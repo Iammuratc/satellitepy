@@ -1,0 +1,2 @@
+val/label_xml: A:\Datasets\GAOFEN\val\label_xml\1001.xml ---> 1001.xml
+val/label_xml: 1001.xml --> 1.xml # because the image files start at 1 NOT 1001
