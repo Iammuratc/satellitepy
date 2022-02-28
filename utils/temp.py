@@ -21,16 +21,13 @@ def get_file_name(file):
 
 
 if __name__ == '__main__':
-	# old_text = f"A:{chr(92)}Datasets{chr(92)}GAOFEN{chr(92)}val{chr(92)}label_xml{chr(92)}"
-	# new_text = ''
-
-	my_folder = "/home/murat/Projects/airplane_detection/DATA/Studenten/Gaofen/val/label_xml"
+	my_folder = "../DATA/Gaofen/val/label_xml"
 
 	for file in os.listdir(my_folder):
 		file_path = f"{my_folder}/{file}"
 
 		file_name = get_file_name(file)
 
-		old_text = f"{str(int(file_name)+1000)}.xml"
+		old_text = f"A:{chr(92)}Datasets{chr(92)}GAOFEN{chr(92)}val{chr(92)}label_xml{chr(92)}{str(int(file_name)+1000)}.xml"
 		new_text = f"{file_name}.xml"
 		replace_text(file_path,old_text,new_text)

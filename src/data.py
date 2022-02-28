@@ -12,21 +12,21 @@ import cv2
 
 class Data(Dataset):
     def __init__(self,dataset_name='train'):
-        self.data_folder = "/home/murat/Projects/airplane_detection/DATA/Studenten/Gaofen"
+        self.data_folder = "../DATA/Gaofen"
         self.dataset_name = dataset_name
         self.json_file = json.load(open(f"{self.data_folder}/sequences.json",'r'))
 
         self.items = self.get_items()
 
     def __len__(self):
-        return len(self.labels) 
+        return len(self.items) 
 
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
+    def __getitem__(self, ind):
+        if torch.is_tensor(ind):
+            ind = ind.tolist()
 
-        img = cv2.imread(self.items[idx][0],1)
-        label = self.items[idx][1]
+        img = cv2.cvtColor(cv2.imread(self.items[ind][0],1),cv2.COLOR_BGR2RGB)
+        label = self.items[ind][1]
         sample = {'image':img,'labels':label}
         return sample
 
@@ -75,20 +75,43 @@ class Data(Dataset):
 
                 coords = []
                 for my_point in my_points:
-                    # coord = []
+                    #### [[[x1,y1],[x2,y2]],[[x1,y1]]]
+                    coord = []
                     for point in my_point.text.split(','):
-                        coords.append(float(point))
-                    # coords.append(coord)
+                        coord.append(float(point))
+                    coords.append(coord)
+                    # for point in my_point.text.split(','):
+                    #     coords.append(float(point))
                 points.append(coords)
 
             labels[img_name] = points
         return labels
 
+    def img_show(self,ind,plot_bbox=True):
+        sample = self.__getitem__(ind)
+        img = sample['image']
+        labels = sample['labels']
+        print(labels)
+        fig, ax = plt.subplots(1)
+        ax.imshow(img,'gray')
+
+        if plot_bbox==True:
+            for coords in labels:
+                for i, coord in enumerate(coords):
+                    # PLOT BBOX
+                    ax.plot([coords[i-1][0],coord[0]],[coords[i-1][1],coord[1]],c='r')
+                    # PLOT CORNERS
+                    # ax.scatter(coord[0],coord[1],c='r',s=5)
+        plt.show()
+
 if __name__ == "__main__":
+    import random
 
     train_data = Data(dataset_name='test')
     # print(len(train_data))
     # print(train_data.get_labels())
     # print(train_data.get_img_paths())
     # print(train_data.items)
-    print(train_data[0])
+    # print(train_data[5]['labels'])
+    ind = random.randint(0,len(train_data)-1)
+    train_data.img_show(ind=ind,plot_bbox=True)
