@@ -4,43 +4,73 @@ import matplotlib.pyplot as plt
 import json
 import xml.etree.ElementTree as ET
 import os
-from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
-import torch
 
 import cv2
+import math
 
-class Data(Dataset):
+
+class Data():
     def __init__(self,dataset_name='train'):
         self.data_folder = "../DATA/Gaofen"
         self.dataset_name = dataset_name
         self.json_file = json.load(open(f"{self.data_folder}/sequences.json",'r'))
 
-        self.items = self.get_items()
-
-    def __len__(self):
-        return len(self.items) 
-
-    def __getitem__(self, ind):
-        if torch.is_tensor(ind):
-            ind = ind.tolist()
-
-        img = cv2.cvtColor(cv2.imread(self.items[ind][0],1),cv2.COLOR_BGR2RGB)
-        label = self.items[ind][1]
-        sample = {'image':img,'labels':label}
-        return sample
-
-    def get_items(self):
-        
-        items=[]
-
         img_paths = self.get_img_paths()
         labels = self.get_labels()
+        patches = self.save_patches(img_paths=img_paths,labels=labels,patch_size=512)
 
+
+    def save_patches(self,img_paths,labels,patch_size=512):
+
+        patches = []
+        box_corner_threshold = 2
         for img_name, img_path in img_paths.items():
-            label = labels[img_name]
-            items.append([img_path,label])
-        return items
+            img = cv2.cvtColor(cv2.imread(img_path,1),cv2.COLOR_BGR2RGB)
+            bbox_coords = labels[img_name]
+            y_max, x_max, ch = img.shape[:3]
+            patch_y = int(math.ceil(y_max/patch_size))
+            patch_x = int(math.ceil(x_max/patch_size))
+
+            for p_y in range(patch_y):
+                for p_x in range(patch_x):
+                    my_labels = []
+                    patch = np.zeros(shape=(patch_size,patch_size,ch),dtype=np.uint8)
+                    y_0 = p_y*patch_size
+                    x_0 = p_x*patch_size
+
+                    plot_img = False
+                    for coords in bbox_coords:
+                        box_corner_in_patch = 0
+                        for coord in coords:
+                            if (x_0<=coord[0]<=x_0+patch_size) and (y_0<=coord[1]<=y_0+patch_size):
+                                box_corner_in_patch += 1    
+                        if box_corner_in_patch>=box_corner_threshold:                        
+                            shifted_coords = np.array(coords)-[x_0,y_0]
+                            my_labels.append(shifted_coords)
+                            plot_img=True
+                    
+                    y_limit_expanded = y_0+patch_size>=y_max
+                    x_limit_expanded = x_0+patch_size>=x_max
+                    limit_expanded = y_limit_expanded and x_limit_expanded
+                    if limit_expanded:
+                        # print(y_max,y_0)
+                        # print(x_max,x_0)
+                        patch[:y_max-y_0,:x_max-x_0] = img[y_0:y_max,x_0:x_max]
+                    elif y_limit_expanded:
+                        patch[:y_max-y_0,:] = img[y_0:y_max,x_0:x_0+patch_size]
+                    elif x_limit_expanded:
+                        patch[:,:x_max-x_0] = img[y_0:y_0+patch_size,x_0:x_max]                        
+                    else:
+                        patch[:,:] = img[y_0:y_0+patch_size,x_0:x_0+patch_size]
+
+                    # patches.append(patch)
+                    # print(patch)
+                    # print(my_labels)
+                    if plot_img:
+                        self.img_show(img=patch,labels=my_labels)
+            # break
+        return patches
 
     def get_img_paths(self):
         img_paths = {}
@@ -87,11 +117,11 @@ class Data(Dataset):
             labels[img_name] = points
         return labels
 
-    def img_show(self,ind,plot_bbox=True):
-        sample = self.__getitem__(ind)
-        img = sample['image']
-        labels = sample['labels']
-        print(labels)
+    def img_show(self,img,labels,plot_bbox=True):
+        # sample = self.__getitem__(ind)
+        # img = sample['image']
+        # labels = sample['labels']
+        # print(labels)
         fig, ax = plt.subplots(1)
         ax.imshow(img,'gray')
 
@@ -104,6 +134,7 @@ class Data(Dataset):
                     # ax.scatter(coord[0],coord[1],c='r',s=5)
         plt.show()
 
+
 if __name__ == "__main__":
     import random
 
@@ -113,5 +144,5 @@ if __name__ == "__main__":
     # print(train_data.get_img_paths())
     # print(train_data.items)
     # print(train_data[5]['labels'])
-    ind = random.randint(0,len(train_data)-1)
-    train_data.img_show(ind=ind,plot_bbox=True)
+    # ind = random.randint(0,len(train_data)-1)
+    # train_data.img_show(ind=ind,plot_bbox=True)
