@@ -3,7 +3,7 @@ import shapely.affinity
 import numpy as np
 from descartes import PolygonPatch
 
-
+# TODO: get_params is slightly off
 class RotatedRect:
     def __init__(self, parametized,**kwargs):
         if parametized == True:
@@ -28,16 +28,35 @@ class RotatedRect:
             self.corners = corners
             self.params = self.get_params()
     def get_params(self):
-        self.cx = np.sum(self.corners[:,0])/4
-        self.cy = np.sum(self.corners[:,1])/4
-        self.h = np.sqrt( (self.corners[0,0] - self.corners[3,0])**2 + (self.corners[0,1] - self.corners[3,1])**2 )
+        self.cx = np.sum(self.corners[:,0])/4.0
+        self.cy = np.sum(self.corners[:,1])/4.0
 
-        x_dif = self.corners[0,0] - self.corners[1,0]
-        y_dif = self.corners[0,1] - self.corners[1,1]
+
+
+        i_0 = np.argmin(self.corners[:,0],axis=None)
+        print(i_0)
+        i_1 = row_no+1 if row_no+1<len(self.corners) else 0
+        print(i_1)
+
+        # x_dif = self.corners[0,0] - self.corners[1,0]
+        # y_dif = self.corners[0,1] - self.corners[1,1]
+        y_dif = lambda i_0,i_1: self.corners[i_0,1] - self.corners[i_1,1]
+        x_dif = lambda i_0,i_1: self.corners[i_0,0] - self.corners[i_1,0]
+
         # print(x_dif,y_dif)
-        self.w = np.sqrt( (x_dif)**2 + (y_dif)**2 )
-        self.angle = np.arctan(y_dif/x_dif)
-        # return cx,cy,w,h,angle            
+        self.w = np.sqrt( x_dif(i_0,i_1)**2 + (y_dif(i_0,i_1))**2 )
+        self.h = np.sqrt( (x_dif(i_0-1))**2 + (self.corners[0,1] - self.corners[3,1])**2 )
+
+        # angle = np.arctan(y_dif/x_dif)
+        # print('corners,', self.corners)
+        angle = np.arctan(x_dif/y_dif)
+        # if angle < 0:
+
+            # self.angle = -(np.pi-np.arctan(y_dif/x_dif))
+            # self.angle = np.arctan(y_dif/x_dif)
+        # else:
+        self.angle= angle
+
     def get_contour(self):
         w = self.w
         h = self.h

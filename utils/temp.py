@@ -22,32 +22,6 @@ def get_file_name(file):
 
 
 
-def rotate(xy, theta):
-    # https://en.wikipedia.org/wiki/Rotation_matrix#In_two_dimensions
-    cos_theta, sin_theta = math.cos(theta), math.sin(theta)
-
-    return (
-        xy[0] * cos_theta - xy[1] * sin_theta,
-        xy[0] * sin_theta + xy[1] * cos_theta
-    )
-
-
-def translate(xy, offset):
-    return xy[0] + offset[0], xy[1] + offset[1]
-
-# def unfold_mat():
-#   unfold = torch.nn.Unfold(kernel_size=(4, 4),stride=4)
-#   input = torch.randn(1, 3, 20, 20)
-#   output = unfold(input)
-#   # each patch contains 30 values (2x3=6 vectors, each of 5 channels)
-#   # 4 blocks (2x3 kernels) in total in the 3x4 input
-#   print(output.size())
-
-def plot_box(ax,points):
-    for i, coord in enumerate(points):
-        ax.plot([points[i-1][0],coord[0]],[points[i-1][1],coord[1]],c='r')
-    return ax    
-
 if __name__ == '__main__':
     # my_folder = "../DATA/Gaofen/val/label_xml"
 
@@ -64,29 +38,27 @@ if __name__ == '__main__':
 
     ### ROTATE BOX
     import matplotlib.pyplot as plt
-    # Create the square relative to (0, 0)
-    w, h = 100, 100
 
-    points = [
-        (10, 10),
-        (10, h),
-        (w, h),
-        (w, 10)
-    ]
+    import shapely.geometry
+    import numpy as np
+    # from descartes import PolygonPatch
+    c = shapely.geometry.box(-20, -10, 20, 10)
+    c = shapely.affinity.rotate(c, 0.52,use_radians=True)
+    rotated_box = shapely.affinity.translate(c, 0, 0)
 
-    offset = (400, 500)
-    degrees = -30
-    theta = math.radians(degrees)
+    x,y = rotated_box.exterior.coords.xy
+    print(x)
+    print(y)
+    x_dif = x[3] - x[4]
+    y_dif = y[3] - y[4]
 
-    # Apply rotation, then translation to each point
-    print(points)
-    rotated_points = [rotate(xy, theta) for xy in points]
-    fig, ax = plt.subplots(1)
-    # ax.imshow(img,'gray')
-    ax = plot_box(ax,points)
-    ax = plot_box(ax,rotated_points)
-# if rotated:
-    # for coords in bboxes:
-
+    angle = np.arctan(y_dif/x_dif)
+    print(angle)
+    fig,ax = plt.subplots(1)
+    ax = plt.gca()
+    ax.set_xlim([-30, +30])
+    ax.set_ylim([-30, +30])
+    plt.plot(*rotated_box.exterior.xy)
+    # ax.add_patch(PolygonPatch(rotated_box, fc='#04d648',alpha=0.5))
 
     plt.show()

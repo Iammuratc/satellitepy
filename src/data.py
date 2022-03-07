@@ -22,7 +22,7 @@ class Data():
         self.save_patches(img_paths=img_paths,labels=labels,patch_size=patch_size)
 
 
-    def save_patches(self,img_paths,labels,patch_size=512):
+    def save_patches(self,img_paths,labels,patch_size=512,overlap=100):
 
         patches = []
         box_corner_threshold = 2
@@ -38,16 +38,11 @@ class Data():
             bbox_coords = labels[img_name]['bbox']
             instance_names = labels[img_name]['names']
             y_max, x_max, ch = img.shape[:3]
-            patch_y = int(math.ceil(y_max/patch_size))
-            patch_x = int(math.ceil(x_max/patch_size))
-
-            for p_y in range(patch_y):
-                for p_x in range(patch_x):
-
-                    my_labels = {'instance_names':[],'rotated_bboxes':[], 'airplane_exist':False} # ,'orthogonal_bboxes':[]
+            patch_y, patch_x = self.get_patch_start_coords(my_max=[y_max,x_max],patch_size=patch_size,overlap=overlap)
+            for y_0 in patch_y:
+                for x_0 in patch_x:
+                    my_labels = {'instance_names':[],'rotated_bboxes':[] ,'orthogonal_bboxes':[],'airplane_exist':False}
                     patch = np.zeros(shape=(patch_size,patch_size,ch),dtype=np.uint8)
-                    y_0 = p_y*patch_size
-                    x_0 = p_x*patch_size
 
                     for i,coords in enumerate(bbox_coords):
                         box_corner_in_patch = 0
@@ -62,11 +57,14 @@ class Data():
                             # ROTATED BBOXES                     
                             my_labels['rotated_bboxes'].append(shifted_coords.tolist())
                             # ORTHOGONAL BBOXES
-                            # x_coords = shifted_coords[:,0]
-                            # y_coords = shifted_coords[:,1]
-                            # x_coord_min, x_coord_max = np.amin(x_coords),np.amax(x_coords)
-                            # y_coord_min, y_coord_max = np.amin(y_coords),np.amax(y_coords)
-                            # my_labels['orthogonal_bboxes'].append([[x_coord_min,y_coord_min],[x_coord_max,y_coord_max]])
+                            x_coords = shifted_coords[:,0]
+                            y_coords = shifted_coords[:,1]
+                            # print(x_coords,y_coords)
+                            x_coord_min, x_coord_max = np.amin(x_coords),np.amax(x_coords)
+                            y_coord_min, y_coord_max = np.amin(y_coords),np.amax(y_coords)
+                            h = y_coord_max - y_coord_min
+                            w = x_coord_max - x_coord_min
+                            my_labels['orthogonal_bboxes'].append([x_coord_min+w/2.0, y_coord_min+h/2.0, w, h])
                             
                             # AIRPLANE EXIST 
                             my_labels['airplane_exist']=True
@@ -85,7 +83,9 @@ class Data():
                     # if my_labels['airplane_exist']:
                         # print(my_labels)
                         # print(my_labels['orthogonal_bboxes'])
-                        # self.img_show(img=patch,bboxes=my_labels['rotated_bboxes'],rotated=False)#my_labels)
+                        # self.img_show(img=patch,bboxes=my_labels['rotated_bboxes'],rotated=True)#my_labels)
+                        # self.img_show(img=patch,bboxes=my_labels['orthogonal_bboxes'],rotated=False)#my_labels)
+
 
                     patch_name = f"{img_name}_x_{x_0}_y_{y_0}"
                     ### save img
@@ -97,6 +97,23 @@ class Data():
             # print(patch_name,my_labels)
             # break
         # return patches
+
+    def get_patch_start_coords(self,my_max,patch_size,overlap):
+
+        def get_values(coord_max):
+            coords=[]
+            coord_0 = 0
+            while coord_0 < coord_max:
+                coords.append(coord_0)
+                coord_0 = coord_0 + patch_size - overlap
+            return coords        
+        
+        y_max,x_max=my_max
+
+        patch_y = get_values(y_max)
+        patch_x = get_values(x_max)
+
+        return patch_y, patch_x
 
     def get_img_paths(self):
         img_paths = {}
@@ -156,24 +173,26 @@ class Data():
         fig, ax = plt.subplots(1)
         ax.imshow(img,'gray')
 
-    # if rotated:
-        for coords in bboxes:
-            for i, coord in enumerate(coords):
-                # PLOT BBOX
-                ax.plot([coords[i-1][0],coord[0]],[coords[i-1][1],coord[1]],c='r')
-                # PLOT CORNERS
-                # ax.scatter(coord[0],coord[1],c='r',s=5)
-    # else:
-        # for coords in bboxes:
-        #     # for i, coord in enumerate(coords):
-        #     x_0 = coords[0][0]
-        #     y_0 = coords[0][1]
-        #     w = coords[1][0] - x_0
-        #     h = coords[1][1] - y_0
-        #     rect = patches.Rectangle((x_0, y_0), w, h, linewidth=1, edgecolor='r', facecolor='none')
+        if rotated:
+            for coords in bboxes:
+                for i, coord in enumerate(coords):
+                    # PLOT BBOX
+                    ax.plot([coords[i-1][0],coord[0]],[coords[i-1][1],coord[1]],c='r')
+                    # PLOT CORNERS
+                    # ax.scatter(coord[0],coord[1],c='r',s=5)
+        else:
+            print(bboxes)
+            for coords in bboxes:
+                print(coords)
+                # for i, coord in enumerate(coords):
+                x_0 = coords[0][0]
+                y_0 = coords[0][1]
+                w = coords[1][0] - x_0
+                h = coords[1][1] - y_0
+                rect = patches.Rectangle((x_0, y_0), w, h, linewidth=1, edgecolor='r', facecolor='none')
 
                 # Add the patch to the Axes
-            # ax.add_patch(rect)
+                ax.add_patch(rect)
         plt.show()
 
 

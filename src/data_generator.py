@@ -66,14 +66,20 @@ class DataGenerator(Dataset):
                 shear=(-16, 16),
             ) 
         ])
+
         if sample['labels']['airplane_exist']: # If there is any airplane in the image, augment bboxes, else, augment image only 
             bboxes = sample['labels']['rotated_bboxes']
+            # bboxes.insert(0,)
+            print(bboxes)
+
             kps = KeypointsOnImage([Keypoint(x=coord[0], y=coord[1]) for coords in bboxes for coord in coords], shape=image.shape)
 
             image_aug, kps_aug = seq(image=image, keypoints=kps)
 
             bbox_aug = np.array([keypoint.xy for keypoint in kps_aug]).reshape(-1,4,2) # eg: 3,4,2
+        
             ## REMOVE AIRPLANES OUT OF IMAGE
+            # self.remove_
             # bbox_aug_flatten = bbox_aug.reshape(bbox_aug.shape[0],-1)
             # print(bbox_aug_flatten.shape)
             # for i in bbox_aug_flatten:
@@ -117,11 +123,11 @@ class DataGenerator(Dataset):
 
 if __name__ == "__main__":
     import random
-    data_generator = DataGenerator(dataset_name='train',patch_size=512)
-    ind = random.randint(0,len(data_generator)-1)
+    data_generator = DataGenerator(dataset_name='val',patch_size=512)
+    # ind = random.randint(0,len(data_generator)-1)
     # USE train-378 for your augmentation tests
-    sample = data_generator[378]
-    print(ind)
+    sample = data_generator[1]
+    # print(ind)
     # print(sample)
     sample = data_generator.transform_sample(sample)
     
