@@ -67,7 +67,8 @@ class Data():
                             # x_coord_min, x_coord_max = np.amin(x_coords),np.amax(x_coords)
                             # y_coord_min, y_coord_max = np.amin(y_coords),np.amax(y_coords)
                             # my_labels['orthogonal_bboxes'].append([[x_coord_min,y_coord_min],[x_coord_max,y_coord_max]])
-                            # airplane exist 
+                            
+                            # AIRPLANE EXIST 
                             my_labels['airplane_exist']=True
                     
                     y_limit_expanded = y_0+patch_size>=y_max
