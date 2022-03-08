@@ -33,10 +33,10 @@ class RotatedRect:
 
 
 
-        i_0 = np.argmin(self.corners[:,0],axis=None)
-        print(i_0)
-        i_1 = row_no+1 if row_no+1<len(self.corners) else 0
-        print(i_1)
+        # i_0 = np.argmin(self.corners[:,0],axis=None)
+        # print(i_0)
+        # i_1 = row_no+1 if row_no+1<len(self.corners) else 0
+        # print(i_1)
 
         # x_dif = self.corners[0,0] - self.corners[1,0]
         # y_dif = self.corners[0,1] - self.corners[1,1]
@@ -44,12 +44,12 @@ class RotatedRect:
         x_dif = lambda i_0,i_1: self.corners[i_0,0] - self.corners[i_1,0]
 
         # print(x_dif,y_dif)
-        self.w = np.sqrt( x_dif(i_0,i_1)**2 + (y_dif(i_0,i_1))**2 )
-        self.h = np.sqrt( (x_dif(i_0-1))**2 + (self.corners[0,1] - self.corners[3,1])**2 )
+        self.w = np.sqrt( x_dif(0,1)**2 + y_dif(0,1)**2 )
+        self.h = np.sqrt(x_dif(1,2)**2 + y_dif(1,2)**2 )
 
         # angle = np.arctan(y_dif/x_dif)
         # print('corners,', self.corners)
-        angle = np.arctan(x_dif/y_dif)
+        angle = np.arctan(x_dif(1,2)/y_dif(1,2))
         # if angle < 0:
 
             # self.angle = -(np.pi-np.arctan(y_dif/x_dif))

@@ -70,7 +70,7 @@ class DataGenerator(Dataset):
         if sample['labels']['airplane_exist']: # If there is any airplane in the image, augment bboxes, else, augment image only 
             bboxes = sample['labels']['rotated_bboxes']
             # bboxes.insert(0,)
-            print(bboxes)
+            # print(bboxes)
 
             kps = KeypointsOnImage([Keypoint(x=coord[0], y=coord[1]) for coords in bboxes for coord in coords], shape=image.shape)
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     data_generator = DataGenerator(dataset_name='val',patch_size=512)
     # ind = random.randint(0,len(data_generator)-1)
     # USE train-378 for your augmentation tests
-    sample = data_generator[1]
+    sample = data_generator[7]
     # print(ind)
     # print(sample)
     sample = data_generator.transform_sample(sample)

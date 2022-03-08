@@ -36,14 +36,14 @@ if __name__ == '__main__':
     # import torch
     # unfold_mat()
 
-    ### ROTATE BOX
+    ### ROTATE BOX 
     import matplotlib.pyplot as plt
 
     import shapely.geometry
     import numpy as np
     # from descartes import PolygonPatch
     c = shapely.geometry.box(-20, -10, 20, 10)
-    c = shapely.affinity.rotate(c, 0.52,use_radians=True)
+    c = shapely.affinity.rotate(c, -0.94,use_radians=True)
     rotated_box = shapely.affinity.translate(c, 0, 0)
 
     x,y = rotated_box.exterior.coords.xy
