@@ -1,15 +1,16 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 import json
 import xml.etree.ElementTree as ET
 import os
-import matplotlib.pyplot as plt
 import json
 import cv2
 import math
-import matplotlib.patches as patches
 
+# from utilities import show_sample
+
+
+## TODO: Add patch size to json file
 class Data():
     def __init__(self,dataset_name,patch_size):
         self.project_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -48,7 +49,7 @@ class Data():
                         box_corner_in_patch = 0
                         for coord in coords:
                             if (x_0<=coord[0]<=x_0+patch_size) and (y_0<=coord[1]<=y_0+patch_size):
-                                box_corner_in_patch += 1 
+                                box_corner_in_patch += 1
                         if box_corner_in_patch>=box_corner_threshold:
                             # INSTANCE NAMES
                             my_labels['instance_names'].append(instance_names[i])
@@ -165,35 +166,12 @@ class Data():
             # break
         return labels
 
-    def img_show(self,img,bboxes,rotated):
-        # sample = self.__getitem__(ind)
-        # img = sample['image']
-        # labels = sample['labels']
-        # print(labels)
-        fig, ax = plt.subplots(1)
-        ax.imshow(img,'gray')
+    def get_norm_params(self):
 
-        if rotated:
-            for coords in bboxes:
-                for i, coord in enumerate(coords):
-                    # PLOT BBOX
-                    ax.plot([coords[i-1][0],coord[0]],[coords[i-1][1],coord[1]],c='r')
-                    # PLOT CORNERS
-                    # ax.scatter(coord[0],coord[1],c='r',s=5)
-        else:
-            print(bboxes)
-            for coords in bboxes:
-                print(coords)
-                # for i, coord in enumerate(coords):
-                x_0 = coords[0][0]
-                y_0 = coords[0][1]
-                w = coords[1][0] - x_0
-                h = coords[1][1] - y_0
-                rect = patches.Rectangle((x_0, y_0), w, h, linewidth=1, edgecolor='r', facecolor='none')
+        means = np.zeros((1,3))
 
-                # Add the patch to the Axes
-                ax.add_patch(rect)
-        plt.show()
+        for img_path in img_paths:
+
 
 
 if __name__ == "__main__":

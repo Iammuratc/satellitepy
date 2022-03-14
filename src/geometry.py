@@ -4,6 +4,7 @@ import numpy as np
 from descartes import PolygonPatch
 
 # TODO: get_params is slightly off
+
 class RotatedRect:
     def __init__(self, parametized,**kwargs):
         if parametized == True:
