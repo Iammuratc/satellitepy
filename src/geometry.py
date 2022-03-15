@@ -3,7 +3,7 @@ import shapely.affinity
 import numpy as np
 from descartes import PolygonPatch
 
-# TODO: get_params is slightly off
+# TODO: get_params is off
 
 class RotatedRect:
     def __init__(self, parametized,**kwargs):
@@ -23,7 +23,7 @@ class RotatedRect:
             """
             corners = kwargs['corners']
             if corners.shape != (4,2):
-                print('Corners shape should (4,2)')
+                print('Corners shape should be (4,2)')
                 return 0
 
             self.corners = corners

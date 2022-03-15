@@ -59,8 +59,9 @@ class ToTensor(object):
         # numpy image: H x W x C
         # torch image: C x H x W
         image = image.transpose((2, 0, 1))
-        return {'image': torch.from_numpy(image),
-                'orthogonal_bboxes': torch.FloatTensor(bbox)}#torch.from_numpy(bbox)}
+        # print(torch.from_numpy(image).unsqueeze(dim=0).shape)
+        return {'image': torch.from_numpy(image),#.unsqueeze(dim=0),
+                'orthogonal_bboxes': torch.FloatTensor(bbox)}#.unsqueeze(dim=0)}#torch.from_numpy(bbox)}
 
 
 class TransformationsUtils:

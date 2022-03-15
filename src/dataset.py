@@ -50,7 +50,13 @@ class AirplaneDataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
 
-        return {'image':sample['image'],'orthogonal_bboxes':sample['orthogonal_bboxes']}
+        # sample = torch
+
+        # if len(sample['orthogonal_bboxes'].shape) != 3:
+        #     sample['orthogonal_bboxes'] = sample['orthogonal_bboxes'].unsqueeze(dim=2)
+
+        # return {'image':sample['image'],'orthogonal_bboxes':sample['orthogonal_bboxes']}
+        return sample['image'], sample['orthogonal_bboxes']
 
     def get_img_names(self):
         return os.listdir(self.img_folder)
