@@ -1,6 +1,10 @@
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import torch
+# import torch
+import os
+import json
+
+
 def show_sample(sample):
     img = sample['image']
     
@@ -33,3 +37,6 @@ def show_sample(sample):
         ax.add_patch(rect)
     plt.show()
     return ax
+
+
+

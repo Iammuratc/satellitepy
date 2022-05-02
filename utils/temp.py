@@ -1,5 +1,14 @@
 import os
 import math
+import numpy as np
+
+
+def padding():
+    a = [[1, 2], [3, 4]]
+
+    b = np.pad(a, ((1, 2), (2, 3)), 'constant',constant_values=0)
+    
+    print(b)
 
 ### REPLACE 
 
@@ -23,6 +32,7 @@ def get_file_name(file):
 
 
 if __name__ == '__main__':
+    padding()
     # my_folder = "../DATA/Gaofen/val/label_xml"
 
     # for file in os.listdir(my_folder):
@@ -37,28 +47,32 @@ if __name__ == '__main__':
     # unfold_mat()
 
     ### ROTATE BOX 
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
 
-    import shapely.geometry
-    import numpy as np
-    # from descartes import PolygonPatch
-    c = shapely.geometry.box(-20, -10, 20, 10)
-    c = shapely.affinity.rotate(c, -0.94,use_radians=True)
-    rotated_box = shapely.affinity.translate(c, 0, 0)
+    # import shapely.geometry
+    # import numpy as np
+    # # from descartes import PolygonPatch
+    # c = shapely.geometry.box(-20, -10, 20, 10)
+    # c = shapely.affinity.rotate(c, -0.14,use_radians=True)
+    # rotated_box = shapely.affinity.translate(c, 0, 0)
 
-    x,y = rotated_box.exterior.coords.xy
-    print(x)
-    print(y)
-    x_dif = x[3] - x[4]
-    y_dif = y[3] - y[4]
+    
+    # # CALCULATE ANGLE FROM CORNERS
+    # x,y = rotated_box.exterior.coords.xy
+    # print(x)
+    # print(y)
+    # x_dif = x[3] - x[4]
+    # y_dif = y[3] - y[4]
 
-    angle = np.arctan(y_dif/x_dif)
-    print(angle)
-    fig,ax = plt.subplots(1)
-    ax = plt.gca()
-    ax.set_xlim([-30, +30])
-    ax.set_ylim([-30, +30])
-    plt.plot(*rotated_box.exterior.xy)
-    # ax.add_patch(PolygonPatch(rotated_box, fc='#04d648',alpha=0.5))
+    # angle = np.arctan(y_dif/x_dif)
+    # print("{:1.2}".format(angle))
 
-    plt.show()
+
+    # fig,ax = plt.subplots(1)
+    # ax = plt.gca()
+    # ax.set_xlim([-30, +30])
+    # ax.set_ylim([-30, +30])
+    # plt.plot(*rotated_box.exterior.xy)
+    # # ax.add_patch(PolygonPatch(rotated_box, fc='#04d648',alpha=0.5))
+
+    # plt.show()
