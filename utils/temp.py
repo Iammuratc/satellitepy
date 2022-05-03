@@ -3,6 +3,9 @@ import math
 import numpy as np
 
 
+
+
+
 def padding():
     a = [[1, 2], [3, 4]]
 
@@ -32,8 +35,13 @@ def get_file_name(file):
 
 
 if __name__ == '__main__':
-    padding()
-    # my_folder = "../DATA/Gaofen/val/label_xml"
+    # padding()
+
+    # from PIL import Image, ExifTags
+    # img = Image.open("/home/murat/Projects/airplane_detection/DATA/Gaofen/train/images/4.tif")
+    # exif = { ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS }
+    # print(exif)
+        # my_folder = "../DATA/Gaofen/val/label_xml"
 
     # for file in os.listdir(my_folder):
     #   file_path = f"{my_folder}/{file}"

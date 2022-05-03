@@ -36,8 +36,8 @@ class RotatedRect:
         x_dif = lambda i_0,i_1: self.corners[i_0,0] - self.corners[i_1,0]
         y_dif = lambda i_0,i_1: self.corners[i_0,1] - self.corners[i_1,1]
 
-        self.w = np.sqrt(x_dif(0,1)**2 + y_dif(0,1)**2 )
-        self.h = np.sqrt(x_dif(1,2)**2 + y_dif(1,2)**2 )       
+        self.h = np.sqrt(x_dif(0,1)**2 + y_dif(0,1)**2 )
+        self.w = np.sqrt(x_dif(1,2)**2 + y_dif(1,2)**2 )       
 
         self.angle = np.arctan(y_dif(0,1)/x_dif(0,1))
 
