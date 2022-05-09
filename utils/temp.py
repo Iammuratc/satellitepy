@@ -84,3 +84,42 @@ if __name__ == '__main__':
     # # ax.add_patch(PolygonPatch(rotated_box, fc='#04d648',alpha=0.5))
 
     # plt.show()
+
+### OLD GEOMETRY
+    # def plot_rotated_box(corners,ax):
+    #     # for coords in corners:
+    #         # print(coords)
+    #     for i, coord in enumerate(corners):
+    #         # PLOT BBOX
+    #         ax.plot([corners[i-1][0],coord[0]],[corners[i-1][1],coord[1]],c='r')
+
+
+    # labels_folder = "/home/murat/Projects/airplane_detection/DATA/Gaofen/train/patches_512/labels_original"
+    # img_folder = "/home/murat/Projects/airplane_detection/DATA/Gaofen/train/patches_512/images"
+    
+    # # my_files = os.listdir(data_folder)
+    # # i = random.randint(0, len(my_files))
+    # # print(my_files[i])
+    # # my_file = os.path.splitext(my_files[i])
+    # my_file = '1_x_412_y_412'
+    # my_dict = json.load(open(f"{labels_folder}/{my_file}.json",'r'))
+    # rotated_bboxes = my_dict['rotated_bboxes']
+    # img = cv2.imread(f"{img_folder}/{my_file}.png")
+
+
+
+
+    # fig, ax = plt.subplots(1)
+    # # ax.imshow()
+    # ax = plt.gca()
+    # ax.set_xlim([0, 512])
+    # ax.set_ylim([0, 512])
+    # for i,corners in enumerate(rotated_bboxes):
+    #     # print(corners)
+    #     instance_name = my_dict["instance_names"][i]
+    #     rotated_rect = RotatedRect(corners=np.array(corners),parametized=False)
+    #     print(f"Type: {instance_name} height: {rotated_rect.h} width: {rotated_rect.w}")
+
+    #     rotated_rect.plot_contours(ax)
+    #     plot_rotated_box(corners,ax)
+    # plt.show()
