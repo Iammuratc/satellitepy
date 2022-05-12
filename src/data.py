@@ -7,13 +7,15 @@ import json
 import cv2
 import math
 import geometry
-
+from utilities import get_file_name_from_path
 # from utilities import show_sample
 
 
 ## TODO: Add patch size to json file
 
 ##TODO (Recognition): save images and labels
+
+##NOTES: y axis of matplotlib figures are inverted, so the airplanes will be actually facing downwards, pay attention at the new datasets 
 class Data:
     def __init__(self,dataset_name):
         self.project_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,8 +23,6 @@ class Data:
         self.dataset_name = dataset_name
         self.json_file = json.load(open(f"{self.data_folder}/sequences.json",'r'))
 
-        self.img_paths = self.get_img_paths()
-        self.labels = self.get_labels()
 
     def get_img_paths(self):
         img_paths = {}
@@ -38,13 +38,13 @@ class Data:
                     
         return img_paths 
 
-    def get_label(self,label_file_path):
+    def get_label(self,label_path):
         label = {'bbox':[],'names':[]}
-        root = ET.parse(label_file_path).getroot()
+        root = ET.parse(label_path).getroot()
 
         ### IMAGE NAME
         file_name = root.findall('./source/filename')[0].text
-        img_name = file_name.split('.')[0]
+        # img_name = file_name.split('.')[0]
          
         ### INSTANCE NAMES
         instance_names = root.findall('./objects/object/possibleresult/name')#[0].text
@@ -63,28 +63,49 @@ class Data:
                     coord.append(float(point))
                 coords.append(coord)
             label['bbox'].append(coords)
-        return label, img_name
+        return label#, img_name
 
-    def get_labels(self):
-        labels={}
-
+    def get_label_paths(self):
         label_folder = f"{self.data_folder}/{self.dataset_name}/label_xml"
-        label_file_paths = [f"{label_folder}/{file_name}" for file_name in os.listdir(label_folder)]
+        label_paths = {file_name.split('.')[0]:f"{label_folder}/{file_name}" for file_name in os.listdir(label_folder)}
+        return label_paths
 
+    def plot_bboxes(self,img_path,label_path):
+        img = cv2.imread(img_path)
+        img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        label = self.get_label(label_path)
 
-        for label_file_path in label_file_paths:
-            
-            label, img_name =self.get_label(label_file_path) 
-            labels[img_name]=label
-            # break
-        return labels
+        fig, ax = plt.subplots(1)
+        ax.imshow(img)
+        for bbox in label['bbox']:
+            # print(bbox)
+            rect = geometry.Rectangle(np.array(bbox))
+            rect.plot_corners(ax)
+        plt.show()
 
-    def plot_rotated_box(self,corners,ax):
-        # for coords in corners:
-            # print(coords)
-        for i, coord in enumerate(corners):
-            # PLOT BBOX
-            ax.plot([corners[i-1][0],coord[0]],[corners[i-1][1],coord[1]],c='y')
+    # def get_labels(self):
+    #     labels={}
+
+    #     label_paths = self.get_label_paths()
+    #     for label_path in label_paths:
+    #         label, img_name =self.get_label(label_path) 
+    #         labels[img_name]=label
+    #         # break
+    #     return labels
+
+    # def plot_rotated_box(self,ax,**kwargs):
+
+    #     if 'bbox_params' in kwargs.keys():
+    #         bbox_params = kwargs['bbox_params']
+    #         geometry.Rectangle.plot_contours(params=bbox_params)
+
+    #     elif 'bbox_corners' in kwargs.keys():
+    #         corners = kwargs['bbox_corners']
+    #         geometry.Rectangle.plot_corners(corners)
+    #     else:
+    #         print('Check the plot_rotated_box')
+    #     return ax
+
 
 
 #### DETECTION DATA
@@ -216,21 +237,30 @@ class RecognitionData(Data):
         '''
         super(RecognitionData, self).__init__(dataset_name)
 
-    def get_patch_folder(self,patch_size):
-        return f"{self.data_folder}/{self.dataset_name}/patches_{patch_size}_recognition"
+    def set_patch_folders(self,patch_size):
+        ### PATCH SAVE DIRECTORIES
+        self.patch_folder_base = f"{self.data_folder}/{self.dataset_name}/patches_{patch_size}_recognition"
+        os.makedirs(self.patch_folder_base,exist_ok=True)
+        self.img_patch_folder = f"{self.patch_folder_base}/images"
+        os.makedirs(self.img_patch_folder,exist_ok=True)
+        self.img_patch_rotated_folder = f"{self.patch_folder_base}/rotated_images"
+        os.makedirs(self.img_patch_rotated_folder,exist_ok=True)
+        self.label_patch_folder = f"{self.patch_folder_base}/labels"
+        os.makedirs(self.label_patch_folder,exist_ok=True)
+        # return img_patch_folder, label_patch_folder
 
 
-    def get_patch(self,img,rect,center,patch_size):
+    def get_img_patch(self,img,rect,patch_dict):
         '''
         Get the patch of the upwards facing airplane
         Original padded image (img) >> 2*patch_size image (img_1) >> rotate such that the airplane is facing upwards (img_2) >> patch_size image
         img: original img
-        center: center of the original bounding boxes of the airplane [x,y]
-        patch_size: desired patch size
         ''' 
 
+        patch_size = patch_dict['patch_size']
+        cx, cy = patch_dict['original']['center_padded']
+
         # Get the large image
-        cx, cy = center
         img_1=img[cy-patch_size:cy+patch_size,cx-patch_size:cx+patch_size,:]
        
 
@@ -240,136 +270,148 @@ class RecognitionData(Data):
 
         # Get the image patch
         patch_half_size = int(patch_size/2)
-        img_patch = img_2[patch_size-patch_half_size:patch_size+patch_half_size,patch_size-patch_half_size:patch_size+patch_half_size,:]
-        return img_patch
+        patch_dict['img_patch_rotated']=img_2[patch_size-patch_half_size:patch_size+patch_half_size,patch_size-patch_half_size:patch_size+patch_half_size,:]
+        patch_dict['img_patch']=img_1[patch_size-patch_half_size:patch_size+patch_half_size,patch_size-patch_half_size:patch_size+patch_half_size,:]
+
+        return patch_dict
 
 
-    def get_patches(self,save=False,patch_size=256):
-        '''
-        Get patches from an original image
-        '''
-        # patch_half_size=int(patch_size/2)
-        my_patch_folder = self.get_patch_folder(patch_size)
-        os.makedirs(my_patch_folder,exist_ok=True)
-        img_patch_folder = f"{my_patch_folder}/images"
-        os.makedirs(img_patch_folder,exist_ok=True)
-        label_patch_folder = f"{my_patch_folder}/labels"
-        os.makedirs(label_patch_folder,exist_ok=True)
+    def get_patch_label(self,img,patch_dict,bbox):
+        # print(bbox)
+        pad_size = patch_dict['original']['pad_size']
+        patch_size=patch_dict['patch_size']
+        # If not including _orig, the variable belongs to the patch 
+        bbox_orig_padded =np.array(bbox)+pad_size # add initial padding
+        # print(pad_size)
+        # print(bbox_orig_padded)
+        ### NEW CENTER OF AIRPLANE
+        center = np.mean(bbox,axis=0).astype(int)
+        center_padded = center+pad_size
+        # print('center padded: ', center_padded)
+        ### NEW BBOX
+        bbox_patch = bbox_orig_padded-center_padded+pad_size/2
+        # print(bbox_orig_padded-center_padded)
+        # print(bbox_patch)
+        patch_dict['rotated_bbox_patch']=bbox_patch.tolist()
+        patch_dict['original']['center_padded']=center_padded.tolist()
 
-        ###
+        rect = geometry.Rectangle(bbox=bbox_patch)
+
+
+        patch_dict['bbox_params']= [int(patch_size/2),int(patch_size/2),rect.h,rect.w,rect.angle]
+        patch_dict['notes']['airplane_features'] = ['center_x,center_y,height,width,rotation_angle']
+
+        patch_dict = self.get_img_patch(img=img,rect=rect,patch_dict=patch_dict)
+        return patch_dict, rect
+
+
+    def get_patches_in_file(self,img_path,label_path,patch_size,save=False):
+
+
         
+        ### GET ORIGINAL IMAGE
+        img = cv2.imread(img_path)
+        label = self.get_label(label_path)
+        ### pad the original image, so no patching problem for the planes on the edge of the image
+        pad_size = patch_size
+        img = np.pad(img,((pad_size,pad_size),(pad_size,pad_size),(0,0)),'constant',constant_values=0)#'symmetric')#
+        ### GET LABELS
+        bboxes = label['bbox']
 
-        for file_name in list(self.labels.keys())[1:]:
-            ## INITIATE PATCH
-            label_patch = { 'patch':{'instance_name':None,'rotated_bboxes':[],'airplane_features':[0,0], 'size':None,'notes':{'airplane_features':None}},
-                            'original': {'img_path':None, 'center_padded':None, 'pad_size':0}}
-            img_patch = np.zeros(shape=(patch_size,patch_size,3),dtype=np.uint8)
-
-            ### GET ORIGINAL IMAGE
-            img_path = self.img_paths[file_name]
-            img = cv2.imread(img_path)
-            ### pad the original image, so no patching problem for the planes on the edge of the image
-            pad_size = patch_size
-            img = np.pad(img,((pad_size,pad_size),(pad_size,pad_size),(0,0)),'constant',constant_values=0)#'symmetric')#
-            ### GET LABELS
-            label = self.labels[file_name]
+        patch_name = os.path.split(img_path)
+        # print(labels)
+        for i,bbox in enumerate(bboxes):
             
-            for i,corners_orig in enumerate(label['bbox']):
-                # If not including _orig, the variable belongs to the patch 
-                corners_orig_padded =np.array(corners_orig)+pad_size # add initial padding
+            patch_dict = {  'img_patch':np.zeros(shape=(patch_size,patch_size,3),dtype=np.uint8),
+                            'img_patch_rotated':np.zeros(shape=(patch_size,patch_size,3),dtype=np.uint8),
+                            'instance_name':None,
+                            'rotated_bbox_patch':[],
+                            'bbox_params':[],
+                            'patch_size':None,
+                            'original': {'img_path':None, 'center_padded':None, 'pad_size':0},
+                            'notes':{'airplane_features':None}}
+            
+            patch_dict['original']['img_path']=img_path
+            patch_dict['instance_name']=label["names"][i]
+            patch_dict['original']['pad_size']=pad_size
+            patch_dict['patch_size']=patch_size
+
+            patch_dict, rect = self.get_patch_label(img,patch_dict,bbox)
+
+            # print(patch_dict['rotated_bbox_patch'])
+
+            ### PLOT
+            fig,ax = plt.subplots(2)
+            ax[0].imshow(cv2.cvtColor(patch_dict['img_patch'],cv2.COLOR_BGR2RGB))
+            # # ax[0].set_ylim(ax[0].get_ylim()[::-1]) # invert y axis
+            # # self.plot_rotated_box(patch_dict['patch']['rotated_bboxes'],ax[0])
+            rect.plot_corners(ax[0])
+            # # rect.plot_contours(ax[0],rotate=False)
+            ax[1].imshow(cv2.cvtColor(patch_dict['img_patch_rotated'],cv2.COLOR_BGR2RGB))
+            # # ax[1].set_ylim(ax[1].get_ylim()[::-1])
+            rect.plot_contours(ax[1],rotate=False)
+            # plt.show()
+
+            ### SAVE FIGURES
+            if save:
+
+                # ax.set_title(f"{instance_name}, h:{rotated_rect.h:.1f}, w:{rotated_rect.w:.1f}",fontsize=24)
+                ## FILE NAMES
+                file_name = get_file_name_from_path(img_path)
+                patch_name = f"{file_name}_{i}"
+
+                os.makedirs(f"{self.patch_folder_base}/figures",exist_ok=True)
+                plt.savefig(f"{self.patch_folder_base}/figures/{patch_name}.png", bbox_inches='tight')
+
+                ## ROTATED IMG
+                img_patch_rotated = patch_dict['img_patch_rotated']
+                cv2.imwrite(f"{self.img_patch_rotated_folder}/{patch_name}.png",img_patch_rotated)
                 
-                center = np.mean(corners_orig,axis=0).astype(int)
-                center_padded = center+pad_size
-                get_patch_coords = lambda coords: coords-center_padded+pad_size/2
-                corners = get_patch_coords(corners_orig_padded)
-                label_patch['patch']['instance_name']=label["names"][i]
-                label_patch['patch']['rotated_bboxes']=corners.tolist()
-                label_patch['original']['img_path']=img_path
-                label_patch['original']['center_padded']=center_padded.tolist()
-                label_patch['original']['pad_size']=pad_size
-                label_patch['patch']['size']=patch_size
+                ## IMG
+                img_patch = patch_dict['img_patch']
+                cv2.imwrite(f"{self.img_patch_folder}/{patch_name}.png",img_patch)
 
-                rect = geometry.Rectangle(corners=corners)
+                ### LABEL
+                del patch_dict['img_patch_rotated']
+                del patch_dict['img_patch']
+                with open(f"{self.label_patch_folder}/{patch_name}.json", 'w') as f:
+                    json.dump(patch_dict, f,indent=4)
 
-
-                label_patch['patch']['airplane_features']= [int(patch_size/2),int(patch_size/2),rect.h,rect.w,rect.angle]
-                label_patch['patch']['notes']['airplane_features'] = ['center_x,center_y,height,width,rotation_angle']
-
-                img_patch = self.get_patch(img=img,rect=rect,center=center_padded,patch_size=patch_size)
-                print(label_patch)
-
-                ### PLOT
-
-                fig,ax = plt.subplots(2)
-                ax[0].imshow(cv2.cvtColor(img_patch,cv2.COLOR_BGR2RGB))
-                ax[0].set_ylim(ax[0].get_ylim()[::-1]) # invert y axis
-                # self.plot_rotated_box(label_patch['rotated_bboxes'],ax[0])
-                rect.plot_contours(ax[0],rotate=False)
-                # ax[1].imshow(cv2.cvtColor(img_patch,cv2.COLOR_BGR2RGB))
-                # ax[1].set_ylim(ax[1].get_ylim()[::-1])
-                plt.show()
-
-                ### SAVE FIGURES
-                if save:
-                    # ax.set_title(f"{instance_name}, h:{rotated_rect.h:.1f}, w:{rotated_rect.w:.1f}",fontsize=24)
-                    # plt.savefig(f"{my_patch_folder}/figures/{file_name}_{i}.png", bbox_inches='tight')
-                    patch_name = f"{file_name}_{i}"
-                    cv2.imwrite(f"{img_patch_folder}/{patch_name}.png",img_patch)
-                    ### save label
-                    with open(f"{label_patch_folder}/{patch_name}.json", 'w') as f:
-                        json.dump(label_patch, f,indent=4)
-
-                # break
             # break
+            
+        # return patch_dict
 
-                
-
-    def get_airplane_size(self,patch_size=128):
-
-        my_patch_folder = self.get_patch_folder(patch_size)
-        label_patch_folder = f"{my_patch_folder}/labels"
-
-        size_dict = {}
-        for json_file in os.listdir(label_patch_folder):
-           label_patch = json.load(open(f"{label_patch_folder}/{json_file}",'r'))
-           h,w = label_patch['size_hw']
-           instance_name=label_patch['instance_name']
-           
-           if instance_name not in size_dict.keys():
-                size_dict[instance_name] = {'w':[],'h':[]}
-           else:
-                size_dict[instance_name]['w'].append(w)
-                size_dict[instance_name]['h'].append(h)
-        # print(size_dict)
-
-        for instance_name in size_dict.keys():
-            total_no = len(size_dict[instance_name]['h'])
-            fig,ax=plt.subplots(2)
-            fig.suptitle(f'Instance:{instance_name}, total no: {total_no}')
-            ax[0].set_title('Height')
-            ax[1].set_title('Width')
-            ax[0].hist(size_dict[instance_name]['h'],bins=50)
-            ax[1].hist(size_dict[instance_name]['w'],bins=50)
-            plt.show()
-            # plt.savefig(f"{my_patch_folder}/figures/hist_{instance_name}.png", bbox_inches='tight')
-
-    def rotate_airplane(self,corners):
-        pass
-    def rescale_airplane(self,patch_size):
-        pass
 
 if __name__ == "__main__":
     import random
     
     import matplotlib.pyplot as plt    
-
+    import os
 
 
 
     ### SAVE PATCHES (RECOGNITION)
+    patch_size=256
     train_data = RecognitionData(dataset_name='train')
-    train_data.get_patches(save=False) 
-    # train_data.get_airplane_size()
+    train_data.set_patch_folders(patch_size=patch_size)
+    # train_data.get_patches(save=False) 
+
+    # paths = train_data.get_img_paths()
+
+
+    # print(paths)
+    # problem ones: 111,148 ---- 200 den devam et
+    # for no in ['283','966','111','54']:
+    for no in ['111','148','100','56','20','5']: 
+    # for no in paths.keys():
+        # print(no)
+        img_path = f'/home/murat/Projects/airplane_detection/DATA/Gaofen/train/images/{no}.tif'
+        label_path = f'/home/murat/Projects/airplane_detection/DATA/Gaofen/train/label_xml/{no}.xml'
+
+
+        train_data.get_patches_in_file(img_path,label_path,patch_size=patch_size,save=True)
+
+        # train_data.plot_bboxes(img_path,label_path)
 
 
     ### CHECK LABELS 
@@ -407,13 +449,6 @@ if __name__ == "__main__":
     #     # rotated_rect.plot_contours(ax)
     #     plot_rotated_box(corners,ax)
     # plt.show()
-    ### SAVE PATCHES
-    # train_data.save_patches()
-    # print('train data saved')
-    # val_data.save_patches()
-    # print('val data saved')
-    # test_data.save_patches()
-    # print('test data saved')
 
     ### PATCH CONTROL
     # patch_coords = test_data.get_patch_start_coords(my_max=[1030,1030],patch_size=512,overlap=100)

@@ -123,3 +123,33 @@ if __name__ == '__main__':
     #     rotated_rect.plot_contours(ax)
     #     plot_rotated_box(corners,ax)
     # plt.show()
+
+
+    # def get_airplane_size(self,patch_size=128):
+
+    #     my_patch_folder = self.get_patch_folder(patch_size)
+    #     label_patch_folder = f"{my_patch_folder}/labels"
+
+    #     size_dict = {}
+    #     for json_file in os.listdir(label_patch_folder):
+    #        patch_dict = json.load(open(f"{label_patch_folder}/{json_file}",'r'))
+    #        h,w = patch_dict['size_hw']
+    #        instance_name=patch_dict['instance_name']
+           
+    #        if instance_name not in size_dict.keys():
+    #             size_dict[instance_name] = {'w':[],'h':[]}
+    #        else:
+    #             size_dict[instance_name]['w'].append(w)
+    #             size_dict[instance_name]['h'].append(h)
+    #     # print(size_dict)
+
+    #     for instance_name in size_dict.keys():
+    #         total_no = len(size_dict[instance_name]['h'])
+    #         fig,ax=plt.subplots(2)
+    #         fig.suptitle(f'Instance:{instance_name}, total no: {total_no}')
+    #         ax[0].set_title('Height')
+    #         ax[1].set_title('Width')
+    #         ax[0].hist(size_dict[instance_name]['h'],bins=50)
+    #         ax[1].hist(size_dict[instance_name]['w'],bins=50)
+    #         plt.show()
+            # plt.savefig(f"{my_patch_folder}/figures/hist_{instance_name}.png", bbox_inches='tight')
