@@ -47,56 +47,77 @@ class Rectangle:
         self.angle =np.arctan(y_dif(0,1)/x_dif(0,1))
 
     
-    def get_contour(self,rotate=True):
+    # def get_contour(self,rotate=True):
 
-        cx,cy,h,w,angle = self.cx,self.cy,self.h,self.w,self.angle
-        c = shapely.geometry.box(-h/2.0, -w/2.0, h/2.0, w/2.0)
-        if rotate:
-            rc = shapely.affinity.rotate(c, angle,use_radians=True)
-        else:
-            rc = shapely.affinity.rotate(c, np.pi/2,use_radians=True)
+    #     cx,cy,h,w,angle = self.cx,self.cy,self.h,self.w,self.angle
+    #     c = shapely.geometry.box(-h/2.0, -w/2.0, h/2.0, w/2.0)
+    #     # if rotate:
+    #     rc = shapely.affinity.rotate(c, angle,use_radians=True)
+    #     # else:
+    #     #     rc = shapely.affinity.rotate(c, np.pi/2,use_radians=True)
 
-        return shapely.affinity.translate(rc, cx, cy)
+    #     rc = shapely.affinity.translate(rc, cx, cy)
+    #     print(rc)
+    #     return rc
 # 
-    # @classmethod
-    def plot_contours(self,ax,rotate,fc='#04d648'):
+    # def plot_contours(self,ax,rotate,fc='#04d648'):
 
         # if 'params' in kwargs.keys():
         #     params = kwargs['params'] # center_x,center_y,height,width,rotation_angle
         # else:
         # params = 
-        ax.add_patch(PolygonPatch(self.get_contour(rotate),  ec=fc,fill=False)) #alpha=0.5 fc=fc,
-        ax.scatter(self.cx+self.h/2,self.cy+self.w/2,c='r',s=15)
-        return ax
+        # ax.add_patch(PolygonPatch(self.get_contour(rotate),  ec=fc,fill=False)) #alpha=0.5 fc=fc,
+        # ax.scatter(self.cx+self.h/2,self.cy+self.w/2,c='r',s=15)
+        # return ax
 
-    def plot_corners(self,ax):
-        for i, coord in enumerate(self.bbox):
+    # def plot_corners(self,ax):
+    #     for i, coord in enumerate(self.bbox):
+    #         # PLOT BBOX
+    #         ax.plot([self.bbox[i-1][0],coord[0]],[self.bbox[i-1][1],coord[1]],c='y')
+    #     ax.scatter(self.bbox[0][0],self.bbox[0][1],c='r',s=15)
+    #     return ax
+
+    def plot_bbox(self,bbox,ax,c):
+        for i, coord in enumerate(bbox):
             # PLOT BBOX
-            ax.plot([self.bbox[i-1][0],coord[0]],[self.bbox[i-1][1],coord[1]],c='y')
-        ax.scatter(self.bbox[0][0],self.bbox[0][1],c='r',s=15)
+            ax.plot([bbox[i-1][0],coord[0]],[bbox[i-1][1],coord[1]],c=c)
+        ax.scatter(bbox[0][0],bbox[0][1],c='r',s=15)
         return ax
 
-    def get_rotation_matrix_upwards(self,img_shape):
+    def get_atan2(self):#,img_shape):
         '''
         Get the rotation matrix to rotate the airplane upwards 
         '''
-        y_max, x_max, _ = img_shape
-        print(np.rad2deg(self.angle))
+        # y_max, x_max, _ = img_shape
+        # print(np.rad2deg(self.angle))
         if (self.bbox[0,1]-self.bbox[1,1]>=0) and (self.bbox[0,0]-self.bbox[1,0]>=0):
-            print('q1')
-            M = cv2.getRotationMatrix2D((y_max/2, x_max/2), np.rad2deg(3*np.pi/2+self.angle), 1.0)
+            # print('q1')
+            angle = 3*np.pi/2+self.angle
         elif (self.bbox[0,1]-self.bbox[1,1]>=0) and (self.bbox[0,0]-self.bbox[1,0]<=0):
-            print('q2')
-            M = cv2.getRotationMatrix2D((y_max/2, x_max/2), np.rad2deg(np.pi/2+self.angle), 1.0)                
+            # print('q2')
+            angle = np.pi/2+self.angle
         elif (self.bbox[0,1]-self.bbox[1,1]<=0) and (self.bbox[0,0]-self.bbox[1,0]<=0): 
-            print('q3')
-            M = cv2.getRotationMatrix2D((y_max/2, x_max/2), np.rad2deg(np.pi/2+self.angle), 1.0)                
+            # print('q3')
+            angle = np.pi/2+self.angle
         elif (self.bbox[0,1]-self.bbox[1,1]<=0) and (self.bbox[0,0]-self.bbox[1,0]>=0): 
-            print('q4')
-            M = cv2.getRotationMatrix2D((y_max/2, x_max/2), np.rad2deg(3*np.pi/2+self.angle), 1.0)
+            # print('q4')
+            angle=3*np.pi/2+self.angle
+        # M = cv2.getRotationMatrix2D((y_max/2, x_max/2), np.rad2deg(angle), 1.0)
 
-        return M
+        # return M,angle
+        return angle
 
+    def get_orthogonal_bbox(self):
+
+        angle = -self.get_atan2()
+        print(angle)
+        R = np.array([[np.cos(angle), -np.sin(angle)],
+                      [np.sin(angle),  np.cos(angle)]])
+        o = np.atleast_2d((self.cx,self.cy))
+        # bbox = np.atleast_2d(self.bbox)
+        # print(bbox.shape)
+        # print(o.shape)
+        return np.squeeze((R @ (self.bbox.T-o.T) + o.T).T)
 
 
 if __name__ == "__main__":
@@ -111,12 +132,19 @@ if __name__ == "__main__":
 
     bbox = np.array([[43.0, 46.0], [47.0, 87.0], [86.0, 83.0], [81.0, 41.0]])
 
-    rotated_rect = Rectangle(bbox=bbox)
-    print(rotated_rect.angle)
+    rect = Rectangle(bbox=bbox)
+    orth_bbox = rect.get_orthogonal_bbox()
+    print(rect.bbox)
+
+    print(orth_bbox)
+
 
     fig,ax = plt.subplots(1)
     ax.set_ylim([0,256])
     ax.set_xlim([0,256])
 
-    rotated_rect.plot_contours(ax)
+    rect.plot_bbox(ax=ax,bbox=rect.bbox,c='y')
+   
+    rect.plot_bbox(ax=ax,bbox=orth_bbox,c='b')
+
     plt.show()
