@@ -69,19 +69,22 @@ class Data:
         label_paths = {file_name.split('.')[0]:f"{label_folder}/{file_name}" for file_name in os.listdir(label_folder)}
         return label_paths
 
-    def plot_bboxes(self,img_path,label_path):
+    def plot_bboxes(self,img_path,label_path,save_path):
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
         label = self.get_label(label_path)
-
         fig, ax = plt.subplots(1)
+
         ax.imshow(img)
         for bbox in label['bbox']:
             # print(bbox)
             bbox=np.array(bbox)
             rect = geometry.Rectangle(bbox)
             rect.plot_bbox(ax=ax,bbox=bbox,c='b')
+        plt.savefig(save_path, bbox_inches='tight')
         plt.show()
+
+        # return ax
 
     # def get_labels(self):
     #     labels={}

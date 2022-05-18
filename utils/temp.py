@@ -170,3 +170,34 @@ if __name__ == '__main__':
     #         ax[1].hist(size_dict[instance_name]['w'],bins=50)
     #         plt.show()
             # plt.savefig(f"{my_patch_folder}/figures/hist_{instance_name}.png", bbox_inches='tight')
+
+    
+    # def get_contour(self,rotate=True):
+
+    #     cx,cy,h,w,angle = self.cx,self.cy,self.h,self.w,self.angle
+    #     c = shapely.geometry.box(-h/2.0, -w/2.0, h/2.0, w/2.0)
+    #     # if rotate:
+    #     rc = shapely.affinity.rotate(c, angle,use_radians=True)
+    #     # else:
+    #     #     rc = shapely.affinity.rotate(c, np.pi/2,use_radians=True)
+
+    #     rc = shapely.affinity.translate(rc, cx, cy)
+    #     print(rc)
+    #     return rc
+# 
+    # def plot_contours(self,ax,rotate,fc='#04d648'):
+
+        # if 'params' in kwargs.keys():
+        #     params = kwargs['params'] # center_x,center_y,height,width,rotation_angle
+        # else:
+        # params = 
+        # ax.add_patch(PolygonPatch(self.get_contour(rotate),  ec=fc,fill=False)) #alpha=0.5 fc=fc,
+        # ax.scatter(self.cx+self.h/2,self.cy+self.w/2,c='r',s=15)
+        # return ax
+
+    # def plot_corners(self,ax):
+    #     for i, coord in enumerate(self.bbox):
+    #         # PLOT BBOX
+    #         ax.plot([self.bbox[i-1][0],coord[0]],[self.bbox[i-1][1],coord[1]],c='y')
+    #     ax.scatter(self.bbox[0][0],self.bbox[0][1],c='r',s=15)
+    #     return ax

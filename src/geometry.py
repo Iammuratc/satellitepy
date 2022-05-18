@@ -11,78 +11,32 @@ class Rectangle:
     - Rotation calculations of bounding boxes
     
     '''
-    def __init__(self,bbox):#**kwargs):
-        # if parametized == True:
-        #     self.cx = kwargs['cx']
-        #     self.cy = kwargs['cy']
-        #     self.w = kwargs['w']
-        #     self.h = kwargs['h']
-        #     self.angle = kwargs['angle']
-        # else:
-        """
-            bbox = np.array([[x0,y0],[x1,y1],[x2,y2],[x3,y3]])
-            x0,y0 = top left of the airplane bbox
-            x1,y1 = bottom left
-            x2,y2 = bottom right
-            x3,y3 = top right
-        """
+    def __init__(self,bbox):
+
         if bbox.shape != (4,2):
             print('bbox shape should be (4,2)')
             return 0
 
         self.bbox = bbox
-        self.params = self.get_params()
+        self.cx, self.cy, self.h, self.w, self.angle = self.get_params(self.bbox)
 
-    def get_params(self):
-        self.cx = np.sum(self.bbox[:,0])/4.0
-        self.cy = np.sum(self.bbox[:,1])/4.0
+        self.orthogonal_bbox=self.get_orthogonal_bbox()
+
+    @staticmethod
+    def get_params(bbox):
+        cx = np.sum(bbox[:,0])/4.0
+        cy = np.sum(bbox[:,1])/4.0
 
 
-        x_dif = lambda i_0,i_1: self.bbox[i_0,0] - self.bbox[i_1,0]
-        y_dif = lambda i_0,i_1: self.bbox[i_0,1] - self.bbox[i_1,1]
+        x_dif = lambda i_0,i_1: bbox[i_0,0] - bbox[i_1,0]
+        y_dif = lambda i_0,i_1: bbox[i_0,1] - bbox[i_1,1]
 
-        self.h = np.sqrt(x_dif(0,1)**2 + y_dif(0,1)**2 )
-        self.w = np.sqrt(x_dif(1,2)**2 + y_dif(1,2)**2 )       
+        h = np.sqrt(x_dif(0,1)**2 + y_dif(0,1)**2 )
+        w = np.sqrt(x_dif(1,2)**2 + y_dif(1,2)**2 )       
 
-        self.angle =np.arctan(y_dif(0,1)/x_dif(0,1))
+        angle =np.arctan(y_dif(0,1)/x_dif(0,1))
+        return [cx,cy,h,w,angle]
 
-    
-    # def get_contour(self,rotate=True):
-
-    #     cx,cy,h,w,angle = self.cx,self.cy,self.h,self.w,self.angle
-    #     c = shapely.geometry.box(-h/2.0, -w/2.0, h/2.0, w/2.0)
-    #     # if rotate:
-    #     rc = shapely.affinity.rotate(c, angle,use_radians=True)
-    #     # else:
-    #     #     rc = shapely.affinity.rotate(c, np.pi/2,use_radians=True)
-
-    #     rc = shapely.affinity.translate(rc, cx, cy)
-    #     print(rc)
-    #     return rc
-# 
-    # def plot_contours(self,ax,rotate,fc='#04d648'):
-
-        # if 'params' in kwargs.keys():
-        #     params = kwargs['params'] # center_x,center_y,height,width,rotation_angle
-        # else:
-        # params = 
-        # ax.add_patch(PolygonPatch(self.get_contour(rotate),  ec=fc,fill=False)) #alpha=0.5 fc=fc,
-        # ax.scatter(self.cx+self.h/2,self.cy+self.w/2,c='r',s=15)
-        # return ax
-
-    # def plot_corners(self,ax):
-    #     for i, coord in enumerate(self.bbox):
-    #         # PLOT BBOX
-    #         ax.plot([self.bbox[i-1][0],coord[0]],[self.bbox[i-1][1],coord[1]],c='y')
-    #     ax.scatter(self.bbox[0][0],self.bbox[0][1],c='r',s=15)
-    #     return ax
-
-    def plot_bbox(self,bbox,ax,c):
-        for i, coord in enumerate(bbox):
-            # PLOT BBOX
-            ax.plot([bbox[i-1][0],coord[0]],[bbox[i-1][1],coord[1]],c=c)
-        ax.scatter(bbox[0][0],bbox[0][1],c='r',s=15)
-        return ax
 
     def get_atan2(self):#,img_shape):
         '''
@@ -110,16 +64,27 @@ class Rectangle:
     def get_orthogonal_bbox(self):
 
         angle = -self.get_atan2()
-        print(angle)
         R = np.array([[np.cos(angle), -np.sin(angle)],
                       [np.sin(angle),  np.cos(angle)]])
         o = np.atleast_2d((self.cx,self.cy))
         # bbox = np.atleast_2d(self.bbox)
-        # print(bbox.shape)
-        # print(o.shape)
         return np.squeeze((R @ (self.bbox.T-o.T) + o.T).T)
 
+    @staticmethod
+    def plot_bbox(bbox,ax,c):
+        for i, coord in enumerate(bbox):
+            # PLOT BBOX
+            ax.plot([bbox[i-1][0],coord[0]],[bbox[i-1][1],coord[1]],c=c)
+        ax.scatter(bbox[0][0],bbox[0][1],c='r',s=15)
+        return ax
 
+    @staticmethod
+    def get_bbox_limits(bbox):
+        x_min = np.amin(bbox[:,0])
+        x_max = np.amax(bbox[:,0])
+        y_min = np.amin(bbox[:,1])
+        y_max = np.amax(bbox[:,1])
+        return np.array([x_min,x_max,y_min,y_max]).astype(int)
 if __name__ == "__main__":
     import numpy as np
     import shapely.geometry
