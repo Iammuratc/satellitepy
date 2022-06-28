@@ -31,6 +31,7 @@ class RecognitionData(Data):
         os.makedirs(self.img_patch_orthogonal_zoomed_folder,exist_ok=True)
         self.label_patch_folder = f"{self.patch_folder_base}/labels"
         os.makedirs(self.label_patch_folder,exist_ok=True)
+        # os.makedirs(f"{self.patch_folder_base}/figures",exist_ok=True)
 
 
     def init_patch_dict(self,instance_name,img_path,pad_size,patch_size):
@@ -209,12 +210,11 @@ class RecognitionData(Data):
         ax.set_title(instance_name)
         ### SAVE FIGURES
         ## FILE NAMES
-        img_path = patch_dict['original_img']['path']
-        file_name = get_file_name_from_path(img_path)
-        patch_name = f"{file_name}_{i}"
-        os.makedirs(f"{self.patch_folder_base}/figures",exist_ok=True)
-        plt.savefig(f"{self.patch_folder_base}/figures/{instance_name}_{patch_name}.png", bbox_inches='tight')
-        # plt.show()
+        # img_path = patch_dict['original_img']['path']
+        # file_name = get_file_name_from_path(img_path)
+        # patch_name = f"{file_name}_{i}"
+        # plt.savefig(f"{self.patch_folder_base}/figures/{instance_name}_{patch_name}.png", bbox_inches='tight')
+        plt.show()
 
 
     def save_patches(self,patch_dict,i):
@@ -310,6 +310,7 @@ class RecognitionAnalysis(RecognitionData):
 
 
 
+
 if __name__ == "__main__":
     import random
     
@@ -330,8 +331,8 @@ if __name__ == "__main__":
     # for no in ['283','966','111','54']:
     # for no in ['111','148','100','56','20','5']: 
     for no in paths.keys():
-        img_path = f'/home/murat/Projects/airplane_detection/DATA/Gaofen/train/images/{no}.tif'
-        label_path = f'/home/murat/Projects/airplane_detection/DATA/Gaofen/train/label_xml/{no}.xml'
+        img_path = f'/home/murat/Projects/airplane_recognition/DATA/Gaofen/train/images/{no}.tif'
+        label_path = f'/home/murat/Projects/airplane_recognition/DATA/Gaofen/train/label_xml/{no}.xml'
 
         train_data.get_patches(img_path,label_path,patch_size=patch_size,save=False,plot=True)
 
