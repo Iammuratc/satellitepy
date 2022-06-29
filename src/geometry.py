@@ -6,7 +6,7 @@ import cv2
 
 class Rectangle:
     '''
-    This class enables the followings:
+    This class does the followings:
     - Parametrization of rectangle corner points, i.e., points >> center, height, length, rotation angle
     - Rotation calculations of bounding boxes
     
@@ -85,9 +85,11 @@ class Rectangle:
         y_min = np.amin(bbox[:,1])
         y_max = np.amax(bbox[:,1])
         return np.array([x_min,x_max,y_min,y_max]).astype(int)
+
+
 if __name__ == "__main__":
     import numpy as np
-    import shapely.geometry
+    import shapely.wkt
 
     import matplotlib.pyplot as plt    
     import json
@@ -95,21 +97,27 @@ if __name__ == "__main__":
     import random
     import cv2
 
-    bbox = np.array([[43.0, 46.0], [47.0, 87.0], [86.0, 83.0], [81.0, 41.0]])
+    # bbox = np.array([[43.0, 46.0], [47.0, 87.0], [86.0, 83.0], [81.0, 41.0]])
 
-    rect = Rectangle(bbox=bbox)
-    orth_bbox = rect.get_orthogonal_bbox()
-    print(rect.bbox)
+    # rect = Rectangle(bbox=bbox)
+    # orth_bbox = rect.get_orthogonal_bbox()
+    # print(rect.bbox)
 
-    print(orth_bbox)
+    # print(orth_bbox)
 
 
-    fig,ax = plt.subplots(1)
-    ax.set_ylim([0,256])
-    ax.set_xlim([0,256])
+    # fig,ax = plt.subplots(1)
+    # ax.set_ylim([0,256])
+    # ax.set_xlim([0,256])
 
-    rect.plot_bbox(ax=ax,bbox=rect.bbox,c='y')
+    # rect.plot_bbox(ax=ax,bbox=rect.bbox,c='y')
    
-    rect.plot_bbox(ax=ax,bbox=orth_bbox,c='b')
+    # rect.plot_bbox(ax=ax,bbox=orth_bbox,c='b')
 
-    plt.show()
+    # plt.show()
+
+    # P = np.asarray(shapely.wkt.loads('POLYGON ((51.0 3.0, 51.3 3.61, 51.3 3.0, 51.0 3.0))'))
+    P = shapely.wkt.loads('POLYGON ((51.0 3.0, 51.3 3.61, 51.3 3.0, 51.6 4.0, 51.0 3.0))')
+    # print(np.array(P.exterior.coords))
+    bbox = np.array(P.exterior.coords)[0:4,:]
+    print(bbox)

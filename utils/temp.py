@@ -201,3 +201,125 @@ if __name__ == '__main__':
     #         ax.plot([self.bbox[i-1][0],coord[0]],[self.bbox[i-1][1],coord[1]],c='y')
     #     ax.scatter(self.bbox[0][0],self.bbox[0][1],c='r',s=15)
     #     return ax
+
+    # def get_label_paths(self):
+    #     label_folder = f"{self.data_folder}/{self.dataset_name}/label_xml"
+    #     label_paths = {file_name.split('.')[0]:f"{label_folder}/{file_name}" for file_name in os.listdir(label_folder)}
+    #     return label_paths
+
+    # def get_labels(self):
+    #     labels={}
+
+    #     label_paths = self.get_label_paths()
+    #     for label_path in label_paths:
+    #         label, img_name =self.get_label(label_path) 
+    #         labels[img_name]=label
+    #         # break
+    #     return labels
+
+    # def plot_rotated_box(self,ax,**kwargs):
+
+    #     if 'bbox_params' in kwargs.keys():
+    #         bbox_params = kwargs['bbox_params']
+    #         geometry.Rectangle.plot_contours(params=bbox_params)
+
+    #     elif 'bbox_corners' in kwargs.keys():
+    #         corners = kwargs['bbox_corners']
+    #         geometry.Rectangle.plot_corners(corners)
+    #     else:
+    #         print('Check the plot_rotated_box')
+    #     return ax
+
+
+
+
+
+
+
+    ### CHECK LABELS 
+    # patch_size=512
+    # train_data = Data(dataset_name='train')
+    # val_data = Data(dataset_name='val')
+    # test_data = Data(dataset_name='test')
+    # labels = train_data.labels
+    # img_paths = train_data.img_paths
+
+    # file_name = random.choice(list(labels.keys())) # interesting images from train dataset: 360, 837, 512
+    # # file_name = '837'
+    # img_path = img_paths[file_name]
+    # label = labels[file_name]
+    # print(img_path)
+
+
+    # img = cv2.imread(img_path)
+
+
+    # fig, ax = plt.subplots(1)
+    # ax.imshow(img)
+    # ax = plt.gca()
+    # # ax.set_xlim([0, 512])
+    # # ax.set_ylim([0, 512])
+    # for i,corners in enumerate(label['bbox']):
+    #     corners=np.array(corners)
+    #     instance_name = label["names"][i]
+    #     rotated_rect = geometry.RotatedRect(corners=corners,parametized=False)
+    #     print(f"Plane no: {i} Type: {instance_name} height: {rotated_rect.h} width: {rotated_rect.w}")
+
+    #     # print(corners[0,0])
+    #     plt.text(corners[0,0], corners[0,1], i, color='blue')#,bbox=dict(fill=False, edgecolor='blue', linewidth=0.5))
+    #     center = np.mean(corners,axis=0)
+    #     # rotated_rect.plot_contours(ax)
+    #     plot_rotated_box(corners,ax)
+    # plt.show()
+
+    ### PATCH CONTROL
+    # patch_coords = test_data.get_patch_start_coords(my_max=[1030,1030],patch_size=512,overlap=100)
+    # print(patch_coords)
+    # print(len(train_data))
+    # print(train_data.get_labels())
+    # print(train_data.get_img_paths())
+    # print(train_data.items)
+    # print(train_data[5]['labels'])
+    # ind = random.randint(0,len(train_data)-1)
+    # train_data.img_show(ind=ind,plot_bbox=True)
+
+
+        # def get_patches(self,img_path,label_path,patch_size,save=False,plot=False):
+        
+        # ### GET ORIGINAL IMAGE
+        # img = cv2.imread(img_path)
+        # label = self.get_label(label_path)
+        # ### pad the original image, so no patching problem for the planes on the edge of the image
+        # pad_size = patch_size
+        # img = np.pad(img,((pad_size,pad_size),(pad_size,pad_size),(0,0)),'constant',constant_values=0)#'symmetric')#
+        # ### GET LABELS
+        # bboxes = label['bbox']
+
+        # for i,bbox in enumerate(bboxes):
+        #     patch_dict = self.init_patch_dict(instance_name=label["names"][i],img_path=img_path,pad_size=pad_size,patch_size=patch_size)
+
+        #     patch_dict = self.set_patch_params(patch_dict,img,bbox)
+
+        #     if plot:
+        #         self.plot_patch(patch_dict,i)
+            
+        #     if save:
+        #         self.save_patch(patch_dict,i)
+
+            # train_data.get_patches(save=False)
+
+    # paths = train_data.get_img_paths()
+
+    #### PREVIOUS VERSION
+    # print(paths)
+    # problem ones: 111,148 ---- 200 den devam et
+    # for no in ['283','966','111','54']:
+    # for no in ['111','148','100','56','20','5']: 
+    # for no in paths.keys():
+    #     img_path = f'/home/murat/Projects/airplane_recognition/DATA/Gaofen/train/images/{no}.tif'
+    #     label_path = f'/home/murat/Projects/airplane_recognition/DATA/Gaofen/train/label_xml/{no}.xml'
+
+    #     recognition.get_patches(img_path,label_path,patch_size=patch_size,save=False,plot=True)
+
+        # save_path = f"{train_data.gaofen_folder}/{train_data.dataset_name}/figures/{no}_wrong_labels.png"
+        # train_data.plot_bboxes(img_path,label_path,save_path)

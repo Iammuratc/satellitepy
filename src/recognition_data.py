@@ -6,47 +6,71 @@ import matplotlib.pyplot as plt
 
 import geometry
 from utilities import get_file_name_from_path
-from data import Data
-
+from data import DataDem
+import shapely.wkt
 
 #### RECOGNITION DATA
-class RecognitionData(Data):
-    def __init__(self,dataset_name):
+class Recognition(DataDem):
+    def __init__(self,dataset_id,dataset_part,dataset_name,patch_size):
         '''
         Save patches for the recognition task
         A patch is consisted of a single airplane. The airplane is located in the middle of the patch by using the center of its rotated bounding box.
         Rotated bounding box can be masked (i.e. masked=True) 
         '''
-        super(RecognitionData, self).__init__(dataset_name)
+        super(Recognition, self).__init__(dataset_id,dataset_part,dataset_name)
 
-    def set_patch_folders(self,patch_size):
+        self.patch_size=patch_size
+        self.pad_size = patch_size
+        self.set_patch_folders()
+
+    def save_patches(self):
+        ### SAVE PATCHES
+        sequences = self.data
+
+        ans = input("Do you really want to save the patches?")
+
+        if ans != 'y':
+            print('If you want to save the patches, please confirm this with y.')
+            return 0
+
+        ### DEM ADAPTED VERSION
+        for s in sequences:
+            for base_image in s["base_images"]:
+                ### GET ORIGINAL IMAGE
+                img_path = base_image['image_path']
+                img = cv2.imread(img_path)
+                img = np.pad(img,((self.pad_size,self.pad_size),(self.pad_size,self.pad_size),(0,0)),'constant',constant_values=0)#'symmetric')#
+
+                for i,label in enumerate(base_image['ground_truth']):
+                    recognition.get_patch(img,img_path,label,ind=i,save=True,plot=False)
+
+    def set_patch_folders(self):
         ### PATCH SAVE DIRECTORIES
-        self.patch_folder_base = f"{self.data_folder}/{self.dataset_name}/patches_{patch_size}_recognition"
+        self.patch_folder_base = f"{self.data_folder}/{self.dataset_name}/{self.dataset_part}/patches_{self.patch_size}_recognition"
         os.makedirs(self.patch_folder_base,exist_ok=True)
         self.img_patch_folder = f"{self.patch_folder_base}/images"
         os.makedirs(self.img_patch_folder,exist_ok=True)
         self.img_patch_orthogonal_folder = f"{self.patch_folder_base}/orthogonal_images"
-        os.makedirs(self.img_patch_folder,exist_ok=True)
+        os.makedirs(self.img_patch_orthogonal_folder,exist_ok=True)
         self.img_patch_orthogonal_zoomed_folder = f"{self.patch_folder_base}/orthogonal_zoomed_images"
         os.makedirs(self.img_patch_orthogonal_zoomed_folder,exist_ok=True)
         self.label_patch_folder = f"{self.patch_folder_base}/labels"
         os.makedirs(self.label_patch_folder,exist_ok=True)
-        # os.makedirs(f"{self.patch_folder_base}/figures",exist_ok=True)
 
 
-    def init_patch_dict(self,instance_name,img_path,pad_size,patch_size):
+    def init_patch_dict(self,instance_name,img_path):
         patch_dict =   {
                 'instance_name':None,
                 'patch_size':None,
                 'original_patch':   {   
-                                    'img':np.zeros(shape=(patch_size,patch_size,3),dtype=np.uint8),
+                                    'img':np.zeros(shape=(self.patch_size,self.patch_size,3),dtype=np.uint8),
                                     'path':None,
                                     'bbox':[],
                                     'bbox_params':[]
                                     },
 
                 'orthogonal_patch': {
-                                    'img':np.zeros(shape=(patch_size,patch_size,3),dtype=np.uint8),
+                                    'img':np.zeros(shape=(self.patch_size,self.patch_size,3),dtype=np.uint8),
                                     'path':None,
                                     'bbox':[],
                                     'bbox_params':[]
@@ -54,7 +78,7 @@ class RecognitionData(Data):
 
                 'orthogonal_zoomed_patch': 
                                     {
-                                    'img':np.zeros(shape=(patch_size,patch_size,3),dtype=np.uint8),
+                                    'img':np.zeros(shape=(self.patch_size,self.patch_size,3),dtype=np.uint8),
                                     'path':None,
                                     'bbox':[],
                                     'bbox_params':[]
@@ -73,28 +97,26 @@ class RecognitionData(Data):
                 }
         patch_dict['instance_name']=instance_name
         patch_dict['original_img']['path']=img_path
-        patch_dict['original_img']['pad_size']=pad_size
-        patch_dict['patch_size']=patch_size
+        patch_dict['original_img']['pad_size']=self.pad_size
+        patch_dict['patch_size']=self.patch_size
 
         return patch_dict
 
     def set_orthogonal_zoomed_img(self,patch_dict):
         orthogonal_patch_img = patch_dict['orthogonal_patch']['img']
         orthogonal_bbox = patch_dict['orthogonal_patch']['bbox']
-        patch_size=patch_dict['patch_size']
 
         x_min,x_max,y_min,y_max = geometry.Rectangle.get_bbox_limits(orthogonal_bbox)
 
-        # print(x_min,x_max,y_min,y_max)
+        ### GET THE ORTHOGONAL ZOOMED IMAGE
         orthogonal_img = orthogonal_patch_img[y_min:y_max,x_min:x_max,:]
-
-        orthogonal_zoomed_img = cv2.resize(orthogonal_img,dsize=(patch_size,patch_size))
-
+        orthogonal_zoomed_img = cv2.resize(orthogonal_img,dsize=(self.patch_size,self.patch_size))
         patch_dict['orthogonal_zoomed_patch']['img'] = orthogonal_zoomed_img
 
-        Ry,Rx = orthogonal_img.shape[0]/patch_size, orthogonal_img.shape[1]/patch_size
+        ### GET THE ORTHOGONAL ZOOMED BBOX
+        orthogonal_zoomed_bbox = orthogonal_bbox - [x_min,y_min]
+        orthogonal_zoomed_bbox = orthogonal_zoomed_bbox * [self.patch_size/(x_max-x_min),self.patch_size/(y_max-y_min)]
 
-        orthogonal_zoomed_bbox = orthogonal_bbox * np.array([Rx,Ry])
         patch_dict['orthogonal_zoomed_patch']['bbox'] = orthogonal_zoomed_bbox
         patch_dict['orthogonal_zoomed_patch']['bbox_params'] = geometry.Rectangle.get_params(orthogonal_zoomed_bbox)
         return patch_dict
@@ -107,51 +129,47 @@ class RecognitionData(Data):
         img: original img
         ''' 
 
-        patch_size = patch_dict['patch_size']
         cx, cy = patch_dict['original_img']['center_padded']
 
         # Get the large image
-        img_1=img[cy-patch_size:cy+patch_size,cx-patch_size:cx+patch_size,:]
+        img_1=img[cy-self.patch_size:cy+self.patch_size,cx-self.patch_size:cx+self.patch_size,:]
        
 
         # Get the rotation angle
         angle = rect.get_atan2()
         M = cv2.getRotationMatrix2D((img_1.shape[0]/2, img_1.shape[1]/2), np.rad2deg(angle), 1.0)
 
-        img_2 = cv2.warpAffine(img_1, M, (patch_size*2, patch_size*2))
+        img_2 = cv2.warpAffine(img_1, M, (self.patch_size*2, self.patch_size*2))
 
         # Get the image patch
-        patch_half_size = int(patch_size/2)
-        orthogonal_patch_img = img_2[patch_size-patch_half_size:patch_size+patch_half_size,patch_size-patch_half_size:patch_size+patch_half_size,:]
+        patch_half_size = int(self.patch_size/2)
+        orthogonal_patch_img = img_2[self.patch_size-patch_half_size:self.patch_size+patch_half_size,self.patch_size-patch_half_size:self.patch_size+patch_half_size,:]
         patch_dict['orthogonal_patch']['img']=orthogonal_patch_img
-        patch_dict['original_patch']['img']=img_1[patch_size-patch_half_size:patch_size+patch_half_size,patch_size-patch_half_size:patch_size+patch_half_size,:]
+        patch_dict['original_patch']['img']=img_1[self.patch_size-patch_half_size:self.patch_size+patch_half_size,self.patch_size-patch_half_size:self.patch_size+patch_half_size,:]
         patch_dict = self.set_orthogonal_zoomed_img(patch_dict)
         return patch_dict
 
 
     def set_patch_params(self,patch_dict,img,bbox):
-
-        pad_size = patch_dict['original_img']['pad_size']
-        patch_size=patch_dict['patch_size']
         # If not including _orig, the variable belongs to the patch 
-        bbox_orig_padded =np.array(bbox)+pad_size # add initial padding
+        bbox_orig_padded =np.array(bbox)+self.pad_size # add initial padding
         ### NEW CENTER OF AIRPLANE
         center = np.mean(bbox,axis=0).astype(int)
-        center_padded = center+pad_size
+        center_padded = center+self.pad_size
         patch_dict['original_img']['center_padded']=center_padded
         ### NEW BBOX
-        bbox_patch = bbox_orig_padded-center_padded+pad_size/2
+        bbox_patch = bbox_orig_padded-center_padded+self.pad_size/2
 
         rect = geometry.Rectangle(bbox=bbox_patch)
 
         ### ORIGINAL PATCH BBOX
         patch_dict['original_patch']['bbox']=bbox_patch
-        patch_dict['original_patch']['bbox_params']= [int(patch_size/2),int(patch_size/2),rect.h,rect.w,rect.angle]
+        patch_dict['original_patch']['bbox_params']= [int(self.patch_size/2),int(self.patch_size/2),rect.h,rect.w,rect.angle]
         
 
         ### ORTHOGONAL PATCH BBOX
         patch_dict['orthogonal_patch']['bbox']= rect.orthogonal_bbox
-        patch_dict['orthogonal_patch']['bbox_params']= [int(patch_size/2),int(patch_size/2),rect.h,rect.w,rect.get_atan2()]
+        patch_dict['orthogonal_patch']['bbox_params']= [int(self.patch_size/2),int(self.patch_size/2),rect.h,rect.w,rect.get_atan2()]
 
         ### NOTES
         patch_dict['notes']['bbox_params'] = ['center_x,center_y,height,width,rotation_angle']
@@ -161,50 +179,25 @@ class RecognitionData(Data):
         return patch_dict
 
 
-    def get_patches(self,img_path,label_path,patch_size,save=False,plot=False):
+    def get_patch(self,img,img_path,label,ind,save=False,plot=False):
+
+        bbox_polygon = shapely.wkt.loads(label['pixel_position'])
+        bbox = np.array(bbox_polygon.exterior.coords)[0:4,:]
+        instance_name = label['class']
+
+        patch_dict = self.init_patch_dict(instance_name=instance_name,img_path=img_path)
+        patch_dict = self.set_patch_params(patch_dict,img,bbox)
+        if plot:
+            self.plot_patch(patch_dict,ind)
         
-        ### GET ORIGINAL IMAGE
-        img = cv2.imread(img_path)
-        label = self.get_label(label_path)
-        ### pad the original image, so no patching problem for the planes on the edge of the image
-        pad_size = patch_size
-        img = np.pad(img,((pad_size,pad_size),(pad_size,pad_size),(0,0)),'constant',constant_values=0)#'symmetric')#
-        ### GET LABELS
-        bboxes = label['bbox']
+        if save:
+            self.save_patch(patch_dict,ind)
 
-        for i,bbox in enumerate(bboxes):
-            patch_dict = self.init_patch_dict(instance_name=label["names"][i],img_path=img_path,pad_size=pad_size,patch_size=patch_size)
-
-            patch_dict = self.set_patch_params(patch_dict,img,bbox)
-
-            if plot:
-                self.plot_patches(patch_dict,i)
-            
-            if save:
-                self.save_patches(patch_dict,i)
-            # break
-
-
-    def plot_patches(self,patch_dict,i):
+    def plot_patch(self,patch_dict,i):
         ### PLOT
-        # print(patch_dict[''])
-        # fig,ax = plt.subplots(2)
-        # ax[0].imshow(cv2.cvtColor(patch_dict['original_patch']['img'],cv2.COLOR_BGR2RGB))
-        # # # ax[0].set_ylim(ax[0].get_ylim()[::-1]) # invert y axis
-
-        # original_patch_bbox = patch_dict['original_patch']['bbox']
-        # geometry.Rectangle.plot_bbox(bbox=original_patch_bbox,ax=ax[0],c='b')
-
-        # ax[1].imshow(cv2.cvtColor(patch_dict['orthogonal_patch']['img'],cv2.COLOR_BGR2RGB))
-        # orthogonal_patch_bbox = patch_dict['orthogonal_patch']['bbox']
-        # geometry.Rectangle.plot_bbox(bbox=orthogonal_patch_bbox,ax=ax[1],c='b')
-
-
-        ### PLOT 2
         fig,ax = plt.subplots(1)
-        ax.imshow(cv2.cvtColor(patch_dict['orthogonal_patch']['img'],cv2.COLOR_BGR2RGB))
-        orthogonal_patch_bbox = patch_dict['orthogonal_patch']['bbox']
-        geometry.Rectangle.plot_bbox(bbox=orthogonal_patch_bbox,ax=ax,c='b')
+        ax.imshow(cv2.cvtColor(patch_dict['orthogonal_zoomed_patch']['img'],cv2.COLOR_BGR2RGB))
+        geometry.Rectangle.plot_bbox(bbox=patch_dict['orthogonal_zoomed_patch']['bbox'],ax=ax,c='b')
 
         instance_name = patch_dict['instance_name']
         ax.set_title(instance_name)
@@ -217,14 +210,12 @@ class RecognitionData(Data):
         plt.show()
 
 
-    def save_patches(self,patch_dict,i):
+    def save_patch(self,patch_dict,i):
 
         ## FILE NAMES
         img_path = patch_dict['original_img']['path']
         file_name = get_file_name_from_path(img_path)
         patch_name = f"{file_name}_{i}"
-
-
 
         ## ORIGINAL PATCH IMG
         original_patch_path = f"{self.img_patch_folder}/{patch_name}.png"
@@ -235,10 +226,11 @@ class RecognitionData(Data):
         orthogonal_patch_path = f"{self.img_patch_orthogonal_folder}/{patch_name}.png"
         patch_dict['orthogonal_patch']['path'] = orthogonal_patch_path
         cv2.imwrite(orthogonal_patch_path,patch_dict['orthogonal_patch']['img'])
-        
+        # print(orthogonal_patch_path)
+
         ## ORTHOGONAL ZOOMED IMG
         orthogonal_zoomed_patch_path = f"{self.img_patch_orthogonal_zoomed_folder}/{patch_name}.png"
-        patch_dict['orthogonal_zoomed_patch']['path'] = orthogonal_patch_path
+        patch_dict['orthogonal_zoomed_patch']['path'] = orthogonal_zoomed_patch_path
         cv2.imwrite(orthogonal_zoomed_patch_path,patch_dict['orthogonal_zoomed_patch']['img'])
 
         ### LABEL
@@ -255,20 +247,28 @@ class RecognitionData(Data):
         with open(f"{self.label_patch_folder}/{patch_name}.json", 'w') as f:
             json.dump(patch_dict, f,indent=4)
 
-        # return patch_dict
 
-
-
-class RecognitionAnalysis(RecognitionData):
-    def __init__(self,dataset_name):
+class RecognitionAnalysis(Recognition):
+    def __init__(self,dataset_id,dataset_part,dataset_name,patch_size):
         '''
         Analyse the recognition data
         '''
-        super(RecognitionData, self).__init__(dataset_name)
+        super(RecognitionAnalysis, self).__init__(dataset_id,dataset_part,dataset_name,patch_size)
+        self.set_patch_folders()
 
+    def get_instance_number(self):
+        json_files = os.listdir(self.label_patch_folder)
 
-    def get_airplane_size(self,patch_size):
-        self.set_patch_folders(patch_size)
+        instance_number = {}
+        for json_file in json_files:
+            patch_dict = json.load(open(f"{self.label_patch_folder}/{json_file}",'r'))
+            instance_name=patch_dict['instance_name']
+            if instance_name not in instance_number.keys():
+                instance_number[instance_name] = 0
+            else:
+                instance_number[instance_name] += 1
+        return instance_number
+    def get_airplane_size(self):
 
         json_files = os.listdir(self.label_patch_folder)
         print(f"Airplane size will be calculated for {len(json_files)} planes")
@@ -299,7 +299,6 @@ class RecognitionAnalysis(RecognitionData):
             # plt.show()
 
     def get_wrong_labels(self,patch_size):
-        self.set_patch_folders(patch_size)
         json_files = os.listdir(self.label_patch_folder)
         print(f"Airplane size will be calculated for {len(json_files)} planes")
         size_dict = {}
@@ -317,28 +316,15 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt    
     import os
 
-    ### SAVE PATCHES (RECOGNITION)
+    
     patch_size=128
-    train_data = RecognitionData(dataset_name='train')
-    train_data.set_patch_folders(patch_size=patch_size)
-    # train_data.get_patches(save=False) 
+    dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
+    dataset_name = 'Gaofen'
+    dataset_part = 'train'
+    recognition = Recognition(dataset_id,dataset_part,dataset_name,patch_size)
+    # recognition.save_patches()
 
-    paths = train_data.get_img_paths()
-
-
-    # print(paths)
-    # problem ones: 111,148 ---- 200 den devam et
-    # for no in ['283','966','111','54']:
-    # for no in ['111','148','100','56','20','5']: 
-    for no in paths.keys():
-        img_path = f'/home/murat/Projects/airplane_recognition/DATA/Gaofen/train/images/{no}.tif'
-        label_path = f'/home/murat/Projects/airplane_recognition/DATA/Gaofen/train/label_xml/{no}.xml'
-
-        train_data.get_patches(img_path,label_path,patch_size=patch_size,save=False,plot=True)
-
-        # save_path = f"{train_data.data_folder}/{train_data.dataset_name}/figures/{no}_wrong_labels.png"
-        # train_data.plot_bboxes(img_path,label_path,save_path)
-
-### ANALYSE
-# analyse = RecognitionAnalysis(dataset_name='train')
-# analyse.get_airplane_size(patch_size)
+    # ### ANALYSE
+    analyse = RecognitionAnalysis(dataset_id,dataset_part,dataset_name,patch_size)
+    instance_number = analyse.get_instance_number()
+    print(instance_number)
