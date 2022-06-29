@@ -5,6 +5,9 @@ import os
 import json
 
 
+def get_file_name_from_path(path):
+    return os.path.splitext(os.path.split(path)[-1])[0]
+
 def show_sample(sample):
     img = sample['image']
     
