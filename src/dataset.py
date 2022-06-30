@@ -6,75 +6,79 @@ import cv2
 import json
 import numpy as np
 
-import matplotlib.pyplot as plt
 
 
-from utilities import show_sample
-from geometry import RotatedRect
-
-
-class AirplaneDataset(Dataset):
-    def __init__(self,dataset_name,patch_size,transform=None):
-        self.project_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.data_folder = f"{self.project_folder}/DATA/Gaofen"
-        # self.dataset_name = dataset_name
-        self.patch_size=patch_size
+class RecognitionDataset(Dataset):
+    def __init__(self,recognition_instance,transform=None):
+        self.recognition = recognition_instance
         self.transform=transform
 
-        self.img_folder = f"{self.data_folder}/{dataset_name}/images_{patch_size}"
-        self.label_folder = f"{self.data_folder}/{dataset_name}/labels_{patch_size}"
+        self.label_folder = self.recognition.label_patch_folder
+        self.label_files = os.listdir(self.label_folder)
 
-        self.img_names = self.get_img_names()
+        self.instance_table = { 'other': 0, 
+                                'ARJ21': 1,
+                                'Boeing737': 2, 
+                                'Boeing747': 3,
+                                'Boeing777': 4, 
+                                'Boeing787': 5, 
+                                'A220': 6, 
+                                'A321': 7, 
+                                'A330': 8, 
+                                'A350': 9
+                                }
+
+        # self.instance_len = len(self.instance_table.keys())
 
     def __len__(self):
-        return len(self.img_names) 
+        return len(self.label_files) 
 
     def __getitem__(self, ind):
         if torch.is_tensor(ind):
             ind = ind.tolist()
 
-        img_name = self.img_names[ind]
+        ### READ LABEL FILE
+        label_file_name = self.label_files[ind]
+        label_dict = json.load(open(f"{self.label_folder}/{label_file_name}",'r'))
 
-        img_path = f"{self.img_folder}/{img_name}"
-        label_path = f"{self.label_folder}/{self.remove_ext(img_name)}.json"
-        
+        ### GET IMAGE
+        img_path = label_dict['orthogonal_zoomed_patch']['path']
         img = cv2.cvtColor(cv2.imread(img_path,1),cv2.COLOR_BGR2RGB)
-        label = json.load(open(label_path,'r'))
-        label['patch_size']=self.patch_size
-        
-        sample={}
-        sample['image']=img
-        sample.update(label)
-        # print(sample)
+
+        ### GET LABEL
+        label = self.instance_table[label_dict['instance_name']]
+
+        sample={'image':img,
+                'label':label}
 
         if self.transform:
             sample = self.transform(sample)
 
-        # sample = torch
+        return sample
 
-        # if len(sample['orthogonal_bboxes'].shape) != 3:
-        #     sample['orthogonal_bboxes'] = sample['orthogonal_bboxes'].unsqueeze(dim=2)
-
-        # return {'image':sample['image'],'orthogonal_bboxes':sample['orthogonal_bboxes']}
-        return sample['image'], sample['orthogonal_bboxes']
-
-    def get_img_names(self):
-        return os.listdir(self.img_folder)
-
-
-    @staticmethod
-    def remove_ext(file_name):
-        return file_name.split('.')[0]
+    
 
 
 if __name__ == "__main__":
     import random
-    from torchvision.transforms import Compose
-    from transform import Augmentations, ToTensor
-    airplane_dataset = AirplaneDataset(dataset_name='train',patch_size=512,transform=Compose([Augmentations()]))#,ToTensor()]))
-    ind = random.randint(0,len(airplane_dataset)-1)
-    sample = airplane_dataset[ind]
-    show_sample(sample)
-    print(ind)
+    # from torchvision.transforms import Compose
+    # from transform import Augmentations, ToTensor
+    from recognition import Recognition
+
+    # airplane_dataset = AirplaneDataset(dataset_name='train',patch_size=512,transform=Compose([Augmentations()]))#,ToTensor()]))
+    # sample = airplane_dataset[ind]
+    # show_sample(sample)
+    # print(ind)
     # print(sample['image'].shape)
+
+    patch_size=128
+    dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
+    dataset_name = 'Gaofen'
+    dataset_part = 'train'
+
+    recognition_instance = Recognition(dataset_id,dataset_part,dataset_name,patch_size)
+    recognition_dataset = RecognitionDataset(recognition_instance)
     
+    ind = random.randint(0,len(recognition_dataset)-1)
+    sample = recognition_dataset[ind]
+    print(sample['label'])

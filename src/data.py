@@ -10,10 +10,6 @@ import geometry
 import matplotlib.pyplot as plt
 import requests
 
-## TODO: Add patch size to json file
-
-##TODO (Recognition): save images and labels
-
 ##NOTES: y axis of matplotlib figures are inverted, so the airplanes will be actually facing downwards, pay attention at the new datasets 
 
 class DataDem:
@@ -66,12 +62,11 @@ class DataDem:
             # Get list of object geometries to find the duplicates 
             obj_geos = []
 
-            res = {
+            for i,base_image in enumerate(s["base_images"]):
+                res = {
                 "sequence_id": s["external_id"],
                 "base_images": []
-            }        
-
-            for i,base_image in enumerate(s["base_images"]):
+                }    
 
                 # SWITCH DEM IMAGE PATH TO LOCAL IMAGE PATH
                 image_path_dem = base_image["image_path"][10:]
@@ -110,8 +105,7 @@ class DataDem:
                     # If the object is not stored yet
                     if obj_geo not in obj_geos:
                         obj_geos.append(obj_geo)
-                        # print(res['base_images'][0]['ground_truth'])
-                        res['base_images'][i]['ground_truth'].append({
+                        res['base_images'][0]['ground_truth'].append({
                                                                     "pixel_position": obj["object_geographies"][0]["image_geometry"],
                                                                     "orig_projection": obj["object_geographies"][0]["srs"],
                                                                     "orig_wkt": obj["object_geographies"][0]["geometry"],
@@ -200,30 +194,43 @@ if __name__ == "__main__":
 
     dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
     dataset_name = 'Gaofen'
-    dataset_part = 'train'
+    dataset_part = 'val'
 
 
     data_dem = DataDem(dataset_id,dataset_part,dataset_name)
-    # data = data_dem.data[0]
-    # print(data.keys())
+
+    ## Base URL
+    # dqp_url = "http://localhost:4000/api/v1"
+    # image_set_id = "b5a26782-b9d1-4f9b-bb81-e6ec35ff0592"
+    # params = {
+    #     # "id": image_set_id,
+    #     "include_nested": False
+    #     }
+    # image_sets = requests.get(f"{dqp_url}/image-set",params=params).json()
+    # print(image_sets)
+    # sequences = requests.get(f"{dqp_url}/image-sequence", params=params).json()
+    # print(sequences)
 
 
-# my_req = "http://localhost:4000/api/v1/dataset/f73e8f1f-f23f-4dca-8090-a40c4e1c260e?include_nested=t"
-# my_req = "http://localhost:4000/api/v1/base-image?geography=ST_INTERSECTS(ST_GEOMFROMTEXT(POLYGON%20((126.2228869226379%2045.61847917970996%2C%20126.233513403451%2045.61873720815048%2C%20126.2338803282899%2045.61128017104979%2C%20126.2232552524807%2045.61102220932946%2C%20126.2228869226379%2045.61847917970996))))"
+    ### GROUND TRUTH
+    # my_dict = {
+    #     "id" : "e097e5d7-3552-4018-8a41-660e7d85fba9",
+    #     "image_id": "d1a5c470-d032-4309-afc4-903bbbcc198c",
+    #         }
+    # params = {
+    #     "base_image.id": my_dict['id'],
+    #     "include_nested": True
+    #     }
+    # objects = requests.get(f"{dqp_url}/ground-truth-object", params=params).json()
+    # print(objects)
+    ### IMAGE SEQUENCES
+    # params = {
+    #     "dataset_id": dataset_id,
+    #     "include_nested": False
+    #     }
+    # sequences = requests.get(f"{dqp_url}/image-sequence", params=params).json()
 
-
-
-# objects = remove_duplicates(dataset_id,read_json_file=False)
-# print(objects[0].keys())
-
-
-# for req in request:
-    # print(req.__dict__)
-    # break
-#   image_path_on_server = req['image_path']
-#   # print(image_path_on_server)
-#   image_path = image_path_on_server.replace("/datasets","/home/murat/Projects/airplane_recognition/DATA")
-
-#   img = cv2.cvtColor(cv2.imread(image_path),cv2.COLOR_BGR2RGB)
-#   plt.imshow(img)
-#   plt.show()
+    # for s in sequences:
+    #     print(s["external_id"])
+    #     for base_image in s['base_images']:
+    #         print(base_image['image_path'])
