@@ -23,6 +23,20 @@ class Recognition(DataDem):
         self.pad_size = patch_size
         self.set_patch_folders()
 
+    def set_patch_folders(self):
+        ### PATCH SAVE DIRECTORIES
+        self.patch_folder_base = f"{self.data_folder}/{self.dataset_name}/{self.dataset_part}/patches_{self.patch_size}_recognition"
+        os.makedirs(self.patch_folder_base,exist_ok=True)
+        self.img_patch_folder = f"{self.patch_folder_base}/images"
+        os.makedirs(self.img_patch_folder,exist_ok=True)
+        self.img_patch_orthogonal_folder = f"{self.patch_folder_base}/orthogonal_images"
+        os.makedirs(self.img_patch_orthogonal_folder,exist_ok=True)
+        self.img_patch_orthogonal_zoomed_folder = f"{self.patch_folder_base}/orthogonal_zoomed_images"
+        os.makedirs(self.img_patch_orthogonal_zoomed_folder,exist_ok=True)
+        self.label_patch_folder = f"{self.patch_folder_base}/labels"
+        os.makedirs(self.label_patch_folder,exist_ok=True)
+
+
     def save_patches(self):
         ### SAVE PATCHES
         sequences = self.data
@@ -38,25 +52,57 @@ class Recognition(DataDem):
             for base_image in s["base_images"]:
                 ### GET ORIGINAL IMAGE
                 img_path = base_image['image_path']
-                img = cv2.imread(img_path)
-                img = np.pad(img,((self.pad_size,self.pad_size),(self.pad_size,self.pad_size),(0,0)),'constant',constant_values=0)#'symmetric')#
-
+                img = self.get_original_image(img_path)
                 for i,label in enumerate(base_image['ground_truth']):
-                    recognition.get_patch(img,img_path,label,ind=i,save=True,plot=False)
+                    self.get_patch(img,img_path,label,ind=i,save=True,plot=False)
 
-    def set_patch_folders(self):
-        ### PATCH SAVE DIRECTORIES
-        self.patch_folder_base = f"{self.data_folder}/{self.dataset_name}/{self.dataset_part}/patches_{self.patch_size}_recognition"
-        os.makedirs(self.patch_folder_base,exist_ok=True)
-        self.img_patch_folder = f"{self.patch_folder_base}/images"
-        os.makedirs(self.img_patch_folder,exist_ok=True)
-        self.img_patch_orthogonal_folder = f"{self.patch_folder_base}/orthogonal_images"
-        os.makedirs(self.img_patch_orthogonal_folder,exist_ok=True)
-        self.img_patch_orthogonal_zoomed_folder = f"{self.patch_folder_base}/orthogonal_zoomed_images"
-        os.makedirs(self.img_patch_orthogonal_zoomed_folder,exist_ok=True)
-        self.label_patch_folder = f"{self.patch_folder_base}/labels"
-        os.makedirs(self.label_patch_folder,exist_ok=True)
+    def get_patch(self,img,img_path,label,ind,save=False,plot=False):
 
+        bbox_polygon = shapely.wkt.loads(label['pixel_position'])
+        bbox = np.array(bbox_polygon.exterior.coords)[0:4,:]
+        instance_name = label['class']
+
+        patch_dict = self.init_patch_dict(instance_name=instance_name,img_path=img_path)
+        patch_dict = self.set_patch_params(patch_dict,img,bbox)
+        if plot:
+            self.plot_patch(patch_dict,ind)
+        
+        if save:
+            self.save_patch(patch_dict,ind)
+
+        # return patch_dict
+
+    def get_patch_by_index(self,img_path,obj_ind,save=False,plot=True):
+        for s in self.data:
+            for base_image in s["base_images"]:
+                # print(base_image['image_path'])
+                if img_path == base_image['image_path']:
+                    img = self.get_original_image(img_path)
+                    label = base_image['ground_truth'][obj_ind]
+                    self.get_patch(img,img_path,label,obj_ind,save=save,plot=plot)
+
+
+    def plot_all_bboxes_on_base_image(self,img_path):
+        for s in self.data:
+            for base_image in s["base_images"]:
+                # print(base_image['image_path'])
+                if img_path == base_image['image_path']:
+                    img = cv2.imread(img_path)
+                    fig,ax = plt.subplots(1)
+                    ax.imshow(cv2.cvtColor(img,cv2.COLOR_BGR2RGB)) # original_patch, orthogonal_patch, orthogonal_zoomed_patch
+                    labels = base_image['ground_truth'] 
+                    for label in labels:
+                        bbox_polygon = shapely.wkt.loads(label['pixel_position'])
+                        bbox = np.array(bbox_polygon.exterior.coords)[0:4,:]
+                        geometry.Rectangle.plot_bbox(bbox=bbox,ax=ax,c='b')
+                    plt.show()
+
+
+
+    def get_original_image(self,img_path):
+        img = cv2.imread(img_path)
+        img = np.pad(img,((self.pad_size,self.pad_size),(self.pad_size,self.pad_size),(0,0)),'constant',constant_values=0)#'symmetric')#
+        return img
 
     def init_patch_dict(self,instance_name,img_path):
         patch_dict =   {
@@ -107,11 +153,16 @@ class Recognition(DataDem):
         orthogonal_bbox = patch_dict['orthogonal_patch']['bbox']
 
         x_min,x_max,y_min,y_max = geometry.Rectangle.get_bbox_limits(orthogonal_bbox)
+        x_min,x_max = np.clip([x_min,x_max],0,orthogonal_patch_img.shape[1])
+        y_min,y_max = np.clip([y_min,y_max],0,orthogonal_patch_img.shape[0])
+
 
         ### GET THE ORTHOGONAL ZOOMED IMAGE
         orthogonal_img = orthogonal_patch_img[y_min:y_max,x_min:x_max,:]
         orthogonal_zoomed_img = cv2.resize(orthogonal_img,dsize=(self.patch_size,self.patch_size))
         patch_dict['orthogonal_zoomed_patch']['img'] = orthogonal_zoomed_img
+
+
 
         ### GET THE ORTHOGONAL ZOOMED BBOX
         orthogonal_zoomed_bbox = orthogonal_bbox - [x_min,y_min]
@@ -179,34 +230,14 @@ class Recognition(DataDem):
         return patch_dict
 
 
-    def get_patch(self,img,img_path,label,ind,save=False,plot=False):
-
-        bbox_polygon = shapely.wkt.loads(label['pixel_position'])
-        bbox = np.array(bbox_polygon.exterior.coords)[0:4,:]
-        instance_name = label['class']
-
-        patch_dict = self.init_patch_dict(instance_name=instance_name,img_path=img_path)
-        patch_dict = self.set_patch_params(patch_dict,img,bbox)
-        if plot:
-            self.plot_patch(patch_dict,ind)
-        
-        if save:
-            self.save_patch(patch_dict,ind)
-
     def plot_patch(self,patch_dict,i):
         ### PLOT
         fig,ax = plt.subplots(1)
-        ax.imshow(cv2.cvtColor(patch_dict['orthogonal_zoomed_patch']['img'],cv2.COLOR_BGR2RGB))
-        geometry.Rectangle.plot_bbox(bbox=patch_dict['orthogonal_zoomed_patch']['bbox'],ax=ax,c='b')
+        ax.imshow(cv2.cvtColor(patch_dict['original_patch']['img'],cv2.COLOR_BGR2RGB)) # original_patch, orthogonal_patch, orthogonal_zoomed_patch
+        geometry.Rectangle.plot_bbox(bbox=patch_dict['original_patch']['bbox'],ax=ax,c='b')
 
         instance_name = patch_dict['instance_name']
         ax.set_title(instance_name)
-        ### SAVE FIGURES
-        ## FILE NAMES
-        # img_path = patch_dict['original_img']['path']
-        # file_name = get_file_name_from_path(img_path)
-        # patch_name = f"{file_name}_{i}"
-        # plt.savefig(f"{self.patch_folder_base}/figures/{instance_name}_{patch_name}.png", bbox_inches='tight')
         plt.show()
 
 
@@ -324,7 +355,30 @@ if __name__ == "__main__":
     recognition = Recognition(dataset_id,dataset_part,dataset_name,patch_size)
     # recognition.save_patches()
 
+    ### PLOT ALL THE BOOX ON AN IMAGE
+    recognition.plot_all_bboxes_on_base_image("/home/murat/Projects/airplane_recognition/DATA/Gaofen/train/images/111.tif")
+
+
+    ### PLOT SINGLE PATCH BY INDEX
+
+    # problem_ones_file = '/home/murat/Projects/airplane_recognition/docs/problem_ones.txt'
+    # with open(problem_ones_file,'r') as f:
+    #     lines = f.readlines()
+    #     # print(img_paths)
+    #     for line in lines:
+
+    #         img_path,ind = line.split(',')
+    #         ind = int(ind[:-1])
+    #         print(os.path.split(img_path)[-1], ind)
+    #         recognition.get_patch_by_index(img_path=img_path,obj_ind=ind,save=False,plot=True)
+
+
+    # img_path = "/home/murat/Projects/airplane_recognition/DATA/Gaofen/train/images/968.tif"
+    # recognition.get_patch_by_index(img_path=img_path,obj_ind=1,save=False,plot=True)
+
     # ### ANALYSE
-    analyse = RecognitionAnalysis(dataset_id,dataset_part,dataset_name,patch_size)
-    instance_number = analyse.get_instance_number()
-    print(instance_number)
+    # analyse = RecognitionAnalysis(dataset_id,dataset_part,dataset_name,patch_size)
+    # instance_number = analyse.get_instance_number()
+    # # print(instance_number)
+    # for key, value in instance_number.items():
+    #     print(f"{key}: {value}")
