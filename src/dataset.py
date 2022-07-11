@@ -16,20 +16,9 @@ class RecognitionDataset(Dataset):
         self.label_folder = self.recognition.label_patch_folder
         self.label_files = os.listdir(self.label_folder)
 
-        self.instance_table = { 'other': 0, 
-                                'ARJ21': 1,
-                                'Boeing737': 2, 
-                                'Boeing747': 3,
-                                'Boeing777': 4, 
-                                'Boeing787': 5, 
-                                'A220': 6, 
-                                'A321': 7, 
-                                'A330': 8, 
-                                'A350': 9
-                                }
+        self.instance_table = self.get_instance_table()
 
         # self.instance_len = len(self.instance_table.keys())
-
     def __len__(self):
         return len(self.label_files) 
 
@@ -56,6 +45,11 @@ class RecognitionDataset(Dataset):
 
         return sample
 
+    def get_instance_table(self):
+        instance_names = ['other', 'ARJ21','Boeing737', 'Boeing747','Boeing777', 'Boeing787', 'A220', 'A321', 'A330', 'A350']
+        instance_table = { instance_name:i for i,instance_name in enumerate(instance_names)}
+        return instance_table
+
     
 
 
@@ -65,12 +59,6 @@ if __name__ == "__main__":
     # from transform import Augmentations, ToTensor
     from recognition import Recognition
 
-    # airplane_dataset = AirplaneDataset(dataset_name='train',patch_size=512,transform=Compose([Augmentations()]))#,ToTensor()]))
-    # sample = airplane_dataset[ind]
-    # show_sample(sample)
-    # print(ind)
-    # print(sample['image'].shape)
-
     patch_size=128
     dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
     dataset_name = 'Gaofen'
@@ -78,7 +66,15 @@ if __name__ == "__main__":
 
     recognition_instance = Recognition(dataset_id,dataset_part,dataset_name,patch_size)
     recognition_dataset = RecognitionDataset(recognition_instance)
-    
-    ind = random.randint(0,len(recognition_dataset)-1)
-    sample = recognition_dataset[ind]
-    print(sample['label'])
+    # print(len(recognition_dataset))
+    # ind = random.randint(0,len(recognition_dataset)-1)
+    # sample = recognition_dataset[ind]
+    # print(sample['image'].shape)
+
+    # for file_name in recognition_dataset.label_files:
+    #     label_dict = json.load(open(f"{recognition_dataset.label_folder}/{file_name}",'r'))
+    #     for key in label_dict
+
+
+
+
