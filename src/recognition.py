@@ -5,36 +5,25 @@ import os
 import matplotlib.pyplot as plt
 
 import geometry
-from utilities import get_file_name_from_path
 from data import DataDem
 import shapely.wkt
 
 #### RECOGNITION DATA
 class Recognition(DataDem):
-    def __init__(self,dataset_id,dataset_part,dataset_name,patch_size):
+    def __init__(self,settings,dataset_part):
         '''
         Save patches for the recognition task
         A patch is consisted of a single airplane. The airplane is located in the middle of the patch by using the center of its rotated bounding box.
         Rotated bounding box can be masked (i.e. masked=True) 
         '''
-        super(Recognition, self).__init__(dataset_id,dataset_part,dataset_name)
+        super(Recognition, self).__init__(settings,dataset_part)
 
-        self.patch_size=patch_size
-        self.pad_size = patch_size
-        self.set_patch_folders()
-
-    def set_patch_folders(self):
-        ### PATCH SAVE DIRECTORIES
-        self.patch_folder_base = f"{self.data_folder}/{self.dataset_name}/{self.dataset_part}/patches_{self.patch_size}_recognition"
-        os.makedirs(self.patch_folder_base,exist_ok=True)
-        self.img_patch_folder = f"{self.patch_folder_base}/images"
-        os.makedirs(self.img_patch_folder,exist_ok=True)
-        self.img_patch_orthogonal_folder = f"{self.patch_folder_base}/orthogonal_images"
-        os.makedirs(self.img_patch_orthogonal_folder,exist_ok=True)
-        self.img_patch_orthogonal_zoomed_folder = f"{self.patch_folder_base}/orthogonal_zoomed_images"
-        os.makedirs(self.img_patch_orthogonal_zoomed_folder,exist_ok=True)
-        self.label_patch_folder = f"{self.patch_folder_base}/labels"
-        os.makedirs(self.label_patch_folder,exist_ok=True)
+        self.patch_size=settings['patch']['size']
+        self.pad_size = settings['patch']['size']
+        self.img_patch_folder = settings['patch'][dataset_part]['img_patch_folder'] #f"{self.patch_folder_base}/images"
+        self.img_patch_orthogonal_folder = settings['patch'][dataset_part]['img_patch_orthogonal_folder']#f"{self.patch_folder_base}/orthogonal_images"
+        self.img_patch_orthogonal_zoomed_folder = settings['patch'][dataset_part]['img_patch_orthogonal_zoomed_folder']#f"{self.patch_folder_base}/orthogonal_zoomed_images"
+        self.label_patch_folder = settings['patch'][dataset_part]['label_patch_folder']#f"{self.patch_folder_base}/labels"
 
 
     def save_patches(self):
@@ -244,7 +233,7 @@ class Recognition(DataDem):
 
         ## FILE NAMES
         img_path = patch_dict['original_img']['path']
-        file_name = get_file_name_from_path(img_path)
+        file_name = self.get_file_name_from_path(img_path)
         patch_name = f"{file_name}_{i}"
 
         ## ORIGINAL PATCH IMG
@@ -276,6 +265,10 @@ class Recognition(DataDem):
 
         with open(f"{self.label_patch_folder}/{patch_name}.json", 'w') as f:
             json.dump(patch_dict, f,indent=4)
+
+
+    def get_file_name_from_path(self,path):
+        return os.path.splitext(os.path.split(path)[-1])[0]
 
 
 class RecognitionAnalysis(Recognition):

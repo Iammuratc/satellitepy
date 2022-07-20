@@ -9,16 +9,18 @@ import numpy as np
 
 
 class RecognitionDataset(Dataset):
-    def __init__(self,recognition_instance,transform=None):
-        self.recognition = recognition_instance
+    def __init__(self,settings,dataset_part,transform=None):
+        # self.recognition = recognition_instance
         self.transform=transform
+        self.hot_encoding=settings['training']['hot_encoding']
 
-        self.label_folder = self.recognition.label_patch_folder
-        self.label_files = os.listdir(self.label_folder)
+        self.label_patch_folder = settings['patch'][dataset_part]['label_patch_folder']
+        self.label_files = os.listdir(self.label_patch_folder)
 
         self.instance_table = self.get_instance_table()
 
-        # self.instance_len = len(self.instance_table.keys())
+        self.classes = len(self.instance_table.keys())
+    
     def __len__(self):
         return len(self.label_files) 
 
@@ -28,15 +30,19 @@ class RecognitionDataset(Dataset):
 
         ### READ LABEL FILE
         label_file_name = self.label_files[ind]
-        label_dict = json.load(open(f"{self.label_folder}/{label_file_name}",'r'))
+        label_dict = json.load(open(f"{self.label_patch_folder}/{label_file_name}",'r'))
 
         ### GET IMAGE
         img_path = label_dict['orthogonal_zoomed_patch']['path']
         img = cv2.cvtColor(cv2.imread(img_path,1),cv2.COLOR_BGR2RGB)
 
         ### GET LABEL
-        label = self.instance_table[label_dict['instance_name']]
-
+        label_int = self.instance_table[label_dict['instance_name']]
+        if self.hot_encoding:
+            label = np.zeros([self.classes])
+            label[label_int]=1
+        else:
+            label = label_int
         sample={'image':img,
                 'label':label}
 
@@ -58,23 +64,19 @@ if __name__ == "__main__":
     # from torchvision.transforms import Compose
     # from transform import Augmentations, ToTensor
     from recognition import Recognition
+    from settings import Settings
 
     patch_size=128
-    dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
-    dataset_name = 'Gaofen'
     dataset_part = 'train'
+    exp_no = 0
 
-    recognition_instance = Recognition(dataset_id,dataset_part,dataset_name,patch_size)
-    recognition_dataset = RecognitionDataset(recognition_instance)
-    # print(len(recognition_dataset))
-    # ind = random.randint(0,len(recognition_dataset)-1)
-    # sample = recognition_dataset[ind]
-    # print(sample['image'].shape)
-
-    # for file_name in recognition_dataset.label_files:
-    #     label_dict = json.load(open(f"{recognition_dataset.label_folder}/{file_name}",'r'))
-    #     for key in label_dict
-
-
-
+    settings = Settings(hot_encoding=True,exp_no=0,patch_size=patch_size)()
+    # recognition_instance = Recognition(dataset_id,dataset_part,dataset_name,patch_size)
+    recognition_dataset = RecognitionDataset(settings,dataset_part,transform=Compose([ToTensor(),Normalize()]))
+    
+    ## CHECK DATASET
+    print(len(recognition_dataset))
+    ind = random.randint(0,len(recognition_dataset)-1)
+    sample = recognition_dataset[ind]
+    print(sample['label'])
 

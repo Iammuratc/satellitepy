@@ -9,22 +9,19 @@ import geometry
 # from utilities import show_sample
 import matplotlib.pyplot as plt
 import requests
-from utilities import get_project_folder
 ##NOTES: y axis of matplotlib figures are inverted, so the airplanes will be actually facing downwards, pay attention at the new datasets 
 
 class DataDem:
     """
         This class is to create the json file using DEM
     """
-    def __init__(self,dataset_id,dataset_part,dataset_name):
-        self.project_folder = get_project_folder()
-        self.dataset_id=dataset_id
+    def __init__(self,settings,dataset_part):
+        self.project_folder = settings['project_folder']
+        self.dataset_id=settings['dataset']['id']
         self.dataset_part=dataset_part # train, test or val
-        self.dataset_name=dataset_name
+        self.dataset_name=settings['dataset']['name']
         
-        self.data_folder = f"{self.project_folder}/data"
-
-        self.json_file_path = f'{self.data_folder}/{self.dataset_name}/{self.dataset_part}/no_duplicates.json'
+        self.json_file_path = os.path.join(settings['dataset']['folder'],self.dataset_part,"no_duplicates.json")
 
         self.data = self.remove_duplicates()
 
