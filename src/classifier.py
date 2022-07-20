@@ -14,21 +14,30 @@ import numpy as np
 from transforms import ToTensor, Normalize
 from recognition import Recognition
 from dataset import RecognitionDataset
-from utilities import get_project_folder, EarlyStopping
+from utilities import EarlyStopping
+from models import Custom_0
 
+
+### TODO: Log files
 
 class Classifier:
-    def __init__(self,path,patch_size):
-        self.path = path
-        self.patch_size=patch_size
-        self.project_folder = get_project_folder()
+    def __init__(self,settings):
+        self.settings=settings
+        self.patch_size=settings['patch']['size']
+        self.project_folder = settings['project_folder']
 
-    def train(self,epochs,batch_size,exp_no,patience,load_last_state=False):
+    def train(self,patience,load_last_state=False):
+        ### TRAINING HYPERPARAMETERS
+        epochs = self.settings['training']['epochs']
+        batch_size = self.settings['training']['batch_size']
+
 
         ### READ MODEL AND MOVE IT TO GPU
+        model_path = self.settings['model']['path']
         model = self.get_model()
-        if os.path.exists(self.path):
-            model.load_state_dict(torch.load(self.path))
+        if os.path.exists(model_path):
+            print(f'Model is read from the previous version at:\n{model_path}')
+            model.load_state_dict(torch.load(model_path))
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model.to(device)
         
@@ -43,17 +52,16 @@ class Classifier:
         loader_val = self.get_loader(dataset=dataset_val,batch_size=batch_size)
 
         ### LOG
-        log_folder = f"{self.project_folder}/logs/exp_{exp_no}"
-        writer = SummaryWriter(log_dir=log_folder)
+        # log_folder = self.settings['training']['log_folder']
+        # writer = SummaryWriter(log_dir=log_folder)
         # stat_step = 20 # write log at every stat_step*batch_size image
-
 
         ### LOSS
         # train_losses_avg = []
         # val_losses_avg = []
 
         ### EARLY STOPPING
-        early_stopping = EarlyStopping(patience=patience, verbose=True,path=self.path)
+        early_stopping = EarlyStopping(patience=patience, verbose=True,path=model_path)
 
         for epoch in range(epochs):  # loop over the dataset multiple times
 
@@ -76,7 +84,7 @@ class Classifier:
                 outputs = model(data['image'].to(device))
                 loss = criterion(outputs, data['label'].to(device))
 
-                writer.add_scalar("Loss/train", loss, epoch)
+                # writer.add_scalar("Loss/train", loss, epoch)
                 loss.backward()
                 optimizer.step()
                 train_losses.append(loss.item())
@@ -86,9 +94,10 @@ class Classifier:
             for data in loader_val:
                 # forward pass: compute predicted outputs by passing inputs to the model
                 outputs = model(data['image'].to(device))
+
                 # calculate the loss
                 loss = criterion(outputs, data['label'].to(device))
-                writer.add_scalar("Loss/val", loss, epoch)
+                # writer.add_scalar("Loss/val", loss, epoch)
                 # record validation loss
                 val_losses.append(loss.item())
 
@@ -115,17 +124,14 @@ class Classifier:
                 print("Early stopping")
                 break
         # torch.save(model.cpu().state_dict(), self.path)
-        writer.flush()
-        writer.close()
+        # writer.flush()
+        # writer.close()
         print('Finished Training')
 
     def get_dataset(self,dataset_part):
 
-        dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
-        dataset_name = 'Gaofen'
-
-        recognition_instance = Recognition(dataset_id,dataset_part,dataset_name,self.patch_size)
-        dataset = RecognitionDataset(recognition_instance,transform=self.get_transform(dataset_part))
+        # recognition_instance = Recognition(self.settings,dataset_part)
+        dataset = RecognitionDataset(settings,dataset_part=dataset_part,transform=self.get_transform(dataset_part))
         return dataset
 
     def get_loader(self,dataset,batch_size):
@@ -142,7 +148,14 @@ class Classifier:
         return transform
 
     def get_model(self):
-        model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet34', pretrained=True) # resnet34  resnet50   resnet101   resnet152
+        model_name = self.settings['model']['name']
+        if model_name == 'resnet18':
+            model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True) # resnet34  resnet50   resnet101   resnet152
+        elif model_name == 'custom_0':
+            model = Custom_0()
+        else:
+            print('Please define your model first.')
+            return 0
         return model
 
 
@@ -152,7 +165,8 @@ class Classifier:
         optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
         return criterion, optimizer
 
-    def get_conf_mat(self,dataset_part,exp_no,save=False,plot=True):
+    def get_conf_mat(self,dataset_part,save=False,plot=True):
+        exp_no = self.settings['exp_no']
         ### MODEL
         model = self.get_model()
         model.load_state_dict(torch.load(self.path,map_location='cpu'))
@@ -194,23 +208,32 @@ class Classifier:
             plt.show()
 
 if __name__ == "__main__":
-    from utilities import get_project_folder
+    from settings import Settings
 
-    project_folder=get_project_folder()
-    exp_no = 2
-    resnet_no = 18
-    patch_size=128    
-    batch_size = 20
+
+    ### MODEL DEFINITION
+    exp_no = 0
+    model_name = 'custom_0'
+
+    # TRAINING HYPERPARAMETERS
+    patch_size=128
+    batch_size=20
     epochs=50
-    model_path = f'{project_folder}/binaries/resnet{resnet_no}_v{exp_no}.pth'
 
-    classifier = Classifier(path=model_path,patch_size=patch_size)
-    # print(classifier.get_model().eval())
+    settings = Settings(model_name=model_name,
+                        exp_no=exp_no,
+                        patch_size=patch_size,
+                        batch_size=batch_size,
+                        epochs=epochs,
+                        hot_encoding=True,
+                        update=True)()
+    classifier = Classifier(settings)
+    # print(classifier.get_model(name='resnet18').__dict__)
 
     ### TRAIN
-    classifier.train(epochs=epochs,batch_size=batch_size,exp_no=exp_no,patience=20)
+    classifier.train(patience=10)
     ### TEST
-    # classifier.get_conf_mat(dataset_part='val',exp_no=exp_no,save=True,plot=True)
+    # classifier.get_conf_mat(dataset_part='val',save=True,plot=True)
 
     ### FORWARD PASS
     # dataiter = iter(classifier.get_loader('train'))

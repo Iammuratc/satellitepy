@@ -11,8 +11,8 @@ class ToTensor(object):
         # torch image: C x H x W
         image = image.transpose((2, 0, 1))
         return {'image': torch.from_numpy(image),
-                'label': label}
-                # 'label': torch.tensor(label, dtype=torch.int8)}
+                # 'label': label}
+                'label': torch.from_numpy(label)}
 
 
 class Normalize(object):
