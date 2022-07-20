@@ -4,16 +4,17 @@ import torch.optim as optim
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 import os
-from tqdm import tqdm
+# from tqdm import tqdm
 import seaborn as sn
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 from transforms import ToTensor, Normalize
 from recognition import Recognition
 from dataset import RecognitionDataset
-from utilities import get_project_folder
+from utilities import get_project_folder, EarlyStopping
 
 
 class Classifier:
@@ -22,7 +23,7 @@ class Classifier:
         self.patch_size=patch_size
         self.project_folder = get_project_folder()
 
-    def train(self,epochs,batch_size,exp_no,load_last_state=False):
+    def train(self,epochs,batch_size,exp_no,patience,load_last_state=False):
 
         ### READ MODEL AND MOVE IT TO GPU
         model = self.get_model()
@@ -30,47 +31,90 @@ class Classifier:
             model.load_state_dict(torch.load(self.path))
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model.to(device)
+        
 
-        ### LOSS AND OPTIMIZER FUNCS
+        ### COST AND OPTIMIZER FUNCS
         criterion, optimizer = self.get_funcs_for_train(model)
 
         ### DATA
-        dataset = self.get_dataset('train')
-        loader_train = self.get_loader(dataset=dataset,batch_size=batch_size)
+        dataset_train = self.get_dataset('train')
+        loader_train = self.get_loader(dataset=dataset_train,batch_size=batch_size)
+        dataset_val = self.get_dataset('val')
+        loader_val = self.get_loader(dataset=dataset_val,batch_size=batch_size)
 
         ### LOG
         log_folder = f"{self.project_folder}/logs/exp_{exp_no}"
         writer = SummaryWriter(log_dir=log_folder)
-        stat_step = 20 # write log at every stat_step*batch_size image
+        # stat_step = 20 # write log at every stat_step*batch_size image
+
+
+        ### LOSS
+        # train_losses_avg = []
+        # val_losses_avg = []
+
+        ### EARLY STOPPING
+        early_stopping = EarlyStopping(patience=patience, verbose=True,path=self.path)
 
         for epoch in range(epochs):  # loop over the dataset multiple times
 
-            running_loss = 0.0
-            with tqdm(loader_train, unit="batch") as tepoch:
-                for i,data in enumerate(loader_train):
-                    tepoch.set_description(f"Epoch {epoch}")
-                    # data is a dict with keys "image", "label"
-                    # zero the parameter gradients
-                    optimizer.zero_grad()
+            ### LOSS
+            train_losses = []
+            val_losses = []
+            # running_loss = 0.0
+            # with tqdm(loader_train, unit="batch") as tepoch:
 
-                    # forward + backward + optimize
-                    
-                    outputs = model(data['image'].to(device))
-                    loss = criterion(outputs, data['label'].to(device))
+            ### TRAIN MODEL
+            model.train()
+            for i,data in enumerate(loader_train):
+                # tepoch.set_description(f"Epoch {epoch}")
+                # data is a dict with keys "image", "label"
+                # zero the parameter gradients
+                optimizer.zero_grad()
 
-                    writer.add_scalar("Loss/train", loss, epoch)
-                    loss.backward()
-                    optimizer.step()
-                    
+                # forward + backward + optimize
+                
+                outputs = model(data['image'].to(device))
+                loss = criterion(outputs, data['label'].to(device))
 
-                    # print statistics
-                    running_loss += loss.item()
-                    if i % stat_step == stat_step-1:    # print every 2000 mini-batches
-                        # print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / stat_step:.3f}')
-                        tepoch.set_postfix(loss=running_loss/stat_step)
-                        running_loss = 0.0
+                writer.add_scalar("Loss/train", loss, epoch)
+                loss.backward()
+                optimizer.step()
+                train_losses.append(loss.item())
+                
+            ### VALIDATE MODEL
+            model.eval()
+            for data in loader_val:
+                # forward pass: compute predicted outputs by passing inputs to the model
+                outputs = model(data['image'].to(device))
+                # calculate the loss
+                loss = criterion(outputs, data['label'].to(device))
+                writer.add_scalar("Loss/val", loss, epoch)
+                # record validation loss
+                val_losses.append(loss.item())
 
-        torch.save(model.cpu().state_dict(), self.path)
+            train_loss = np.average(train_losses)
+            val_loss = np.average(val_losses)
+
+            # train_losses_avg.append(train_loss)
+            # val_losses_avg.append(val_loss)
+
+            msg = (f'[{epoch}/{epochs}] ' +
+             f'train_loss: {train_loss:.5f} ' +
+             f'valid_loss: {val_loss:.5f}')
+            print(msg)
+
+
+                # print statistics
+                # running_loss += loss.item()
+                # if i % stat_step == stat_step-1:    # print every 2000 mini-batches
+                    # print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / stat_step:.3f}')
+                    # tepoch.set_postfix(loss=running_loss/stat_step)
+                    # running_loss = 0.0
+            early_stopping(val_loss,model)
+            if early_stopping.early_stop:
+                print("Early stopping")
+                break
+        # torch.save(model.cpu().state_dict(), self.path)
         writer.flush()
         writer.close()
         print('Finished Training')
@@ -153,19 +197,20 @@ if __name__ == "__main__":
     from utilities import get_project_folder
 
     project_folder=get_project_folder()
-    exp_no = 1
+    exp_no = 2
+    resnet_no = 18
     patch_size=128    
     batch_size = 20
     epochs=50
-    model_path = f'{project_folder}/binaries/resnet34_v{exp_no}.pth'
+    model_path = f'{project_folder}/binaries/resnet{resnet_no}_v{exp_no}.pth'
 
     classifier = Classifier(path=model_path,patch_size=patch_size)
     # print(classifier.get_model().eval())
 
     ### TRAIN
-    # classifier.train(epochs=epochs,batch_size=batch_size,exp_no=exp_no)
+    classifier.train(epochs=epochs,batch_size=batch_size,exp_no=exp_no,patience=20)
     ### TEST
-    classifier.get_conf_mat(dataset_part='val',exp_no=exp_no,save=True,plot=True)
+    # classifier.get_conf_mat(dataset_part='val',exp_no=exp_no,save=True,plot=True)
 
     ### FORWARD PASS
     # dataiter = iter(classifier.get_loader('train'))
