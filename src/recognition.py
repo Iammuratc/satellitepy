@@ -355,14 +355,14 @@ if __name__ == "__main__":
     patch_size=128
     dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
     dataset_name = 'Gaofen'
-    dataset_part = 'test'
+    dataset_part = 'train'
 
     ### SAVE PATCHES FOR A DATASET PART
     recognition = Recognition(dataset_id,dataset_part,dataset_name,patch_size)
     # recognition.save_patches()
 
     ### PLOT ALL THE BOOX ON AN IMAGE
-    # recognition.plot_all_bboxes_on_base_image("/home/murat/Projects/airplane_recognition/DATA/Gaofen/train/images/39.tif")
+    # recognition.plot_all_bboxes_on_base_image("/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/20.tif")
 
 
     ### PLOT SINGLE PATCH BY INDEX
@@ -380,12 +380,12 @@ if __name__ == "__main__":
 
 
     ### PLOT SINGLE PATCH BY INDEX
-    # img_path = "/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/67.tif"
-    # recognition.get_patch_by_index(img_path=img_path,obj_ind=14,save=False,plot=True)
+    img_path = "/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/143.tif"
+    recognition.get_patch_by_index(img_path=img_path,obj_ind=0,save=False,plot=True)
 
     # ### ANALYSE
-    analyse = RecognitionAnalysis(dataset_id,dataset_part,dataset_name,patch_size)
-    instance_number = analyse.get_instance_number()
-    # print(instance_number)
-    for key, value in instance_number.items():
-        print(f"{key}: {value}")
+    # analyse = RecognitionAnalysis(dataset_id,dataset_part,dataset_name,patch_size)
+    # instance_number = analyse.get_instance_number()
+    # # print(instance_number)
+    # for key, value in instance_number.items():
+    #     print(f"{key}: {value}")
