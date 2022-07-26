@@ -12,6 +12,10 @@ class Settings(object):
                         batch_size=None,
                         epochs=None,
                         hot_encoding=None,
+                        merge_and_split_data=None,
+                        split_ratio=None,
+                        patch_config=None,
+                        class_weight=None,
                         update=True):
         super(Settings, self).__init__()
         self.update=update
@@ -23,25 +27,20 @@ class Settings(object):
         self.hot_encoding=hot_encoding
         self.batch_size=batch_size
         self.epochs=epochs
-    
+        self.merge_and_split_data=merge_and_split_data
+        self.split_ratio=split_ratio
+        self.patch_config=patch_config
+        self.class_weight=class_weight
+
         self.project_folder = self.get_project_folder()
+        self.experiment_folder = self.get_experiment_folder()
 
     def __call__(self):
         return self.get_settings()
 
     def get_settings(self):
         ### SETTINGS PATH
-        settings_folder = os.path.join(self.project_folder,"settings")
-        folder_ok = self.create_folder(settings_folder)
-        if not folder_ok:
-            return 0
-
-        settings_exp_folder = os.path.join(self.project_folder,"settings",f"exp_{self.exp_no}")
-        folder_ok = self.create_folder(settings_exp_folder)
-        if not folder_ok:
-            return 0
-
-        settings_path = os.path.join(settings_exp_folder,f"settings.json")
+        settings_path = os.path.join(self.experiment_folder,f"settings.json")
 
         print(f'The following settings will be used:\n{settings_path}\n')
 
@@ -61,11 +60,10 @@ class Settings(object):
         val_folders = self.get_patch_folders(dataset_folder,'val')[2:]
 
 
-
-
         settings = {
             'project_folder':self.project_folder,
             'exp_no':self.exp_no,
+            'exp_folder':self.experiment_folder,
             'model': {
                 'name':self.model_name,
                 'path':self.get_model_path(),
@@ -74,7 +72,8 @@ class Settings(object):
             'dataset': {
                 'folder':dataset_folder,
                 'name':dataset_name,
-                'id': dataset_id
+                'id': dataset_id,
+                'instance_table':self.get_instance_table()
             },
             'patch': {
                 'size': self.patch_size,
@@ -98,12 +97,18 @@ class Settings(object):
                 }
             },
             'training': {
+                'class_weight':self.class_weight,
+                'patch_config':self.patch_config,
                 'hot_encoding':self.hot_encoding,
                 'batch_size':self.batch_size,
                 'epochs':self.epochs,
-                # 'log_folder':
                 'log_path':self.get_train_log_path(),
-            }
+                'merge_and_split_data':self.merge_and_split_data,
+                'split_ratio':self.split_ratio, # split into train, test, val after merging datasets
+            },
+            # 'testing': {
+            #     'fig_folder':self.get_test_fig_folder()
+            # }
         }
 
         with open(settings_path,'w+') as f:
@@ -114,38 +119,33 @@ class Settings(object):
     def get_project_folder(self):
         return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+    def get_experiment_folder(self):
+        ### EXPERIMENTS FOLDER
+        experiments_folder=os.path.join(self.project_folder,'experiments')
+        folder_ok = self.create_folder(experiments_folder)
+        if not folder_ok:
+            return 0
+        ### EXPERIMENT FOLDER
+        experiment_folder=os.path.join(experiments_folder,f'exp_{self.exp_no}')
+        folder_ok = self.create_folder(experiment_folder)
+        if not folder_ok:
+            return 0
+        return experiment_folder
+
+    def get_instance_table(self):
+        instance_names = ['other', 'ARJ21','Boeing737', 'Boeing747','Boeing777', 'Boeing787', 'A220', 'A321', 'A330', 'A350']
+        instance_table = { instance_name:i for i,instance_name in enumerate(instance_names)}
+        return instance_table
+
+
     def get_model_path(self):
-        ### BINARIES FOLDER
-        binaries_folder = os.path.join(self.project_folder,'binaries')
-        folder_ok = self.create_folder(binaries_folder)
-        if not folder_ok:
-            return 0
-
-        ### MODEL FOLDER
-        model_folder = os.path.join(binaries_folder,f'exp_{self.exp_no}')
-        folder_ok = self.create_folder(model_folder)
-        if not folder_ok:
-            return 0
-
         ### ASK USER TO CREATE THE FOLDER
-        model_path = os.path.join(model_folder,f"{self.model_name}.pth")
+        model_path = os.path.join(self.experiment_folder,f"{self.model_name}.pth")
 
         return model_path
 
     def get_train_log_path(self):
-        ### BINARIES FOLDER
-        log_folder = os.path.join(self.project_folder,'logs')
-        folder_ok = self.create_folder(log_folder)
-        if not folder_ok:
-            return 0
-
-        ### MODEL FOLDER
-        train_log_folder = os.path.join(log_folder,f'exp_{self.exp_no}')
-        folder_ok = self.create_folder(train_log_folder)
-        if not folder_ok:
-            return 0
-
-        train_log_path = os.path.join(train_log_folder,f"{self.model_name}.log")
+        train_log_path = os.path.join(self.experiment_folder,f"{self.model_name}_train.log")
         return train_log_path #train_log_folder,
 
     def get_patch_folders(self,dataset_folder,dataset_part):

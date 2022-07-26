@@ -13,14 +13,19 @@ from classifier import Classifier
 
 
 ### MODEL DEFINITION
-exp_no = 0
+exp_no = 2
 model_name = 'custom_0'
+update_settings = False
 
 # TRAINING HYPERPARAMETERS
 patch_size=128
 batch_size=20
 epochs=50
-update_settings = True
+patch_config = "orthogonal_zoomed_patch"#"orthogonal_patch" #"orthogonal_zoomed_patch" , "original_patch"
+merge_and_split_data=True
+split_ratio=[0.8,0.1,0.1]
+class_weight=[0.5,1,2,1,1,1,2,1,1,1]
+
 
 settings = Settings(model_name=model_name,
                     exp_no=exp_no,
@@ -28,14 +33,19 @@ settings = Settings(model_name=model_name,
                     batch_size=batch_size,
                     epochs=epochs,
                     hot_encoding=True,
+                    patch_config=patch_config,
+                    merge_and_split_data=True,
+                    split_ratio=split_ratio,
+                    class_weight=class_weight,
                     update=update_settings)()
 
+# print(settings['training']['class_weight'])
 classifier = Classifier(settings)
 
 ### TRAIN
 # classifier.train(patience=10)
 ### TEST
-classifier.get_conf_mat(dataset_part='val',save=False,plot=True)
+classifier.get_conf_mat(dataset_part='test',save=True,plot=True)
 
 ## CHECK DATASET
 # print(len(recognition_dataset))

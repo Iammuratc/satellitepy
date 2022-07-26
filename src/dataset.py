@@ -9,15 +9,16 @@ import numpy as np
 
 
 class RecognitionDataset(Dataset):
-    def __init__(self,settings,dataset_part,transform=None):
+    def __init__(self,settings,dataset_part,transform=None,shuffle=None):
         # self.recognition = recognition_instance
         self.transform=transform
         self.hot_encoding=settings['training']['hot_encoding']
+        self.patch_config = settings['training']['patch_config']
 
         self.label_patch_folder = settings['patch'][dataset_part]['label_patch_folder']
         self.label_files = os.listdir(self.label_patch_folder)
 
-        self.instance_table = self.get_instance_table()
+        self.instance_table = settings['dataset']['instance_table']
 
         self.classes = len(self.instance_table.keys())
     
@@ -33,7 +34,7 @@ class RecognitionDataset(Dataset):
         label_dict = json.load(open(f"{self.label_patch_folder}/{label_file_name}",'r'))
 
         ### GET IMAGE
-        img_path = label_dict['orthogonal_zoomed_patch']['path']
+        img_path = label_dict[self.patch_config]['path']
         img = cv2.cvtColor(cv2.imread(img_path,1),cv2.COLOR_BGR2RGB)
 
         ### GET LABEL
@@ -50,12 +51,6 @@ class RecognitionDataset(Dataset):
             sample = self.transform(sample)
 
         return sample
-
-    def get_instance_table(self):
-        instance_names = ['other', 'ARJ21','Boeing737', 'Boeing747','Boeing777', 'Boeing787', 'A220', 'A321', 'A330', 'A350']
-        instance_table = { instance_name:i for i,instance_name in enumerate(instance_names)}
-        return instance_table
-
     
 
 
