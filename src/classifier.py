@@ -14,7 +14,7 @@ import numpy as np
 from transforms import ToTensor, Normalize
 from recognition import Recognition
 from dataset import RecognitionDataset
-from utilities import EarlyStopping
+from utilities import EarlyStopping, ImageViewer 
 from models import Custom_0
 
 
@@ -198,8 +198,9 @@ class Classifier:
 
 
 
-    def get_conf_mat(self,dataset_part,save=False,plot=True):
-        exp_no = self.settings['exp_no']
+    def get_conf_mat(self,dataset_part,show_false_images=False,save=False,plot=True):
+        exp_no = self.settings['experiment']['no'] 
+
         ### MODEL
         model = self.get_model()
         model.load_state_dict(torch.load(self.settings['model']['path'],map_location='cpu'))
@@ -207,16 +208,23 @@ class Classifier:
         ### HOT ENCODING SETTINGS
         logSoftmax = nn.LogSoftmax(dim=1)    
 
-        ### DATA
-        dataset = self.get_dataset(dataset_part,shuffle=False)
-        loader_test = self.get_loader(dataset=dataset)
+        ### GET MY LOADER
+        if self.settings['training']['merge_and_split_data']:
+            loader_train, loader_test, loader_val = self.get_loaders()
+            loaders = {'train':loader_train,
+                        'test':loader_test,
+                        'val':loader_val}
+            my_loader = loaders[dataset_part]
+        else:
+            dataset = self.get_dataset(dataset_part,shuffle=False)
+            my_loader = self.get_loader(dataset=dataset)
 
         ### INSTANCE DICT
-        # instance_table_rev = dict((v, k) for k, v in dataset.instance_table.items())
-        instance_list = list(dataset.instance_table.keys())
+        instance_list = list(self.settings['dataset']['instance_table'].keys())
         ### APPEND BATCHES TO A LIST
         confusion_matrix = torch.zeros(len(instance_list), len(instance_list))
-        for i, data in enumerate(loader_test):
+        false_image_data = []
+        for i, data in enumerate(my_loader):
             y_pred_batch = model(data['image'])
             if self.settings['training']['hot_encoding']:
                 # print(y_pred_batch)
@@ -228,26 +236,38 @@ class Classifier:
                 y_pred_batch = (torch.max(torch.exp(y_pred_batch), 1)[1]).data.cpu()#.numpy()
 
                 y_true_batch = data['label']
-            for t, p in zip(y_pred_batch, y_true_batch):
+
+            image_paths = data['image_path']
+            # print(image_paths)
+            for t, p, img_path in zip(y_pred_batch, y_true_batch, image_paths):
                 confusion_matrix[t.long(), p.long()] += 1
+                if t!=p:
+                    false_image_data.append([img_path,t,p])
 
             # if i == 1:
-                # break
+            #     break
 
         # print(confusion_matrix)
-
-        df_conf_mat = pd.DataFrame(confusion_matrix,index=instance_list,columns=instance_list)
-        fig, ax = plt.subplots(1)
-        # plt.figure(figsize = (10,7))
-        ax.set_title(f'Dataset: {dataset_part} --- Rows: Predicted --- Cols: Ground truth')
-        # plt.ylabel('Predicted',fontsize=18,loc='top')
-        # plt.xlabel('Ground truth',fontsize=18,loc='center')
-        sn.heatmap(df_conf_mat, annot=True, fmt='g',ax=ax)
+        if save or plot:
+            df_conf_mat = pd.DataFrame(confusion_matrix,index=instance_list,columns=instance_list)
+            fig, ax = plt.subplots(1)
+            # plt.figure(figsize = (10,7))
+            ax.set_title(f'Exp no: {exp_no} --- Dataset: {dataset_part}\nRows: Predicted --- Cols: Ground truth')
+            # plt.ylabel('Predicted',fontsize=18,loc='top')
+            # plt.xlabel('Ground truth',fontsize=18,loc='center')
+            sn.heatmap(df_conf_mat, annot=True, fmt='g',ax=ax)
         if save:
-            # fig_folder = f'{dataset.recognition.project_folder}/docs/experiments/exp_{exp_no}'
-            # os.makedirs(fig_folder,exist_ok=True)
-            fig_path = os.path.join(self.settings['exp_folder'],f'conf_mat_{dataset_part}.png')
+            fig_path = os.path.join(self.settings['experiment']['folder'],f'conf_mat_{dataset_part}.png')
             fig.savefig(fig_path)
-        if plot:
-            plt.show()
 
+        if show_false_images:
+            fig, ax = plt.subplots(1)
+            image_viewer = ImageViewer( ax=ax,
+                                        instance_table=self.settings['dataset']['instance_table'],
+                                        image_data=false_image_data)
+
+            # fig.canvas.mpl_connect('scroll_event', image_viewer.onscroll)
+            fig.canvas.mpl_connect('key_press_event', image_viewer.on_press)
+
+        if show_false_images or plot:
+            plt.show()
