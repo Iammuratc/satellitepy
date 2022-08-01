@@ -1,7 +1,7 @@
-import os
+# import os
 import numpy as np
-import torch
-
+import matplotlib.pyplot as plt
+import cv2
 
 
 class EarlyStopping:
@@ -55,3 +55,44 @@ class EarlyStopping:
             self.trace_func(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model.state_dict(), self.path)
         self.val_loss_min = val_loss
+
+
+
+class ImageViewer(object):
+    def __init__(self, ax, instance_table,image_data):
+        self.ax = ax
+        self.image_data = image_data
+        self.instance_table = list(instance_table.keys())
+
+
+        self.slices = len(image_data)
+        self.ind = 0
+
+        self.im = ax.imshow(self.get_next_img())
+        self.update()
+
+    # def onscroll(self, event):
+    def on_press(self, event):
+        # print("%s %s" % (event.button, event.step))
+        # if event.button == 'up':
+        if event.key == 'd':
+            self.ind = (self.ind + 1) % self.slices
+        # else:
+        if event.key == 'a':
+            self.ind = (self.ind - 1) % self.slices
+        print(self.ind)
+        self.update()
+
+    def get_next_img(self):
+        img = cv2.cvtColor(cv2.imread(self.image_data[self.ind][0]),cv2.COLOR_BGR2RGB)
+        return img
+
+    def update(self):
+
+        label = self.instance_table[self.image_data[self.ind][1]]
+        predicted = self.instance_table[self.image_data[self.ind][2]]
+
+        self.im.set_data(self.get_next_img())
+        # self.ax.set_ylabel('slice %s' % self.ind)
+        self.ax.set_title(f"Label: {label}, Predicted: {predicted}")
+        self.im.axes.figure.canvas.draw()

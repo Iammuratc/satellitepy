@@ -8,6 +8,7 @@ class Settings(object):
     """docstring for Settings"""
     def __init__(self,  model_name=None,
                         exp_no=None,
+                        exp_name=None,
                         patch_size=None,
                         batch_size=None,
                         epochs=None,
@@ -21,6 +22,7 @@ class Settings(object):
         self.update=update
         self.model_name = model_name
         self.exp_no = exp_no
+        self.exp_name = exp_name
         self.patch_size = patch_size
 
         ### TRAINING HYPERPARAMETERS
@@ -62,8 +64,11 @@ class Settings(object):
 
         settings = {
             'project_folder':self.project_folder,
-            'exp_no':self.exp_no,
-            'exp_folder':self.experiment_folder,
+            'experiment': {
+                'no':self.exp_no,
+                'folder':self.experiment_folder,
+                'name':self.exp_name            
+            },
             'model': {
                 'name':self.model_name,
                 'path':self.get_model_path(),

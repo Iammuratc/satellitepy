@@ -44,7 +44,8 @@ class RecognitionDataset(Dataset):
             label[label_int]=1
         else:
             label = label_int
-        sample={'image':img,
+        sample={'image_path':img_path,
+                'image':img,
                 'label':label}
 
         if self.transform:
