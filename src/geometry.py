@@ -4,6 +4,9 @@ import numpy as np
 from descartes import PolygonPatch
 import cv2
 
+
+
+## TODO: Detection and recognition functionilities are confusing. Remove class attributes, and call methods (not attributes) from RecognitionPatch and DetectionPatch
 class Rectangle:
     '''
     This class does the followings:
@@ -12,6 +15,8 @@ class Rectangle:
     
     '''
     def __init__(self,bbox):
+        if isinstance(bbox,list):
+            bbox = np.array(bbox)
 
         if bbox.shape != (4,2):
             print('bbox shape should be (4,2)')
@@ -69,6 +74,23 @@ class Rectangle:
         o = np.atleast_2d((self.cx,self.cy))
         # bbox = np.atleast_2d(self.bbox)
         return np.squeeze((R @ (self.bbox.T-o.T) + o.T).T)
+
+    def get_orthogonal_bbox_by_limits(self,bbox,return_params):
+        x_coords = bbox[:,0]
+        y_coords = bbox[:,1]
+        x_coord_min, x_coord_max = np.amin(x_coords),np.amax(x_coords)
+        y_coord_min, y_coord_max = np.amin(y_coords),np.amax(y_coords)
+
+        if return_params:
+            h = y_coord_max - y_coord_min
+            w = x_coord_max - x_coord_min
+            return [x_coord_min+w/2.0, y_coord_min+h/2.0, w, h]
+        else:
+            return [[x_coord_min,y_coord_max],
+                    [x_coord_max,y_coord_max],
+                    [x_coord_max,y_coord_min],
+                    [x_coord_min,y_coord_min]]
+
 
     @staticmethod
     def plot_bbox(bbox,ax,c):

@@ -5,38 +5,37 @@ import os
 import matplotlib.pyplot as plt
 
 import geometry
-from data import DataDem
+# from data import DataDem
 import shapely.wkt
 
 #### RECOGNITION DATA
-class Recognition(DataDem):
+class RecognitionPatch:
     def __init__(self,settings,dataset_part):
         '''
         Save patches for the recognition task
         A patch is consisted of a single airplane. The airplane is located in the middle of the patch by using the center of its rotated bounding box.
         Rotated bounding box can be masked (i.e. masked=True) 
         '''
-        super(Recognition, self).__init__(settings,dataset_part)
-
         self.patch_size=settings['patch']['size']
         self.pad_size = settings['patch']['size']
         self.img_patch_folder = settings['patch'][dataset_part]['img_patch_folder'] #f"{self.patch_folder_base}/images"
         self.img_patch_orthogonal_folder = settings['patch'][dataset_part]['img_patch_orthogonal_folder']#f"{self.patch_folder_base}/orthogonal_images"
         self.img_patch_orthogonal_zoomed_folder = settings['patch'][dataset_part]['img_patch_orthogonal_zoomed_folder']#f"{self.patch_folder_base}/orthogonal_zoomed_images"
         self.label_patch_folder = settings['patch'][dataset_part]['label_patch_folder']#f"{self.patch_folder_base}/labels"
+        with open(settings['patch'][dataset_part]['json_file_path'], 'r') as fp:
+            self.sequences = json.load(fp)
 
 
     def save_patches(self):
         ### SAVE PATCHES
-        sequences = self.data
 
-        ans = input("Do you really want to save the patches?")
+        ans = input("Do you really want to save the patches? ")
         if ans != 'y':
             print('If you want to save the patches, please confirm this with y.')
             return 0
 
         ### DEM ADAPTED VERSION
-        for s in sequences:
+        for s in self.sequences:
             for base_image in s["base_images"]:
                 ### GET ORIGINAL IMAGE
                 img_path = base_image['image_path']
@@ -344,15 +343,14 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt    
     import os
 
-    
-    patch_size=128
-    dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
-    dataset_name = 'Gaofen'
-    dataset_part = 'train'
+    from settings import Settings
+
+    settings = Settings(patch_size=128)()
+    recognition = RecognitionPatch(settings,dataset_part='val')
+
 
     ### SAVE PATCHES FOR A DATASET PART
-    recognition = Recognition(dataset_id,dataset_part,dataset_name,patch_size)
-    # recognition.save_patches()
+    recognition.save_patches()
 
     ### PLOT ALL THE BOOX ON AN IMAGE
     # recognition.plot_all_bboxes_on_base_image("/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/20.tif")
@@ -373,8 +371,8 @@ if __name__ == "__main__":
 
 
     ### PLOT SINGLE PATCH BY INDEX
-    img_path = "/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/143.tif"
-    recognition.get_patch_by_index(img_path=img_path,obj_ind=0,save=False,plot=True)
+    # img_path = "/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/143.tif"
+    # recognition.get_patch_by_index(img_path=img_path,obj_ind=0,save=False,plot=True)
 
     # ### ANALYSE
     # analyse = RecognitionAnalysis(dataset_id,dataset_part,dataset_name,patch_size)

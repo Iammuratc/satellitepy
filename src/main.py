@@ -12,46 +12,57 @@ from classifier import Classifier
 # TODO: Store images if they do not exist (e.g., patches with size 32)
 
 
-### MODEL DEFINITION
-exp_no = 2
+### EXPERIMENT DEFINITION
+exp_no = 5
+update_settings = True # if False, ignore all the parameters defined here, and read the existing settings file
+
+
+### MODEL DEFINITION    
 model_name = 'custom_0'
-update_settings = False
+exp_name = 'Custom_0 model on orthogonal_patch with dropout (p=0.2) and equal class weights'
 
 # TRAINING HYPERPARAMETERS
 patch_size=128
 batch_size=20
 epochs=50
 patch_config = "orthogonal_zoomed_patch"#"orthogonal_patch" #"orthogonal_zoomed_patch" , "original_patch"
-merge_and_split_data=True
 split_ratio=[0.8,0.1,0.1]
-class_weight=[0.5,1,2,1,1,1,2,1,1,1]
+# class_weight=[0.5,1,2,1,1,1,2,1,1,1]
+class_weight=[1,1,1,1,1,1,1,1,1,1]
 
 
 settings = Settings(model_name=model_name,
                     exp_no=exp_no,
+                    exp_name=exp_name,
                     patch_size=patch_size,
                     batch_size=batch_size,
                     epochs=epochs,
                     hot_encoding=True,
                     patch_config=patch_config,
-                    merge_and_split_data=True,
                     split_ratio=split_ratio,
                     class_weight=class_weight,
                     update=update_settings)()
 
-# print(settings['training']['class_weight'])
+
+# print(settings)
+
 classifier = Classifier(settings)
 
-### TRAIN
-# classifier.train(patience=10)
-### TEST
-classifier.get_conf_mat(dataset_part='test',save=True,plot=True)
+# ### TRAIN
+classifier.train(patience=10)
 
-## CHECK DATASET
-# print(len(recognition_dataset))
-# ind = random.randint(0,len(recognition_dataset)-1)
-# sample = recognition_dataset[ind]
-# print(sample['label'])
+# ### PLOTTING INSTANCE IMAGES
+# classifier.plot_images(instances=['Boeing737','A220'],dataset_part='test',save=True,plot=False)
+# classifier.plot_images(instances=['A220','A220'],dataset_part='test',save=True,plot=False)
+# classifier.plot_images(instances=['A220','Boeing737'],dataset_part='test',save=True,plot=False)
+# classifier.plot_images(instances=['Boeing737','Boeing737'],dataset_part='test',save=True,plot=False)
+
+
+### CONFUSION MATRIX
+# classifier.plot_conf_mat(dataset_part='train',save=True,plot=False)
+# classifier.plot_conf_mat(dataset_part='val',save=True,plot=False)
+# classifier.get_conf_mat(dataset_part='test',show_false_images=True,save=False,plot=False)
+
 
 ### CHECK MODEL OUTPUT
 # dataset = classifier.get_dataset('train')
