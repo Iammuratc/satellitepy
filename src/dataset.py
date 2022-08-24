@@ -9,7 +9,7 @@ import numpy as np
 
 
 class RecognitionDataset(Dataset):
-    def __init__(self,settings,dataset_part,transform=None,shuffle=None):
+    def __init__(self,settings,dataset_part,transform=None):
         # self.recognition = recognition_instance
         self.transform=transform
         self.hot_encoding=settings['training']['hot_encoding']
@@ -36,7 +36,6 @@ class RecognitionDataset(Dataset):
         ### GET IMAGE
         img_path = label_dict[self.patch_config]['path']
         img = cv2.cvtColor(cv2.imread(img_path,1),cv2.COLOR_BGR2RGB)
-
         ### GET LABEL
         label_int = self.instance_table[label_dict['instance_name']]
         if self.hot_encoding:
@@ -57,22 +56,32 @@ class RecognitionDataset(Dataset):
 
 if __name__ == "__main__":
     import random
-    # from torchvision.transforms import Compose
-    # from transform import Augmentations, ToTensor
+    from torchvision.transforms import Compose
+    from transforms import Normalize, ToTensor
     from recognition import Recognition
     from settings import Settings
 
     patch_size=128
-    dataset_part = 'train'
-    exp_no = 0
+    dataset_part = 'test'
+    exp_no='temp'
+    patch_config = 'orthogonal_zoomed_patch'
+    split_ratio=[0.8,0.1,0.1]
 
-    settings = Settings(hot_encoding=True,exp_no=0,patch_size=patch_size)()
+    settings = Settings(hot_encoding=True,
+                        exp_no=exp_no,
+                        patch_size=patch_size,
+                        patch_config=patch_config,
+                        update=True,
+                        split_ratio=split_ratio)()
+    # print(settings)
     # recognition_instance = Recognition(dataset_id,dataset_part,dataset_name,patch_size)
     recognition_dataset = RecognitionDataset(settings,dataset_part,transform=Compose([ToTensor(),Normalize()]))
     
     ## CHECK DATASET
-    print(len(recognition_dataset))
-    ind = random.randint(0,len(recognition_dataset)-1)
-    sample = recognition_dataset[ind]
-    print(sample['label'])
+    # print(len(recognition_dataset))
+    for ind in range(10):
+        # ind = 0#random.randint(0,len(recognition_dataset)-1)
+        sample = recognition_dataset[ind]
+        # print(sample['label'])
+        print(sample['image_path'])
 
