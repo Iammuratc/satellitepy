@@ -14,8 +14,11 @@ from patch_tools import PatchTools
 class SegmentationPatch(PatchTools):
     def __init__(self,settings,dataset_part):
 
-        super(SegmentationPatch, self).__init__(settings,dataset_part)
+        patch_size=settings['patch']['size']
+        super(SegmentationPatch, self).__init__(patch_size,task='segmentation')
 
+        self.settings=settings
+        self.dataset_part=dataset_part
         ### ORIGINAL DATASET FOLDER SETTINGS
         self.original_image_folder = settings['dataset'][dataset_part]['image_folder']
         # self.original_instance_mask_folder = settings['dataset'][dataset_part]['instance_mask_folder']
@@ -25,7 +28,7 @@ class SegmentationPatch(PatchTools):
 
         self.bbox_rotation = settings['dataset']['bbox_rotation']
 
-    def get_patch(self,img,img_path,mask,mask_path,bbox_label,ind,save=False,plot=False):
+    def get_patch_dict(self,img,img_path,mask,mask_path,bbox_label,ind):
 
         category = bbox_label[-2]
         if self.bbox_rotation=='clockwise':
@@ -44,14 +47,9 @@ class SegmentationPatch(PatchTools):
 
         patch_dict = self.init_patch_dict(instance_name=category,img_path=img_path,mask_path=mask_path)
         patch_dict = self.set_patch_params(patch_dict,img,bbox,mask)
-        if plot:
-            self.plot_patch(patch_dict,ind)
-        
-        if save:
-            self.save_patch(patch_dict,ind)
+        return patch_dict
 
-
-    def save_patches(self):
+    def get_patches(self,save,plot):
 
         plane_pixel_value = 103.0 # the pixel value of airplanes in gray scale mask image
 
@@ -69,7 +67,7 @@ class SegmentationPatch(PatchTools):
                 bbox_labels = [line[:-1].split(' ') for line in f.readlines()[2:]] #[x1, y1, x2, y2, x3, y3, x4, y4, category, difficult]
             ### MASK
             mask_path = mask_paths[i]
-            mask = cv2.imread(mask_path,0)
+            mask = self.get_original_image(mask_path,flags=0)
             binary_mask = np.zeros_like(mask)
             cv2.inRange(mask,plane_pixel_value,plane_pixel_value,binary_mask)
 
@@ -77,32 +75,35 @@ class SegmentationPatch(PatchTools):
             # fig,ax = plt.subplots(1)
             # ax.imshow(cv2.cvtColor(img,cv2.COLOR_BGR2RGB)) # original_patch, orthogonal_patch, orthogonal_zoomed_patch
 
-
+            bbox_ind=0
             for bbox_label in bbox_labels:
                 category = bbox_label[-2]
                 if category != 'plane':
                     continue
 
-                self.get_patch( img=img,
-                                img_path=img_path,
-                                mask=mask,
-                                mask_path=mask_path,
-                                bbox_label=bbox_label,
-                                ind=i,
-                                save=False,
-                                plot=True)
+                patch_dict = self.get_patch_dict(   img=img,
+                                                    img_path=img_path,
+                                                    mask=mask,
+                                                    mask_path=mask_path,
+                                                    bbox_label=bbox_label,
+                                                    ind=bbox_ind
+                                                    )
 
-                # bbox = np.array(bbox_label[:8]).astype(int).reshape(4,2)
-                # geometry.Rectangle.plot_bbox(bbox=bbox,ax=ax,c='b')
+                
+        
+                if save:
+                    self.save_patch(settings,dataset_part,patch_dict,bbox_ind)
 
-                # print(rectangle.orthogonal_bbox)
                 # ### PLOT
-                # fig,ax = plt.subplots(1)
-                # ax.imshow(img)
-                # ax.imshow(binary_mask)#,alpha=0.5)
-            # plt.show()
+                if plot:
+                    fig,ax = plt.subplots(2,sharex=True,sharey=True)
+                    self.plot_patch(ax[0],patch_dict,conf=['orthogonal_zoomed','img'])
+                    self.plot_patch(ax[1],patch_dict,conf=['orthogonal_zoomed','mask'])
+                    plt.show()
+                    
+                bbox_ind += 1
                 # break
-            break
+            # break
         
     def get_labels(self):
         with open(self.original_label_path, 'r') as fp:
@@ -146,12 +147,13 @@ if __name__ == '__main__':
     segmentation_patch = SegmentationPatch(settings,dataset_part)
     # segmentation_patch.show_original_image(1)
 
+    ### SAVE PATCHES
+    segmentation_patch.get_patches(save=True,plot=False)
+
+
     ### CHECK LARGE JSON LABEL DATA
     # labels = segmentation_patch.get_labels() # dict_keys(['images', 'categories', 'annotations'])
     #labels['images'] = [{'id': 0, 'file_name': 'P0000.png', 'ins_file_name': 'P0000_instance_id_RGB.png', 'seg_file_name': 'P0000_instance_color_RGB.png'}]
     #labels['annotations'] =
     # print(labels['images'][0])
     # print(labels['annotations'][0])
-
-    ### SAVE PATCHES
-    segmentation_patch.save_patches()

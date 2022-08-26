@@ -128,6 +128,7 @@ class SettingsSegmentation(SettingsUtils):
                                 'mask_folder':train_patch_folders[3],
                                 'orthogonal_mask_folder':train_patch_folders[4],
                                 'orthogonal_zoomed_mask_folder':train_patch_folders[5],
+                                'label_folder':train_patch_folders[6],
                         },
             }            
         }
@@ -150,6 +151,7 @@ class SettingsSegmentation(SettingsUtils):
         mask_patch_folder = os.path.join(patch_folder_base,'masks')
         orthogonal_mask_patch_folder = os.path.join(patch_folder_base,'orthogonal_masks')
         orthogonal_zoomed_mask_patch_folder = os.path.join(patch_folder_base,'orthogonal_zoomed_masks')
+        label_folder = os.path.join(patch_folder_base,'labels')
 
         folders = [ patch_folder_base,
                     img_patch_folder,
@@ -157,7 +159,8 @@ class SettingsSegmentation(SettingsUtils):
                     orthogonal_zoomed_img_patch_folder,
                     mask_patch_folder,
                     orthogonal_mask_patch_folder,
-                    orthogonal_zoomed_mask_patch_folder]
+                    orthogonal_zoomed_mask_patch_folder,
+                    label_folder]
 
         for folder in folders:
             assert self.create_folder(folder)
@@ -528,4 +531,5 @@ if __name__ == '__main__':
 
     settings_segmentation = SettingsSegmentation(dataset_name='DOTA',
                                                 patch_size=128)()
-    print(settings_segmentation)
+    print(settings_segmentation)        
+    # print('mask_folder' in settings_segmentation['patch']['train'].keys())

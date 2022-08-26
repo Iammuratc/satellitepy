@@ -3,29 +3,37 @@ import numpy as np
 import os
 import geometry
 import matplotlib.pyplot as plt
+import json
 
+### LEave some margin for the patches, because some airplane in DOTA has cutoff parts 
 class PatchTools(object):
     """docstring for PatchTools"""
-    def __init__(self, settings, dataset_part):
+    def __init__(self, patch_size, task):
         super(PatchTools, self).__init__()
-        
-        self.patch_size=settings['patch']['size']
+
+        self.patch_size=patch_size
+        # self.patch_size=settings['patch']['size']
         self.pad_size=self.patch_size        
 
         ### SEGMENTATION PATCHES
         self.segmentation_task=False
-        if 'mask_folder' in settings['patch'][dataset_part].keys():        
+        # if 'mask_folder' in settings['patch'][dataset_part].keys():
+        if task == 'segmentation':        
             self.segmentation_task = True
 
-
+        self.margin=0
         ### PATCH TOOLS
-    def get_original_image(self,img_path):
-        img = cv2.imread(img_path)
-        img = np.pad(img,((self.pad_size,self.pad_size),(self.pad_size,self.pad_size),(0,0)),'constant',constant_values=0)#'symmetric')#
+    def get_original_image(self,img_path,flags=1):
+        img = cv2.imread(img_path,flags=flags)
+        if flags != 0:
+            img = np.pad(img,((self.pad_size,self.pad_size),(self.pad_size,self.pad_size),(0,0)),'constant',constant_values=0)#'symmetric')#
+        else:
+            img = np.pad(img,((self.pad_size,self.pad_size),(self.pad_size,self.pad_size)),'constant',constant_values=0)#'symmetric')#
         return img
 
     def init_patch_dict(self,instance_name,img_path,mask_path=None):
         patch_dict =   {
+                'file_path':None,
                 'instance_name':None,
                 'patch_size':None,
                 'original_patch':   {   
@@ -109,8 +117,8 @@ class PatchTools(object):
         cx, cy = patch_dict['original']['center_padded']
 
         # Get the large cutout image
-        y_0, y_1= cy-self.patch_size, cy+self.patch_size
-        x_0,x_1 = cx-self.patch_size, cx+self.patch_size
+        y_0, y_1= cy-self.patch_size-self.margin, cy+self.patch_size+self.margin
+        x_0,x_1 = cx-self.patch_size-self.margin, cx+self.patch_size+self.margin
         img_1=img[y_0:y_1,x_0:x_1,:] if len(img.shape)==3 else img[y_0:y_1,x_0:x_1]
         return img_1        
 
@@ -128,8 +136,8 @@ class PatchTools(object):
 
     def get_small_cutout(self,img):
         patch_half_size = int(self.patch_size/2)
-        start = self.patch_size-patch_half_size
-        end = self.patch_size+patch_half_size
+        start = self.patch_size-patch_half_size#-self.margin
+        end = self.patch_size+patch_half_size#+self.margin
         small_cutout = img[start:end,start:end,:] if len(img.shape)==3 else img[start:end,start:end]
         return small_cutout
 
@@ -147,20 +155,27 @@ class PatchTools(object):
         if self.segmentation_task:
             padded_mask = self.get_padded_original_img(mask,patch_dict)
             patch_dict['original_patch']['mask']=self.get_small_cutout(padded_mask)
-            patch_dict['orthogonal_patch']['mask']=self.get_orthogonal_patch_img(padded_mask,rect,patch_dict)
+
+            orthogonal_patch_img = self.get_orthogonal_patch_img(padded_mask,rect,patch_dict)
+            # Because of waprAffine, mask is not binary anymore, switch it back to binary by thresholding
+            _,orthogonal_patch_img = cv2.threshold(orthogonal_patch_img,1,255,cv2.THRESH_BINARY)
+            patch_dict['orthogonal_patch']['mask']=orthogonal_patch_img
+            # plt.imshow(patch_dict['original_patch']['mask'])
+            # plt.imshow(padded_mask)
+            # plt.show()
 
         patch_dict = self.set_orthogonal_zoomed_img(patch_dict)
         return patch_dict
 
 
     def set_patch_params(self,patch_dict,img,bbox,mask=None):
-        bbox_orig_padded =np.array(bbox)+self.pad_size # add initial padding
+        bbox_orig_padded =np.array(bbox)+self.pad_size# # add initial padding
         ### NEW CENTER OF AIRPLANE
-        center = np.mean(bbox,axis=0).astype(int)
-        center_padded = center+self.pad_size
+        # center = np.mean(bbox,axis=0).astype(int)
+        center_padded = np.mean(bbox_orig_padded,axis=0).astype(int)#center+self.pad_size
         patch_dict['original']['center_padded']=center_padded
         ### NEW BBOX
-        bbox_patch = bbox_orig_padded-center_padded+self.pad_size/2
+        bbox_patch = bbox_orig_padded-center_padded+self.pad_size/2+self.margin
 
         rect = geometry.Rectangle(bbox=bbox_patch)
 
@@ -180,16 +195,17 @@ class PatchTools(object):
         patch_dict = self.set_images(patch_dict=patch_dict,img=img,rect=rect,mask=mask)
         return patch_dict
 
-    def set_paths(self,patch_dict,settings):
+    def set_paths(self,settings,dataset_part,patch_dict,i):
         ### PATCH FOLDER SETTINGS
-        img_patch_folder = settings['patch'][dataset_part]['img_patch_folder'] 
+        img_patch_folder = settings['patch'][dataset_part]['img_folder'] 
         img_patch_orthogonal_folder = settings['patch'][dataset_part]['orthogonal_img_folder']
         img_patch_orthogonal_zoomed_folder = settings['patch'][dataset_part]['orthogonal_zoomed_img_folder']
 
         ## FILE NAMES
-        img_path = patch_dict['original']['path']
+        img_path = patch_dict['original']['img_path']
         file_name = self.get_file_name_from_path(img_path)
-        patch_img_name = f"{file_name}_{i}.png"
+        patch_name = f"{file_name}_{i}"
+        patch_img_name = f"{patch_name}.png"
 
         patch_img_path = lambda folder: os.path.join(folder,patch_img_name)
 
@@ -205,13 +221,17 @@ class PatchTools(object):
             mask_patch_orthogonal_folder = settings['patch'][dataset_part]['orthogonal_mask_folder']
             mask_patch_orthogonal_zoomed_folder = settings['patch'][dataset_part]['orthogonal_zoomed_mask_folder']
             patch_dict['original_patch']['mask_path'] = patch_img_path(mask_patch_folder)
-            patch_dict['orthogonal_patch']['mask_path'] = patch_img_path(mask_patch_orhtogonal_folder)
+            patch_dict['orthogonal_patch']['mask_path'] = patch_img_path(mask_patch_orthogonal_folder)
             patch_dict['orthogonal_zoomed_patch']['mask_path'] = patch_img_path(mask_patch_orthogonal_zoomed_folder)
 
-
+        ### SET LABEL PATH
+        label_path = os.path.join(settings['patch'][dataset_part]['label_folder'],f'{patch_name}.json')
+        patch_dict['file_path']=label_path
         return patch_dict
 
-    def save_patch(self,patch_dict,i):
+    def save_patch(self,settings,dataset_part,patch_dict,i):
+
+        patch_dict = self.set_paths(settings,dataset_part,patch_dict,i)
 
         cv2.imwrite(patch_dict['original_patch']['img_path'],patch_dict['original_patch']['img'])
         cv2.imwrite(patch_dict['orthogonal_patch']['img_path'],patch_dict['orthogonal_patch']['img'])
@@ -237,18 +257,25 @@ class PatchTools(object):
                     if isinstance(value_1,np.ndarray):
                         patch_dict[key_0][key_1] = patch_dict[key_0][key_1].tolist()
 
-        with open(f"{self.label_patch_folder}/{patch_name}.json", 'w') as f:
+        with open(patch_dict['file_path'], 'w') as f:
             json.dump(patch_dict, f,indent=4)
 
-    def plot_patch(self,patch_dict,i,conf='original'):
+    def plot_patch(self,ax,patch_dict,conf=['original','img']):
         ### PLOT
-        fig,ax = plt.subplots(1)
-        ax.imshow(cv2.cvtColor(patch_dict[f'{conf}_patch']['img'],cv2.COLOR_BGR2RGB)) # original_patch, orthogonal_patch, orthogonal_zoomed_patch
-        geometry.Rectangle.plot_bbox(bbox=patch_dict[f'{conf}_patch']['bbox'],ax=ax,c='b')
+        # fig,ax = plt.subplots(1)
+        patch_conf = conf[0]
+        img_conf = conf[1]
+        if img_conf=='img':
+            ax.imshow(cv2.cvtColor(patch_dict[f'{patch_conf}_patch'][img_conf],cv2.COLOR_BGR2RGB)) # original_patch, orthogonal_patch, orthogonal_zoomed_patch
+        elif img_conf=='mask':
+            ax.imshow(patch_dict[f'{patch_conf}_patch'][img_conf]) # original_patch, orthogonal_patch, orthogonal_zoomed_patch
+
+        geometry.Rectangle.plot_bbox(bbox=patch_dict[f'{patch_conf}_patch']['bbox'],ax=ax,c='b')
 
         instance_name = patch_dict['instance_name']
         ax.set_title(instance_name)
-        plt.show()
+        # plt.show()
+        # return ax
 
     def get_file_name_from_path(self,path):
         return os.path.splitext(os.path.split(path)[-1])[0]
