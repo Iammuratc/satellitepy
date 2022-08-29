@@ -12,8 +12,9 @@ class PatchTools(object):
         super(PatchTools, self).__init__()
 
         self.patch_size=patch_size
-        # self.patch_size=settings['patch']['size']
-        self.pad_size=self.patch_size        
+
+        ### PAD SIZE (PAD ORIGINAL IMAGE AND FIRST CUTOUT)
+        self.pad_size=int(self.patch_size/2)
 
         ### SEGMENTATION PATCHES
         self.segmentation_task=False
@@ -36,18 +37,36 @@ class PatchTools(object):
                 'file_path':None,
                 'instance_name':None,
                 'patch_size':None,
+                'original':     {
+                                    'img':None,
+                                    'mask':None,
+                                    'bbox':[],
+                                    'mask_path':None,
+                                    'img_path':None, 
+                                    # 'center_padded':None, 
+                                    'pad_size':0
+                                },
+
+                'original_padded_patch':   {   
+                                    'img':None,
+                                    'mask':None,
+                                    'bbox':[],
+                                    'bbox_params':[],
+                                    },
+
                 'original_patch':   {   
-                                    'img':np.zeros(shape=(self.patch_size,self.patch_size,3),dtype=np.uint8),
-                                    'mask':np.zeros(shape=(self.patch_size,self.patch_size),dtype=np.uint8),
+                                    'img':None,
+                                    'mask':None,
                                     'bbox':[],
                                     'bbox_params':[],
                                     'img_path':None,
                                     'mask_path':None,
                                     },
 
+
                 'orthogonal_patch': {
-                                    'img':np.zeros(shape=(self.patch_size,self.patch_size,3),dtype=np.uint8),
-                                    'mask':np.zeros(shape=(self.patch_size,self.patch_size),dtype=np.uint8),
+                                    'img':None,
+                                    'mask':None,
                                     'bbox':[],
                                     'bbox_params':[],
                                     'img_path':None,
@@ -56,8 +75,8 @@ class PatchTools(object):
 
                 'orthogonal_zoomed_patch': 
                                     {
-                                    'img':np.zeros(shape=(self.patch_size,self.patch_size,3),dtype=np.uint8),
-                                    'mask':np.zeros(shape=(self.patch_size,self.patch_size),dtype=np.uint8),
+                                    'img':None,
+                                    'mask':None,
                                     'bbox':[],
                                     'bbox_params':[],
                                     'img_path':None,
@@ -68,13 +87,6 @@ class PatchTools(object):
                                     'bbox_params':None,
                                     'bbox':None
                                     },
-
-                'original':     {
-                                    'mask_path':None,
-                                    'img_path':None, 
-                                    'center_padded':None, 
-                                    'pad_size':0
-                                    }
                 }
         patch_dict['instance_name']=instance_name
         patch_dict['original']['img_path']=img_path
@@ -84,116 +96,132 @@ class PatchTools(object):
 
         return patch_dict
 
-    def set_orthogonal_zoomed_img(self,patch_dict):
-        orthogonal_patch_img = patch_dict['orthogonal_patch']['img']
-        orthogonal_bbox = patch_dict['orthogonal_patch']['bbox']
-
-        x_min,x_max,y_min,y_max = geometry.Rectangle.get_bbox_limits(orthogonal_bbox)
-        x_min,x_max = np.clip([x_min,x_max],0,orthogonal_patch_img.shape[1])
-        y_min,y_max = np.clip([y_min,y_max],0,orthogonal_patch_img.shape[0])
-
-
-        ### GET THE ORTHOGONAL ZOOMED IMAGE
-        orthogonal_img = orthogonal_patch_img[y_min:y_max,x_min:x_max,:]
-        orthogonal_zoomed_img = cv2.resize(orthogonal_img,dsize=(self.patch_size,self.patch_size))
-        patch_dict['orthogonal_zoomed_patch']['img'] = orthogonal_zoomed_img
-
-        if self.segmentation_task:
-            orthogonal_patch_mask = patch_dict['orthogonal_patch']['mask']
-            orthogonal_mask = orthogonal_patch_mask[y_min:y_max,x_min:x_max]
-            orthogonal_zoomed_mask = cv2.resize(orthogonal_mask,dsize=(self.patch_size,self.patch_size))            
-            patch_dict['orthogonal_zoomed_patch']['mask'] = orthogonal_zoomed_mask
-
-
-        ### GET THE ORTHOGONAL ZOOMED BBOX
-        orthogonal_zoomed_bbox = orthogonal_bbox - [x_min,y_min]
-        orthogonal_zoomed_bbox = orthogonal_zoomed_bbox * [self.patch_size/(x_max-x_min),self.patch_size/(y_max-y_min)]
-
-        patch_dict['orthogonal_zoomed_patch']['bbox'] = orthogonal_zoomed_bbox
-        patch_dict['orthogonal_zoomed_patch']['bbox_params'] = geometry.Rectangle.get_params(orthogonal_zoomed_bbox)
-        return patch_dict
-
-    def get_padded_original_img(self,img,patch_dict):
-        cx, cy = patch_dict['original']['center_padded']
-
-        # Get the large cutout image
-        y_0, y_1= cy-self.patch_size-self.margin, cy+self.patch_size+self.margin
-        x_0,x_1 = cx-self.patch_size-self.margin, cx+self.patch_size+self.margin
-        img_1=img[y_0:y_1,x_0:x_1,:] if len(img.shape)==3 else img[y_0:y_1,x_0:x_1]
-        return img_1        
-
-    def get_orthogonal_patch_img(self,img,rect,patch_dict):
-       
-        # Get the rotation angle
-        angle = rect.get_atan2()
-        M = cv2.getRotationMatrix2D((img.shape[0]/2, img.shape[1]/2), np.rad2deg(angle), 1.0)
-
-        img_2 = cv2.warpAffine(img, M, (self.patch_size*2, self.patch_size*2))
-
-        # Get the image patch
-        orthogonal_patch_img = self.get_small_cutout(img_2)
-        return orthogonal_patch_img
-
-    def get_small_cutout(self,img):
-        patch_half_size = int(self.patch_size/2)
-        start = self.patch_size-patch_half_size#-self.margin
-        end = self.patch_size+patch_half_size#+self.margin
-        small_cutout = img[start:end,start:end,:] if len(img.shape)==3 else img[start:end,start:end]
-        return small_cutout
-
-    def set_images(self,patch_dict,img,rect,mask):
-        '''
-        Get the patch of the upwards facing airplane (orthogonal)
-        Original padded image (padded_img) >> 2*patch_size cutout image >> rotate cutout such that the airplane is facing upwards (img_2) >> patch_size cutout image
-        img: original img
-        ''' 
-        padded_img = self.get_padded_original_img(img,patch_dict)
-
-        patch_dict['orthogonal_patch']['img']=self.get_orthogonal_patch_img(padded_img,rect,patch_dict)
-        patch_dict['original_patch']['img']=self.get_small_cutout(padded_img)
-
-        if self.segmentation_task:
-            padded_mask = self.get_padded_original_img(mask,patch_dict)
-            patch_dict['original_patch']['mask']=self.get_small_cutout(padded_mask)
-
-            orthogonal_patch_img = self.get_orthogonal_patch_img(padded_mask,rect,patch_dict)
-            # Because of waprAffine, mask is not binary anymore, switch it back to binary by thresholding
-            _,orthogonal_patch_img = cv2.threshold(orthogonal_patch_img,1,255,cv2.THRESH_BINARY)
-            patch_dict['orthogonal_patch']['mask']=orthogonal_patch_img
-            # plt.imshow(patch_dict['original_patch']['mask'])
-            # plt.imshow(padded_mask)
-            # plt.show()
-
-        patch_dict = self.set_orthogonal_zoomed_img(patch_dict)
-        return patch_dict
-
-
     def set_patch_params(self,patch_dict,img,bbox,mask=None):
-        bbox_orig_padded =np.array(bbox)+self.pad_size# # add initial padding
-        ### NEW CENTER OF AIRPLANE
-        # center = np.mean(bbox,axis=0).astype(int)
-        center_padded = np.mean(bbox_orig_padded,axis=0).astype(int)#center+self.pad_size
-        patch_dict['original']['center_padded']=center_padded
+
+        patch_dict = self.set_original(patch_dict,img,bbox,mask)
+        
         ### NEW BBOX
-        bbox_patch = bbox_orig_padded-center_padded+self.pad_size/2+self.margin
+        # bbox_patch = bbox_orig_padded-center_padded+self.patch_size/2#+self.margin
 
-        rect = geometry.Rectangle(bbox=bbox_patch)
+        # rect = geometry.Rectangle(bbox=bbox_patch)
 
-        ### ORIGINAL PATCH BBOX
-        patch_dict['original_patch']['bbox']=bbox_patch
-        patch_dict['original_patch']['bbox_params']= [int(self.patch_size/2),int(self.patch_size/2),rect.h,rect.w,rect.angle]
+        # ### ORIGINAL PATCH BBOX
+        # patch_dict['original_patch']['bbox']=bbox_patch
+        # patch_dict['original_patch']['bbox_params']= [int(self.patch_size/2),int(self.patch_size/2),rect.h,rect.w,rect.angle]
         
 
-        ### ORTHOGONAL PATCH BBOX
-        patch_dict['orthogonal_patch']['bbox']= rect.orthogonal_bbox
-        patch_dict['orthogonal_patch']['bbox_params']= [int(self.patch_size/2),int(self.patch_size/2),rect.h,rect.w,rect.get_atan2()]
+        # # ### ORTHOGONAL PATCH BBOX
+        # patch_dict['orthogonal_patch']['bbox']= rect.orthogonal_bbox
+        # patch_dict['orthogonal_patch']['bbox_params']= [int(self.patch_size/2),int(self.patch_size/2),rect.h,rect.w,rect.get_atan2()]
 
         ### NOTES
         patch_dict['notes']['bbox_params'] = ['center_x,center_y,height,width,rotation_angle']
         patch_dict['notes']['bbox'] = ['[airplane_top_left_xy,airplane_bottom_left_xy,airplane_bottom_right_xy,airplane_top_right_xy]']
 
-        patch_dict = self.set_images(patch_dict=patch_dict,img=img,rect=rect,mask=mask)
+        # patch_dict = self.set_images(patch_dict=patch_dict,img=img,rect=rect,mask=mask)
+        patch_dict = self.set_original(patch_dict,img,bbox,mask)
+        patch_dict = self.set_original_padded_patch(patch_dict)
+        patch_dict = self.set_original_patch(patch_dict)
+        patch_dict = self.set_orthogonal_patch(patch_dict)
+        patch_dict = self.set_orthogonal_zoomed_patch(patch_dict)
+
+
+        # plt.imshow(patch_dict['original_padded_patch']['img'])
+        # plt.show()
         return patch_dict
+
+
+
+    def set_original(self,patch_dict,img,bbox,mask):
+        ### IMAGE
+        patch_dict['original']['img']=img
+
+        ### BBOX
+        bbox_orig_padded =np.array(bbox)+self.pad_size# # add initial padding
+        patch_dict['original']['bbox']=bbox_orig_padded
+
+        ## MASK
+        patch_dict['original']['mask']=mask
+
+        # center = np.mean(bbox,axis=0).astype(int)
+        # center_padded = np.mean(bbox_orig_padded,axis=0).astype(int)#center+self.pad_size
+        # patch_dict['original']['center_padded']=center_padded
+
+        return patch_dict
+
+
+    def set_original_padded_patch(self,patch_dict):
+        # cx, cy = patch_dict['original']['center_padded']
+        ### Get the large cutout image
+        # y_0, y_1= cy-self.patch_size-self.margin, cy+self.patch_size+self.margin
+        # x_0,x_1 = cx-self.patch_size-self.margin, cx+self.patch_size+self.margin
+
+        img = patch_dict['original']['img']
+        bbox = patch_dict['original']['bbox']
+        # print(bbox)
+
+        img_1, bbox_1 = self.cut_image_by_bbox(img,bbox,self.pad_size)
+
+        patch_dict['original_padded_patch']['img']=img_1
+        patch_dict['original_padded_patch']['bbox']=bbox_1
+
+        return patch_dict
+
+    def set_original_patch(self,patch_dict,margin=0):
+        img = patch_dict['original_padded_patch']['img']
+        bbox = patch_dict['original_padded_patch']['bbox']
+
+        img_1, bbox_1 = self.cut_image_by_bbox(img,bbox,margin)
+
+        patch_dict['original_patch']['img']=img_1
+        patch_dict['original_patch']['bbox']=bbox_1
+
+        return patch_dict
+
+    def set_orthogonal_patch(self,patch_dict,margin=0):
+
+        img = patch_dict['original_padded_patch']['img']
+        bbox = patch_dict['original_padded_patch']['bbox']
+
+        rect = geometry.Rectangle(bbox)
+
+        angle = rect.get_atan2()
+        # cv2.getRotationMatrix2D(center, angle, transform)
+        M = cv2.getRotationMatrix2D((rect.cy, rect.cx), np.rad2deg(angle), 1.0) 
+        # cv2.warpAffine(img, rotation, dest_size)
+        img_rotated = cv2.warpAffine(img, M, (img.shape[0], img.shape[1])) 
+        bbox_rotated = rect.orthogonal_bbox
+
+        img_1, bbox_1 = self.cut_image_by_bbox(img_rotated,bbox_rotated,margin)
+
+        patch_dict['orthogonal_patch']['img']=img_1
+        patch_dict['orthogonal_patch']['bbox']=bbox_1
+        return patch_dict
+
+
+    def set_orthogonal_zoomed_patch(self,patch_dict,margin=0):
+
+        img = patch_dict['orthogonal_patch']['img']
+        bbox = patch_dict['orthogonal_patch']['bbox']
+
+        img_1, bbox_1 = self.cut_image_by_bbox(img,bbox,margin)
+
+        patch_dict['orthogonal_zoomed_patch']['img']=img_1
+        patch_dict['orthogonal_zoomed_patch']['bbox']=bbox_1
+
+        return patch_dict
+
+
+    def cut_image_by_bbox(self,img,bbox,margin):
+        x_min,x_max,y_min,y_max = geometry.Rectangle.get_bbox_limits(bbox)
+        y_0,y_1 = np.array([y_min-margin, y_max+margin]).astype(int)
+        x_0,x_1 = np.array([x_min-margin, x_max+margin]).astype(int)
+        img_1=img[y_0:y_1,x_0:x_1,:] if len(img.shape)==3 else img[y_0:y_1,x_0:x_1]
+        bbox_1 = bbox-[x_min,y_min]+margin
+        return img_1, bbox_1
+
+
+ 
 
     def set_paths(self,settings,dataset_part,patch_dict,i):
         ### PATCH FOLDER SETTINGS

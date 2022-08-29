@@ -97,13 +97,13 @@ class SegmentationPatch(PatchTools):
                 # ### PLOT
                 if plot:
                     fig,ax = plt.subplots(2,sharex=True,sharey=True)
-                    self.plot_patch(ax[0],patch_dict,conf=['orthogonal_zoomed','img'])
-                    self.plot_patch(ax[1],patch_dict,conf=['orthogonal_zoomed','mask'])
+                    self.plot_patch(ax[0],patch_dict,conf=['orthogonal','img'])
+                    # self.plot_patch(ax[1],patch_dict,conf=['orthogonal_zoomed','mask'])
                     plt.show()
                     
                 bbox_ind += 1
                 # break
-            # break
+            break
         
     def get_labels(self):
         with open(self.original_label_path, 'r') as fp:
@@ -114,41 +114,54 @@ class SegmentationPatch(PatchTools):
 
         file_paths = [os.path.join(folder,file) for file in os.listdir(folder)]
         file_paths.sort()
-        return file_paths        
+        return file_paths[18:] 
 
     def show_original_image(self,ind,mask=True):
         ### IMAGE PATHS
-        image_paths = self.get_image_paths(self.original_image_folder)
-
+        image_paths = self.get_file_paths(self.original_image_folder)
+        # print(image_paths)
         ### MASK PATHS
-        mask_paths = self.get_image_paths(self.original_binary_mask_folder)
+        mask_paths = self.get_file_paths(self.original_binary_mask_folder)
+
+        ### BBOX PATHS
+        bbox_paths = self.get_file_paths(self.original_bbox_folder)
 
         ### IMAGE
         img_path = image_paths[ind]
         img = cv2.cvtColor(cv2.imread(img_path),cv2.COLOR_BGR2RGB)
+        print(img_path)
 
         ### MASK
         mask_path = mask_paths[ind]
         mask = cv2.imread(mask_path,0)
 
+        ### BBOXES
+        bbox_path = bbox_paths[ind]
+        with open(bbox_path,'r') as f:
+            bbox_labels = [line[:-1].split(' ') for line in f.readlines()[2:]] #[x1, y1, x2, y2, x3, y3, x4, y4, category, difficult]
+
         ### SHOW
         fig,ax = plt.subplots(1)
         ax.imshow(img)
         ax.imshow(mask,alpha=0.5)
+
+        for bbox_label in bbox_labels:
+            bbox = np.array(bbox_label[:8]).astype(int).reshape(4,2)
+            geometry.Rectangle.plot_bbox(bbox,ax,c='b',s=5)
         plt.show()
 
 if __name__ == '__main__':
     from settings import SettingsSegmentation
 
     settings = SettingsSegmentation(dataset_name='DOTA',
-                                    patch_size=128)()
+                                    patch_size=256)()
     
     dataset_part='train'
     segmentation_patch = SegmentationPatch(settings,dataset_part)
-    # segmentation_patch.show_original_image(1)
+    # segmentation_patch.show_original_image(18)
 
     ### SAVE PATCHES
-    segmentation_patch.get_patches(save=True,plot=False)
+    segmentation_patch.get_patches(save=False,plot=True)
 
 
     ### CHECK LARGE JSON LABEL DATA
