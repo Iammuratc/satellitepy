@@ -14,7 +14,7 @@ class PatchTools(object):
         self.patch_size=patch_size
 
         ### PAD SIZE (PAD ORIGINAL IMAGE AND FIRST CUTOUT)
-        self.pad_size=int(self.patch_size/2)
+        self.pad_size=int(self.patch_size*1.5)
 
         ### SEGMENTATION PATCHES
         self.segmentation_task=False
@@ -117,8 +117,6 @@ class PatchTools(object):
         patch_dict = self.set_orthogonal_zoomed_patch(patch_dict,margin=0)
 
 
-        # plt.imshow(patch_dict['original_padded_patch']['img'])
-        # plt.show()
         return patch_dict
 
 
@@ -186,12 +184,11 @@ class PatchTools(object):
         M = cv2.getRotationMatrix2D((rect.cx, rect.cy), np.rad2deg(angle), 1.0) 
         ### cv2.warpAffine(img, rotation, dest_size)
         img_rotated = cv2.warpAffine(img, M, (img.shape[0], img.shape[1]))
-        # print(img.dtype)
-        # print(mask.dtype)
         mask_rotated = cv2.warpAffine(mask, M, (img.shape[0], img.shape[1]),flags=cv2.INTER_NEAREST) if self.segmentation_task else None
         bbox_rotated = rect.orthogonal_bbox
 
         img_1, mask_1, bbox_1 = self.cut_image_by_bbox(img_rotated,mask_rotated,bbox_rotated,margin)
+
 
         patch_dict['orthogonal_patch']['img']=img_1
         patch_dict['orthogonal_patch']['mask']=mask_1

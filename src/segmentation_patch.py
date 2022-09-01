@@ -13,7 +13,6 @@ from patch_tools import PatchTools
 #### SEGMENTATION DATA
 class SegmentationPatch(PatchTools):
     def __init__(self,settings,dataset_part):
-
         patch_size=settings['patch']['size']
         super(SegmentationPatch, self).__init__(patch_size,task='segmentation')
 
@@ -49,7 +48,7 @@ class SegmentationPatch(PatchTools):
         patch_dict = self.set_patch_params(patch_dict,img,bbox,mask)
         return patch_dict
 
-    def get_patches(self,save,plot):
+    def get_patches(self,save,plot,indices='all'):
 
         # plane_pixel_value = 103.0 # the pixel value of airplanes in gray scale mask image
 
@@ -58,6 +57,12 @@ class SegmentationPatch(PatchTools):
         bbox_paths = self.get_file_paths(self.original_bbox_folder)
 
         for i,img_path in enumerate(image_paths):
+            if indices =='all':
+                pass
+            elif i in indices:
+                pass
+            else:
+                continue
             print(img_path)
             ## IMAGE 
             ## Add padding before passing to the PatchTools because of the cropping steps 
@@ -119,7 +124,7 @@ class SegmentationPatch(PatchTools):
 
         file_paths = [os.path.join(folder,file) for file in os.listdir(folder)]
         file_paths.sort()
-        return file_paths[18:] 
+        return file_paths 
 
     def show_original_image(self,ind,mask=True):
         ### IMAGE PATHS
@@ -163,10 +168,16 @@ if __name__ == '__main__':
     
     dataset_part='train'
     segmentation_patch = SegmentationPatch(settings,dataset_part)
-    # segmentation_patch.show_original_image(18)
 
-    ### SAVE PATCHES
-    segmentation_patch.get_patches(save=True,plot=False)
+    ### PRINT FILE PATH
+    # print(segmentation_patch.get_file_paths(segmentation_patch.original_image_folder)[561])
+
+    ### SHOW ORIGINAL IMAGE
+    # train index=561 image_name=P1114
+    # segmentation_patch.show_original_image(561)
+
+    ### GET PATCHES
+    segmentation_patch.get_patches(save=True,plot=False,indices='all')
 
 
     ### CHECK LARGE JSON LABEL DATA
