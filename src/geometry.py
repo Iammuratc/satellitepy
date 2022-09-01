@@ -93,15 +93,16 @@ class Rectangle:
 
 
     @staticmethod
-    def plot_bbox(bbox,ax,c):
+    def plot_bbox(bbox,ax,c,s=15):
         for i, coord in enumerate(bbox):
             # PLOT BBOX
             ax.plot([bbox[i-1][0],coord[0]],[bbox[i-1][1],coord[1]],c=c)
-        ax.scatter(bbox[0][0],bbox[0][1],c='r',s=15)
+        ax.scatter(bbox[0][0],bbox[0][1],c='r',s=s)
         return ax
 
     @staticmethod
     def get_bbox_limits(bbox):
+        # print(bbox)
         x_min = np.amin(bbox[:,0])
         x_max = np.amax(bbox[:,0])
         y_min = np.amin(bbox[:,1])
