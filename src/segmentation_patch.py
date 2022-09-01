@@ -21,7 +21,7 @@ class SegmentationPatch(PatchTools):
         self.dataset_part=dataset_part
         ### ORIGINAL DATASET FOLDER SETTINGS
         self.original_image_folder = settings['dataset'][dataset_part]['image_folder']
-        # self.original_instance_mask_folder = settings['dataset'][dataset_part]['instance_mask_folder']
+        self.original_instance_mask_folder = settings['dataset'][dataset_part]['instance_mask_folder']
         self.original_binary_mask_folder = settings['dataset'][dataset_part]['binary_mask_folder']
         # self.original_label_path = settings['dataset'][dataset_part]['label_path']
         self.original_bbox_folder = settings['dataset'][dataset_part]['bounding_box_folder']
@@ -51,13 +51,14 @@ class SegmentationPatch(PatchTools):
 
     def get_patches(self,save,plot):
 
-        plane_pixel_value = 103.0 # the pixel value of airplanes in gray scale mask image
+        # plane_pixel_value = 103.0 # the pixel value of airplanes in gray scale mask image
 
         image_paths = self.get_file_paths(self.original_image_folder)
-        mask_paths = self.get_file_paths(self.original_binary_mask_folder)
+        mask_paths = self.get_file_paths(self.original_instance_mask_folder)
         bbox_paths = self.get_file_paths(self.original_bbox_folder)
 
         for i,img_path in enumerate(image_paths):
+            print(img_path)
             ## IMAGE 
             ## Add padding before passing to the PatchTools because of the cropping steps 
             img = self.get_original_image(img_path)#cv2.imread(img_path)
@@ -67,9 +68,9 @@ class SegmentationPatch(PatchTools):
                 bbox_labels = [line[:-1].split(' ') for line in f.readlines()[2:]] #[x1, y1, x2, y2, x3, y3, x4, y4, category, difficult]
             ### MASK
             mask_path = mask_paths[i]
-            mask = self.get_original_image(mask_path,flags=0)
-            binary_mask = np.zeros_like(mask)
-            cv2.inRange(mask,plane_pixel_value,plane_pixel_value,binary_mask)
+            mask = self.get_original_image(mask_path,flags=1)
+            # binary_mask = np.zeros_like(mask)
+            # cv2.inRange(mask,plane_pixel_value,plane_pixel_value,binary_mask)
 
             ### PLOT
             # fig,ax = plt.subplots(1)
@@ -96,14 +97,18 @@ class SegmentationPatch(PatchTools):
 
                 # ### PLOT
                 if plot:
-                    fig,ax = plt.subplots(2,sharex=True,sharey=True)
-                    self.plot_patch(ax[0],patch_dict,conf=['orthogonal','img'])
-                    # self.plot_patch(ax[1],patch_dict,conf=['orthogonal_zoomed','mask'])
+                    fig,ax = plt.subplots(2,3)#,sharex=True,sharey=True)
+                    self.plot_patch(ax[0,0],patch_dict,conf=['original','img'])
+                    self.plot_patch(ax[1,0],patch_dict,conf=['original','mask'])
+                    self.plot_patch(ax[0,1],patch_dict,conf=['orthogonal','img'])
+                    self.plot_patch(ax[1,1],patch_dict,conf=['orthogonal','mask'])
+                    self.plot_patch(ax[0,2],patch_dict,conf=['orthogonal_zoomed','img'])
+                    self.plot_patch(ax[1,2],patch_dict,conf=['orthogonal_zoomed','mask'])
                     plt.show()
                     
                 bbox_ind += 1
                 # break
-            break
+            # break
         
     def get_labels(self):
         with open(self.original_label_path, 'r') as fp:
@@ -154,14 +159,14 @@ if __name__ == '__main__':
     from settings import SettingsSegmentation
 
     settings = SettingsSegmentation(dataset_name='DOTA',
-                                    patch_size=256)()
+                                    patch_size=128)()
     
     dataset_part='train'
     segmentation_patch = SegmentationPatch(settings,dataset_part)
     # segmentation_patch.show_original_image(18)
 
     ### SAVE PATCHES
-    segmentation_patch.get_patches(save=False,plot=True)
+    segmentation_patch.get_patches(save=True,plot=False)
 
 
     ### CHECK LARGE JSON LABEL DATA
