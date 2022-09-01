@@ -1,8 +1,17 @@
-# import os
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import torch
+
+
+def get_file_paths(folder,sort=True):
+    file_paths = [os.path.join(folder,file) for file in os.listdir(folder)]
+    if sort:
+        file_paths.sort()
+    return file_paths 
+
+
 
 class EarlyStopping:
     """

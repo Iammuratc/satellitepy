@@ -8,7 +8,7 @@ import geometry
 # from data import DataDem
 # import shapely.wkt
 from patch_tools import PatchTools
-
+from utilities import get_file_paths
 
 #### SEGMENTATION DATA
 class SegmentationPatch(PatchTools):
@@ -52,9 +52,9 @@ class SegmentationPatch(PatchTools):
 
         # plane_pixel_value = 103.0 # the pixel value of airplanes in gray scale mask image
 
-        image_paths = self.get_file_paths(self.original_image_folder)
-        mask_paths = self.get_file_paths(self.original_instance_mask_folder)
-        bbox_paths = self.get_file_paths(self.original_bbox_folder)
+        image_paths = get_file_paths(self.original_image_folder)
+        mask_paths = get_file_paths(self.original_instance_mask_folder)
+        bbox_paths = get_file_paths(self.original_bbox_folder)
 
         for i,img_path in enumerate(image_paths):
             if indices =='all':
@@ -120,21 +120,16 @@ class SegmentationPatch(PatchTools):
             labels = json.load(fp)
         return labels
 
-    def get_file_paths(self,folder):
-
-        file_paths = [os.path.join(folder,file) for file in os.listdir(folder)]
-        file_paths.sort()
-        return file_paths 
 
     def show_original_image(self,ind,mask=True):
         ### IMAGE PATHS
-        image_paths = self.get_file_paths(self.original_image_folder)
+        image_paths = get_file_paths(self.original_image_folder)
         # print(image_paths)
         ### MASK PATHS
-        mask_paths = self.get_file_paths(self.original_binary_mask_folder)
+        mask_paths = get_file_paths(self.original_binary_mask_folder)
 
         ### BBOX PATHS
-        bbox_paths = self.get_file_paths(self.original_bbox_folder)
+        bbox_paths = get_file_paths(self.original_bbox_folder)
 
         ### IMAGE
         img_path = image_paths[ind]
@@ -162,6 +157,7 @@ class SegmentationPatch(PatchTools):
 
 if __name__ == '__main__':
     from settings import SettingsSegmentation
+    from utilities import get_file_paths
 
     settings = SettingsSegmentation(dataset_name='DOTA',
                                     patch_size=128)()
@@ -170,14 +166,16 @@ if __name__ == '__main__':
     segmentation_patch = SegmentationPatch(settings,dataset_part)
 
     ### PRINT FILE PATH
-    # print(segmentation_patch.get_file_paths(segmentation_patch.original_image_folder)[561])
+    print(get_file_paths(segmentation_patch.original_image_folder))
 
     ### SHOW ORIGINAL IMAGE
     # train index=561 image_name=P1114
-    # segmentation_patch.show_original_image(561)
+    # train index=923 image_name=P1872
+    # segmentation_patch.show_original_image(923)
 
     ### GET PATCHES
-    segmentation_patch.get_patches(save=True,plot=False,indices='all')
+    ## Skip 923, there airplanes labeled but no image
+    # segmentation_patch.get_patches(save=True,plot=False,indices=range(924,1000))
 
 
     ### CHECK LARGE JSON LABEL DATA
