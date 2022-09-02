@@ -12,7 +12,7 @@ import time
 import cv2
 
 
-from utilities import EarlyStopping
+from .utils import EarlyStopping
 
 
 ### TODO: Log files
@@ -39,7 +39,7 @@ class Classifier(object):
             if input('Do you confirm that? [y/n] ') != 'y':
                 print('The existing model will be overwritten!\n')
                 time.sleep(2)
-                # return 0
+                return 0
             else:
                 model.load_state_dict(torch.load(model_path))
 

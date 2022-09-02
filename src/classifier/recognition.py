@@ -1,5 +1,4 @@
 from transforms import ToTensor, Normalize
-from recognition import Recognition
 from dataset import RecognitionDataset
 from models import Custom_0
 from classifier import Classifier

@@ -5,10 +5,8 @@ import os
 import matplotlib.pyplot as plt
 
 import geometry
-# from data import DataDem
-# import shapely.wkt
-from patch_tools import PatchTools
-from utilities import get_file_paths
+from tools import PatchTools
+# from utils import get_file_paths
 
 #### SEGMENTATION DATA
 class SegmentationPatch(PatchTools):
@@ -52,9 +50,9 @@ class SegmentationPatch(PatchTools):
 
         # plane_pixel_value = 103.0 # the pixel value of airplanes in gray scale mask image
 
-        image_paths = get_file_paths(self.original_image_folder)
-        mask_paths = get_file_paths(self.original_instance_mask_folder)
-        bbox_paths = get_file_paths(self.original_bbox_folder)
+        image_paths = self.utils.get_file_paths(self.original_image_folder)
+        mask_paths = self.utils.get_file_paths(self.original_instance_mask_folder)
+        bbox_paths = self.utils.get_file_paths(self.original_bbox_folder)
 
         for i,img_path in enumerate(image_paths):
             if indices =='all':
@@ -123,13 +121,13 @@ class SegmentationPatch(PatchTools):
 
     def show_original_image(self,ind,mask=True):
         ### IMAGE PATHS
-        image_paths = get_file_paths(self.original_image_folder)
+        image_paths = self.utils.get_file_paths(self.original_image_folder)
         # print(image_paths)
         ### MASK PATHS
-        mask_paths = get_file_paths(self.original_binary_mask_folder)
+        mask_paths = self.utils.get_file_paths(self.original_binary_mask_folder)
 
         ### BBOX PATHS
-        bbox_paths = get_file_paths(self.original_bbox_folder)
+        bbox_paths = self.utils.get_file_paths(self.original_bbox_folder)
 
         ### IMAGE
         img_path = image_paths[ind]
@@ -157,16 +155,17 @@ class SegmentationPatch(PatchTools):
 
 if __name__ == '__main__':
     from settings import SettingsSegmentation
-    from utilities import get_file_paths
+    from ..utilities import Utilities
 
     settings = SettingsSegmentation(dataset_name='DOTA',
                                     patch_size=128)()
     
     dataset_part='train'
     segmentation_patch = SegmentationPatch(settings,dataset_part)
+    utils = Utilities()
 
     ### PRINT FILE PATH
-    print(get_file_paths(segmentation_patch.original_image_folder))
+    print(utils.get_file_paths(segmentation_patch.original_image_folder))
 
     ### SHOW ORIGINAL IMAGE
     # train index=561 image_name=P1114
