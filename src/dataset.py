@@ -5,8 +5,51 @@ import torch
 import cv2
 import json
 import numpy as np
+from utilities import get_file_paths
 
+class SegmentationDataset(Dataset):
+    def __init__(self,settings,dataset_part,transform=None):
 
+        self.transform=transform
+        self.patch_size = settings['patch']['size']
+        self.img_folder = settings['patch'][dataset_part]['img_folder']
+        self.mask_folder = settings['patch'][dataset_part]['mask_folder'] # orthogonal_mask_folder, orthogonal_zoomed_mask_folder
+
+        self.img_paths = get_file_paths(self.img_folder)
+        self.mask_paths = get_file_paths(self.mask_folder)
+    
+    def __len__(self):
+        return len(self.img_paths)
+
+    def __getitem__(self,ind):
+        if torch.is_tensor(ind):
+            ind = ind.tolist()
+
+        img_path = self.img_paths[ind]
+        mask_path = self.mask_paths[ind]
+
+        img = self.get_img(img_path)
+        mask = self.get_mask(mask_path)
+
+        sample = {  'image_path':img_path,
+                    'mask_path':mask_path,
+                    'image':img,
+                    'label':mask}
+
+        if self.transform:
+            sample = self.transform(sample)
+
+        return sample
+
+    def get_img(self,image_path):
+        img = cv2.imread(image_path)
+        img = cv2.resize(img,dsize=(self.patch_size,self.patch_size),interpolation=cv2.INTER_LINEAR)
+        return img
+
+    def get_mask(self,mask_path):
+        mask = cv2.imread(mask_path,0)
+        mask = cv2.resize(mask,dsize=(self.patch_size,self.patch_size),interpolation=cv2.INTER_NEAREST)
+        return mask        
 
 class RecognitionDataset(Dataset):
     def __init__(self,settings,dataset_part,transform=None):

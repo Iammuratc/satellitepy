@@ -37,14 +37,10 @@ class SettingsUtils:
     def get_experiment_folder(self):
         ### EXPERIMENTS FOLDER
         experiments_folder=os.path.join(self.project_folder,'experiments')
-        folder_ok = self.create_folder(experiments_folder)
-        if not folder_ok:
-            return 0
+        assert self.create_folder(experiments_folder)
         ### EXPERIMENT FOLDER
         experiment_folder=os.path.join(experiments_folder,f'exp_{self.exp_no}')
-        folder_ok = self.create_folder(experiment_folder)
-        if not folder_ok:
-            return 0
+        assert self.create_folder(experiment_folder)
         return experiment_folder
 
     def get_json_file_path(self,dataset_name,dataset_part):
@@ -67,6 +63,10 @@ class SettingsUtils:
         train_log_path = os.path.join(self.experiment_folder,f"{model_name}_train.log")
         return train_log_path #train_log_folder,
 
+    def get_model_path(self,model_name,ext):
+        model_path = os.path.join(self.experiment_folder,f"{model_name}.{ext}")
+        return model_path
+
 
 class SettingsSegmentation(SettingsUtils):
     """
@@ -75,13 +75,34 @@ class SettingsSegmentation(SettingsUtils):
     def __init__(self, 
                     dataset_name,
                     patch_size=None,
+                    exp_no=None,
+                    exp_name=None,
+                    patience=None,
+                    epochs=None,
+                    batch_size=None,
+                    model_name=None,
+                    split_ratio=None,                    
+                    bbox_rotation='clockwise',
                     update=True,
-                    bbox_rotation='clockwise'):
-        super(SettingsSegmentation, self).__init__()
-        self.dataset_name = dataset_name
+                    ):
+        super(SettingsSegmentation, self).__init__(exp_no)
+
+        ### EXPERIMENTS
+        self.model_name=model_name
+        self.exp_name=exp_name
+        self.exp_no=exp_no
+        self.epochs=epochs
+        self.batch_size=batch_size
+        self.patience=patience
+        self.split_ratio=split_ratio
+
+        ### DATA
+        self.dataset_name=dataset_name    
         self.patch_size=patch_size
-        self.update=update
         self.bbox_rotation=bbox_rotation
+
+        ### SETTINGS CONFIG
+        self.update=update
         
     def __call__(self):
         return self.get_settings()
@@ -119,17 +140,32 @@ class SettingsSegmentation(SettingsUtils):
                     'bounding_box_folder':dataset_train_folders[4]
                 },
             },
+            'experiment': {
+                'no':self.exp_no,
+                'folder':self.experiment_folder,
+                'name':self.exp_name
+            },
+            'model': {
+                'name':self.model_name,
+                'path':self.get_model_path(self.model_name,'pth')
+            },
             'patch':    {
-                        'size':self.patch_size,
-                        'train': {
-                                'img_folder':train_patch_folders[0],
-                                'orthogonal_img_folder':train_patch_folders[1],
-                                'orthogonal_zoomed_img_folder':train_patch_folders[2],
-                                'mask_folder':train_patch_folders[3],
-                                'orthogonal_mask_folder':train_patch_folders[4],
-                                'orthogonal_zoomed_mask_folder':train_patch_folders[5],
-                                'label_folder':train_patch_folders[6],
-                        },
+                'size':self.patch_size,
+                'train': {
+                    'img_folder':train_patch_folders[0],
+                    'orthogonal_img_folder':train_patch_folders[1],
+                    'orthogonal_zoomed_img_folder':train_patch_folders[2],
+                    'mask_folder':train_patch_folders[3],
+                    'orthogonal_mask_folder':train_patch_folders[4],
+                    'orthogonal_zoomed_mask_folder':train_patch_folders[5],
+                    'label_folder':train_patch_folders[6],
+                },
+            },
+            'training': {
+                'batch_size':self.batch_size,
+                'epochs':self.epochs,
+                'patience':self.patience,
+                'split_ratio':self.split_ratio
             }            
         }
 
@@ -235,7 +271,7 @@ class SettingsRecognition(SettingsUtils):
             },
             'model': {
                 'name':self.model_name,
-                'path':self.get_model_path(),
+                'path':self.get_model_path(self.model_name,'pth'),
             },
 
             'dataset': {
@@ -298,13 +334,6 @@ class SettingsRecognition(SettingsUtils):
             instance_names = ['other', 'ARJ21','Boeing737', 'Boeing747','Boeing777', 'Boeing787', 'A220', 'A321', 'A330', 'A350']
             instance_table = { instance_name:i for i,instance_name in enumerate(instance_names)}
         return instance_table
-
-
-    def get_model_path(self):
-        ### ASK USER TO CREATE THE FOLDER
-        model_path = os.path.join(self.experiment_folder,f"{self.model_name}.pth")
-
-        return model_path
 
 
     def get_patch_folders(self,dataset_folder,dataset_part):
@@ -403,7 +432,7 @@ class SettingsDetection(SettingsUtils):
             },
             'model': {
                 'name':self.model_name,
-                'path':self.get_model_path(),
+                'path':self.get_model_path(self.model_name,'pth'),
             },
 
             'dataset': {
@@ -515,12 +544,6 @@ class SettingsDetection(SettingsUtils):
             if not folder_ok:
                 return 0
         return folders
-
-
-    def get_model_path(self):
-        ### ASK USER TO CREATE THE FOLDER
-        model_path = os.path.join(self.experiment_folder,f"{self.model_name}.pt")
-        return model_path
 
 if __name__ == '__main__':
     # settings_detection = SettingsDetection(patch_size=512)()
