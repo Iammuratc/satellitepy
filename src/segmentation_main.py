@@ -1,16 +1,17 @@
 from torchvision.transforms import Compose
-from transforms import Normalize, ToTensor
-import torch
+# import torch
 
-from unet import UNet
+from transforms import Normalize, ToTensor, AddAxis
+import models.models as models 
 from settings import SettingsSegmentation
-from dataset import SegmentationDataset 
-from segmentation_classifier import SegmentationClassifier
+from dataset.dataset import DatasetSegmentation 
+from classifier.segmentation import ClassifierSegmentation
+from utilities import Utilities 
 
 
-
-exp_no = 7
-exp_name = 'Initial UNet'
+exp_no = 8
+init_features=64
+exp_name = f'UNet (init_features={init_features}'
 epochs=50
 batch_size=10
 
@@ -25,13 +26,21 @@ settings_segmentation = SettingsSegmentation(
 						                    bbox_rotation='clockwise',
 						                    update=True,
 											model_name='UNet',
+											init_features=init_features,
                                             patch_size=128)()
 # print(settings_segmentation)
 
-
 dataset_part='train'
+
+### DATASET
+utils = Utilities(settings_segmentation) 
+dataset_segmentation = {dataset_part:DatasetSegmentation(
+														utils=utils,
+														dataset_part=dataset_part,
+														transform=Compose([ToTensor(),Normalize(task='segmentation'),AddAxis()])) 
+														for dataset_part in ['train']}
 ## CLASSIFIER
-classifier = SegmentationClassifier(settings_segmentation)
+classifier = ClassifierSegmentation(utils,dataset_segmentation)
 
 ## TRAIN MODEL
 classifier.train()
@@ -40,7 +49,7 @@ classifier.train()
 # print(len(dataset))
 
 ### PLOT IMAGES
-# classifier.plot_images(dataset_part)
+# classifier.plot_images(dataset_part='test')
 
 ### CHECK LOADER
 # sample = next(loader)

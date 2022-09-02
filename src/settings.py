@@ -81,14 +81,17 @@ class SettingsSegmentation(SettingsUtils):
                     epochs=None,
                     batch_size=None,
                     model_name=None,
+                    init_features=None,
                     split_ratio=None,                    
                     bbox_rotation='clockwise',
                     update=True,
                     ):
         super(SettingsSegmentation, self).__init__(exp_no)
 
-        ### EXPERIMENTS
+        ### MODEL
         self.model_name=model_name
+        self.init_features = init_features
+        ### EXPERIMENTS
         self.exp_name=exp_name
         self.exp_no=exp_no
         self.epochs=epochs
@@ -147,7 +150,8 @@ class SettingsSegmentation(SettingsUtils):
             },
             'model': {
                 'name':self.model_name,
-                'path':self.get_model_path(self.model_name,'pth')
+                'path':self.get_model_path(self.model_name,'pth'),
+                'init_features':self.init_features,
             },
             'patch':    {
                 'size':self.patch_size,

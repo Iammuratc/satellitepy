@@ -5,18 +5,18 @@ import torch
 import cv2
 import json
 import numpy as np
-from utilities import get_file_paths
+# from util import get_file_paths
 
-class SegmentationDataset(Dataset):
-    def __init__(self,settings,dataset_part,transform=None):
+class DatasetSegmentation(Dataset):
+    def __init__(self,utils,dataset_part,transform=None):
 
         self.transform=transform
-        self.patch_size = settings['patch']['size']
-        self.img_folder = settings['patch'][dataset_part]['img_folder']
-        self.mask_folder = settings['patch'][dataset_part]['mask_folder'] # orthogonal_mask_folder, orthogonal_zoomed_mask_folder
+        self.patch_size = utils.settings['patch']['size']
+        self.img_folder = utils.settings['patch'][dataset_part]['img_folder']
+        self.mask_folder = utils.settings['patch'][dataset_part]['mask_folder'] # orthogonal_mask_folder, orthogonal_zoomed_mask_folder
 
-        self.img_paths = get_file_paths(self.img_folder)
-        self.mask_paths = get_file_paths(self.mask_folder)
+        self.img_paths = utils.get_file_paths(self.img_folder)
+        self.mask_paths = utils.get_file_paths(self.mask_folder)
     
     def __len__(self):
         return len(self.img_paths)
