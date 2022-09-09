@@ -1,13 +1,15 @@
 ### CREATE PATCHES
 from settings import SettingsDetection
 from patch.detection import PatchDetection
+#512 as patch_size
+#patch part only for fair1m, not dota
 settings = SettingsDetection(patch_size=256,
                             dataset_name='FAIR1m')()
 
 
 for dataset_part in ['train','test','val']:
     detection_patch = PatchDetection(settings,dataset_part=dataset_part)
-    detection_patch.get_patches(save=False,plot=True)    
+    detection_patch.get_patches(save=True,plot=False)    
 
 
 

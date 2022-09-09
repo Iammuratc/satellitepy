@@ -1,0 +1,5 @@
+
+*.png
+*.txt
+*.json
+src/venvAirplane/Lib/site-packages/pip/_vendor/tomli/__pycache__/_parser.cpython-310.pyc
