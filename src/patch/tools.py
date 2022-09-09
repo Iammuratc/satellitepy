@@ -1,10 +1,10 @@
 import cv2
 import numpy as np
 import os
-import geometry
 import matplotlib.pyplot as plt
 import json
 
+from . import geometry
 ### LEave some margin for the patches, because some airplane in DOTA has cutoff parts 
 class PatchTools(object):
     """docstring for PatchTools"""

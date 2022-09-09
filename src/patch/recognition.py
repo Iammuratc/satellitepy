@@ -4,12 +4,12 @@ import json
 import os
 import matplotlib.pyplot as plt
 
-import geometry
+from . import geometry
 # from data import DataDem
 import shapely.wkt
 
 
-from patch_tools import PatchTools
+from .tools import PatchTools
 
 #### RECOGNITION DATA
 class RecognitionPatch(PatchTools):
@@ -19,8 +19,8 @@ class RecognitionPatch(PatchTools):
         A patch is consisted of a single airplane. The airplane is located in the middle of the patch by using the center of its rotated bounding box.
         Rotated bounding box can be masked (i.e. masked=True) 
         '''
-        # self.patch_size=settings['patch']['size']
-        super(RecognitionPatch, self).__init__(settings,dataset_part)
+        self.patch_size=settings['patch']['size']
+        super(RecognitionPatch, self).__init__(self.patch_size,task='recognition')
 
         # self.img_patch_folder = settings['patch'][dataset_part]['img_patch_folder'] #f"{self.patch_folder_base}/images"
         # self.img_patch_orthogonal_folder = settings['patch'][dataset_part]['img_patch_orthogonal_folder']#f"{self.patch_folder_base}/orthogonal_images"
@@ -74,19 +74,22 @@ class RecognitionPatch(PatchTools):
 
 
     def plot_all_bboxes_on_base_image(self,img_path):
-        for s in self.data:
+        fig,ax = plt.subplots(1)
+        frame = plt.gca()
+        frame.axes.get_xaxis().set_visible(False)
+        frame.axes.get_yaxis().set_visible(False)
+        for s in self.sequences:
             for base_image in s["base_images"]:
                 # print(base_image['image_path'])
                 if img_path == base_image['image_path']:
                     img = cv2.imread(img_path)
-                    fig,ax = plt.subplots(1)
                     ax.imshow(cv2.cvtColor(img,cv2.COLOR_BGR2RGB)) # original_patch, orthogonal_patch, orthogonal_zoomed_patch
                     labels = base_image['ground_truth'] 
                     for label in labels:
                         bbox_polygon = shapely.wkt.loads(label['pixel_position'])
                         bbox = np.array(bbox_polygon.exterior.coords)[0:4,:]
                         geometry.Rectangle.plot_bbox(bbox=bbox,ax=ax,c='b')
-                    plt.show()
+        plt.show()
 
 
 if __name__ == "__main__":
@@ -105,7 +108,7 @@ if __name__ == "__main__":
     # recognition.save_patches()
 
     ### PLOT ALL THE BOOX ON AN IMAGE
-    # recognition.plot_all_bboxes_on_base_image("/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/20.tif")
+    recognition.plot_all_bboxes_on_base_image("/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/20.tif")
 
 
     ### PLOT SINGLE PATCH BY INDEX

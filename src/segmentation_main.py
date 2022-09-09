@@ -9,7 +9,7 @@ from classifier.segmentation import ClassifierSegmentation
 from utilities import Utilities 
 
 
-exp_no = 8
+exp_no = 9
 init_features=64
 exp_name = f'UNet (init_features={init_features}'
 epochs=50

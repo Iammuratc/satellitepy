@@ -3,19 +3,20 @@ import random
 import torch
 # import numpy as np
 
-from recognition import Recognition
-from settings import Settings
-from models import Custom_0
+from settings import SettingsRecognition
+from models.models import Custom_0
 from transforms import ToTensor, Normalize
-from dataset import RecognitionDataset
-from classifier import Classifier
+from dataset.dataset import DatasetRecognition
+from classifier.recognition import ClassifierRecognition
 # TODO: Store images if they do not exist (e.g., patches with size 32)
 
 
 ### EXPERIMENT DEFINITION
-exp_no = 5
+exp_no = None
 update_settings = True # if False, ignore all the parameters defined here, and read the existing settings file
 
+### DATA
+dataset_name='Gaofen'
 
 ### MODEL DEFINITION    
 model_name = 'custom_0'
@@ -31,7 +32,8 @@ split_ratio=[0.8,0.1,0.1]
 class_weight=[1,1,1,1,1,1,1,1,1,1]
 
 
-settings = Settings(model_name=model_name,
+settings = SettingsRecognition(model_name=model_name,
+                    dataset_name=dataset_name,
                     exp_no=exp_no,
                     exp_name=exp_name,
                     patch_size=patch_size,
@@ -43,13 +45,21 @@ settings = Settings(model_name=model_name,
                     class_weight=class_weight,
                     update=update_settings)()
 
+# print(settings)
+
+### PATCH
+from patch.recognition import RecognitionPatch
+patch = RecognitionPatch(settings,dataset_part='train')
+patch.plot_all_bboxes_on_base_image("/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/12.tif")
+
+
 
 # print(settings)
 
-classifier = Classifier(settings)
+# classifier = Classifier(settings)
 
 # ### TRAIN
-classifier.train(patience=10)
+# classifier.train(patience=10)
 
 # ### PLOTTING INSTANCE IMAGES
 # classifier.plot_images(instances=['Boeing737','A220'],dataset_part='test',save=True,plot=False)

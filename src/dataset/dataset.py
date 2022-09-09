@@ -51,7 +51,7 @@ class DatasetSegmentation(Dataset):
         mask = cv2.resize(mask,dsize=(self.patch_size,self.patch_size),interpolation=cv2.INTER_NEAREST)
         return mask        
 
-class RecognitionDataset(Dataset):
+class DatasetRecognition(Dataset):
     def __init__(self,settings,dataset_part,transform=None):
         # self.recognition = recognition_instance
         self.transform=transform

@@ -1,10 +1,10 @@
-from transforms import ToTensor, Normalize
-from dataset import RecognitionDataset
-from models import Custom_0
-from classifier import Classifier
+# from transforms import ToTensor, Normalize
+# from dataset import RecognitionDataset
+# from models import Custom_0
+from .classifier import Classifier
 import torch.optim as optim
 
-class RecognitionClassifier(Classifier):
+class ClassifierRecognition(Classifier):
     def __init__(self,settings):
         super(Classifier, self).__init__(settings)
 
