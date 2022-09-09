@@ -38,9 +38,8 @@ class PatchDetection:
         img_files = os.listdir(image_folder)
         label_folder = self.settings['dataset'][self.dataset_part]['label_folder'] 
         label_files = os.listdir(label_folder)
-        counter_img=0
-        counter_Airplanes=0
-        counter_ZeroAirplanes=0
+        airplane_labels=['Boeing787','Boeing737','Boeing747','Boeing787', 'A220', 'A321', 'A330', 'A350', 'ARJ21','other','other-airplane'] 
+
         for img_file in img_files:
             counter_img=counter_img+1
             ### IMAGE
@@ -54,10 +53,8 @@ class PatchDetection:
             instance_names = labels['names'] # the ships are the instances
             # check and if no ship is in the list, continue with the next image
             # 
-            airplaneLabels=['Boeing787','Boeing737','Boeing747','Boeing787', 'A220', 'A321', 'A330', 'A350', 'ARJ21','other','other-airplane'] 
-            for airplaneLabel in airplaneLabels:
-                if airplaneLabel in instance_names:
-                    counter_Airplanes=counter_Airplanes+1
+            for airplane_label in airplane_labels:
+                if airplane_label in instance_names:
                     ### PATCH COORDINATES IN THE ORIGINAL IMAGE
                     y_max, x_max, ch = img.shape[:3]
                     patch_y, patch_x = self.get_patch_start_coords(my_max=[y_max,x_max],patch_size=patch_size,overlap=overlap)
@@ -135,7 +132,6 @@ class PatchDetection:
                                         my_line = ' '.join(params_str)
                                         f.write(f"{my_line}\n")
                 else:
-                    counter_ZeroAirplanes=counter_ZeroAirplanes+1
                     continue
             # print("AIRPLANES", counter_Airplanes)
             # print("No airplanes", counter_ZeroAirplanes)
