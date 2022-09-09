@@ -367,6 +367,7 @@ class SettingsDetection(SettingsUtils):
     def __init__(self, 
                 update=True,
                 model_name=None,
+                dataset_name=None,
                 exp_no=None,
                 exp_name=None,
                 patch_size=None,
@@ -380,6 +381,10 @@ class SettingsDetection(SettingsUtils):
                         ):
         super(SettingsDetection, self).__init__(exp_no)
         self.update=update
+
+        ## DATASET
+        self.dataset_name=dataset_name
+        assert self.dataset_name
 
         ### TRAINING CONFIGS
         self.model_name = model_name
@@ -412,8 +417,7 @@ class SettingsDetection(SettingsUtils):
 
         ### DATASET DETAILS
         dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
-        dataset_name = 'Gaofen'
-        dataset_folder = self.get_dataset_folder(dataset_name)
+        dataset_folder = self.get_dataset_folder(self.dataset_name)
 
 
         ### PATCH FOLDERS
@@ -441,8 +445,8 @@ class SettingsDetection(SettingsUtils):
 
             'dataset': {
                 'folder':dataset_folder,
-                'name':dataset_name,
-                'id': dataset_id,
+                'name':self.dataset_name,
+                'id': dataset_id, 
                 'train': {  'image_folder':train_folders[0],
                             'label_folder':train_folders[1],
                         },
@@ -503,14 +507,13 @@ class SettingsDetection(SettingsUtils):
         }
         
         with open(settings_path,'w+') as f:
+            print(f'Settings is saved at {settings_path}\n')
             json.dump(settings,f,indent=4)
         return settings
 
     def get_detection_folder(self,dataset_folder,dataset_part):
         detection_folder = os.path.join(dataset_folder,dataset_part,"detection")
-        folder_ok = self.create_folder(detection_folder)
-        if not folder_ok:
-            return 0        
+        assert self.create_folder(detection_folder)
         return detection_folder
 
     def get_original_data_folders(self,dataset_folder,dataset_part):
@@ -525,14 +528,11 @@ class SettingsDetection(SettingsUtils):
         
         ## IF THEY DO NOT EXIST, CREATE THEN
         for folder in folders:
-            folder_ok = self.create_folder(folder)
-            if not folder_ok:
-                return 0
+            assert self.create_folder(folder)
         return img_folder, label_folder
 
     def get_patch_folders(self,dataset_folder,dataset_part):
         patch_folder_base = os.path.join(self.get_detection_folder(dataset_folder,dataset_part),f"patches_{self.patch_size}")
-        # patch_folder = f"{self.data_folder}/{self.dataset_name}/patches_{patch_size}"
         img_patch_folder = os.path.join(patch_folder_base,"images")
         label_patch_folder = os.path.join(patch_folder_base,"labels")
         label_patch_yolo_folder = os.path.join(patch_folder_base,"labels_yolo")
@@ -544,9 +544,7 @@ class SettingsDetection(SettingsUtils):
 
         ## IF THEY DO NOT EXIST, CREATE THEN
         for folder in folders:
-            folder_ok = self.create_folder(folder)
-            if not folder_ok:
-                return 0
+            assert self.create_folder(folder)
         return folders
 
 if __name__ == '__main__':

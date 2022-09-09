@@ -5,18 +5,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 
-import geometry 
+from . import geometry 
 
+## TODO: 
+#   - Move save steps to a method
+#   - FAIR1m: Skip non airplane images
+#   - DOTA: Patch creation reads FAIR1m files (.xml) only, DOTA has a different format, modify it accordingly
 
 #### DETECTION PATCH
-class DetectionPatch:
+class PatchDetection:
     
     def __init__(self,settings,dataset_part):
         # super(DetectionData, self).__init__(dataset_name)
         self.settings=settings
         self.dataset_part=dataset_part
 
-    def save_patches(self,plot=False):
+    def get_patches(self,save=False,plot=False):
 
         ### PATCH CONFIGURATIONS
         box_corner_threshold = self.settings['patch']['box_corner_threshold']
@@ -94,33 +98,35 @@ class DetectionPatch:
                         patch_dict['image'][:,:x_max-x_0] = img[y_0:y_0+patch_size,x_0:x_max]                        
                     else:
                         patch_dict['image'][:,:] = img[y_0:y_0+patch_size,x_0:x_0+patch_size]
-                    
+                   
                     ### PLOT
                     if plot:
                         self.plot_patch_dict(patch_dict)
 
                     ### SAVE
-                    patch_name = f"{img_name}_x_{x_0}_y_{y_0}"
-                    ### SAVE IMAGE
-                    cv2.imwrite(os.path.join(img_patch_folder,f"{patch_name}.png"),patch_dict['image'])
-                    del patch_dict['image'] # remove image before saving labels
-                    ### SAVE LABEL
-                    with open(os.path.join(label_patch_folder,f"{patch_name}.json"), 'w') as f:
-                        json.dump(patch_dict, f,indent=4)
+                    if save:
+                        # self.save_plot_dict(patch_dict)
+                        patch_name = f"{img_name}_x_{x_0}_y_{y_0}"
+                        ### SAVE IMAGE
+                        cv2.imwrite(os.path.join(img_patch_folder,f"{patch_name}.png"),patch_dict['image'])
+                        del patch_dict['image'] # remove image before saving labels
+                        ### SAVE LABEL
+                        with open(os.path.join(label_patch_folder,f"{patch_name}.json"), 'w') as f:
+                            json.dump(patch_dict, f,indent=4)
 
-                    ### SAVE YOLO LABEL
-                    with open(os.path.join(label_patch_yolo_folder,f"{patch_name}.txt"), 'w') as f:
-                        for bbox_params in patch_dict['orthogonal_bbox_params']:
-                            params_str = ['0'] # class_id center_x center_y width height
-                            for param in bbox_params:
-                                param_norm = param/patch_size
-                                if param_norm>1:
-                                    param_norm=1
-                                elif param_norm<0:
-                                    param_norm=0
-                                params_str.append(str(param_norm))
-                            my_line = ' '.join(params_str)
-                            f.write(f"{my_line}\n")
+                        ### SAVE YOLO LABEL
+                        with open(os.path.join(label_patch_yolo_folder,f"{patch_name}.txt"), 'w') as f:
+                            for bbox_params in patch_dict['orthogonal_bbox_params']:
+                                params_str = ['0'] # class_id center_x center_y width height
+                                for param in bbox_params:
+                                    param_norm = param/patch_size
+                                    if param_norm>1:
+                                        param_norm=1
+                                    elif param_norm<0:
+                                        param_norm=0
+                                    params_str.append(str(param_norm))
+                                my_line = ' '.join(params_str)
+                                f.write(f"{my_line}\n")
 
     def plot_patch_dict(self,patch_dict):
         if patch_dict['instance_names']:
@@ -128,7 +134,7 @@ class DetectionPatch:
             ax.imshow(cv2.cvtColor(patch_dict['image'],cv2.COLOR_BGR2RGB)) # original_patch, orthogonal_patch, orthogonal_zoomed_patch
             for i,rotated_bbox in enumerate(patch_dict['rotated_bboxes']):
                 rect = geometry.Rectangle(bbox=rotated_bbox)
-                rect.plot_bbox(bbox=rect.orthogonal_bbox,ax=ax,c='r')
+                # rect.plot_bbox(bbox=rect.orthogonal_bbox,ax=ax,c='r')
                 rect.plot_bbox(bbox=rotated_bbox,ax=ax,c='b')
                 rect.plot_bbox(bbox=patch_dict['orthogonal_bboxes'][i],ax=ax,c='g')
             plt.show()
@@ -155,35 +161,39 @@ class DetectionPatch:
 
     def get_labels(self,label_path):
         label = {'bboxes':[],'names':[]}
-        root = ET.parse(label_path).getroot()
+        dataset_name = self.settings['dataset']['name']
+        if  (dataset_name == 'Gaofen' or dataset_name == 'FAIR1m'):         
+            root = ET.parse(label_path).getroot()
 
-        ### IMAGE NAME
-        file_name = root.findall('./source/filename')[0].text
-        # img_name = file_name.split('.')[0]
-         
-        ### INSTANCE NAMES
-        instance_names = root.findall('./objects/object/possibleresult/name')#[0].text
-        for instance_name in instance_names:
-            label['names'].append(instance_name.text)
-        
-        ### BBOX CCORDINATES
-        point_spaces = root.findall('./objects/object/points')        
-        for point_space in point_spaces:
-            my_points = point_space.findall('point')[:4] # remove the last coordinate
-            coords = []
-            for my_point in my_points:
-                #### [[[x1,y1],[x2,y2]],[[x1,y1]]]
-                coord = []
-                for point in my_point.text.split(','):
-                    coord.append(float(point))
-                coords.append(coord)
-            label['bboxes'].append(coords)
+            ### IMAGE NAME
+            file_name = root.findall('./source/filename')[0].text
+            # img_name = file_name.split('.')[0]
+             
+            ### INSTANCE NAMES
+            instance_names = root.findall('./objects/object/possibleresult/name')#[0].text
+            for instance_name in instance_names:
+                label['names'].append(instance_name.text)
+            
+            ### BBOX CCORDINATES
+            point_spaces = root.findall('./objects/object/points')        
+            for point_space in point_spaces:
+                my_points = point_space.findall('point')[:4] # remove the last coordinate
+                coords = []
+                for my_point in my_points:
+                    #### [[[x1,y1],[x2,y2]],[[x1,y1]]]
+                    coord = []
+                    for point in my_point.text.split(','):
+                        coord.append(float(point))
+                    coords.append(coord)
+                label['bboxes'].append(coords)
+        else:
+            print('No label parsing function found.')
         return label#, img_name
 
 
 if __name__ == '__main__':
     from settings import SettingsDetection
-    settings = SettingsDetection(patch_size=512)()
+    settings = SettingsDetection(patch_size=256)()
 
 
     for dataset_part in ['train','test','val']:
