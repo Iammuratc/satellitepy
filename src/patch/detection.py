@@ -39,16 +39,20 @@ class PatchDetection:
         label_folder = self.settings['dataset'][self.dataset_part]['label_folder'] 
         label_files = os.listdir(label_folder)
         airplane_labels=['Boeing787','Boeing737','Boeing747','Boeing787', 'A220', 'A321', 'A330', 'A350', 'ARJ21','other','other-airplane'] 
-
+        dataset_name = self.settings['dataset']['name']
         for img_file in img_files:
-            counter_img=counter_img+1
             ### IMAGE
             img_path = os.path.join(image_folder,img_file)
             img = cv2.imread(img_path,1)
 
             ### LABEL
             img_name = os.path.splitext(img_file)[0]
-            label_path = os.path.join(label_folder,f'{img_name}.xml')
+            if  (dataset_name == 'Gaofen' or dataset_name == 'FAIR1m'):         
+
+                label_path = os.path.join(label_folder,f'{img_name}.xml')
+            else:
+                label_path = os.path.join(label_folder,f'{img_name}.txt')
+
             labels = self.get_labels(label_path)
             instance_names = labels['names'] # the ships are the instances
             # check and if no ship is in the list, continue with the next image
@@ -168,7 +172,12 @@ class PatchDetection:
 
     def get_labels(self,label_path):
         # dota has only text files, so we need to change the code for the labels
-
+        def is_float(number_as_string):
+            try:
+                float(number_as_string)
+                return True
+            except ValueError:
+                return False
         label = {'bboxes':[],'names':[]}
         dataset_name = self.settings['dataset']['name']
         if  (dataset_name == 'Gaofen' or dataset_name == 'FAIR1m'):         
@@ -195,6 +204,25 @@ class PatchDetection:
                         coord.append(float(point))
                     coords.append(coord)
                 label['bboxes'].append(coords)
+
+        elif (dataset_name =='DOTA'):
+            f = open(label_path,'r') # is label path direct to label?
+            content=f.read()
+            content_split=content.split('\n') # separate the lines
+            for line in content_split:
+                coords=[]
+                elements=line.split(' ')
+                for el in elements[:len(elements)-1]:#last number cut, its just how difficult to fiind
+                    coord=[] 
+                    if is_float(el):
+                        coord.append(el)
+                    else:
+                        label['names'].append(el)
+                    coords.append(coord)
+                    #print(coords)
+
+                label['bboxes'].append(coords)
+            pass
         else:
             print('No label parsing function found.')
         return label#, img_name
