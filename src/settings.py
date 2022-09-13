@@ -376,6 +376,7 @@ class SettingsDetection(SettingsUtils):
                 batch_size=None,
                 patience=None,
                 # resume=None,
+                label_names=None,
                 box_corner_threshold=2,
                 epochs=None,
                         ):
@@ -399,7 +400,7 @@ class SettingsDetection(SettingsUtils):
         self.split_ratio=split_ratio
         self.overlap=overlap
         self.box_corner_threshold=box_corner_threshold
-
+        self.label_names=label_names
     def __call__(self):
         return self.get_settings()
 
@@ -430,7 +431,7 @@ class SettingsDetection(SettingsUtils):
         train_folders = self.get_original_data_folders(dataset_folder,'train')
         test_folders = self.get_original_data_folders(dataset_folder,'test')
         val_folders = self.get_original_data_folders(dataset_folder,'val')
-
+        # adding the labels for the detection.py in the patch (but in the method from the beginning)
         settings = {
             'project_folder':self.project_folder,
             'experiment': {
@@ -462,6 +463,7 @@ class SettingsDetection(SettingsUtils):
                 'overlap':self.overlap,
                 'box_corner_threshold':self.box_corner_threshold,
                 'size':self.patch_size,
+                'label_names':self.label_names,
                 'train': {
                     'patch_folder_base':patch_train_folders[0],
                     'img_patch_folder':patch_train_folders[1],

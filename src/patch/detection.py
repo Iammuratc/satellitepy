@@ -38,7 +38,7 @@ class PatchDetection:
         img_files = os.listdir(image_folder)
         label_folder = self.settings['dataset'][self.dataset_part]['label_folder'] 
         label_files = os.listdir(label_folder)
-        airplane_labels=['Boeing787','Boeing737','Boeing747','Boeing787', 'A220', 'A321', 'A330', 'A350', 'ARJ21','other','other-airplane'] 
+        airplane_labels=self.settings['patch']['label_names']
         dataset_name = self.settings['dataset']['name']
         for img_file in img_files:
             ### IMAGE
