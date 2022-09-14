@@ -59,6 +59,8 @@ class PatchDetection:
             # 
             for airplane_label in airplane_labels:
                 if airplane_label in instance_names:
+                    print("Cheking labels")
+
                     ### PATCH COORDINATES IN THE ORIGINAL IMAGE
                     y_max, x_max, ch = img.shape[:3]
                     patch_y, patch_x = self.get_patch_start_coords(my_max=[y_max,x_max],patch_size=patch_size,overlap=overlap)
@@ -207,18 +209,25 @@ class PatchDetection:
 
         elif (dataset_name =='DOTA'):
             f = open(label_path,'r') # is label path direct to label?
+
             content=f.read()
             content_split=content.split('\n') # separate the lines
             for line in content_split:
+                counter=1
+
                 coords=[]
                 elements=line.split(' ')
                 for el in elements[:len(elements)-1]:#last number cut, its just how difficult to fiind
-                    coord=[] 
+                    if counter%2==1:
+                        coord=[] 
                     if is_float(el):
-                        coord.append(el)
+                        coord.append(float(el))
+                        counter=counter+1
                     else:
                         label['names'].append(el)
-                    coords.append(coord)
+                    if len(coord)>0 and coord not in coords:
+                        coords.append(coord)
+                    #coords.append(coord)
                     #print(coords)
 
                 label['bboxes'].append(coords)
