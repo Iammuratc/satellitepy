@@ -67,15 +67,6 @@ class ClassifierRecognition(Classifier):
         class_weight = self.settings['training']['class_weight']
         return torch.FloatTensor(class_weight)        
 
-    # def get_dataset(self,dataset_part):
-
-        # recognition_instance = Recognition(self.settings,dataset_part)
-        # dataset = RecognitionDataset(self.settings,
-        #                             dataset_part=dataset_part,
-        #                             transform=self.get_transform(dataset_part))
-
-        # return dataset
-
     def get_loader(self,dataset,shuffle,batch_size,num_workers=4):
 
         loader = torch.utils.data.DataLoader(dataset, 
@@ -85,24 +76,7 @@ class ClassifierRecognition(Classifier):
 
         return loader
 
-    def get_transform(self,dataset_part):
-        transform = Compose([ToTensor(),Normalize()])
-        return transform
-
-    # def get_model(self):
-    #     model_name = self.settings['model']['name']
-    #     if model_name == 'resnet18':
-    #         model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True) # resnet34  resnet50   resnet101   resnet152
-    #     elif model_name == 'custom_0':
-    #         model = Custom_0()
-    #     else:
-    #         print('Please define your model first.')
-    #         return 0
-    #     return model
-
-
-
-    def get_predictions(self,dataset_part): #show_false_images=False,save=False,plot=True
+    def get_predictions(self,dataset_part):
         ### MODEL
         model = self.utils.get_model()
         model.load_state_dict(torch.load(self.settings['model']['path'],map_location='cpu'))
