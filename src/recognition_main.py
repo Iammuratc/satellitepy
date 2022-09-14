@@ -8,12 +8,14 @@ from models.models import Custom_0
 from transforms import ToTensor, Normalize
 from dataset.dataset import DatasetRecognition
 from classifier.recognition import ClassifierRecognition
-# TODO: Store images if they do not exist (e.g., patches with size 32)
+from utilities import Utilities
 
+# TODO: Store images if they do not exist (e.g., patches with size 32)
+#   - Pass settings utils to classifier, and remove the methods like get_model
 
 ### EXPERIMENT DEFINITION
-exp_no = None
-update_settings = True # if False, ignore all the parameters defined here, and read the existing settings file
+exp_no = 3
+update_settings = False # if False, ignore all the parameters defined here, and read the existing settings file
 
 ### DATA
 dataset_name='Gaofen'
@@ -47,25 +49,34 @@ settings = SettingsRecognition(model_name=model_name,
 
 # print(settings)
 
+## UTILS
+utils = Utilities(settings)
+
+### DATASET
+dataset = {dataset_part:DatasetRecognition(
+                                            utils=utils,
+                                            dataset_part=dataset_part,
+                                            transform=Compose([ToTensor(),Normalize(task='recognition')])) 
+                                            for dataset_part in ['train','test','val']}
 ### PATCH
-from patch.recognition import RecognitionPatch
-patch = RecognitionPatch(settings,dataset_part='train')
-patch.plot_all_bboxes_on_base_image("/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/12.tif")
+# from patch.recognition import RecognitionPatch
+# patch = RecognitionPatch(settings,dataset_part='train')
+# patch.plot_all_bboxes_on_base_image("/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/12.tif")
 
 
 
 # print(settings)
 
-# classifier = Classifier(settings)
+classifier = ClassifierRecognition(utils,dataset)
 
 # ### TRAIN
 # classifier.train(patience=10)
 
 # ### PLOTTING INSTANCE IMAGES
-# classifier.plot_images(instances=['Boeing737','A220'],dataset_part='test',save=True,plot=False)
-# classifier.plot_images(instances=['A220','A220'],dataset_part='test',save=True,plot=False)
-# classifier.plot_images(instances=['A220','Boeing737'],dataset_part='test',save=True,plot=False)
-# classifier.plot_images(instances=['Boeing737','Boeing737'],dataset_part='test',save=True,plot=False)
+classifier.plot_images(instances=['Boeing737','A220'],dataset_part='test',save=True,plot=False)
+classifier.plot_images(instances=['A220','A220'],dataset_part='test',save=True,plot=False)
+classifier.plot_images(instances=['A220','Boeing737'],dataset_part='test',save=True,plot=False)
+classifier.plot_images(instances=['Boeing737','Boeing737'],dataset_part='test',save=True,plot=False)
 
 
 ### CONFUSION MATRIX
