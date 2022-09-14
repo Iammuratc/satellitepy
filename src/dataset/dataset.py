@@ -52,16 +52,16 @@ class DatasetSegmentation(Dataset):
         return mask        
 
 class DatasetRecognition(Dataset):
-    def __init__(self,settings,dataset_part,transform=None):
+    def __init__(self,utils,dataset_part,transform=None):
         # self.recognition = recognition_instance
         self.transform=transform
-        self.hot_encoding=settings['training']['hot_encoding']
-        self.patch_config = settings['training']['patch_config']
+        self.hot_encoding=utils.settings['training']['hot_encoding']
+        self.patch_config = utils.settings['training']['patch_config']
 
-        self.label_patch_folder = settings['patch'][dataset_part]['label_patch_folder']
+        self.label_patch_folder = utils.settings['patch'][dataset_part]['label_patch_folder']
         self.label_files = os.listdir(self.label_patch_folder)
 
-        self.instance_table = settings['dataset']['instance_table']
+        self.instance_table = utils.settings['dataset']['instance_table']
 
         self.classes = len(self.instance_table.keys())
     

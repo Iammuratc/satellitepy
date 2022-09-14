@@ -1,16 +1,22 @@
 # from transforms import ToTensor, Normalize
 # from dataset import RecognitionDataset
-# from models import Custom_0
 from .classifier import Classifier
 import torch.optim as optim
+import torch
+import torch.nn as nn
+import matplotlib.pyplot as plt
+import numpy as np
+import cv2
+import os
+
 
 class ClassifierRecognition(Classifier):
-    def __init__(self,settings):
-        super(Classifier, self).__init__(settings)
-
-        self.settings=settings
-        self.patch_size=settings['patch']['size']
-        self.project_folder = settings['project_folder']
+    def __init__(self,utils,dataset):
+        super(ClassifierRecognition, self).__init__(utils.settings)
+        self.utils=utils
+        self.dataset=dataset
+        self.settings=utils.settings
+        self.patch_size=self.settings['patch']['size']
 
     def train(self):
         ### COST AND OPTIMIZER FUNCS
@@ -29,9 +35,9 @@ class ClassifierRecognition(Classifier):
 
     def get_loaders(self,batch_size):
         if self.settings['training']['split_ratio']:
-            dataset_train = self.get_dataset('train')
-            dataset_test = self.get_dataset('test')
-            dataset_val = self.get_dataset('val')
+            dataset_train = self.dataset['train']
+            dataset_test = self.dataset['test']
+            dataset_val = self.dataset['val']
             ### MERGE DATASETS
             dataset_full = torch.utils.data.ConcatDataset([dataset_train, dataset_test,dataset_val])
             len_full_dataset = len(dataset_full)
@@ -47,9 +53,9 @@ class ClassifierRecognition(Classifier):
             dataset_val = torch.utils.data.Subset(dataset_full, range(train_size + test_size,train_size + test_size + val_size))
             print(f'Full dataset (train+test+val) is split into:\n{len(dataset_train)},{len(dataset_test)},{len(dataset_val)}\n')
         else:
-            dataset_train = self.get_dataset('train')
-            dataset_test = self.get_dataset('test')
-            dataset_val = self.get_dataset('val')
+            dataset_train = self.dataset['train']
+            dataset_test = self.dataset['test']
+            dataset_val = self.dataset['val']
 
         loader_train = self.get_loader(dataset=dataset_train,batch_size=batch_size,shuffle=True)
         loader_test = self.get_loader(dataset=dataset_test,batch_size=batch_size,shuffle=False)
@@ -61,13 +67,14 @@ class ClassifierRecognition(Classifier):
         class_weight = self.settings['training']['class_weight']
         return torch.FloatTensor(class_weight)        
 
-    def get_dataset(self,dataset_part):
+    # def get_dataset(self,dataset_part):
 
         # recognition_instance = Recognition(self.settings,dataset_part)
-        dataset = RecognitionDataset(self.settings,
-                                    dataset_part=dataset_part,
-                                    transform=self.get_transform(dataset_part))
-        return dataset
+        # dataset = RecognitionDataset(self.settings,
+        #                             dataset_part=dataset_part,
+        #                             transform=self.get_transform(dataset_part))
+
+        # return dataset
 
     def get_loader(self,dataset,shuffle,batch_size,num_workers=4):
 
@@ -82,22 +89,22 @@ class ClassifierRecognition(Classifier):
         transform = Compose([ToTensor(),Normalize()])
         return transform
 
-    def get_model(self):
-        model_name = self.settings['model']['name']
-        if model_name == 'resnet18':
-            model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True) # resnet34  resnet50   resnet101   resnet152
-        elif model_name == 'custom_0':
-            model = Custom_0()
-        else:
-            print('Please define your model first.')
-            return 0
-        return model
+    # def get_model(self):
+    #     model_name = self.settings['model']['name']
+    #     if model_name == 'resnet18':
+    #         model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True) # resnet34  resnet50   resnet101   resnet152
+    #     elif model_name == 'custom_0':
+    #         model = Custom_0()
+    #     else:
+    #         print('Please define your model first.')
+    #         return 0
+    #     return model
 
 
 
     def get_predictions(self,dataset_part): #show_false_images=False,save=False,plot=True
         ### MODEL
-        model = self.get_model()
+        model = self.utils.get_model()
         model.load_state_dict(torch.load(self.settings['model']['path'],map_location='cpu'))
 
         ### HOT ENCODING SETTINGS
@@ -113,7 +120,7 @@ class ClassifierRecognition(Classifier):
                         'val':loader_val}
             my_loader = loaders[dataset_part]
         else:
-            dataset = self.get_dataset(dataset_part)
+            dataset = self.dataset[dataset_part]
             my_loader = self.get_loader(dataset=dataset,batch_size=batch_size)
 
 
@@ -207,7 +214,7 @@ class ClassifierRecognition(Classifier):
         for i_fig in range(fig_count):
             fig, ax = plt.subplots(row,col)
             fig.subplots_adjust(wspace=0.1, hspace=0.1)
-            fig.suptitle(f'G.Truth: {y_true_name} Prediction: {y_pred_name}',fontsize=15)
+            fig.suptitle(f'Ground Truth: {y_true_name} Prediction: {y_pred_name}',fontsize=15)
             for ind,img_path in enumerate(image_paths[i_fig*fig_subplots:(i_fig+1)*fig_subplots]):
                 subplot_ind = np.unravel_index(ind,(row,col))
 
@@ -217,7 +224,7 @@ class ClassifierRecognition(Classifier):
                 ax[subplot_ind[0],subplot_ind[1]].set_yticks([])
             if save:
                 fig.savefig(os.path.join(fig_folder,f'fig_{i_fig}.png'))
-        if plot:
-            plt.show()
+            if plot:
+                plt.show()
 
 
