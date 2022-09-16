@@ -18,11 +18,9 @@ class PatchDetection:
     def __init__(self,settings,dataset_part):
         # super(DetectionData, self).__init__(dataset_name)
         self.settings=settings
-        #print("INIT METHOD")
         self.dataset_part=dataset_part
 
     def get_patches(self,save=False,plot=False):
-        print("get Patches")
         ### PATCH CONFIGURATIONS
         box_corner_threshold = self.settings['patch']['box_corner_threshold']
         overlap = self.settings['patch']['overlap']
@@ -57,10 +55,8 @@ class PatchDetection:
             instance_names = labels['names'] # the ships are the instances
             # check and if no ship is in the list, continue with the next image
             # 
-            for airplane_label in airplane_labels:
-                if airplane_label in instance_names:
-                    print("Cheking labels")
-
+            for airplane_label in airplane_labels: #going through the labels
+                if airplane_label in instance_names: # if one of the wanted labels in the instance names, the patches are done
                     ### PATCH COORDINATES IN THE ORIGINAL IMAGE
                     y_max, x_max, ch = img.shape[:3]
                     patch_y, patch_x = self.get_patch_start_coords(my_max=[y_max,x_max],patch_size=patch_size,overlap=overlap)
@@ -139,8 +135,6 @@ class PatchDetection:
                                         f.write(f"{my_line}\n")
                 else:
                     continue
-            # print("AIRPLANES", counter_Airplanes)
-            # print("No airplanes", counter_ZeroAirplanes)
     def plot_patch_dict(self,patch_dict):
         if patch_dict['instance_names']:
             fig, ax = plt.subplots(1)
@@ -214,21 +208,18 @@ class PatchDetection:
             content_split=content.split('\n') # separate the lines
             for line in content_split:
                 counter=1
-
                 coords=[]
                 elements=line.split(' ')
-                for el in elements[:len(elements)-1]:#last number cut, its just how difficult to fiind
-                    if counter%2==1:
-                        coord=[] 
+                for el in elements[:len(elements)-1]:# cut the last number
+                    if counter%2==1: #every second number is in one List, e.g. [[200,300],[800,900]]
+                        coord=[]  # new sublist for the coordinates itself
                     if is_float(el):
-                        coord.append(float(el))
-                        counter=counter+1
+                        coord.append(float(el)) #if the Number is a float and not the label
+                        counter=counter+1 # counter one up for the modulo 
                     else:
-                        label['names'].append(el)
-                    if len(coord)>0 and coord not in coords:
+                        label['names'].append(el) # everything written in the file are the labels
+                    if len(coord)>0 and coord not in coords: # if the sublist not yet in our final coorinations and the sublist is not none
                         coords.append(coord)
-                    #coords.append(coord)
-                    #print(coords)
 
                 label['bboxes'].append(coords)
             pass
