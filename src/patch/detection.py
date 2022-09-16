@@ -52,6 +52,7 @@ class PatchDetection:
                 label_path = os.path.join(label_folder,f'{img_name}.txt')
 
             labels = self.get_labels(label_path)
+
             instance_names = labels['names'] # the ships are the instances
             # check and if no ship is in the list, continue with the next image
             # 
@@ -203,25 +204,18 @@ class PatchDetection:
 
         elif (dataset_name =='DOTA'):
             f = open(label_path,'r') # is label path direct to label?
-
-            content=f.read()
-            content_split=content.split('\n') # separate the lines
-            for line in content_split:
-                counter=1
-                coords=[]
-                elements=line.split(' ')
-                for el in elements[:len(elements)-1]:# cut the last number
-                    if counter%2==1: #every second number is in one List, e.g. [[200,300],[800,900]]
-                        coord=[]  # new sublist for the coordinates itself
-                    if is_float(el):
-                        coord.append(float(el)) #if the Number is a float and not the label
-                        counter=counter+1 # counter one up for the modulo 
-                    else:
-                        label['names'].append(el) # everything written in the file are the labels
-                    if len(coord)>0 and coord not in coords: # if the sublist not yet in our final coorinations and the sublist is not none
-                        coords.append(coord)
-
-                label['bboxes'].append(coords)
+            boxes=[]
+            names=[]
+            with open(label_path,'r') as f:
+                bbox_labels = [line[:-1].split(' ') for line in f.readlines()[2:]]
+                for bbox_label in bbox_labels:
+                    category = bbox_label[-2] # get label of this box
+                    bbox_label=[[float(i) for i in bbox_label[:-2]]] # turning the box coords to floats, but delete the last two indices because there are the label and the difficulty
+                    bboxToSave=np.reshape(bbox_label,(4,2)).tolist()
+                    names.append(category) # put them to lists
+                    boxes.append(bboxToSave)
+                    label['bboxes']=boxes
+                    label['names']=names
             pass
         else:
             print('No label parsing function found.')
