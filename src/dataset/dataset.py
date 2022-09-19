@@ -10,11 +10,16 @@ import numpy as np
 class DatasetSegmentation(Dataset):
     def __init__(self,utils,dataset_part,transform=None):
 
+
+        self.output_image=utils.settings['training']['output_image']
         self.transform=transform
         self.patch_size = utils.settings['patch']['size']
-        self.img_folder = utils.settings['patch'][dataset_part]['img_folder']
-        self.mask_folder = utils.settings['patch'][dataset_part]['mask_folder'] # orthogonal_mask_folder, orthogonal_zoomed_mask_folder
-
+        
+        patch_config=utils.settings['training']['patch_config']
+        patch_folder_name = f'{patch_config}_' if patch_config!='original' else ''
+        self.img_folder = utils.settings['patch'][dataset_part][f'{patch_folder_name}img_folder'] 
+        self.mask_folder = utils.settings['patch'][dataset_part][f'{patch_folder_name}mask_folder']
+        print(self.img_folder,self.mask_folder)
         self.img_paths = utils.get_file_paths(self.img_folder)
         self.mask_paths = utils.get_file_paths(self.mask_folder)
     
@@ -30,6 +35,8 @@ class DatasetSegmentation(Dataset):
 
         img = self.get_img(img_path)
         mask = self.get_mask(mask_path)
+        # print(type(mask))
+        # print(mask.shape)
 
         sample = {  'image_path':img_path,
                     'mask_path':mask_path,
@@ -49,8 +56,13 @@ class DatasetSegmentation(Dataset):
     def get_mask(self,mask_path):
         mask = cv2.imread(mask_path,0)
         mask = cv2.resize(mask,dsize=(self.patch_size,self.patch_size),interpolation=cv2.INTER_NEAREST)
-        return mask        
-
+        if self.output_image=='mask':
+            return mask        
+        elif self.output_image=='contours':
+            contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            contours_img = np.zeros_like(mask)
+            cv2.drawContours(contours_img,contours,-1,255,2)
+            return contours_img
 class DatasetRecognition(Dataset):
     def __init__(self,utils,dataset_part,transform=None):
         # self.recognition = recognition_instance

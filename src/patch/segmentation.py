@@ -4,26 +4,23 @@ import json
 import os
 import matplotlib.pyplot as plt
 
-import geometry
-from tools import PatchTools
-# from utils import get_file_paths
+from . import geometry
+from .tools import PatchTools
 
 #### SEGMENTATION DATA
 class SegmentationPatch(PatchTools):
-    def __init__(self,settings,dataset_part):
-        patch_size=settings['patch']['size']
-        super(SegmentationPatch, self).__init__(patch_size,task='segmentation')
+    def __init__(self,utils,dataset_part):
+        super(SegmentationPatch, self).__init__(utils,task='segmentation')
 
-        self.settings=settings
         self.dataset_part=dataset_part
         ### ORIGINAL DATASET FOLDER SETTINGS
-        self.original_image_folder = settings['dataset'][dataset_part]['image_folder']
-        self.original_instance_mask_folder = settings['dataset'][dataset_part]['instance_mask_folder']
-        self.original_binary_mask_folder = settings['dataset'][dataset_part]['binary_mask_folder']
-        # self.original_label_path = settings['dataset'][dataset_part]['label_path']
-        self.original_bbox_folder = settings['dataset'][dataset_part]['bounding_box_folder']
+        self.original_image_folder = utils.settings['dataset'][dataset_part]['image_folder']
+        self.original_instance_mask_folder = utils.settings['dataset'][dataset_part]['instance_mask_folder']
+        self.original_binary_mask_folder = utils.settings['dataset'][dataset_part]['binary_mask_folder']
+        # self.original_label_path = utils.settings['dataset'][dataset_part]['label_path']
+        self.original_bbox_folder = utils.settings['dataset'][dataset_part]['bounding_box_folder']
 
-        self.bbox_rotation = settings['dataset']['bbox_rotation']
+        self.bbox_rotation = utils.settings['dataset']['bbox_rotation']
 
     def get_patch_dict(self,img,img_path,mask,mask_path,bbox_label,ind):
 
@@ -54,6 +51,12 @@ class SegmentationPatch(PatchTools):
         mask_paths = self.utils.get_file_paths(self.original_instance_mask_folder)
         bbox_paths = self.utils.get_file_paths(self.original_bbox_folder)
 
+        if save:
+            ans = input(f'Patches are saved for the following folder:\n{self.original_image_folder}\nDo you confirm? [y/n] ')
+
+            if ans != 'y':
+                print('Please confirm if you want to save the patches')
+                return 0
         for i,img_path in enumerate(image_paths):
             if indices =='all':
                 pass
@@ -61,7 +64,6 @@ class SegmentationPatch(PatchTools):
                 pass
             else:
                 continue
-            print(img_path)
             ## IMAGE 
             ## Add padding before passing to the PatchTools because of the cropping steps 
             img = self.get_original_image(img_path)#cv2.imread(img_path)
@@ -96,7 +98,7 @@ class SegmentationPatch(PatchTools):
                 
         
                 if save:
-                    self.save_patch(settings,dataset_part,patch_dict,bbox_ind)
+                    self.save_patch(self.dataset_part,patch_dict,bbox_ind)
 
                 # ### PLOT
                 if plot:
@@ -160,7 +162,7 @@ if __name__ == '__main__':
     settings = SettingsSegmentation(dataset_name='DOTA',
                                     patch_size=128)()
     
-    dataset_part='train'
+    dataset_part='val'
     segmentation_patch = SegmentationPatch(settings,dataset_part)
     utils = Utilities()
 
@@ -173,8 +175,8 @@ if __name__ == '__main__':
     # segmentation_patch.show_original_image(923)
 
     ### GET PATCHES
-    ## Skip 923, there airplanes labeled but no image
-    # segmentation_patch.get_patches(save=True,plot=False,indices=range(924,1000))
+    ## Skip 923 for train, there airplanes labeled but no image
+    segmentation_patch.get_patches(save=True,plot=False,indices=range(924,1000))
 
 
     ### CHECK LARGE JSON LABEL DATA
