@@ -74,6 +74,7 @@ class SettingsSegmentation(SettingsUtils):
     """
     def __init__(self, 
                     dataset_name,
+                    save_patches=None,
                     patch_size=None,
                     exp_no=None,
                     exp_name=None,
@@ -82,7 +83,10 @@ class SettingsSegmentation(SettingsUtils):
                     batch_size=None,
                     model_name=None,
                     init_features=None,
-                    split_ratio=None,                    
+                    split_ratio=None,
+                    learning_rate=None,
+                    patch_config=None,
+                    output_image=None,                 
                     bbox_rotation='clockwise',
                     update=True,
                     ):
@@ -91,16 +95,23 @@ class SettingsSegmentation(SettingsUtils):
         ### MODEL
         self.model_name=model_name
         self.init_features = init_features
+
         ### EXPERIMENTS
         self.exp_name=exp_name
         self.exp_no=exp_no
+        
+        ### TRAINING
         self.epochs=epochs
         self.batch_size=batch_size
         self.patience=patience
         self.split_ratio=split_ratio
-
+        self.learning_rate=learning_rate
+        self.output_image=output_image
+        self.patch_config=patch_config
+        
         ### DATA
-        self.dataset_name=dataset_name    
+        self.dataset_name=dataset_name
+        self.save_patches=save_patches    
         self.patch_size=patch_size
         self.bbox_rotation=bbox_rotation
 
@@ -125,22 +136,31 @@ class SettingsSegmentation(SettingsUtils):
         ### DATASET DETAILS
         dataset_folder = self.get_dataset_folder(self.dataset_name)
         dataset_train_folders = self.get_dataset_part_folders(dataset_folder,'train')
-        # dataset_train_folders = self.get_dataset_part_folders(dataset_folder,'train')
+        dataset_val_folders = self.get_dataset_part_folders(dataset_folder,'val')
         # dataset_train_folders = self.get_dataset_part_folders(dataset_folder,'train')
 
         ### PATCH DETAILS
         train_patch_folders = self.get_patch_folders(dataset_folder,'train')
+        val_patch_folders = self.get_patch_folders(dataset_folder,'val')
 
         settings = {
             'dataset':  {
                 'name':self.dataset_name,
                 'bbox_rotation':self.bbox_rotation,
+                'save_patches':self.save_patches,
                 'train':{
                     'image_folder':dataset_train_folders[0],
                     'binary_mask_folder':dataset_train_folders[1],
                     'instance_mask_folder':dataset_train_folders[2],
                     'label_path':dataset_train_folders[3],
                     'bounding_box_folder':dataset_train_folders[4]
+                },
+                'val':{
+                    'image_folder':dataset_val_folders[0],
+                    'binary_mask_folder':dataset_val_folders[1],
+                    'instance_mask_folder':dataset_val_folders[2],
+                    'label_path':dataset_val_folders[3],
+                    'bounding_box_folder':dataset_val_folders[4]
                 },
             },
             'experiment': {
@@ -164,14 +184,29 @@ class SettingsSegmentation(SettingsUtils):
                     'orthogonal_zoomed_mask_folder':train_patch_folders[5],
                     'label_folder':train_patch_folders[6],
                 },
+                'val': {
+                    'img_folder':val_patch_folders[0],
+                    'orthogonal_img_folder':val_patch_folders[1],
+                    'orthogonal_zoomed_img_folder':val_patch_folders[2],
+                    'mask_folder':val_patch_folders[3],
+                    'orthogonal_mask_folder':val_patch_folders[4],
+                    'orthogonal_zoomed_mask_folder':val_patch_folders[5],
+                    'label_folder':val_patch_folders[6],
+                },
             },
             'training': {
+                'patch_config':self.patch_config,
+                'learning_rate':self.learning_rate,
                 'batch_size':self.batch_size,
                 'epochs':self.epochs,
                 'patience':self.patience,
-                'split_ratio':self.split_ratio
+                'split_ratio':self.split_ratio,
+                'output_image':self.output_image
             }            
         }
+
+        with open(settings_path,'w+') as f:
+            json.dump(settings,f,indent=4)
 
         return settings
     def get_dataset_part_folders(self,dataset_folder,dataset_part):

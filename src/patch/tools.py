@@ -8,10 +8,11 @@ from . import geometry
 ### LEave some margin for the patches, because some airplane in DOTA has cutoff parts 
 class PatchTools(object):
     """docstring for PatchTools"""
-    def __init__(self, patch_size, task):
+    def __init__(self, utils, task):
         super(PatchTools, self).__init__()
 
-        self.patch_size=patch_size
+        self.utils = utils
+        self.patch_size=self.utils.settings['patch']['size']
 
         ### PAD SIZE (PAD ORIGINAL IMAGE AND FIRST CUTOUT)
         self.pad_size=int(self.patch_size*1.5)
@@ -225,11 +226,11 @@ class PatchTools(object):
 
  
 
-    def set_paths(self,settings,dataset_part,patch_dict,i):
+    def set_paths(self,dataset_part,patch_dict,i):
         ### PATCH FOLDER SETTINGS
-        img_patch_folder = settings['patch'][dataset_part]['img_folder'] 
-        img_patch_orthogonal_folder = settings['patch'][dataset_part]['orthogonal_img_folder']
-        img_patch_orthogonal_zoomed_folder = settings['patch'][dataset_part]['orthogonal_zoomed_img_folder']
+        img_patch_folder = self.utils.settings['patch'][dataset_part]['img_folder'] 
+        img_patch_orthogonal_folder = self.utils.settings['patch'][dataset_part]['orthogonal_img_folder']
+        img_patch_orthogonal_zoomed_folder = self.utils.settings['patch'][dataset_part]['orthogonal_zoomed_img_folder']
 
         ## FILE NAMES
         img_path = patch_dict['original']['img_path']
@@ -247,21 +248,21 @@ class PatchTools(object):
         ### SET MASK PATHS
 
         if self.segmentation_task:
-            mask_patch_folder = settings['patch'][dataset_part]['mask_folder']
-            mask_patch_orthogonal_folder = settings['patch'][dataset_part]['orthogonal_mask_folder']
-            mask_patch_orthogonal_zoomed_folder = settings['patch'][dataset_part]['orthogonal_zoomed_mask_folder']
+            mask_patch_folder = self.utils.settings['patch'][dataset_part]['mask_folder']
+            mask_patch_orthogonal_folder = self.utils.settings['patch'][dataset_part]['orthogonal_mask_folder']
+            mask_patch_orthogonal_zoomed_folder = self.utils.settings['patch'][dataset_part]['orthogonal_zoomed_mask_folder']
             patch_dict['original_patch']['mask_path'] = patch_img_path(mask_patch_folder)
             patch_dict['orthogonal_patch']['mask_path'] = patch_img_path(mask_patch_orthogonal_folder)
             patch_dict['orthogonal_zoomed_patch']['mask_path'] = patch_img_path(mask_patch_orthogonal_zoomed_folder)
 
         ### SET LABEL PATH
-        label_path = os.path.join(settings['patch'][dataset_part]['label_folder'],f'{patch_name}.json')
+        label_path = os.path.join(self.utils.settings['patch'][dataset_part]['label_folder'],f'{patch_name}.json')
         patch_dict['file_path']=label_path
         return patch_dict
 
-    def save_patch(self,settings,dataset_part,patch_dict,i):
+    def save_patch(self,dataset_part,patch_dict,i):
 
-        patch_dict = self.set_paths(settings,dataset_part,patch_dict,i)
+        patch_dict = self.set_paths(dataset_part,patch_dict,i)
 
         cv2.imwrite(patch_dict['original_patch']['img_path'],patch_dict['original_patch']['img'])
         cv2.imwrite(patch_dict['orthogonal_patch']['img_path'],patch_dict['orthogonal_patch']['img'])

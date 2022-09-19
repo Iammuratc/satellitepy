@@ -24,7 +24,7 @@ class ClassifierSegmentation(Classifier):
         model = self.utils.get_model()
         ### COST AND OPTIMIZER FUNCS
         loss_func = DiceLoss()
-        optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+        optimizer = optim.SGD(model.parameters(), lr=self.settings['training']['learning_rate'], momentum=0.9)
 
         ### DATA
         loaders = self.get_loaders(batch_size=self.settings['training']['batch_size'])
@@ -35,10 +35,10 @@ class ClassifierSegmentation(Classifier):
         if self.settings['training']['split_ratio']:
             dataset_train = self.dataset['train']
             # dataset_test = self.get_dataset('test')
-            # dataset_val = self.get_dataset('val')
+            dataset_val = self.dataset['val']
             ### MERGE DATASETS
-            # dataset_full = torch.utils.data.ConcatDataset([dataset_train, dataset_test,dataset_val])
-            dataset_full = dataset_train
+            # dataset_full=dataset_train
+            dataset_full = torch.utils.data.ConcatDataset([dataset_train,dataset_val])
             len_full_dataset = len(dataset_full)
 
             ### SPLIT RATIO
@@ -87,7 +87,6 @@ class ClassifierSegmentation(Classifier):
 
 
     def get_predictions(self,model,loader):
-        ### GET MY LOADER
         for i, data in enumerate(loader):
             y_pred_batch = model(data['image'])
             y_true_batch = data['label']
@@ -109,17 +108,18 @@ class ClassifierSegmentation(Classifier):
         fig_subplots = row*col
 
         # for i_fig in range(fig_count):
-        fig, ax = plt.subplots(row,col)
-        fig.subplots_adjust(wspace=0.1, hspace=0.1)
-        # fig.suptitle(f'G.Truth: {y_true_name} Prediction: {y_pred_name}',fontsize=15)
-        for ind in range(col):
-            y_pred,y_true,img_path = next(prediction_generator)
-            # print(img_path)
-            img = cv2.cvtColor(cv2.imread(img_path),cv2.COLOR_BGR2RGB)
-            ax[0,ind].imshow(img)
-            ax[1,ind].imshow(y_pred*255)
-            ax[2,ind].imshow(y_true*255)
-        plt.show()
+        while True:
+            fig, ax = plt.subplots(row,col)
+            fig.subplots_adjust(wspace=0.1, hspace=0.1)
+            # fig.suptitle(f'G.Truth: {y_true_name} Prediction: {y_pred_name}',fontsize=15)
+            for ind in range(col):
+                y_pred,y_true,img_path = next(prediction_generator)
+                # print(img_path)
+                img = cv2.cvtColor(cv2.imread(img_path),cv2.COLOR_BGR2RGB)
+                ax[0,ind].imshow(img)
+                ax[1,ind].imshow(y_pred*255)
+                ax[2,ind].imshow(y_true*255)
+            plt.show()
 
 
 class DiceLoss(nn.Module):
