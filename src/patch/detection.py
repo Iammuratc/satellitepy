@@ -30,13 +30,14 @@ class PatchDetection:
         img_patch_folder = self.settings['patch'][self.dataset_part]['img_patch_folder']
         label_patch_folder = self.settings['patch'][self.dataset_part]['label_patch_folder']
         label_patch_yolo_folder = self.settings['patch'][self.dataset_part]['label_patch_yolo_folder']
+        label_patch_dota_folder = self.settings['patch'][self.dataset_part]['label_patch_dota_folder']
 
         ### ORIGINAL IMAGES
         image_folder = self.settings['dataset'][self.dataset_part]['image_folder']
         img_files = os.listdir(image_folder)
         label_folder = self.settings['dataset'][self.dataset_part]['label_folder'] 
         label_files = os.listdir(label_folder)
-        airplane_labels=self.settings['patch']['label_names']
+        label_names=self.settings['dataset']['label_names']
         dataset_name = self.settings['dataset']['name']
         for img_file in img_files:
             ### IMAGE
@@ -45,8 +46,7 @@ class PatchDetection:
 
             ### LABEL
             img_name = os.path.splitext(img_file)[0]
-            if  (dataset_name == 'Gaofen' or dataset_name == 'FAIR1m'):         
-
+            if  (dataset_name == 'Gaofen' or dataset_name == 'FAIR1M'):         
                 label_path = os.path.join(label_folder,f'{img_name}.xml')
             else:
                 label_path = os.path.join(label_folder,f'{img_name}.txt')
@@ -56,8 +56,8 @@ class PatchDetection:
             instance_names = labels['names'] # the ships are the instances
             # check and if no ship is in the list, continue with the next image
             # 
-            for airplane_label in airplane_labels: #going through the labels
-                if airplane_label in instance_names: # if one of the wanted labels in the instance names, the patches are done
+            for label_name in label_names: #going through the labels
+                if label_name in instance_names: # if one of the wanted labels in the instance names, the patches are done
                     ### PATCH COORDINATES IN THE ORIGINAL IMAGE
                     y_max, x_max, ch = img.shape[:3]
                     patch_y, patch_x = self.get_patch_start_coords(my_max=[y_max,x_max],patch_size=patch_size,overlap=overlap)
@@ -121,6 +121,15 @@ class PatchDetection:
                                 with open(os.path.join(label_patch_folder,f"{patch_name}.json"), 'w') as f:
                                     json.dump(patch_dict, f,indent=4)
 
+                                ### SAVE DOTA FORMAT
+                                with open(os.path.join(label_patch_dota_folder,f"{patch_name}.txt"), 'w+') as f:
+                                    for bbox in patch_dict['rotated_bboxes']:
+                                        bbox_ccords = ' '.join(np.array(bbox).flatten().astype(str))
+                                        my_line = f"{bbox_ccords} {label_name} 0"
+                                        print(my_line)
+                                        f.write(f"{my_line}\n")
+                                        
+
                                 ### SAVE YOLO LABEL
                                 with open(os.path.join(label_patch_yolo_folder,f"{patch_name}.txt"), 'w') as f:
                                     for bbox_params in patch_dict['orthogonal_bbox_params']:
@@ -177,7 +186,7 @@ class PatchDetection:
                 return False
         label = {'bboxes':[],'names':[]}
         dataset_name = self.settings['dataset']['name']
-        if  (dataset_name == 'Gaofen' or dataset_name == 'FAIR1m'):         
+        if  (dataset_name == 'Gaofen' or dataset_name == 'FAIR1M'):         
             root = ET.parse(label_path).getroot()
 
             ### IMAGE NAME

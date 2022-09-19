@@ -3,13 +3,22 @@ from settings import SettingsDetection
 from patch.detection import PatchDetection
 #512 as patch_size
 #patch part only for fair1m, not dota
-settings = SettingsDetection(patch_size=256,
-                            dataset_name='FAIR1m',label_names=['Boeing787','Boeing737','Boeing747','Boeing787', 'A220', 'A321', 'A330', 'A350', 'ARJ21','other-airplane'])()
+
+save_patches=True
+dataset_parts = ['train']
+patch_size=256
+
+settings = SettingsDetection(patch_size=patch_size,
+                            save_patches=save_patches,
+                            dataset_name='FAIR1M',
+                            label_names=['Boeing787','Boeing737','Boeing747','Boeing787', 'A220', 'A321', 'A330', 'A350', 'ARJ21','other-airplane'])()
 # add labels here in the settings
 
-for dataset_part in ['train','test','val']:
-    detection_patch = PatchDetection(settings,dataset_part=dataset_part)
-    detection_patch.get_patches(save=True,plot=False)    
+# print(settings)
+if save_patches:
+    for dataset_part in dataset_parts:
+        detection_patch = PatchDetection(settings,dataset_part=dataset_part)
+        detection_patch.get_patches(save=True,plot=False)    
 
 
 
