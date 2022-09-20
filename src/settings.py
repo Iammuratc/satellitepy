@@ -289,7 +289,7 @@ class SettingsRecognition(SettingsUtils):
                 return json.load(f)
 
         ### DATASET DETAILS
-        dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
+        # dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
         dataset_name = self.dataset_name
 
         # self.dataset_folder = self.get_dataset_folder(dataset_name)
@@ -316,7 +316,7 @@ class SettingsRecognition(SettingsUtils):
             'dataset': {
                 'name':dataset_name,
                 'folder':self.get_dataset_folder(dataset_name),
-                'id': dataset_id,
+                # 'id': dataset_id,
                 'instance_table':self.get_instance_table(dataset_name)
                 },
             'patch': {
@@ -402,7 +402,6 @@ class SettingsDetection(SettingsUtils):
     def __init__(self, 
                 update=True,
                 model_name=None,
-                dataset_name=None,
                 exp_no=None,
                 exp_name=None,
                 patch_size=None,
@@ -410,17 +409,14 @@ class SettingsDetection(SettingsUtils):
                 split_ratio=None,
                 batch_size=None,
                 patience=None,
-                # resume=None,
-                label_names=None,
+                save_patches=None,
+                dataset_name=None,
                 box_corner_threshold=2,
+                label_names=None,
                 epochs=None,
                         ):
         super(SettingsDetection, self).__init__(exp_no)
         self.update=update
-
-        ## DATASET
-        self.dataset_name=dataset_name
-        assert self.dataset_name
 
         ### TRAINING CONFIGS
         self.model_name = model_name
@@ -428,14 +424,17 @@ class SettingsDetection(SettingsUtils):
         self.batch_size=batch_size
         self.epochs=epochs
         self.patience=patience
-        # self.resume=resume
 
+        ### DATASET
+        self.label_names=label_names
+        self.save_patches=save_patches
+        self.dataset_name=dataset_name
         ### PATCH CONFIGS 
         self.patch_size = patch_size
         self.split_ratio=split_ratio
         self.overlap=overlap
         self.box_corner_threshold=box_corner_threshold
-        self.label_names=label_names
+
     def __call__(self):
         return self.get_settings()
 
@@ -452,7 +451,7 @@ class SettingsDetection(SettingsUtils):
                 return json.load(f)
 
         ### DATASET DETAILS
-        dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
+        # dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
         dataset_folder = self.get_dataset_folder(self.dataset_name)
 
 
@@ -466,7 +465,7 @@ class SettingsDetection(SettingsUtils):
         train_folders = self.get_original_data_folders(dataset_folder,'train')
         test_folders = self.get_original_data_folders(dataset_folder,'test')
         val_folders = self.get_original_data_folders(dataset_folder,'val')
-        # adding the labels for the detection.py in the patch (but in the method from the beginning)
+
         settings = {
             'project_folder':self.project_folder,
             'experiment': {
@@ -480,9 +479,11 @@ class SettingsDetection(SettingsUtils):
             },
 
             'dataset': {
+                'label_names':self.label_names,
+                'save_patches':self.save_patches,
                 'folder':dataset_folder,
                 'name':self.dataset_name,
-                'id': dataset_id, 
+                # 'id': dataset_id,
                 'train': {  'image_folder':train_folders[0],
                             'label_folder':train_folders[1],
                         },
@@ -498,34 +499,26 @@ class SettingsDetection(SettingsUtils):
                 'overlap':self.overlap,
                 'box_corner_threshold':self.box_corner_threshold,
                 'size':self.patch_size,
-                'label_names':self.label_names,
                 'train': {
                     'patch_folder_base':patch_train_folders[0],
                     'img_patch_folder':patch_train_folders[1],
                     'label_patch_folder':patch_train_folders[2],
-                    'label_patch_yolo_folder':patch_train_folders[3],
+                    'label_patch_dota_folder':patch_train_folders[4],
                 },
                 'test': {
                     'patch_folder_base':patch_test_folders[0],
                     'img_patch_folder':patch_test_folders[1],
                     'label_patch_folder':patch_test_folders[2],
-                    'label_patch_yolo_folder':patch_test_folders[3],
+                    'label_patch_dota_folder':patch_test_folders[4],
                 },
                 'val': {
                     'patch_folder_base':patch_val_folders[0],
                     'img_patch_folder':patch_val_folders[1],
                     'label_patch_folder':patch_val_folders[2],
-                    'label_patch_yolo_folder':patch_val_folders[3],
+                    'label_patch_dota_folder':patch_val_folders[4],
                 },
             },
             'training': {
-                'yolo': {   'train_py':os.path.join(self.project_folder,'yolo_models/yolov5/train.py'),
-                            'data_yaml':os.path.join(self.experiment_folder,'data.yaml'),
-                            'hyp_config_yaml':os.path.join(self.experiment_folder,'hyp_config.yaml'),
-                            'weights_yaml':os.path.join(self.project_folder,f'yolo_models/yolov5/models/{self.model_name}.yaml'),
-                            'weights':os.path.join(self.experiment_folder,'exp','weights','best.pt')
-
-                },
                 # 'resume':self.resume,
                 'patience':self.patience,
                 'batch_size':self.batch_size,
@@ -534,23 +527,40 @@ class SettingsDetection(SettingsUtils):
                 'split_ratio':self.split_ratio, # split into train, test, val after merging datasets if None, no split (stick to the original folders)
             },
 
-            'testing': 
-            {
-                'yolo': 
-                {
-                    'test_py':os.path.join(self.project_folder,'yolo_models/yolov5/val.py'),
-                }
-            }
         }
-        
+
+        # try:
+            # if self.model_name.startswith('yolo'):
+        if True: # If YOLO
+            settings['training']['yolo'] = {   'train_py':os.path.join(self.project_folder,'yolo_models/yolov5/train.py'),
+                            'data_yaml':os.path.join(self.experiment_folder,'data.yaml'),
+                            'hyp_config_yaml':os.path.join(self.experiment_folder,'hyp_config.yaml'),
+                            'weights_yaml':os.path.join(self.project_folder,f'yolo_models/yolov5/models/{self.model_name}.yaml'),
+                            'weights':os.path.join(self.experiment_folder,'exp','weights','best.pt')
+                                }
+            settings['patch']['train']['label_patch_yolo_folder'] = patch_train_folders[3]
+            settings['patch']['val']['label_patch_yolo_folder'] = patch_val_folders[3]
+            settings['patch']['test']['label_patch_yolo_folder'] = patch_test_folders[3]
+
+            settings['testing']={
+                                    'yolo': 
+                                    {
+                                        'test_py':os.path.join(self.project_folder,'yolo_models/yolov5/val.py'),
+                                    }
+                                }
+        # except Exception:
+            # print('Not a YOLO model.\n')
+
+
         with open(settings_path,'w+') as f:
-            print(f'Settings is saved at {settings_path}\n')
             json.dump(settings,f,indent=4)
         return settings
 
     def get_detection_folder(self,dataset_folder,dataset_part):
         detection_folder = os.path.join(dataset_folder,dataset_part,"detection")
-        assert self.create_folder(detection_folder)
+        folder_ok = self.create_folder(detection_folder)
+        if not folder_ok:
+            return 0        
         return detection_folder
 
     def get_original_data_folders(self,dataset_folder,dataset_part):
@@ -565,23 +575,30 @@ class SettingsDetection(SettingsUtils):
         
         ## IF THEY DO NOT EXIST, CREATE THEN
         for folder in folders:
-            assert self.create_folder(folder)
+            folder_ok = self.create_folder(folder)
+            if not folder_ok:
+                return 0
         return img_folder, label_folder
 
     def get_patch_folders(self,dataset_folder,dataset_part):
         patch_folder_base = os.path.join(self.get_detection_folder(dataset_folder,dataset_part),f"patches_{self.patch_size}")
+        # patch_folder = f"{self.data_folder}/{self.dataset_name}/patches_{patch_size}"
         img_patch_folder = os.path.join(patch_folder_base,"images")
         label_patch_folder = os.path.join(patch_folder_base,"labels")
         label_patch_yolo_folder = os.path.join(patch_folder_base,"labels_yolo")
+        label_patch_dota_folder = os.path.join(patch_folder_base,"labels_dota")
 
         folders = [ patch_folder_base,
                     img_patch_folder,
                     label_patch_folder,
-                    label_patch_yolo_folder]
+                    label_patch_yolo_folder,
+                    label_patch_dota_folder]
 
         ## IF THEY DO NOT EXIST, CREATE THEN
         for folder in folders:
-            assert self.create_folder(folder)
+            folder_ok = self.create_folder(folder)
+            if not folder_ok:
+                return 0
         return folders
 
 if __name__ == '__main__':
