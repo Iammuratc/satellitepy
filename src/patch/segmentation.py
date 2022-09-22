@@ -163,8 +163,8 @@ if __name__ == '__main__':
                                     patch_size=128)()
     
     dataset_part='val'
+    utils = Utilities(settings)
     segmentation_patch = SegmentationPatch(settings,dataset_part)
-    utils = Utilities()
 
     ### PRINT FILE PATH
     print(utils.get_file_paths(segmentation_patch.original_image_folder))

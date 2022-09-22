@@ -8,20 +8,25 @@ import numpy as np
 # from util import get_file_paths
 
 class DatasetSegmentation(Dataset):
-    def __init__(self,utils,dataset_part,transform=None):
+    def __init__(self,settings,dataset_part,transform=None):
 
 
-        self.output_image=utils.settings['training']['output_image']
+        self.output_image=settings['training']['output_image']
         self.transform=transform
-        self.patch_size = utils.settings['patch']['size']
+        self.patch_size = settings['patch']['size']
         
-        patch_config=utils.settings['training']['patch_config']
+        patch_config=settings['training']['patch_config']
         patch_folder_name = f'{patch_config}_' if patch_config!='original' else ''
-        self.img_folder = utils.settings['patch'][dataset_part][f'{patch_folder_name}img_folder'] 
-        self.mask_folder = utils.settings['patch'][dataset_part][f'{patch_folder_name}mask_folder']
-        print(self.img_folder,self.mask_folder)
-        self.img_paths = utils.get_file_paths(self.img_folder)
-        self.mask_paths = utils.get_file_paths(self.mask_folder)
+        self.img_folder = settings['patch'][dataset_part][f'{patch_folder_name}img_folder'] 
+        self.mask_folder = settings['patch'][dataset_part][f'{patch_folder_name}mask_folder']
+        # print(self.img_folder,self.mask_folder)
+
+        get_file_paths = lambda folder: [os.path.join(folder,file) for file in os.listdir(folder)]
+        
+        self.img_paths =  get_file_paths(self.img_folder)#utils.get_file_paths()
+        self.img_paths.sort()
+        self.mask_paths = get_file_paths(self.mask_folder) # utils.get_file_paths(self.mask_folder)
+        self.mask_paths.sort()
     
     def __len__(self):
         return len(self.img_paths)
@@ -63,6 +68,7 @@ class DatasetSegmentation(Dataset):
             contours_img = np.zeros_like(mask)
             cv2.drawContours(contours_img,contours,-1,255,2)
             return contours_img
+
 class DatasetRecognition(Dataset):
     def __init__(self,utils,dataset_part,transform=None):
         # self.recognition = recognition_instance
