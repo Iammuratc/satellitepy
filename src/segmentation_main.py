@@ -1,25 +1,22 @@
-from torchvision.transforms import Compose
 # import torch
 import matplotlib.pyplot as plt
 
-from transforms import Normalize, ToTensor, AddAxis
 import models.models as models 
 from settings import SettingsSegmentation
-from dataset.dataset import DatasetSegmentation 
 from classifier.segmentation import ClassifierSegmentation
 from utilities import Utilities 
 from patch.segmentation import SegmentationPatch
 
 update=True
-exp_no = 11
+exp_no = 10
 init_features=64
-patch_config='original'
+patch_config='orthogonal'
 dataset_parts = ['train','val']
 save_patches = False
 exp_name = f'UNet (init_features={init_features}'
 output_image='contours' # 'mask'
 epochs=50
-batch_size=10
+batch_size=20
 learning_rate=1e-3
 
 settings_segmentation = SettingsSegmentation(
@@ -49,26 +46,20 @@ if utils.settings['dataset']['save_patches']:
 		segmentation_patch.get_patches(save=True,plot=False)
 
 ### DATASET
-dataset = {dataset_part:DatasetSegmentation(
-											utils=utils,
-											dataset_part=dataset_part,
-											transform=Compose([ToTensor(),Normalize(task='segmentation'),AddAxis()])
-											) 
-											for dataset_part in dataset_parts}
-## CLASSIFIER
+dataset=utils.get_dataset(dataset_parts,task='segmentation')
+
+# ## CLASSIFIER
 classifier = ClassifierSegmentation(utils,dataset)
 
-## TRAIN MODEL
-# classifier.train()
-
-# ### TRAIN INSTANCE LENGTH
-# print(len(dataset))
+# ## TRAIN MODEL
+classifier.train()
 
 ### PLOT IMAGES
 # classifier.plot_images(dataset_part='val')
 
-### CHECK LOADER
-# sample = next(loader)
+### F1 SCORE
+# classifier.get_f1_score(dataset_part='val')
+# classifier.get_f1_score(dataset_part='train')
 
 ### CHECK SAMPLE HISTOGRAMS
 # import matplotlib.pyplot as plt
@@ -84,8 +75,8 @@ classifier = ClassifierSegmentation(utils,dataset)
 # model=utils.get_model()
 # loader = classifier.get_loader(classifier.dataset['val'],batch_size=1,shuffle=False)
 # for sample in loader:
-# # 	# outputs = model(sample['image'])
-# 	fig,ax = plt.subplots(2)
+# 	fig,ax = plt.subplots(3)
+# 	outputs = model(sample['image'][0])
 # 	ax[0].imshow(sample['image'][0])
 # 	ax[1].imshow(sample['label'][0])
 # 	plt.show()

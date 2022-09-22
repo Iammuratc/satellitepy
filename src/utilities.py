@@ -1,8 +1,14 @@
 import os
+from torchvision.transforms import Compose
+import torch
+
 # import numpy as np
 # import matplotlib.pyplot as plt
 # import cv2
 from models.models import * 
+from dataset.dataset import DatasetSegmentation 
+from transforms import Normalize, ToTensor, AddAxis
+
 
 class Utilities:
     """docstring for Utilities"""
@@ -11,11 +17,11 @@ class Utilities:
         self.settings = settings
 
             
-    def get_file_paths(self,folder,sort=True):
-        file_paths = [os.path.join(folder,file) for file in os.listdir(folder)]
-        if sort:
-            file_paths.sort()
-        return file_paths 
+    # def get_file_paths(self,folder,sort=True):
+    #     file_paths = [os.path.join(folder,file) for file in os.listdir(folder)]
+    #     if sort:
+    #         file_paths.sort()
+    #     return file_paths 
 
     def get_model(self):
         model_name = self.settings['model']['name']
@@ -27,6 +33,48 @@ class Utilities:
             print('Please define your model first.')
             return 0
         return model
+
+    def get_dataset(self,dataset_parts,task):
+        if task=='segmentation':
+            ### DATASET
+            dataset = {dataset_part:DatasetSegmentation(
+                                            settings=self.settings,
+                                            dataset_part=dataset_part,
+                                            transform=Compose([ToTensor(),Normalize(task='segmentation'),AddAxis()])
+                                            ) 
+                                            for dataset_part in dataset_parts}
+            dataset_split = self.split_dataset(dataset)
+        return dataset_split
+
+    def split_dataset(self,dataset):
+        if self.settings['training']['split_ratio']:
+            dataset_train = dataset['train']
+            dataset_val = dataset['val']
+            ### MERGE DATASETS
+            # dataset_full=dataset_train
+            dataset_full = torch.utils.data.ConcatDataset([dataset_train,dataset_val])
+            len_full_dataset = len(dataset_full)
+
+            ### SPLIT RATIO
+            ratio_train, ratio_test, ratio_val = self.settings['training']['split_ratio']
+            train_size = int(ratio_train * len_full_dataset)
+            test_size = int(ratio_test * len_full_dataset)
+            val_size = len_full_dataset - train_size - test_size
+            # dataset_train, dataset_test, dataset_val = torch.utils.data.random_split(dataset_full, [train_size, test_size,val_size])
+            dataset_train = torch.utils.data.Subset(dataset_full, range(train_size))
+            dataset_test = torch.utils.data.Subset(dataset_full, range(train_size, train_size + test_size))
+            dataset_val = torch.utils.data.Subset(dataset_full, range(train_size + test_size,train_size + test_size + val_size))
+            print(f'Full dataset (train+test+val) is split into:\n{len(dataset_train)},{len(dataset_test)},{len(dataset_val)}\n')
+        else:
+            dataset_train = dataset['train']
+            dataset_test = dataset['test']
+            dataset_val = dataset['val']
+
+        dataset_split = {'train':dataset_train,
+                    'val':dataset_val,
+                    'test':dataset_test}
+        return dataset_split
+
 
 
 
