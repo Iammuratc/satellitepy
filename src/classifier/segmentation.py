@@ -100,10 +100,11 @@ class ClassifierSegmentation(Classifier):
 
         prediction_generator = self.get_predictions(model,loader)        
 
-        batch = len(self.dataset[dataset_part])//batch_size
+        batch = 5#len(self.dataset[dataset_part])//batch_size
+        
         f1 = F1Score(num_classes=2,average=None)
         f1_score = 0 #TOTAL
-        for i in range(5): # batch
+        for i in range(batch): # batch
             y_pred,y_true,img_path = next(prediction_generator)
             y_pred = y_pred[:, 0].contiguous().view(-1)
             y_true = y_true[:, 0].contiguous().view(-1)
@@ -111,7 +112,7 @@ class ClassifierSegmentation(Classifier):
             f1_score += f1_batch
             ####
         f1_score /= batch
-        print(f'f1 score for {batch*batch_size} samples: {f1_score}')
+        print(f'f1 score for {batch*batch_size} samples of {dataset_part} set: {f1_score}')
 
 
 

@@ -17,11 +17,11 @@ class Utilities:
         self.settings = settings
 
             
-    # def get_file_paths(self,folder,sort=True):
-    #     file_paths = [os.path.join(folder,file) for file in os.listdir(folder)]
-    #     if sort:
-    #         file_paths.sort()
-    #     return file_paths 
+    def get_file_paths(self,folder,sort=True):
+        file_paths = [os.path.join(folder,file) for file in os.listdir(folder)]
+        if sort:
+            file_paths.sort()
+        return file_paths 
 
     def get_model(self):
         model_name = self.settings['model']['name']
