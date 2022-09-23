@@ -131,7 +131,11 @@ class SettingsSegmentation(SettingsUtils):
         if os.path.exists(settings_path) and not self.update:
             with open(settings_path,'r') as f:
                 return json.load(f)
-
+        elif os.path.exists(settings_path) and self.update:
+            ans = input('A settings file already exists. Do you want to overwrite the settings file? [y/n]')
+            if ans != 'y':
+                print('Please confirm it.')
+                return 0
 
         ### DATASET DETAILS
         dataset_folder = self.get_dataset_folder(self.dataset_name)

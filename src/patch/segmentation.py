@@ -43,9 +43,7 @@ class SegmentationPatch(PatchTools):
         patch_dict = self.set_patch_params(patch_dict,img,bbox,mask)
         return patch_dict
 
-    def get_patches(self,save,plot,indices='all'):
-
-        # plane_pixel_value = 103.0 # the pixel value of airplanes in gray scale mask image
+    def get_patches(self,save,plot,indices='all'): # skip_existing
 
         image_paths = self.utils.get_file_paths(self.original_image_folder)
         mask_paths = self.utils.get_file_paths(self.original_instance_mask_folder)
@@ -67,6 +65,7 @@ class SegmentationPatch(PatchTools):
             ## IMAGE 
             ## Add padding before passing to the PatchTools because of the cropping steps 
             img = self.get_original_image(img_path)#cv2.imread(img_path)
+            print(img_path)
             ### BBOXES
             bbox_path = bbox_paths[i]
             with open(bbox_path,'r') as f:
@@ -77,15 +76,15 @@ class SegmentationPatch(PatchTools):
             # binary_mask = np.zeros_like(mask)
             # cv2.inRange(mask,plane_pixel_value,plane_pixel_value,binary_mask)
 
-            ### PLOT
-            # fig,ax = plt.subplots(1)
-            # ax.imshow(cv2.cvtColor(img,cv2.COLOR_BGR2RGB)) # original_patch, orthogonal_patch, orthogonal_zoomed_patch
-
             bbox_ind=0
             for bbox_label in bbox_labels:
+                # print(bbox_label)
                 category = bbox_label[-2]
                 if category != 'plane':
                     continue
+
+                # if skip_existing:
+                #     self.skip_existing_patch(patch_dict)
 
                 patch_dict = self.get_patch_dict(   img=img,
                                                     img_path=img_path,
@@ -126,7 +125,7 @@ class SegmentationPatch(PatchTools):
         image_paths = self.utils.get_file_paths(self.original_image_folder)
         # print(image_paths)
         ### MASK PATHS
-        mask_paths = self.utils.get_file_paths(self.original_binary_mask_folder)
+        mask_paths = self.utils.get_file_paths(self.original_instance_mask_folder)
 
         ### BBOX PATHS
         bbox_paths = self.utils.get_file_paths(self.original_bbox_folder)
@@ -138,7 +137,7 @@ class SegmentationPatch(PatchTools):
 
         ### MASK
         mask_path = mask_paths[ind]
-        mask = cv2.imread(mask_path,0)
+        mask = cv2.imread(mask_path,1)
 
         ### BBOXES
         bbox_path = bbox_paths[ind]
@@ -162,21 +161,21 @@ if __name__ == '__main__':
     settings = SettingsSegmentation(dataset_name='DOTA',
                                     patch_size=128)()
     
-    dataset_part='val'
+    dataset_part='train'
     utils = Utilities(settings)
-    segmentation_patch = SegmentationPatch(settings,dataset_part)
+    segmentation_patch = SegmentationPatch(utils,dataset_part)
 
     ### PRINT FILE PATH
-    print(utils.get_file_paths(segmentation_patch.original_image_folder))
+    # print(utils.get_file_paths(segmentation_patch.original_image_folder))
 
     ### SHOW ORIGINAL IMAGE
     # train index=561 image_name=P1114
     # train index=923 image_name=P1872
-    # segmentation_patch.show_original_image(923)
+    segmentation_patch.show_original_image(5)
 
     ### GET PATCHES
     ## Skip 923 for train, there airplanes labeled but no image
-    segmentation_patch.get_patches(save=True,plot=False,indices=range(924,1000))
+    # segmentation_patch.get_patches(save=True,plot=False,indices=range(924,1000))
 
 
     ### CHECK LARGE JSON LABEL DATA

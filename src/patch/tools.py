@@ -115,7 +115,7 @@ class PatchTools(object):
         patch_dict = self.set_original_padded_patch(patch_dict,margin=self.pad_size)
         patch_dict = self.set_original_patch(patch_dict,margin=20)
         patch_dict = self.set_orthogonal_patch(patch_dict,margin=20)
-        patch_dict = self.set_orthogonal_zoomed_patch(patch_dict,margin=0)
+        patch_dict = self.set_orthogonal_zoomed_patch(patch_dict,margin=10)
 
 
         return patch_dict
@@ -146,7 +146,6 @@ class PatchTools(object):
         img = patch_dict['original']['img']
         mask = patch_dict['original']['mask']
         bbox = patch_dict['original']['bbox']
-
 
         mask = self.remove_other_instances(mask,bbox)
         img_1, mask_1, bbox_1 = self.cut_image_by_bbox(img,mask,bbox,margin)
@@ -260,6 +259,9 @@ class PatchTools(object):
         patch_dict['file_path']=label_path
         return patch_dict
 
+    # def skip_existing_patch(self,patch_dict):
+    #     return os.path.exists(patch_dict['original_patch']['img_path'])
+
     def save_patch(self,dataset_part,patch_dict,i):
 
         patch_dict = self.set_paths(dataset_part,patch_dict,i)
@@ -312,15 +314,40 @@ class PatchTools(object):
         return os.path.splitext(os.path.split(path)[-1])[0]
 
     def remove_other_instances(self,mask,bbox):
-
-        # num_labels, label_image, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=4, ltype=cv2.CV_32S)
-        center = np.mean(bbox,axis=0).astype(int)
-
-        # cy,cx = mask.shape[:2]
-        plane_index = mask[center[1],center[0],:]
-        # print(plane_index)
-
         label_image = np.zeros(shape=(mask.shape[0],mask.shape[1],3))#,dtype=np.uint8)
+
+        center = np.mean(bbox,axis=0).astype(int)
+        try:
+            plane_index = np.array([mask[center[1],center[0],:]])
+        except:
+            plane_index = np.array([0,0,0])
+        is_background = (plane_index == np.array([0,0,0])).all() #np.logical_and(plane_index,np.array([0,0,0]))
+        # print(is_background)
+        if is_background:
+            _, bbox_image, bbox_1 = self.cut_image_by_bbox(mask,mask,bbox,margin=-10)
+
+            label_values = np.unique(bbox_image.reshape(-1, bbox_image.shape[2]), axis=0)
+            label_counts = {}
+            for i,label_value in enumerate(label_values): #Remove [0,0,0]
+                # print(label_value)
+                label_counts[i] = np.count_nonzero((bbox_image == label_value).all(axis = 2))
+            try:
+                max_count_index = np.argmax(list(label_counts.values())[1:])
+                plane_index = label_values[max_count_index+1]
+            except:
+                print(f'No plane found, so the label is {plane_index}')
+        # else:
         label_image = np.where(mask==plane_index,(255,255,255),0)[:,:,0]
+
+        # fig, ax = plt.subplots(2)
+        # ax[0].imshow(img)
+        # ax[1].imshow(label_image)
+        # ax[2].imshow(mask_2)
+        # plt.show()
+        # print(num_labels)
+        # print(label_image.shape)
+        # print(plane_index)
+        # print(bbox)
+
         return label_image.astype(np.uint8)
 
