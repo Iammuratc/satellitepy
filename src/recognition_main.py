@@ -6,7 +6,7 @@ import torch
 from settings import SettingsRecognition
 from models.models import Custom_0
 from transforms import ToTensor, Normalize
-from dataset.dataset import DatasetRecognition
+# from dataset.dataset import DatasetRecognition
 from classifier.recognition import ClassifierRecognition
 from utilities import Utilities
 
@@ -15,11 +15,13 @@ from utilities import Utilities
 
 ### EXPERIMENT DEFINITION
 exp_no = 3
-update_settings = False # if False, ignore all the parameters defined here, and read the existing settings file
+update = False # if False, ignore all the parameters defined here, and read the existing settings file
+
 
 ### DATA
 dataset_name='Gaofen'
-
+dataset_parts=['train','val','test']
+save_patches=False
 ### MODEL DEFINITION    
 model_name = 'custom_0'
 exp_name = 'Custom_0 model on orthogonal_patch with dropout (p=0.2) and equal class weights'
@@ -45,26 +47,17 @@ settings = SettingsRecognition(model_name=model_name,
                     patch_config=patch_config,
                     split_ratio=split_ratio,
                     class_weight=class_weight,
-                    update=update_settings)()
-
-# print(settings)
+                    update=update)()
 
 ## UTILS
 utils = Utilities(settings)
 
 ### DATASET
-dataset = {dataset_part:DatasetRecognition(
-                                            utils=utils,
-                                            dataset_part=dataset_part,
-                                            transform=Compose([ToTensor(),Normalize(task='recognition')])) 
-                                            for dataset_part in ['train','test','val']}
+dataset = utils.get_dataset(dataset_parts,task='recognition')
 ### PATCH
 # from patch.recognition import RecognitionPatch
 # patch = RecognitionPatch(settings,dataset_part='train')
 # patch.plot_all_bboxes_on_base_image("/home/murat/Projects/airplane_recognition/data/Gaofen/train/images/12.tif")
-
-
-
 # print(settings)
 
 classifier = ClassifierRecognition(utils,dataset)
