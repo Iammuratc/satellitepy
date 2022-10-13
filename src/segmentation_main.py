@@ -6,7 +6,7 @@ from utilities import Utilities
 from patch.segmentation import SegmentationPatch
 
 update=False
-exp_no = None
+exp_no = 11
 init_features=32
 patch_config='original'
 dataset_parts = ['train','val']
@@ -19,7 +19,7 @@ learning_rate=1e-3
 
 settings_segmentation = SettingsSegmentation(
                                             dataset_name='DOTA',
-                                            save_patches=save_patches,
+                                            save_patches=False,
                                             exp_no=exp_no,
                                             exp_name=exp_name,
                                             patience=10,
@@ -38,20 +38,20 @@ settings_segmentation = SettingsSegmentation(
 utils = Utilities(settings_segmentation)
 
 ### SAVE PATCHES
-if utils.settings['dataset']['save_patches']:
-    # for dataset_part in dataset_parts:
-    segmentation_patch = SegmentationPatch(utils,'train')
-    segmentation_patch.get_patches(save=True,plot=False)#,indices=range(924,1200))
-    segmentation_patch = SegmentationPatch(utils,'val')
-    segmentation_patch.get_patches(save=True,plot=False)
+# if utils.settings['dataset']['save_patches']:
+#     # for dataset_part in dataset_parts:
+#     segmentation_patch = SegmentationPatch(utils,'train')
+#     segmentation_patch.get_patches(save=True,plot=False)#,indices=range(924,1200))
+#     segmentation_patch = SegmentationPatch(utils,'val')
+#     segmentation_patch.get_patches(save=True,plot=False)
 
         # segmentation_patch.show_original_image(10)
 
 ### DATASET
-# dataset=utils.get_dataset(dataset_parts,task='segmentation')
+dataset=utils.get_dataset(dataset_parts,task='segmentation')
 
 # ## CLASSIFIER
-# classifier = ClassifierSegmentation(utils,dataset)
+classifier = ClassifierSegmentation(utils,dataset)
 
 # ## TRAIN MODEL
 # classifier.train()
@@ -60,9 +60,9 @@ if utils.settings['dataset']['save_patches']:
 # classifier.plot_images(dataset_part='val')
 
 ### F1 SCORE
-# classifier.get_f1_score(dataset_part='val')
+classifier.get_f1_score(dataset_part='val')
 # classifier.get_f1_score(dataset_part='train')
-
+# 
 ### CHECK SAMPLE HISTOGRAMS
 # import matplotlib.pyplot as plt
 # fig,ax = plt.subplots(2)

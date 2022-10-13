@@ -6,7 +6,7 @@ import torch
 # import matplotlib.pyplot as plt
 # import cv2
 from models.models import * 
-from dataset.dataset import DatasetSegmentation 
+from dataset.dataset import DatasetSegmentation, DatasetRecognition
 from transforms import Normalize, ToTensor, AddAxis
 
 
@@ -40,10 +40,19 @@ class Utilities:
             dataset = {dataset_part:DatasetSegmentation(
                                             settings=self.settings,
                                             dataset_part=dataset_part,
-                                            transform=Compose([ToTensor(),Normalize(task='segmentation'),AddAxis()])
+                                            transform=Compose([ToTensor(),Normalize(task=task),AddAxis()])
                                             ) 
                                             for dataset_part in dataset_parts}
             dataset_split = self.split_dataset(dataset)
+        elif task=='recognition':
+            dataset = {dataset_part:DatasetRecognition(
+                                            settings=self.settings,
+                                            dataset_part=dataset_part,
+                                            transform=Compose([ToTensor(),Normalize(task=task)])
+                                            ) 
+                                            for dataset_part in dataset_parts}
+            dataset_split = self.split_dataset(dataset)
+
         return dataset_split
 
     def split_dataset(self,dataset):
