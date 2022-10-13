@@ -9,10 +9,29 @@ import json
 
 class SettingsUtils:
     """docstring for SettingsUtils"""
-    def __init__(self,exp_no=None):
-        self.exp_no = exp_no if exp_no != None else 'temp'
+    def __init__(self,exp_name):
+        self.exp_name = exp_name if exp_name != None else 'exp_temp'
         self.project_folder = self.get_project_folder()
         self.experiment_folder = self.get_experiment_folder()
+
+    def get_settings_path(self,update):
+        ### SETTINGS PATH
+        settings_path = os.path.join(self.experiment_folder,"settings.json")
+
+        print(f'The following settings will be used:\n{settings_path}\n')
+
+        ## READ EXISTING SETTINGS FILE
+        if os.path.exists(settings_path) and not update:
+            with open(settings_path,'r') as f:
+                return json.load(f)
+        elif os.path.exists(settings_path) and update:
+            ans = input('A settings file already exists. Do you want to overwrite the settings file? [y/n] ')
+            if ans != 'y':
+                print('Please confirm it.')
+                return 0
+            else:
+                print('\n')
+        return settings_path
 
     def get_project_folder(self):
         project_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -39,7 +58,7 @@ class SettingsUtils:
         experiments_folder=os.path.join(self.project_folder,'experiments')
         assert self.create_folder(experiments_folder)
         ### EXPERIMENT FOLDER
-        experiment_folder=os.path.join(experiments_folder,f'exp_{self.exp_no}')
+        experiment_folder=os.path.join(experiments_folder,f'{self.exp_name}')
         assert self.create_folder(experiment_folder)
         return experiment_folder
 
@@ -122,20 +141,7 @@ class SettingsSegmentation(SettingsUtils):
         return self.get_settings()
 
     def get_settings(self):
-        ### SETTINGS PATH
-        settings_path = os.path.join(self.experiment_folder,"settings.json")
-
-        print(f'The following settings will be used:\n{settings_path}\n')
-
-        ## READ EXISTING SETTINGS FILE
-        if os.path.exists(settings_path) and not self.update:
-            with open(settings_path,'r') as f:
-                return json.load(f)
-        elif os.path.exists(settings_path) and self.update:
-            ans = input('A settings file already exists. Do you want to overwrite the settings file? [y/n]')
-            if ans != 'y':
-                print('Please confirm it.')
-                return 0
+        settings_path = self.get_settings_path(self.update)
 
         ### DATASET DETAILS
         dataset_folder = self.get_dataset_folder(self.dataset_name)
@@ -283,14 +289,8 @@ class SettingsRecognition(SettingsUtils):
 
     def get_settings(self):
         ### SETTINGS PATH
-        settings_path = os.path.join(self.experiment_folder,"settings.json")
+        settings_path = self.get_settings_path(self.update)
 
-        print(f'The following settings will be used:\n{settings_path}\n')
-
-        ## READ EXISTING SETTINGS FILE
-        if os.path.exists(settings_path) and not self.update:
-            with open(settings_path,'r') as f:
-                return json.load(f)
 
         ### DATASET DETAILS
         # dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
@@ -406,7 +406,6 @@ class SettingsDetection(SettingsUtils):
     def __init__(self, 
                 update=True,
                 model_name=None,
-                exp_no=None,
                 exp_name=None,
                 patch_size=None,
                 overlap=100,
@@ -419,7 +418,7 @@ class SettingsDetection(SettingsUtils):
                 label_names=None,
                 epochs=None,
                         ):
-        super(SettingsDetection, self).__init__(exp_no)
+        super(SettingsDetection, self).__init__(exp_name)
         self.update=update
 
         ### TRAINING CONFIGS
@@ -428,6 +427,7 @@ class SettingsDetection(SettingsUtils):
         self.batch_size=batch_size
         self.epochs=epochs
         self.patience=patience
+        self.split_ratio=split_ratio
 
         ### DATASET
         self.label_names=label_names
@@ -435,7 +435,6 @@ class SettingsDetection(SettingsUtils):
         self.dataset_name=dataset_name
         ### PATCH CONFIGS 
         self.patch_size = patch_size
-        self.split_ratio=split_ratio
         self.overlap=overlap
         self.box_corner_threshold=box_corner_threshold
 
@@ -444,18 +443,10 @@ class SettingsDetection(SettingsUtils):
 
     def get_settings(self):
         ### SETTINGS PATH
-        settings_path = os.path.join(self.experiment_folder,"settings.json")
+        settings_path = self.get_settings_path(self.update)
 
-        print(f'The following settings will be used:\n{settings_path}\n')
-
-
-        ## READ EXISTING SETTINGS FILE
-        if os.path.exists(settings_path) and not self.update:
-            with open(settings_path,'r') as f:
-                return json.load(f)
 
         ### DATASET DETAILS
-        # dataset_id = 'f73e8f1f-f23f-4dca-8090-a40c4e1c260e'
         dataset_folder = self.get_dataset_folder(self.dataset_name)
 
 
@@ -473,9 +464,8 @@ class SettingsDetection(SettingsUtils):
         settings = {
             'project_folder':self.project_folder,
             'experiment': {
-                'no':self.exp_no,
                 'folder':self.experiment_folder,
-                'name':self.exp_name            
+                'name':self.exp_name
             },
             'model': {
                 'name':self.model_name,
@@ -487,7 +477,6 @@ class SettingsDetection(SettingsUtils):
                 'save_patches':self.save_patches,
                 'folder':dataset_folder,
                 'name':self.dataset_name,
-                # 'id': dataset_id,
                 'train': {  'image_folder':train_folders[0],
                             'label_folder':train_folders[1],
                         },
@@ -504,22 +493,28 @@ class SettingsDetection(SettingsUtils):
                 'box_corner_threshold':self.box_corner_threshold,
                 'size':self.patch_size,
                 'train': {
-                    'patch_folder_base':patch_train_folders[0],
-                    'img_patch_folder':patch_train_folders[1],
-                    'label_patch_folder':patch_train_folders[2],
-                    'label_patch_dota_folder':patch_train_folders[4],
+                    'folder_base':patch_train_folders[0],
+                    'image_folder':patch_train_folders[1],
+                    'label_folder':patch_train_folders[2],
+                    'label_binary_yolo_folder':patch_train_folders[3],
+                    'label_dota_folder':patch_train_folders[4],
+                    'label_binary_dota_folder':patch_train_folders[5],
                 },
                 'test': {
-                    'patch_folder_base':patch_test_folders[0],
-                    'img_patch_folder':patch_test_folders[1],
-                    'label_patch_folder':patch_test_folders[2],
-                    'label_patch_dota_folder':patch_test_folders[4],
+                    'folder_base':patch_test_folders[0],
+                    'image_folder':patch_test_folders[1],
+                    'label_folder':patch_test_folders[2],
+                    'label_binary_yolo_folder':patch_test_folders[3],
+                    'label_dota_folder':patch_test_folders[4],
+                    'label_binary_dota_folder':patch_test_folders[5],
                 },
                 'val': {
-                    'patch_folder_base':patch_val_folders[0],
-                    'img_patch_folder':patch_val_folders[1],
-                    'label_patch_folder':patch_val_folders[2],
-                    'label_patch_dota_folder':patch_val_folders[4],
+                    'folder_base':patch_val_folders[0],
+                    'image_folder':patch_val_folders[1],
+                    'label_folder':patch_val_folders[2],
+                    'label_binary_yolo_folder':patch_val_folders[3],
+                    'label_dota_folder':patch_val_folders[4],
+                    'label_binary_dota_folder':patch_val_folders[5],
                 },
             },
             'training': {
@@ -534,24 +529,23 @@ class SettingsDetection(SettingsUtils):
         }
 
         # try:
-            # if self.model_name.startswith('yolo'):
-        if True: # If YOLO
+        if self.model_name.startswith('yolo'):
+        # if True: # If YOLO
             settings['training']['yolo'] = {   'train_py':os.path.join(self.project_folder,'yolo_models/yolov5/train.py'),
-                            'data_yaml':os.path.join(self.experiment_folder,'data.yaml'),
-                            'hyp_config_yaml':os.path.join(self.experiment_folder,'hyp_config.yaml'),
-                            'weights_yaml':os.path.join(self.project_folder,f'yolo_models/yolov5/models/{self.model_name}.yaml'),
-                            'weights':os.path.join(self.experiment_folder,'exp','weights','best.pt')
+                                                'data_yaml':os.path.join(self.experiment_folder,'data.yaml'),
+                                                'hyp_config_yaml':os.path.join(self.experiment_folder,'hyp_config.yaml'),
+                                                'weights_yaml':os.path.join(self.project_folder,f'yolo_models/yolov5/models/{self.model_name}.yaml'),
+                                                'weights':os.path.join(self.experiment_folder,'exp','weights','best.pt')
                                 }
-            settings['patch']['train']['label_patch_yolo_folder'] = patch_train_folders[3]
-            settings['patch']['val']['label_patch_yolo_folder'] = patch_val_folders[3]
-            settings['patch']['test']['label_patch_yolo_folder'] = patch_test_folders[3]
-
-            settings['testing']={
+            settings['testing'] = {
                                     'yolo': 
                                     {
                                         'test_py':os.path.join(self.project_folder,'yolo_models/yolov5/val.py'),
                                     }
                                 }
+
+            settings = self.get_yolo_symlink_folders(settings)
+
         # except Exception:
             # print('Not a YOLO model.\n')
 
@@ -571,17 +565,17 @@ class SettingsDetection(SettingsUtils):
         original_folder_base = os.path.join(dataset_folder,dataset_part)
 
         img_folder = os.path.join(original_folder_base,'images')
-        label_folder = os.path.join(original_folder_base,'label_xml')
-         
+        label_folder = os.path.join(original_folder_base,'labels')
+        # label_dota_folder = os.path.join(original_folder_base,'labels_dota')
+        # label_binary_dota_folder = os.path.join(original_folder_base,'labels_binary_dota')
+
         folders = [original_folder_base,
                     img_folder,
                     label_folder]
         
         ## IF THEY DO NOT EXIST, CREATE THEN
         for folder in folders:
-            folder_ok = self.create_folder(folder)
-            if not folder_ok:
-                return 0
+            assert self.create_folder(folder)
         return img_folder, label_folder
 
     def get_patch_folders(self,dataset_folder,dataset_part):
@@ -589,21 +583,60 @@ class SettingsDetection(SettingsUtils):
         # patch_folder = f"{self.data_folder}/{self.dataset_name}/patches_{patch_size}"
         img_patch_folder = os.path.join(patch_folder_base,"images")
         label_patch_folder = os.path.join(patch_folder_base,"labels")
-        label_patch_yolo_folder = os.path.join(patch_folder_base,"labels_yolo")
+        label_binary_patch_yolo_folder = os.path.join(patch_folder_base,"labels_binary_yolo")
         label_patch_dota_folder = os.path.join(patch_folder_base,"labels_dota")
+        label_binary_patch_dota_folder = os.path.join(patch_folder_base,"labels_binary_dota")
 
         folders = [ patch_folder_base,
                     img_patch_folder,
                     label_patch_folder,
-                    label_patch_yolo_folder,
-                    label_patch_dota_folder]
+                    label_binary_patch_yolo_folder,
+                    label_patch_dota_folder,
+                    label_binary_patch_dota_folder]
 
         ## IF THEY DO NOT EXIST, CREATE THEN
         for folder in folders:
-            folder_ok = self.create_folder(folder)
-            if not folder_ok:
-                return 0
+            assert self.create_folder(folder)
         return folders
+
+    def get_yolo_symlink_folders(self,settings):
+
+        symlink_root_folder = os.path.join(self.experiment_folder,'data_symlinks')
+        train_symlink_root_folder = os.path.join(symlink_root_folder,'train')
+        test_symlink_root_folder = os.path.join(symlink_root_folder,'test')
+        val_symlink_root_folder = os.path.join(symlink_root_folder,'val')
+
+
+        train_img_symlink_folder = os.path.join(train_symlink_root_folder,'images')
+        test_img_symlink_folder = os.path.join(test_symlink_root_folder,'images')
+        val_img_symlink_folder = os.path.join(val_symlink_root_folder,'images')
+
+        train_label_symlink_folder = os.path.join(train_symlink_root_folder,'labels')
+        test_label_symlink_folder = os.path.join(test_symlink_root_folder,'labels')
+        val_label_symlink_folder = os.path.join(val_symlink_root_folder,'labels')
+
+        folders = [ 
+                    symlink_root_folder,
+                    train_symlink_root_folder,
+                    test_symlink_root_folder,
+                    val_symlink_root_folder,
+                    train_img_symlink_folder,
+                    test_img_symlink_folder,
+                    val_img_symlink_folder,
+                    train_label_symlink_folder,
+                    test_label_symlink_folder,
+                    val_label_symlink_folder
+                    ]
+        for folder in folders:
+            assert self.create_folder(folder)
+
+        settings['patch']['train']['image_folder_if_split']=train_img_symlink_folder
+        settings['patch']['train']['label_binary_yolo_folder_if_split']=train_label_symlink_folder
+        settings['patch']['test']['image_folder_if_split']=test_img_symlink_folder
+        settings['patch']['test']['label_binary_yolo_folder_if_split']=test_label_symlink_folder
+        settings['patch']['val']['image_folder_if_split']=val_img_symlink_folder
+        settings['patch']['val']['label_binary_yolo_folder_if_split']=val_label_symlink_folder
+        return settings
 
 if __name__ == '__main__':
     # settings_detection = SettingsDetection(patch_size=512)()

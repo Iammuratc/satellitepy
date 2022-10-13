@@ -25,126 +25,152 @@ class PatchDetection:
         box_corner_threshold = self.settings['patch']['box_corner_threshold']
         overlap = self.settings['patch']['overlap']
         patch_size= self.settings['patch']['size']
-
-        ### PATCH FOLDERS
-        img_patch_folder = self.settings['patch'][self.dataset_part]['img_patch_folder']
-        label_patch_folder = self.settings['patch'][self.dataset_part]['label_patch_folder']
-        label_patch_yolo_folder = self.settings['patch'][self.dataset_part]['label_patch_yolo_folder']
-        label_patch_dota_folder = self.settings['patch'][self.dataset_part]['label_patch_dota_folder']
-
+        
         ### ORIGINAL IMAGES
         image_folder = self.settings['dataset'][self.dataset_part]['image_folder']
         img_files = os.listdir(image_folder)
         label_folder = self.settings['dataset'][self.dataset_part]['label_folder'] 
         label_files = os.listdir(label_folder)
-        label_names=self.settings['dataset']['label_names']
+        label_names=self.settings['dataset']['label_names'] # Label names in our interest
         dataset_name = self.settings['dataset']['name']
         for img_file in img_files:
             ### IMAGE
             img_path = os.path.join(image_folder,img_file)
+            print(f'patches for {img_path} are being saved')
             img = cv2.imread(img_path,1)
 
             ### LABEL
             img_name = os.path.splitext(img_file)[0]
-            if  (dataset_name == 'Gaofen' or dataset_name == 'FAIR1M'):         
+            if  (dataset_name == 'Gaofen' or dataset_name == 'fair1m'):         
                 label_path = os.path.join(label_folder,f'{img_name}.xml')
             else:
                 label_path = os.path.join(label_folder,f'{img_name}.txt')
 
             labels = self.get_labels(label_path)
+            instance_names = labels['names'] # Instance names in the image
+            
+            # for label_name in label_names: #going through the labels
+            #     if label_name in instance_names: # if one of the wanted labels in the instance names, the patches are done
 
-            instance_names = labels['names'] # the ships are the instances
-            # check and if no ship is in the list, continue with the next image
-            # 
-            for label_name in label_names: #going through the labels
-                if label_name in instance_names: # if one of the wanted labels in the instance names, the patches are done
-                    ### PATCH COORDINATES IN THE ORIGINAL IMAGE
-                    y_max, x_max, ch = img.shape[:3]
-                    patch_y, patch_x = self.get_patch_start_coords(my_max=[y_max,x_max],patch_size=patch_size,overlap=overlap)
-                    #skip images with no airships, you need the instance_names for it
-                    for y_0 in patch_y:
-                        for x_0 in patch_x:
-                            ### PROCESS ONE PATCH
-                            patch_dict = {  'image':np.zeros(shape=(patch_size,patch_size,ch),dtype=np.uint8),
-                                            'instance_names':[],
-                                            'rotated_bboxes':[] ,
-                                            'orthogonal_bboxes':[],
-                                            'orthogonal_bbox_params':[]
-                                            }
+            ### Check if any of the label_names match with instance_names
+            if any(label_name==instance_name for instance_name in instance_names for label_name in label_names):
+                ### PATCH COORDINATES IN THE ORIGINAL IMAGE
+                y_max, x_max, ch = img.shape[:3]
+                patch_y, patch_x = self.get_patch_start_coords(my_max=[y_max,x_max],patch_size=patch_size,overlap=overlap)
 
-                            for i,bbox in enumerate(labels['bboxes']):
-                                ## CHECK IF BBOX IN PATCH
-                                box_corner_in_patch = 0
-                                for coord in bbox:
-                                    if (x_0<=coord[0]<=x_0+patch_size) and (y_0<=coord[1]<=y_0+patch_size):
-                                        box_corner_in_patch += 1
-                                if box_corner_in_patch>=box_corner_threshold:
-                                    # INSTANCE NAMES
-                                    patch_dict['instance_names'].append(instance_names[i])
-                                    # shift coords
-                                    shifted_bbox = np.array(bbox)-[x_0,y_0]
-                                    # ROTATED BBOXES                     
-                                    patch_dict['rotated_bboxes'].append(shifted_bbox.tolist())
-                                    # ORTHOGONAL BBOXES
-                                    rect = geometry.Rectangle(bbox=shifted_bbox)
+                ### Iterate over patch starting coordinates
+                for y_0 in patch_y:
+                    for x_0 in patch_x:
+                        patch_dict = {  'original_image_name':img_name,
+                                        'start_coords':[x_0,y_0],
+                                        'image':np.zeros(shape=(patch_size,patch_size,ch),dtype=np.uint8),
+                                        'instance_names':[],
+                                        'rotated_bboxes':[] ,
+                                        'orthogonal_bboxes':[],
+                                        'orthogonal_bbox_params':[]
+                                        }
 
-                                    orthogonal_bbox_param = rect.get_orthogonal_bbox_by_limits(bbox=shifted_bbox,return_params=True)
-                                    orthogonal_bbox = rect.get_orthogonal_bbox_by_limits(bbox=shifted_bbox,return_params=False)
+                        for i,bbox in enumerate(labels['bboxes']):
+                            ## CHECK IF BBOX IN PATCH
+                            instance_name = instance_names[i]
+                            # Skip not interested label names, e.g., 'Intersection'
+                            if instance_name not in label_names:
+                                continue
+                            box_corner_in_patch = 0
+                            for coord in bbox:
+                                if (x_0<=coord[0]<=x_0+patch_size) and (y_0<=coord[1]<=y_0+patch_size):
+                                    box_corner_in_patch += 1
+                            if box_corner_in_patch>=box_corner_threshold:
+                                # INSTANCE NAMES
+                                patch_dict['instance_names'].append(instance_names[i])
+                                # shift coords
+                                shifted_bbox = np.array(bbox)-[x_0,y_0]
+                                # ROTATED BBOXES                     
+                                patch_dict['rotated_bboxes'].append(shifted_bbox.tolist())
+                                # ORTHOGONAL BBOXES
+                                rect = geometry.Rectangle(bbox=shifted_bbox)
 
-                                    patch_dict['orthogonal_bbox_params'].append(orthogonal_bbox_param)
-                                    patch_dict['orthogonal_bboxes'].append(orthogonal_bbox)
-                                                        
-                            y_limit_expanded = y_0+patch_size>=y_max
-                            x_limit_expanded = x_0+patch_size>=x_max
-                            limit_expanded = y_limit_expanded and x_limit_expanded
-                            if limit_expanded:
-                                patch_dict['image'][:y_max-y_0,:x_max-x_0] = img[y_0:y_max,x_0:x_max]
-                            elif y_limit_expanded:
-                                patch_dict['image'][:y_max-y_0,:] = img[y_0:y_max,x_0:x_0+patch_size]
-                            elif x_limit_expanded:
-                                patch_dict['image'][:,:x_max-x_0] = img[y_0:y_0+patch_size,x_0:x_max]                        
-                            else:
-                                patch_dict['image'][:,:] = img[y_0:y_0+patch_size,x_0:x_0+patch_size]
-                        
-                            ### PLOT
-                            if plot:
-                                self.plot_patch_dict(patch_dict)
+                                orthogonal_bbox_param = rect.get_orthogonal_bbox_by_limits(bbox=shifted_bbox,return_params=True)
+                                orthogonal_bbox = rect.get_orthogonal_bbox_by_limits(bbox=shifted_bbox,return_params=False)
 
-                            ### SAVE
-                            if save:
-                                # self.save_plot_dict(patch_dict)
-                                patch_name = f"{img_name}_x_{x_0}_y_{y_0}"
-                                ### SAVE IMAGE
-                                cv2.imwrite(os.path.join(img_patch_folder,f"{patch_name}.png"),patch_dict['image'])
-                                del patch_dict['image'] # remove image before saving labels
-                                ### SAVE LABEL
-                                with open(os.path.join(label_patch_folder,f"{patch_name}.json"), 'w') as f:
-                                    json.dump(patch_dict, f,indent=4)
+                                patch_dict['orthogonal_bbox_params'].append(orthogonal_bbox_param)
+                                patch_dict['orthogonal_bboxes'].append(orthogonal_bbox)
 
-                                ### SAVE DOTA FORMAT
-                                with open(os.path.join(label_patch_dota_folder,f"{patch_name}.txt"), 'w+') as f:
-                                    for bbox in patch_dict['rotated_bboxes']:
-                                        bbox_ccords = ' '.join(np.array(bbox).flatten().astype(str))
-                                        my_line = f"{bbox_ccords} {label_name} 0"
-                                        print(my_line)
-                                        f.write(f"{my_line}\n")
-                                        
+                        # Get patch image                                                    
+                        y_limit_expanded = y_0+patch_size>=y_max
+                        x_limit_expanded = x_0+patch_size>=x_max
+                        limit_expanded = y_limit_expanded and x_limit_expanded
+                        if limit_expanded:
+                            patch_dict['image'][:y_max-y_0,:x_max-x_0] = img[y_0:y_max,x_0:x_max]
+                        elif y_limit_expanded:
+                            patch_dict['image'][:y_max-y_0,:] = img[y_0:y_max,x_0:x_0+patch_size]
+                        elif x_limit_expanded:
+                            patch_dict['image'][:,:x_max-x_0] = img[y_0:y_0+patch_size,x_0:x_max]                        
+                        else:
+                            patch_dict['image'][:,:] = img[y_0:y_0+patch_size,x_0:x_0+patch_size]
+                    
+                        ### PLOT
+                        if plot:
+                            self.plot_patch_dict(patch_dict)
 
-                                ### SAVE YOLO LABEL
-                                with open(os.path.join(label_patch_yolo_folder,f"{patch_name}.txt"), 'w') as f:
-                                    for bbox_params in patch_dict['orthogonal_bbox_params']:
-                                        params_str = ['0'] # class_id center_x center_y width height
-                                        for param in bbox_params:
-                                            param_norm = param/patch_size
-                                            if param_norm>1:
-                                                param_norm=1
-                                            elif param_norm<0:
-                                                param_norm=0
-                                            params_str.append(str(param_norm))
-                                        my_line = ' '.join(params_str)
-                                        f.write(f"{my_line}\n")
+                        ### SAVE
+                        if save:
+                            self.save_patch_dict(patch_dict)
                 else:
                     continue
+
+    def save_patch_dict(self,patch_dict):
+        patch_size= self.settings['patch']['size']
+
+        ### PATCH FOLDERS
+        img_patch_folder = self.settings['patch'][self.dataset_part]['image_folder']
+        label_patch_folder = self.settings['patch'][self.dataset_part]['label_folder']
+        label_binary_patch_yolo_folder = self.settings['patch'][self.dataset_part]['label_binary_yolo_folder']
+        label_patch_dota_folder = self.settings['patch'][self.dataset_part]['label_dota_folder']
+        label_binary_patch_dota_folder = self.settings['patch'][self.dataset_part]['label_binary_dota_folder']
+
+        img_name = patch_dict['original_image_name']
+        x_0,y_0=patch_dict['start_coords']
+        patch_name = f"{img_name}_x_{x_0}_y_{y_0}"
+
+        ### SAVE IMAGE
+        cv2.imwrite(os.path.join(img_patch_folder,f"{patch_name}.png"),patch_dict['image'])
+        del patch_dict['image'] # remove image before saving labels
+
+        ### SAVE LABEL
+        with open(os.path.join(label_patch_folder,f"{patch_name}.json"), 'w') as f:
+            json.dump(patch_dict, f,indent=4)
+
+        ### SAVE YOLO BINARY LABEL
+        with open(os.path.join(label_binary_patch_yolo_folder,f"{patch_name}.txt"), 'w') as f:
+            for bbox_params in patch_dict['orthogonal_bbox_params']:
+                params_str = ['0'] # class_id center_x center_y width height
+                for param in bbox_params:
+                    param_norm = param/patch_size
+                    if param_norm>1:
+                        param_norm=1
+                    elif param_norm<0:
+                        param_norm=0
+                    params_str.append(str(param_norm))
+                my_line = ' '.join(params_str)
+                f.write(f"{my_line}\n")
+
+        ### SAVE DOTA AND BINARY DOTA FORMAT
+        with open(os.path.join(label_patch_dota_folder,f"{patch_name}.txt"), 'w+') as f_0:
+            with open(os.path.join(label_binary_patch_dota_folder,f"{patch_name}.txt"), 'w+') as f_1:
+                for i,bbox in enumerate(patch_dict['rotated_bboxes']):
+                    bbox_ccords = ' '.join(np.array(bbox).flatten().astype(str))
+                    
+                    instance_name = patch_dict['instance_names'][i]
+                    my_line_0 = f"{bbox_ccords} {instance_name} 0"
+                    f_0.write(f"{my_line_0}\n")
+
+                    my_line_1 = f"{bbox_ccords} airplane 0"
+                    f_1.write(f"{my_line_1}\n")
+                
+        # print(''.join(patch_dict['instance_names']))
+
+
     def plot_patch_dict(self,patch_dict):
         if patch_dict['instance_names']:
             fig, ax = plt.subplots(1)
@@ -178,15 +204,9 @@ class PatchDetection:
 
     def get_labels(self,label_path):
         # dota has only text files, so we need to change the code for the labels
-        def is_float(number_as_string):
-            try:
-                float(number_as_string)
-                return True
-            except ValueError:
-                return False
         label = {'bboxes':[],'names':[]}
         dataset_name = self.settings['dataset']['name']
-        if  (dataset_name == 'Gaofen' or dataset_name == 'FAIR1M'):         
+        if  (dataset_name == 'Gaofen' or dataset_name == 'fair1m'):
             root = ET.parse(label_path).getroot()
 
             ### IMAGE NAME
@@ -225,7 +245,6 @@ class PatchDetection:
                     boxes.append(bboxToSave)
                     label['bboxes']=boxes
                     label['names']=names
-            pass
         else:
             print('No label parsing function found.')
         return label#, img_name

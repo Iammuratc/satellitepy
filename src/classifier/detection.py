@@ -2,12 +2,10 @@ import os
 import yaml
 
 
-
-class DetectionClassifier:
+class ClassifierDetection:
     def __init__(self,settings):
 
-        self.settings_utils=settings
-        self.settings=self.settings_utils()
+        self.settings=settings
 
     def train(self):
 
@@ -27,7 +25,10 @@ class DetectionClassifier:
         # --resume {resume}\
         train_cmd = f'python3 {train_py} --project {experiment_folder} --exist-ok\
                         --imgsz {img_size} --batch {batch} --epochs {epochs} --data {data_yaml} \
-                        --hyp {hyp_yaml} --weights {weights} --cfg {weights_yaml} --patience {patience} --cache'
+                        --hyp {hyp_yaml}  --cfg {weights_yaml} --patience {patience} --cache'
+
+        if os.path.exists(weights):
+            train_cmd = train_cmd + f'--weights {weights}'
         os.system(train_cmd)
 
     def validate(self,dataset_part):
@@ -114,13 +115,13 @@ class DetectionClassifier:
     def get_patch_folders(self):
         split_ratio = self.settings['training']['split_ratio']
 
-        train_img_patch_folder = self.settings['patch']['train']['img_patch_folder']
-        test_img_patch_folder = self.settings['patch']['test']['img_patch_folder']
-        val_img_patch_folder = self.settings['patch']['val']['img_patch_folder']
+        train_img_patch_folder = self.settings['patch']['train']['image_folder']
+        test_img_patch_folder = self.settings['patch']['test']['image_folder']
+        val_img_patch_folder = self.settings['patch']['val']['image_folder']
 
-        train_label_patch_folder = self.settings['patch']['train']['label_patch_yolo_folder']
-        test_label_patch_folder = self.settings['patch']['test']['label_patch_yolo_folder']
-        val_label_patch_folder = self.settings['patch']['val']['label_patch_yolo_folder']
+        train_label_patch_folder = self.settings['patch']['train']['label_binary_yolo_folder']
+        test_label_patch_folder = self.settings['patch']['test']['label_binary_yolo_folder']
+        val_label_patch_folder = self.settings['patch']['val']['label_binary_yolo_folder']
 
         if split_ratio:
             ### SPLIT ORIGINAL DATASET PARTS
@@ -156,21 +157,21 @@ class DetectionClassifier:
             split_val_label_paths = all_label_paths[train_len+test_len:]
 
             # ### SYMLINK FOLDERS
-            train_img_symlink_folder = os.path.join(self.settings['experiment']['folder'],'data_symlinks','train','images')
-            test_img_symlink_folder = os.path.join(self.settings['experiment']['folder'],'data_symlinks','test','images')
-            val_img_symlink_folder = os.path.join(self.settings['experiment']['folder'],'data_symlinks','val','images')
+            train_img_symlink_folder = self.settings['patch']['train']['image_folder_if_split']
+            test_img_symlink_folder = self.settings['patch']['test']['image_folder_if_split']
+            val_img_symlink_folder = self.settings['patch']['val']['image_folder_if_split']
 
-            train_label_symlink_folder = os.path.join(self.settings['experiment']['folder'],'data_symlinks','train','labels')
-            test_label_symlink_folder = os.path.join(self.settings['experiment']['folder'],'data_symlinks','test','labels')
-            val_label_symlink_folder = os.path.join(self.settings['experiment']['folder'],'data_symlinks','val','labels')
+            train_label_symlink_folder = self.settings['patch']['train']['label_binary_yolo_folder_if_split']
+            test_label_symlink_folder = self.settings['patch']['test']['label_binary_yolo_folder_if_split']
+            val_label_symlink_folder = self.settings['patch']['val']['label_binary_yolo_folder_if_split']
 
-            self.create_symlink_folder(folder=train_img_symlink_folder,paths=split_train_img_paths)
-            self.create_symlink_folder(folder=test_img_symlink_folder,paths=split_test_img_paths)
-            self.create_symlink_folder(folder=val_img_symlink_folder,paths=split_val_img_paths)
+            self.get_symlink_folder(folder=train_img_symlink_folder,paths=split_train_img_paths)
+            self.get_symlink_folder(folder=test_img_symlink_folder,paths=split_test_img_paths)
+            self.get_symlink_folder(folder=val_img_symlink_folder,paths=split_val_img_paths)
 
-            self.create_symlink_folder(folder=train_label_symlink_folder,paths=split_train_label_paths)
-            self.create_symlink_folder(folder=test_label_symlink_folder,paths=split_test_label_paths)
-            self.create_symlink_folder(folder=val_label_symlink_folder,paths=split_val_label_paths)
+            self.get_symlink_folder(folder=train_label_symlink_folder,paths=split_train_label_paths)
+            self.get_symlink_folder(folder=test_label_symlink_folder,paths=split_test_label_paths)
+            self.get_symlink_folder(folder=val_label_symlink_folder,paths=split_val_label_paths)
 
 
 
@@ -194,20 +195,19 @@ class DetectionClassifier:
         sorted_files.sort(key=lambda f: (int(f.split('_')[0]),int(f.split('_')[2]),int(f.split('_')[4].split('.')[0]))) # EX: 1_x_0_y_0.json
         return [os.path.join(folder,file) for file in sorted_files]
 
-    def create_symlink_folder(self,folder,paths):
+    def get_symlink_folder(self,folder,paths):
 
-        folder_ok = self.settings_utils.create_folder(folder)
-        if not folder_ok:
-            return 0
-
-        for path in paths:
-            _, file = os.path.split(path)
-            file_name, ext = os.path.splitext(file)
-            symlink_path = os.path.join(folder,f"{file_name}_symlink{ext}")
-            try:
-                os.symlink(path,symlink_path)
-            except FileExistsError:
-                continue
+        if len(os.listdir(folder))==len(paths):
+            return 1
+        else:
+            for path in paths:
+                _, file = os.path.split(path)
+                file_name, ext = os.path.splitext(file)
+                symlink_path = os.path.join(folder,f"{file_name}_symlink{ext}")
+                try:
+                    os.symlink(path,symlink_path)
+                except FileExistsError:
+                    continue
 
 if __name__ == '__main__':
     from settings import SettingsDetection
