@@ -7,31 +7,40 @@ import json
 import numpy as np
 # from util import get_file_paths
 
+
+
+class DatasetMultitask(Dataset):
+    def __init__(self, settings, dataset_part, transform=None):
+    
+
+
 class DatasetSegmentation(Dataset):
-    def __init__(self,settings,dataset_part,transform=None):
+    def __init__(self, settings, dataset_part, transform=None):
 
-
-        self.output_image=settings['training']['output_image']
-        self.transform=transform
+        self.output_image = settings['training']['output_image']
+        self.transform = transform
         self.patch_size = settings['patch']['size']
-        
-        patch_config=settings['training']['patch_config']
-        patch_folder_name = f'{patch_config}_' if patch_config!='original' else ''
-        self.img_folder = settings['patch'][dataset_part][f'{patch_folder_name}img_folder'] 
+
+        patch_config = settings['training']['patch_config']
+        patch_folder_name = f'{patch_config}_' if patch_config != 'original' else ''
+        self.img_folder = settings['patch'][dataset_part][f'{patch_folder_name}img_folder']
         self.mask_folder = settings['patch'][dataset_part][f'{patch_folder_name}mask_folder']
         # print(self.img_folder,self.mask_folder)
 
-        get_file_paths = lambda folder: [os.path.join(folder,file) for file in os.listdir(folder)]
-        
-        self.img_paths =  get_file_paths(self.img_folder)#utils.get_file_paths()
+        def get_file_paths(folder): return [os.path.join(
+            folder, file) for file in os.listdir(folder)]
+
+        self.img_paths = get_file_paths(
+            self.img_folder)  # utils.get_file_paths()
         self.img_paths.sort()
-        self.mask_paths = get_file_paths(self.mask_folder) # utils.get_file_paths(self.mask_folder)
+        # utils.get_file_paths(self.mask_folder)
+        self.mask_paths = get_file_paths(self.mask_folder)
         self.mask_paths.sort()
-    
+
     def __len__(self):
         return len(self.img_paths)
 
-    def __getitem__(self,ind):
+    def __getitem__(self, ind):
         if torch.is_tensor(ind):
             ind = ind.tolist()
 
@@ -43,37 +52,49 @@ class DatasetSegmentation(Dataset):
         # print(type(mask))
         # print(mask.shape)
 
-        sample = {  'image_path':img_path,
-                    'mask_path':mask_path,
-                    'image':img,
-                    'label':mask}
+        sample = {'image_path': img_path,
+                  'mask_path': mask_path,
+                  'image': img,
+                  'label': mask}
 
         if self.transform:
             sample = self.transform(sample)
 
         return sample
 
-    def get_img(self,image_path):
+    def get_img(self, image_path):
         img = cv2.imread(image_path)
-        img = cv2.resize(img,dsize=(self.patch_size,self.patch_size),interpolation=cv2.INTER_LINEAR)
+        img = cv2.resize(
+            img,
+            dsize=(
+                self.patch_size,
+                self.patch_size),
+            interpolation=cv2.INTER_LINEAR)
         return img
 
-    def get_mask(self,mask_path):
-        mask = cv2.imread(mask_path,0)
-        mask = cv2.resize(mask,dsize=(self.patch_size,self.patch_size),interpolation=cv2.INTER_NEAREST)
-        if self.output_image=='mask':
-            return mask        
-        elif self.output_image=='contours':
-            contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    def get_mask(self, mask_path):
+        mask = cv2.imread(mask_path, 0)
+        mask = cv2.resize(
+            mask,
+            dsize=(
+                self.patch_size,
+                self.patch_size),
+            interpolation=cv2.INTER_NEAREST)
+        if self.output_image == 'mask':
+            return mask
+        elif self.output_image == 'contours':
+            contours, hierarchy = cv2.findContours(
+                mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             contours_img = np.zeros_like(mask)
-            cv2.drawContours(contours_img,contours,-1,255,2)
+            cv2.drawContours(contours_img, contours, -1, 255, 2)
             return contours_img
 
+
 class DatasetRecognition(Dataset):
-    def __init__(self,utils,dataset_part,transform=None):
+    def __init__(self, utils, dataset_part, transform=None):
         # self.recognition = recognition_instance
-        self.transform=transform
-        self.hot_encoding=utils.settings['training']['hot_encoding']
+        self.transform = transform
+        self.hot_encoding = utils.settings['training']['hot_encoding']
         self.patch_config = utils.settings['training']['patch_config']
 
         self.label_patch_folder = utils.settings['patch'][dataset_part]['label_patch_folder']
@@ -82,37 +103,39 @@ class DatasetRecognition(Dataset):
         self.instance_table = utils.settings['dataset']['instance_table']
 
         self.classes = len(self.instance_table.keys())
-    
+
     def __len__(self):
-        return len(self.label_files) 
+        return len(self.label_files)
 
     def __getitem__(self, ind):
         if torch.is_tensor(ind):
             ind = ind.tolist()
 
-        ### READ LABEL FILE
+        # READ LABEL FILE
         label_file_name = self.label_files[ind]
-        label_dict = json.load(open(f"{self.label_patch_folder}/{label_file_name}",'r'))
+        label_dict = json.load(
+            open(
+                f"{self.label_patch_folder}/{label_file_name}",
+                'r'))
 
-        ### GET IMAGE
+        # GET IMAGE
         img_path = label_dict[self.patch_config]['path']
-        img = cv2.cvtColor(cv2.imread(img_path,1),cv2.COLOR_BGR2RGB)
-        ### GET LABEL
+        img = cv2.cvtColor(cv2.imread(img_path, 1), cv2.COLOR_BGR2RGB)
+        # GET LABEL
         label_int = self.instance_table[label_dict['instance_name']]
         if self.hot_encoding:
             label = np.zeros([self.classes])
-            label[label_int]=1
+            label[label_int] = 1
         else:
             label = label_int
-        sample={'image_path':img_path,
-                'image':img,
-                'label':label}
+        sample = {'image_path': img_path,
+                  'image': img,
+                  'label': label}
 
         if self.transform:
             sample = self.transform(sample)
 
         return sample
-    
 
 
 if __name__ == "__main__":
@@ -122,11 +145,11 @@ if __name__ == "__main__":
     from recognition import Recognition
     from settings import Settings
 
-    patch_size=128
+    patch_size = 128
     dataset_part = 'test'
-    exp_no='temp'
+    exp_no = 'temp'
     patch_config = 'orthogonal_zoomed_patch'
-    split_ratio=[0.8,0.1,0.1]
+    split_ratio = [0.8, 0.1, 0.1]
 
     settings = Settings(hot_encoding=True,
                         exp_no=exp_no,
@@ -136,13 +159,13 @@ if __name__ == "__main__":
                         split_ratio=split_ratio)()
     # print(settings)
     # recognition_instance = Recognition(dataset_id,dataset_part,dataset_name,patch_size)
-    recognition_dataset = RecognitionDataset(settings,dataset_part,transform=Compose([ToTensor(),Normalize()]))
-    
-    ## CHECK DATASET
+    recognition_dataset = RecognitionDataset(
+        settings, dataset_part, transform=Compose([ToTensor(), Normalize()]))
+
+    # CHECK DATASET
     # print(len(recognition_dataset))
     for ind in range(10):
         # ind = 0#random.randint(0,len(recognition_dataset)-1)
         sample = recognition_dataset[ind]
         # print(sample['label'])
         print(sample['image_path'])
-

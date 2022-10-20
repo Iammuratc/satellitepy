@@ -6,6 +6,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 
+
 class UNet(nn.Module):
 
     def __init__(self, in_channels=3, out_channels=1, init_features=32):
@@ -21,20 +22,24 @@ class UNet(nn.Module):
         self.encoder4 = UNet._block(features * 4, features * 8, name="enc4")
         self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.bottleneck = UNet._block(features * 8, features * 16, name="bottleneck")
+        self.bottleneck = UNet._block(
+            features * 8, features * 16, name="bottleneck")
 
         self.upconv4 = nn.ConvTranspose2d(
             features * 16, features * 8, kernel_size=2, stride=2
         )
-        self.decoder4 = UNet._block((features * 8) * 2, features * 8, name="dec4")
+        self.decoder4 = UNet._block(
+            (features * 8) * 2, features * 8, name="dec4")
         self.upconv3 = nn.ConvTranspose2d(
             features * 8, features * 4, kernel_size=2, stride=2
         )
-        self.decoder3 = UNet._block((features * 4) * 2, features * 4, name="dec3")
+        self.decoder3 = UNet._block(
+            (features * 4) * 2, features * 4, name="dec3")
         self.upconv2 = nn.ConvTranspose2d(
             features * 4, features * 2, kernel_size=2, stride=2
         )
-        self.decoder2 = UNet._block((features * 2) * 2, features * 2, name="dec2")
+        self.decoder2 = UNet._block(
+            (features * 2) * 2, features * 2, name="dec2")
         self.upconv1 = nn.ConvTranspose2d(
             features * 2, features, kernel_size=2, stride=2
         )
@@ -102,56 +107,65 @@ class UNet(nn.Module):
 
 # Creating a CNN class
 class Custom_0(nn.Module):
-	#  Determine what layers and their order in CNN object 
-    def __init__(self,num_classes=10):
+    #  Determine what layers and their order in CNN object
+    def __init__(self, num_classes=10):
         super(Custom_0, self).__init__()
 
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=0.2)
-        self.max_pool = nn.MaxPool2d(kernel_size = 2, stride = 2)
+        self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
 
+        self.conv_layer1 = nn.Conv2d(
+            in_channels=3,
+            out_channels=32,
+            kernel_size=5,
+            padding=3)
+        self.conv_layer2 = nn.Conv2d(
+            in_channels=32,
+            out_channels=32,
+            kernel_size=5,
+            padding=3)
 
-        self.conv_layer1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=5,padding=3)
-        self.conv_layer2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=5,padding=3)
-        
-        self.conv_layer3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3)
-        self.conv_layer4 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3)
-        
+        self.conv_layer3 = nn.Conv2d(
+            in_channels=32, out_channels=64, kernel_size=3)
+        self.conv_layer4 = nn.Conv2d(
+            in_channels=64, out_channels=64, kernel_size=3)
+
         # self.fc1 = nn.Linear(1600, 128)
         self.fc1 = nn.Linear(61504, 128)
         self.fc2 = nn.Linear(128, num_classes)
-            
-        ### Cross entroy loss already includes log soft max layer
 
-    # Progresses data across layers    
+        # Cross entroy loss already includes log soft max layer
+
+    # Progresses data across layers
     def forward(self, x):
-        ### CONV 1
+        # CONV 1
         out = self.conv_layer1(x)
         out = self.relu(out)
         out = self.dropout(out)
 
-        ### CONV 2
+        # CONV 2
         out = self.conv_layer2(out)
         out = self.relu(out)
         out = self.dropout(out)
-        
-        ### MAX POOL
+
+        # MAX POOL
         out = self.max_pool(out)
-        
-        ### CONV 3
+
+        # CONV 3
         out = self.conv_layer3(out)
         out = self.relu(out)
         out = self.dropout(out)
-        
-        ### CONV 4
+
+        # CONV 4
         out = self.conv_layer4(out)
         out = self.relu(out)
         out = self.dropout(out)
-        
-        ### MAX POOL
+
+        # MAX POOL
         out = self.max_pool(out)
 
-        ### FULLY CONNECTED LAYERS                
+        # FULLY CONNECTED LAYERS
         out = out.reshape(out.size(0), -1)
         # out = out.view(out.size(0), -1)
         # print(out.shape)

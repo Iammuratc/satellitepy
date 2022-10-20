@@ -34,7 +34,7 @@
 #            cx,cy,h,w,angle = patch_dict['orthogonal_patch']['bbox_params']
 #            instance_name=patch_dict['instance_name']
 
-           
+
 #            if instance_name not in size_dict.keys():
 #                 size_dict[instance_name] = {'w':[],'h':[]}
 #            else:
@@ -61,5 +61,3 @@
 #         for json_file in json_files:
 #            patch_dict = json.load(open(f"{self.label_patch_folder}/{json_file}",'r'))
 #            img = json.load(open(f"{self.img_patch_folder}/{json_file}",'r'))
-
-
