@@ -9,13 +9,14 @@ from torchmetrics import F1Score
 
 # from transforms import *
 from .classifier import Classifier
-# from dataset import SegmentationDataset 
+# from dataset import SegmentationDataset
 # from unet import UNet
 
-## MOVE get_loaders to Classifier
+# MOVE get_loaders to Classifier
+
 
 class ClassifierSegmentation(Classifier):
-    def __init__(self,utils,dataset):    
+    def __init__(self, utils, dataset):
         super(ClassifierSegmentation, self).__init__(utils.settings)
         self.settings = utils.settings
         self.dataset = dataset
@@ -24,37 +25,49 @@ class ClassifierSegmentation(Classifier):
     def train(self):
 
         model = self.utils.get_model()
-        ### COST AND OPTIMIZER FUNCS
+        # COST AND OPTIMIZER FUNCS
         loss_func = DiceLoss()
-        optimizer = optim.SGD(model.parameters(), lr=self.settings['training']['learning_rate'], momentum=0.9)
+        optimizer = optim.SGD(
+            model.parameters(),
+            lr=self.settings['training']['learning_rate'],
+            momentum=0.9)
 
-        ### DATA
-        loaders = self.get_loaders(batch_size=self.settings['training']['batch_size'])
+        # DATA
+        loaders = self.get_loaders(
+            batch_size=self.settings['training']['batch_size'])
 
-        super().train(model,loss_func,optimizer,loaders)
+        super().train(model, loss_func, optimizer, loaders)
 
-    def get_loaders(self,batch_size):
+    def get_loaders(self, batch_size):
 
-        loader_train = self.get_loader(dataset=self.dataset['train'],batch_size=batch_size,shuffle=True)
-        loader_test = self.get_loader(dataset=self.dataset['test'],batch_size=batch_size,shuffle=False)
-        loader_val = self.get_loader(dataset=self.dataset['val'],batch_size=batch_size,shuffle=True)
+        loader_train = self.get_loader(
+            dataset=self.dataset['train'],
+            batch_size=batch_size,
+            shuffle=True)
+        loader_test = self.get_loader(
+            dataset=self.dataset['test'],
+            batch_size=batch_size,
+            shuffle=False)
+        loader_val = self.get_loader(
+            dataset=self.dataset['val'],
+            batch_size=batch_size,
+            shuffle=True)
 
-        loaders = {'train':loader_train,
-                    'test':loader_test,
-                    'val':loader_val}
+        loaders = {'train': loader_train,
+                   'test': loader_test,
+                   'val': loader_val}
 
         return loaders
 
-    def get_loader(self,dataset,shuffle,batch_size,num_workers=4):
-        loader = torch.utils.data.DataLoader(dataset, 
-                                            batch_size=batch_size,
-                                            shuffle=shuffle, 
-                                            num_workers=num_workers)      
+    def get_loader(self, dataset, shuffle, batch_size, num_workers=4):
+        loader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=batch_size,
+                                             shuffle=shuffle,
+                                             num_workers=num_workers)
 
         return loader
 
-
-    def get_predictions(self,model,loader):
+    def get_predictions(self, model, loader):
         for i, data in enumerate(loader):
             y_pred_batch = model(data['image'])
             y_true_batch = data['label']
@@ -62,58 +75,67 @@ class ClassifierSegmentation(Classifier):
 
             yield y_pred_batch.long(), y_true_batch.long(), image_path
 
-    def plot_images(self,dataset_part):
+    def plot_images(self, dataset_part):
         # BATCH SIZE ()SUBPLOT COUNTER)
         row, col = 3, 5
         batch_size = col
 
-        ### MODEL
-        model=self.utils.get_model()
-        model.load_state_dict(torch.load(self.settings['model']['path'],map_location='cpu'))
+        # MODEL
+        model = self.utils.get_model()
+        model.load_state_dict(
+            torch.load(
+                self.settings['model']['path'],
+                map_location='cpu'))
 
-        ### LOADERS
+        # LOADERS
         loader = self.get_loaders(batch_size=batch_size)[dataset_part]
 
-        prediction_generator = self.get_predictions(model,loader)
+        prediction_generator = self.get_predictions(model, loader)
         while True:
-            fig, ax = plt.subplots(row,col)
+            fig, ax = plt.subplots(row, col)
             fig.subplots_adjust(wspace=0.1, hspace=0.1)
             # fig.suptitle(f'G.Truth: {y_true_name} Prediction: {y_pred_name}',fontsize=15)
             for ind in range(batch_size):
-                y_pred,y_true,img_path = next(prediction_generator)
+                y_pred, y_true, img_path = next(prediction_generator)
 
-                img = cv2.cvtColor(cv2.imread(img_path[ind]),cv2.COLOR_BGR2RGB)
-                ax[0,ind].imshow(img)
-                ax[1,ind].imshow(y_pred[ind,0]*255)
-                ax[2,ind].imshow(y_true[ind,0]*255)
+                img = cv2.cvtColor(
+                    cv2.imread(
+                        img_path[ind]),
+                    cv2.COLOR_BGR2RGB)
+                ax[0, ind].imshow(img)
+                ax[1, ind].imshow(y_pred[ind, 0] * 255)
+                ax[2, ind].imshow(y_true[ind, 0] * 255)
             plt.show()
 
-    def get_f1_score(self,dataset_part):
-        
-        ### MODEL
-        model=self.utils.get_model()
-        model.load_state_dict(torch.load(self.settings['model']['path'],map_location='cpu'))
+    def get_f1_score(self, dataset_part):
 
-        ### LOADERS
-        batch_size=50
+        # MODEL
+        model = self.utils.get_model()
+        model.load_state_dict(
+            torch.load(
+                self.settings['model']['path'],
+                map_location='cpu'))
+
+        # LOADERS
+        batch_size = 50
         loader = self.get_loaders(batch_size=batch_size)[dataset_part]
 
-        prediction_generator = self.get_predictions(model,loader)        
+        prediction_generator = self.get_predictions(model, loader)
 
-        batch = 5#len(self.dataset[dataset_part])//batch_size
-        
-        f1 = F1Score(num_classes=2,average=None)
-        f1_score = 0 #TOTAL
-        for i in range(batch): # batch
-            y_pred,y_true,img_path = next(prediction_generator)
+        batch = 5  # len(self.dataset[dataset_part])//batch_size
+
+        f1 = F1Score(num_classes=2, average=None)
+        f1_score = 0  # TOTAL
+        for i in range(batch):  # batch
+            y_pred, y_true, img_path = next(prediction_generator)
             y_pred = y_pred[:, 0].contiguous().view(-1)
             y_true = y_true[:, 0].contiguous().view(-1)
             f1_batch = f1(y_pred, y_true)
             f1_score += f1_batch
             ####
         f1_score /= batch
-        print(f'f1 score for {batch*batch_size} samples of {dataset_part} set: {f1_score}')
-
+        print(
+            f'f1 score for {batch*batch_size} samples of {dataset_part} set: {f1_score}')
 
 
 class DiceLoss(nn.Module):
@@ -131,4 +153,3 @@ class DiceLoss(nn.Module):
             y_pred.sum() + y_true.sum() + self.smooth
         )
         return 1. - dsc
-

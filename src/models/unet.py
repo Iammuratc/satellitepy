@@ -36,7 +36,6 @@
 #         return logits
 
 
-
 # class DoubleConv(nn.Module):
 #     """(convolution => [BN] => ReLU) * 2"""
 
@@ -107,5 +106,3 @@
 
 #     def forward(self, x):
 #         return self.conv(x)
-
-
