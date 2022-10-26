@@ -1,5 +1,31 @@
 import os
+import logging
 
+def get_logger(name,file):
+    # create logger
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+
+    # create console handler and set level to debug
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.DEBUG)
+        
+    fh = logging.FileHandler(filename=file)
+    fh.setLevel(logging.DEBUG)
+
+    # create formatter
+    sh_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh_formatter = logging.Formatter('%(message)s')
+
+    # add formatter to ch
+    sh.setFormatter(sh_formatter)
+    fh.setFormatter(fh_formatter)
+
+    # add ch to logger
+    logger.addHandler(sh)
+    logger.addHandler(fh)
+        
+    return logger
 
 def create_folder(folder):
     if not os.path.exists(folder):
