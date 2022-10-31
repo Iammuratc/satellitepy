@@ -1,19 +1,56 @@
 import os
 from torchvision.transforms import Compose
 import torch
-
+import json
 # import numpy as np
 # import matplotlib.pyplot as plt
 # import cv2
+import traceback
 from models.models import *
-from dataset.dataset import DatasetSegmentation, DatasetRecognition
+from data.dataset.dataset import DatasetSegmentation, DatasetRecognition
 from transforms import Normalize, ToTensor, AddAxis
-from cutout.cutout import Cutout
+from data.cutout.cutout import Cutout
 
-def write_cutouts(dataset_settings):
+
+def convert_my_labels_to_imagenet(dataset_settings):
+    ''' Convert JSON labels to imagenet type annotation file
+
+    mmclassification needs imagenet type annotation files
+    e.g.
+    image_path class_id
+    This function takes my json file labels and create an imagenet type annotation file
+    '''
+    # print(dataset_settings)
+    for dataset_part in dataset_settings['dataset_parts']:
+        label_folder = dataset_settings['cutout'][dataset_part]['label_folder']
+        imagenet_label_file_path = os.path.join(dataset_settings['cutout'][dataset_part]['root_folder'],'imagenet_labels.txt')
+        print(f'imagenet annotation file will be saved at {imagenet_label_file_path}')
+        imagenet_label_file = open(imagenet_label_file_path,'a+')
+        
+        try:
+            for file_name in os.listdir(label_folder):
+                label_file_path = os.path.join(label_folder,file_name) 
+                with open(label_file_path,'r') as f:
+                    # print(label_file_path)
+                    label_file = json.load(f)
+
+                img_path = label_file['original_cutout']['img_path']
+                instance_id = label_file['instance']['id']
+
+                imagenet_line = f'{img_path} {instance_id}\n'
+                print(imagenet_line)
+                imagenet_label_file.write(imagenet_line)
+
+        except Exception:
+            traceback.print_exc()                    
+        finally:
+            imagenet_label_file.close()
+
+def write_cutouts(dataset_settings,multi_process):
     for dataset_part in dataset_settings['dataset_parts']:
         my_cutout = Cutout(dataset_settings,dataset_part)
-        my_cutout.get_cutouts(save=True,plot=False,indices='all') # 12,13
+        my_cutout.get_cutouts(save=True,plot=False,indices='all',multi_process=multi_process) # 12,13
+        # my_cutout.show_original_image(ind=288)
 
 class Utilities:
     """docstring for Utilities"""

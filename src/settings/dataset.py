@@ -1,7 +1,9 @@
 import os
-from .utils import create_folder, get_project_folder
+from .utils import create_folder, get_project_folder#, get_logger
 
 
+#TODO:
+#   Log files
 class Utils:
     """docstring for Utils"""
 
@@ -26,8 +28,6 @@ class Utils:
 
     def get_cutout_folders(self, dataset_part):
         # PATCH SAVE DIRECTORIES
-        # EX:
-        # /home/murat/Projects/airplane_recognition/data/Gaofen/train/recognition/patches_128
         cutout_folder_root = self.get_cutout_folder(dataset_part)
         img_cutout_folder = os.path.join(cutout_folder_root, "images")
         img_cutout_orthogonal_folder = os.path.join(
@@ -37,11 +37,16 @@ class Utils:
         label_cutout_folder = os.path.join(cutout_folder_root, "labels")
 
         folders = {
+            'root_folder':cutout_folder_root,
             'image_folder': img_cutout_folder,
             'orthogonal_image_folder': img_cutout_orthogonal_folder,
             'orthogonal_zoomed_image_folder': img_cutout_orthogonal_zoomed_folder,
             'label_folder': label_cutout_folder
         }
+        # if 'class' in self.tasks:
+        #     imagenet_label_file = os.path.join(cutout_folder_root,'imagenet_labels.txt')
+        #     folders['imagenet_label_file']=imagenet_label_file
+
         if 'seg' in self.tasks:
             seg_folders = {
                 'mask_folder': os.path.join(cutout_folder_root, 'masks'),
@@ -80,6 +85,8 @@ class Utils:
             assert create_folder(folder)
         return folders
 
+    # def init_logger(self,dataset_part,file,name):
+
 
 class SettingsDataset(Utils):
     """docstring for SettingsDataset"""
@@ -101,15 +108,18 @@ class SettingsDataset(Utils):
 
     def get_settings(self):
 
-        # CUTOUT FOLDERS
-        train_folders = self.get_cutout_folders('train')
-        val_folders = self.get_cutout_folders('val')
+        # log_names = f'{self.dataset_name}_log'
+        # log_file = os.path.join(self.get_cutout_folder(),'cutouts.log')
+        # logger = get_logger(log_name,log_file)
+
+
 
         settings = {
+            # 'log_names':log_name,
             'dataset_name':self.dataset_name,
             'tasks': self.tasks,
             'dataset_parts':self.dataset_parts,
-            'instance_names':self.instance_names,
+            'instance_names':{instance_name:i for i,instance_name in enumerate(self.instance_names)},
             'bbox_rotation':self.bbox_rotation,
             'original': {
                 dataset_part: self.get_original_data_folders(dataset_part)

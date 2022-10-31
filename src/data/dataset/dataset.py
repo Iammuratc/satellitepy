@@ -9,8 +9,8 @@ import numpy as np
 
 
 
-class DatasetMultitask(Dataset):
-    def __init__(self, settings, dataset_part, transform=None):
+# class DatasetMultitask(Dataset):
+#     def __init__(self, settings, dataset_part, transform=None):
     
 
 
