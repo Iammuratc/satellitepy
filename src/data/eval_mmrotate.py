@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from .cutout import geometry
 # from mmdet.apis.inference import init_detector, inference_detector, show_result_pyplot
 # import mmcv
+from ast import literal_eval
+import mmcv
 
 
 class EvalMMRotate:
@@ -22,6 +24,11 @@ class EvalMMRotate:
 		csv_path = self.settings['test_csv_path']
 		if os.path.exists(csv_path):
 			df = pd.read_csv(csv_path)
+			# print(df.iloc[:,1])
+			# print(len(df))
+			for i in range(2,len(df.columns)):
+				df.iloc[:,i] = df.iloc[:,i].apply(literal_eval)
+			# data = [ast.literal_eval(line) for line in lines]
 		else:
 			test_pkl_path = self.settings['test_pkl_path']
 			with open(test_pkl_path, "rb") as f:
@@ -30,7 +37,14 @@ class EvalMMRotate:
 			if save:
 				df.to_csv(csv_path)
 				self.logger.info(f"csv is saved at {csv_path}")
+
+		print(df.iloc[2,2])
 		return df
+
+	def read_test_pkl(self):
+		test_pkl_path = self.settings['test_pkl_path']
+		pkl_object = mmcv.load(test_pkl_path)
+		print(pkl_object)
 
 	def show_image(self,ind,show_bbox=True):
 		## Read image path from settings (old) 
@@ -46,11 +60,18 @@ class EvalMMRotate:
 		ax.imshow(img)
 
 		if show_bbox:
-			bboxes = self.df.iloc[ind,2:]
-			for bbox in bboxes:
-				if bbox == []:
+			all_bboxes = self.df.iloc[ind,2:].to_list() # multiple bbox params
+			print('\n')
+			print(all_bboxes)
+			for all_bbox in all_bboxes:
+				if all_bbox == []:
 					continue
-				geometry.Bbox.plot_bbox(bbox,ax,c='b')
+				else:
+					print('here')
+				for bbox in all_bbox:
+					print(bbox)
+					my_bbox = geometry.BBox(params=bbox)
+					my_bbox.plot_bbox(corners=my_bbox.corners,ax=ax,c='b')
 		plt.show()
 
 
