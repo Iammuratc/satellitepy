@@ -47,6 +47,7 @@ class BBox:
             else:
                 raise Exception('Params have to be either list or numpy array')
             self.params = params
+            self.corners=self.get_corners()
 
     def get_neighbor_corner_dif(self,corners,i):
         i_0 = i
@@ -59,6 +60,17 @@ class BBox:
         return x_dif, y_dif, y_sum
 
 
+    def get_corners(self):
+        cx,cy,h,w,angle = self.params
+
+        corners = [
+            [cx+w/2.0,cy+h/2.0],
+            [cx+w/2.0,cy-h/2.0],
+            [cx-w/2.0,cy-h/2.0],
+            [cx-w/2.0,cy+h/2.0]]
+
+        corners = self.rotate_corners(corners)
+        return corners
 
     def get_params(self):
         cx = np.sum(self.corners[:, 0]) / 4.0
@@ -116,9 +128,9 @@ class BBox:
             orth_angle =  3 * np.pi / 2 + params_angle
         return orth_angle
 
-    def get_orthogonal_bbox(self):
-
-        angle = -self.get_orth_angle()
+    # def get_orthogonal_bbox(self,angle):
+    def rotate_corners(self,angle):
+        # angle = -self.get_orth_angle()
         R = np.array([[np.cos(angle), -np.sin(angle)],
                       [np.sin(angle), np.cos(angle)]])
         # o = np.atleast_2d((self.cx, self.cy))

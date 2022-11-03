@@ -9,8 +9,11 @@ from .cutout import geometry
 # from mmdet.apis.inference import init_detector, inference_detector, show_result_pyplot
 # import mmcv
 from ast import literal_eval
+<<<<<<< Updated upstream
 import mmcv
 
+=======
+>>>>>>> Stashed changes
 
 class EvalMMRotate:
 	"""docstring for MMRotate"""
@@ -41,10 +44,14 @@ class EvalMMRotate:
 		print(df.iloc[2,2])
 		return df
 
+<<<<<<< Updated upstream
 	def read_test_pkl(self):
 		test_pkl_path = self.settings['test_pkl_path']
 		pkl_object = mmcv.load(test_pkl_path)
 		print(pkl_object)
+=======
+
+>>>>>>> Stashed changes
 
 	def show_image(self,ind,show_bbox=True):
 		## Read image path from settings (old) 

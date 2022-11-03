@@ -10,7 +10,6 @@ settings = SettingsMMRotate(
 
 my_ind = 1
 evaluate = EvalMMRotate(settings)
-# print(evaluate.df.iloc[my_ind,:])
-evaluate.show_image(my_ind)
+# print(evaluate.df.iloc[my_ind,7])
+# evaluate.show_image(my_ind)
 
-# evaluate.inference_model(ind=my_ind)
