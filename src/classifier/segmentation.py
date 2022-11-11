@@ -108,9 +108,9 @@ class ClassifierSegmentation(Classifier):
             plt.show()
 
     def get_f1_score(self, dataset_part):
-
         # MODEL
         model = self.utils.get_model()
+        print(self.settings['model']['path'])
         model.load_state_dict(
             torch.load(
                 self.settings['model']['path'],

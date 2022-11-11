@@ -1,6 +1,7 @@
 import os
 import json
-from utils import create_folder, get_project_folder
+
+from src.settings.utils import create_folder, get_project_folder
 
 # NOTES: The recognition patches are read from the json file (e.g.
 # no_duplicates.json), while the detection patches are read from the
@@ -20,7 +21,6 @@ class Utils:
     def get_settings_path(self, update):
         # SETTINGS PATH
         settings_path = os.path.join(self.experiment_folder, "settings.json")
-
         print(f'The following settings will be used:\n{settings_path}\n')
 
         # READ EXISTING SETTINGS FILE
@@ -37,6 +37,17 @@ class Utils:
                 print('\n')
         return settings_path
 
+    def get_dataset_folder(self):
+        dataset_folder = os.path.join(
+            self.project_folder, "data", self.dataset_name)
+        assert create_folder(dataset_folder)
+        return dataset_folder
+
+    def get_segmentation_folder(self, dataset_folder, dataset_part):
+        segmentation_folder = os.path.join(
+            dataset_folder, dataset_part, "segmentation")
+        assert create_folder(segmentation_folder)
+        return segmentation_folder
     def get_experiment_folder(self):
         # EXPERIMENTS FOLDER
         experiments_folder = os.path.join(self.project_folder, 'experiments')
@@ -82,7 +93,7 @@ class SettingsSegmentation(Utils):
                  bbox_rotation='clockwise',
                  update=True,
                  ):
-        super(SettingsSegmentation, self).__init__(exp_no)
+        super(SettingsSegmentation, self).__init__(exp_name)
 
         # MODEL
         self.model_name = model_name
@@ -114,10 +125,11 @@ class SettingsSegmentation(Utils):
         return self.get_settings()
 
     def get_settings(self):
-        settings_path = self.get_settings_path(self.update)
+        settings_path = self.get_settings_path(self)
+        print(settings_path)
 
         # DATASET DETAILS
-        dataset_folder = self.get_dataset_folder(self.dataset_name)
+        dataset_folder = self.get_dataset_folder()
         dataset_train_folders = self.get_dataset_part_folders(
             dataset_folder, 'train')
         dataset_val_folders = self.get_dataset_part_folders(
@@ -189,7 +201,6 @@ class SettingsSegmentation(Utils):
                 'output_image': self.output_image
             }
         }
-
         with open(settings_path, 'w+') as f:
             json.dump(settings, f, indent=4)
 
@@ -259,6 +270,7 @@ class SettingsRecognition(Utils):
                  class_weight=None,
                  update=True
                  ):
+        from src.main_segmentation import exp_no
         super(SettingsRecognition, self).__init__(exp_no)
         self.update = update
         self.model_name = model_name
@@ -280,6 +292,7 @@ class SettingsRecognition(Utils):
         return self.get_settings()
 
     def get_settings(self):
+        from src.main_detection import dataset_name
         # SETTINGS PATH
         settings_path = self.get_settings_path(self.update)
 
