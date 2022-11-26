@@ -1,6 +1,9 @@
-from src.classifier.segmentation import ClassifierSegmentation
-from src.settings.experiment import SettingsSegmentation
-from src.utilities import Utilities
+import matplotlib.pyplot as plt
+
+from settings import SettingsSegmentation
+from classifier.segmentation import ClassifierSegmentation
+from utilities import Utilities
+from patch.segmentation import SegmentationPatch
 
 update = False
 exp_no = 11

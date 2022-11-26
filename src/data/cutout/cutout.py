@@ -1,16 +1,14 @@
+import cv2
+import numpy as np
+import json
 import os
+import matplotlib.pyplot as plt
 import traceback
 import xml.etree.ElementTree as ET
 from multiprocessing import Pool
 
-import cv2
-import matplotlib.pyplot as plt
-import numpy as np
-
-from src.data.cutout import geometry
-from src.data.cutout.tools import Tools
-from src.main_segmentation import utils
-
+from . import geometry
+from .tools import Tools
 
 # SEGMENTATION DATA
 
@@ -229,7 +227,7 @@ class Cutout(Tools):
             f.write(cutout_dict['original']['img_path'])
 
 if __name__ == '__main__':
-    from src.settings.dataset import SettingsDataset
+    from ..settings.dataset import SettingsDataset
     fair1m_settings = SettingsDataset(
     dataset_name='fair1m',
     dataset_parts=['val'], # 'train',

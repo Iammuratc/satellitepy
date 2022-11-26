@@ -1,6 +1,6 @@
 # CREATE PATCHES
-from src.settings.experiment import SettingsDetection
-from src.data.patch.detection import PatchDetection
+from settings import SettingsDetection
+from patch.detection import PatchDetection
 # from utilities import Utilities
 from classifier.detection import ClassifierDetection
 

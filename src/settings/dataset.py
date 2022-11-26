@@ -1,5 +1,5 @@
 import os
-from src.settings.utils import create_folder, get_project_folder#, get_logger
+from .utils import create_folder, get_project_folder#, get_logger
 
 
 #TODO:

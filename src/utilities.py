@@ -1,16 +1,15 @@
-import json
 import os
+from torchvision.transforms import Compose
+import torch
+import json
 # import numpy as np
 # import matplotlib.pyplot as plt
 # import cv2
 import traceback
-
-import cv2
-from torchvision.transforms import Compose
-
-from src.data.dataset.dataset import DatasetSegmentation, DatasetRecognition
-from src.models.models import *
-from src.transforms import Normalize, ToTensor, AddAxis
+from models.models import *
+from data.dataset.dataset import DatasetSegmentation, DatasetRecognition
+from transforms import Normalize, ToTensor, AddAxis
+from data.cutout.cutout import Cutout
 
 
 def convert_my_labels_to_imagenet(dataset_settings):
@@ -48,7 +47,6 @@ def convert_my_labels_to_imagenet(dataset_settings):
             imagenet_label_file.close()
 
 def write_cutouts(dataset_settings,multi_process):
-    from src.data.cutout.cutout import Cutout
     for dataset_part in dataset_settings['dataset_parts']:
         my_cutout = Cutout(dataset_settings,dataset_part)
         my_cutout.get_cutouts(save=True,plot=False,indices='all',multi_process=multi_process) # 12,13
