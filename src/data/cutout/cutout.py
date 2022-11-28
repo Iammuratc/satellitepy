@@ -76,9 +76,14 @@ class Cutout(Tools):
 
         else:
             for i, img_path in enumerate(image_paths):
-                self.get_cutout(img_path,mask_paths[i],bbox_paths[i],i,save,plot,indices)
+                bbox_path = bbox_paths[0]
+                if self.settings['dataset_name'] != 'rarePlanes':
+                    mask_path = mask_paths[i]
+
+                self.get_cutout(img_path,mask_paths[i],bbox_path,i,save,plot,indices)
                 # break
             # break
+
     def get_cutout(self,img_path,mask_path,bbox_path,i,save,plot,indices):
             if indices == 'all':
                 pass
@@ -93,9 +98,12 @@ class Cutout(Tools):
                 # cropping steps
                 img = self.get_original_image(img_path)  # cv2.imread(img_path)
                 print(img_path)
+                img_name = img_path.split('\\')[-1]
+                print(img_name)
+
                 # BBOXES
                 # bbox_path = bbox_paths[i]
-                bbox_labels = self.get_bbox_labels(bbox_path)
+                bbox_labels = self.get_bbox_labels(bbox_path, img_name)
                 # MASK
                 # mask_path = mask_paths[i]
                 mask = self.get_original_image(mask_path, flags=1)
@@ -142,7 +150,7 @@ class Cutout(Tools):
                 traceback.print_exc()                    
 
 
-    def get_bbox_labels(self,bbox_path):
+    def get_bbox_labels(self,bbox_path, img_name):
         """
         Return dota type bbox labels
         bbox_labels: list([x1, y1, x2, y2, x3, y3, x4, y4, instance_name, difficult])
@@ -179,7 +187,34 @@ class Cutout(Tools):
                     bbox_label = [item for sublist in coords for item in sublist]
                     bbox_label.append(instance_names[i].text)
                 bbox_labels.append(bbox_label)
-        # print(bbox_labels)
+        elif self.settings['dataset_name'] == 'rarePlanes':
+            file = json.load(open(bbox_path, 'r'))
+
+            # INSTANCE NAMES
+            instance_names = []
+            point_spaces = []
+            for category in file['categories']:
+                if category['image_fname'] == img_name:
+                    instance_names.append(category['role'])
+                    point_spaces.append(category['bbox'])
+
+            coords = []
+
+            for i,bbox in enumerate(point_spaces):
+                coord = []
+
+                for x in [float(bbox[0]), float(bbox[0]) + float(bbox[2])]:
+                    for y in [float(bbox[1]), float(bbox[1]) + float(bbox[3])]:
+                        coord.append(x)
+                        coord.append(y)
+
+                coords.append(coord)
+                bbox_label = coord
+
+                bbox_label.append(instance_names[i])
+                bbox_labels.append(bbox_label)
+
+        print(bbox_labels)
         return bbox_labels
 
     def show_original_image(self, ind):

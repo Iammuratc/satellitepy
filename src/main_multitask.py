@@ -29,9 +29,24 @@ fair1m_settings = SettingsDataset(
         'ARJ21',
         'C919',
         'other-airplane'])()
-print(fair1m_settings)
-dataset_settings = [fair1m_settings]#,dota_settings]
+# print(fair1m_settings)
 
-# if save_cutouts:
-#     for my_settings in dataset_settings:
-#         write_cutouts(my_settings)
+rarePlanes_settings = SettingsDataset(
+    dataset_name='rarePlanes',
+    dataset_parts=['train','val'],
+    tasks=['bbox'],
+    bbox_rotation='clockwise',
+    instance_names=[
+        'Small Civil Transport/Utility',
+        'Medium Civil Transport/Utility',
+        'Large Civil Transport/Utility',
+        'Military Transport/Utility/AWAC',
+        'Military Bomber',
+        'Military Fighter/Interceptor/Attack',
+        'Military Trainer'])()
+
+dataset_settings = [rarePlanes_settings] #fair1m_settings]  # dota_settings]
+
+if save_cutouts:
+    for my_settings in dataset_settings:
+        write_cutouts(my_settings, False)
