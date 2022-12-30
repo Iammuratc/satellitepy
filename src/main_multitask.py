@@ -1,3 +1,5 @@
+import os.path
+
 from settings.dataset import SettingsDataset
 from utilities import write_cutouts
 

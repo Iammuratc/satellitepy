@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import traceback
 import xml.etree.ElementTree as ET
+from sympy import geometry as geo
 from multiprocessing import Pool
 
 from . import geometry
@@ -193,20 +194,35 @@ class Cutout(Tools):
             # INSTANCE NAMES
             instance_names = []
             point_spaces = []
-            for category in file['categories']:
-                if category['image_fname'] == img_name:
-                    instance_names.append(category['role'])
-                    point_spaces.append(category['bbox'])
+            for image in file['images']:
+                if image['file_name'] == img_name:
+                    img_id = image['id']
+
+                    for annotation in file['annotations']:
+                        if annotation['image_id'] == img_id:
+                            instance_names.append(annotation['role'])
+                            point_spaces.append(annotation['segmentation'])
 
             coords = []
 
             for i,bbox in enumerate(point_spaces):
-                coord = []
 
-                for x in [float(bbox[0]), float(bbox[0]) + float(bbox[2])]:
-                    for y in [float(bbox[1]), float(bbox[1]) + float(bbox[3])]:
-                        coord.append(x)
-                        coord.append(y)
+                print(bbox)
+
+                A = geo.Point(bbox[0][0], bbox[0][1])
+                B = geo.Point(bbox[0][2], bbox[0][3])
+                C = geo.Point(bbox[0][4], bbox[0][5])
+                D = geo.Point(bbox[0][6], bbox[0][7])
+
+                lineAC = geo.Line(A, C)
+                lineBD = geo.Line(B, D)
+                middle = lineAC.intersection(lineBD)[0]
+                vecToC = C - middle
+                vecToA = A - middle
+
+                coord = [(D + vecToA).x, (D + vecToA).y, (D + vecToC).x, (D + vecToC).y, (B + vecToC).x, (B + vecToC).y, (B + vecToA).x, (B + vecToA).y]
+
+                print(coord)
 
                 coords.append(coord)
                 bbox_label = coord
