@@ -1,6 +1,4 @@
 import os
-
-import cv2
 from torchvision.transforms import Compose
 import torch
 import json

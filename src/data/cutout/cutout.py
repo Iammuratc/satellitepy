@@ -79,7 +79,7 @@ class Cutout(Tools):
             for i, img_path in enumerate(image_paths):
                 bbox_path = bbox_paths[0]
                 if self.settings['dataset_name'] != 'rarePlanes':
-                    mask_path = mask_paths[i]
+                    bbox_path = bbox_paths[i]
 
                 self.get_cutout(img_path,mask_paths[i],bbox_path,i,save,plot,indices)
                 # break
@@ -100,8 +100,6 @@ class Cutout(Tools):
                 img = self.get_original_image(img_path)  # cv2.imread(img_path)
                 print(img_path)
                 img_name = img_path.split('\\')[-1]
-                print(img_name)
-
                 # BBOXES
                 # bbox_path = bbox_paths[i]
                 bbox_labels = self.get_bbox_labels(bbox_path, img_name)
@@ -206,9 +204,6 @@ class Cutout(Tools):
             coords = []
 
             for i,bbox in enumerate(point_spaces):
-
-                print(bbox)
-
                 A = geo.Point(bbox[0][0], bbox[0][1])
                 B = geo.Point(bbox[0][2], bbox[0][3])
                 C = geo.Point(bbox[0][4], bbox[0][5])
@@ -221,16 +216,12 @@ class Cutout(Tools):
                 vecToA = A - middle
 
                 coord = [(D + vecToA).x, (D + vecToA).y, (D + vecToC).x, (D + vecToC).y, (B + vecToC).x, (B + vecToC).y, (B + vecToA).x, (B + vecToA).y]
-
-                print(coord)
-
                 coords.append(coord)
                 bbox_label = coord
-
                 bbox_label.append(instance_names[i])
                 bbox_labels.append(bbox_label)
 
-        print(bbox_labels)
+        # print(bbox_labels)
         return bbox_labels
 
     def show_original_image(self, ind):

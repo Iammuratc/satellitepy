@@ -1,7 +1,6 @@
 import os
 import logging
 
-
 def get_logger(name, file):
     # create logger
     logger = logging.getLogger(name)
@@ -27,7 +26,6 @@ def get_logger(name, file):
     logger.addHandler(fh)
 
     return logger
-
 
 def create_folder(folder):
     if not os.path.exists(folder):

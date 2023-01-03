@@ -1,5 +1,3 @@
-import os.path
-
 from settings.dataset import SettingsDataset
 from utilities import write_cutouts
 
@@ -31,11 +29,11 @@ fair1m_settings = SettingsDataset(
         'ARJ21',
         'C919',
         'other-airplane'])()
-# print(fair1m_settings)
+print(fair1m_settings)
 
 rarePlanes_settings = SettingsDataset(
     dataset_name='rarePlanes',
-    dataset_parts=['train','val'],
+    dataset_parts=['train', 'val'],
     tasks=['bbox'],
     bbox_rotation='clockwise',
     instance_names=[
@@ -47,8 +45,8 @@ rarePlanes_settings = SettingsDataset(
         'Military Fighter/Interceptor/Attack',
         'Military Trainer'])()
 
-dataset_settings = [rarePlanes_settings] #fair1m_settings]  # dota_settings]
+dataset_settings = [fair1m_settings]  # rarePlanes_settings]   # dota_settings]
 
-if save_cutouts:
-    for my_settings in dataset_settings:
-        write_cutouts(my_settings, False)
+# if save_cutouts:
+#     for my_settings in dataset_settings:
+#         write_cutouts(my_settings, False)
