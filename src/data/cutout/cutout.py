@@ -197,7 +197,7 @@ class Cutout(Tools):
                     img_id = image['id']
 
                     for annotation in file['annotations']:
-                        if annotation['image_id'] == img_id:
+                        if annotation['image_id'] == img_id and annotation['truncated'] == 0.0:
                             instance_names.append(annotation['role'])
                             point_spaces.append(annotation['segmentation'])
 
