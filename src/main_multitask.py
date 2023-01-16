@@ -2,7 +2,7 @@ from settings.dataset import SettingsDataset
 from utilities import write_cutouts, convert_my_labels_to_imagenet
 
 ### DATASETS
-save_cutouts=False
+save_cutouts=True
 
 dota_settings = SettingsDataset(
     dataset_name='DOTA',
@@ -33,17 +33,19 @@ fair1m_settings = SettingsDataset(
 
 rarePlanes_settings = SettingsDataset(
     dataset_name='rarePlanes',
-    dataset_parts=['train', 'val'],
+    dataset_parts=[ 'val'],
     tasks=['bbox'],
     bbox_rotation='clockwise',
-    instance_names=[
-        'Small Civil Transport/Utility',
-        'Medium Civil Transport/Utility',
-        'Large Civil Transport/Utility',
-        'Military Transport/Utility/AWAC',
-        'Military Bomber',
-        'Military Fighter/Interceptor/Attack',
-        'Military Trainer'])()
+  #  instance_names=[
+     #   'Small Civil Transport/Utility',
+     #   'Medium Civil Transport/Utility',
+     #   'Large Civil Transport/Utility',
+     #   'Military Transport/Utility/AWAC',
+     #   'Military Bomber',
+     #   'Military Fighter/Interceptor/Attack',
+    #    'Military Trainer'])()
+instance_names=[
+        1, 2, 3])()
 
 dataset_settings = [rarePlanes_settings]   # fair1m_settings]    # dota_settings]
 

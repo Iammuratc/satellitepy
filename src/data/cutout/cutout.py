@@ -76,16 +76,28 @@ class Cutout(Tools):
                 pool.starmap(self.get_cutout,[[img_path,mask_paths[i],bbox_paths[i],i,save,plot,indices] for i, img_path in enumerate(image_paths)])
 
         else:
+            if self.settings['dataset_name'] == 'rarePlanes':
+                file = json.load(open(bbox_paths[0], 'r'))
+                img_to_id = {}
+                for image in file['images']:
+                    img_to_id[image['file_name']] = image['id']
+
+                id_to_annotation = {}
+                for annotation in file['annotations']:
+                    if not id_to_annotation.get(annotation['image_id']):
+                        id_to_annotation[annotation['image_id']] = []
+                    id_to_annotation[annotation['image_id']].append([annotation['segmentation'][0], annotation['category_id']])
+
             for i, img_path in enumerate(image_paths):
                 bbox_path = bbox_paths[0]
                 if self.settings['dataset_name'] != 'rarePlanes':
                     bbox_path = bbox_paths[i]
 
-                self.get_cutout(img_path,mask_paths[i],bbox_path,i,save,plot,indices)
+                self.get_cutout(img_path,mask_paths[i],bbox_path,i,save,plot,indices, img_to_id, id_to_annotation)
                 # break
             # break
 
-    def get_cutout(self,img_path,mask_path,bbox_path,i,save,plot,indices):
+    def get_cutout(self,img_path,mask_path,bbox_path,i,save,plot,indices, img_to_id, id_to_annotation):
             if indices == 'all':
                 pass
             elif i in indices:
@@ -100,9 +112,10 @@ class Cutout(Tools):
                 img = self.get_original_image(img_path)  # cv2.imread(img_path)
                 print(img_path)
                 img_name = img_path.split('\\')[-1]
+                img_name = img_name.split('/')[-1]
                 # BBOXES
                 # bbox_path = bbox_paths[i]
-                bbox_labels = self.get_bbox_labels(bbox_path, img_name)
+                bbox_labels = self.get_bbox_labels(bbox_path, img_name, img_to_id, id_to_annotation)
                 # MASK
                 # mask_path = mask_paths[i]
                 mask = self.get_original_image(mask_path, flags=1)
@@ -111,7 +124,6 @@ class Cutout(Tools):
 
                 bbox_ind = 0
                 for bbox_label in bbox_labels:
-                    # print(bbox_label)
                     instance_name = bbox_label[-1]
                     if instance_name not in self.settings['instance_names'].keys():
                         continue
@@ -149,7 +161,7 @@ class Cutout(Tools):
                 traceback.print_exc()                    
 
 
-    def get_bbox_labels(self,bbox_path, img_name):
+    def get_bbox_labels(self,bbox_path, img_name, img_to_id, id_to_annotation):
         """
         Return dota type bbox labels
         bbox_labels: list([x1, y1, x2, y2, x3, y3, x4, y4, instance_name, difficult])
@@ -187,27 +199,22 @@ class Cutout(Tools):
                     bbox_label.append(instance_names[i].text)
                 bbox_labels.append(bbox_label)
         elif self.settings['dataset_name'] == 'rarePlanes':
-            file = json.load(open(bbox_path, 'r'))
-
             # INSTANCE NAMES
             instance_names = []
             point_spaces = []
-            for image in file['images']:
-                if image['file_name'] == img_name:
-                    img_id = image['id']
 
-                    for annotation in file['annotations']:
-                        if annotation['image_id'] == img_id and annotation['truncated'] == 0.0:
-                            instance_names.append(annotation['role'])
-                            point_spaces.append(annotation['segmentation'])
+            img_id = img_to_id[img_name]
+            for annotation in id_to_annotation[img_id]:
+                instance_names.append(annotation[1])
+                point_spaces.append(annotation[0])
 
             coords = []
 
             for i,bbox in enumerate(point_spaces):
-                A = geo.Point(bbox[0][0], bbox[0][1])
-                B = geo.Point(bbox[0][2], bbox[0][3])
-                C = geo.Point(bbox[0][4], bbox[0][5])
-                D = geo.Point(bbox[0][6], bbox[0][7])
+                A = geo.Point(bbox[0], bbox[1])
+                B = geo.Point(bbox[2], bbox[3])
+                C = geo.Point(bbox[4], bbox[5])
+                D = geo.Point(bbox[6], bbox[7])
 
                 lineAC = geo.Line(A, C)
                 lineBD = geo.Line(B, D)
@@ -215,7 +222,8 @@ class Cutout(Tools):
                 vecToC = C - middle
                 vecToA = A - middle
 
-                coord = [(D + vecToA).x, (D + vecToA).y, (D + vecToC).x, (D + vecToC).y, (B + vecToC).x, (B + vecToC).y, (B + vecToA).x, (B + vecToA).y]
+                # coord = [(D + vecToA).x, (D + vecToA).y, (D + vecToC).x, (D + vecToC).y, (B + vecToC).x, (B + vecToC).y, (B + vecToA).x, (B + vecToA).y] #real
+                coord = [(B + vecToA).x, (B + vecToA).y, (D + vecToA).x, (D + vecToA).y, (D + vecToC).x, (D + vecToC).y, (B + vecToC).x, (B + vecToC).y]  #synthetic
                 coords.append(coord)
                 bbox_label = coord
                 bbox_label.append(instance_names[i])
