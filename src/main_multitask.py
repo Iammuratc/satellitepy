@@ -1,8 +1,9 @@
 from settings.dataset import SettingsDataset
-from utilities import write_cutouts, convert_my_labels_to_imagenet
+from utilities import write_cutouts, convert_my_labels_to_imagenet, filter_truncated_images
 
 ### DATASETS
-save_cutouts=True
+save_cutouts=False
+convert_to_imagenet=False
 
 dota_settings = SettingsDataset(
     dataset_name='DOTA',
@@ -33,7 +34,7 @@ fair1m_settings = SettingsDataset(
 
 rarePlanes_settings = SettingsDataset(
     dataset_name='rarePlanes',
-    dataset_parts=[ 'val'],
+    dataset_parts=[ 'train'],
     tasks=['bbox'],
     bbox_rotation='clockwise',
   #  instance_names=[
@@ -53,4 +54,7 @@ if save_cutouts:
     for my_settings in dataset_settings:
         write_cutouts(my_settings, False)
 
-convert_my_labels_to_imagenet(rarePlanes_settings)
+if convert_to_imagenet:
+    convert_my_labels_to_imagenet(rarePlanes_settings)
+
+filter_truncated_images()

@@ -8,8 +8,10 @@ import json
 import traceback
 from models.models import *
 from data.dataset.dataset import DatasetSegmentation, DatasetRecognition
+from src.settings.utils import create_folder
 from transforms import Normalize, ToTensor, AddAxis
 from data.cutout.cutout import Cutout
+from PIL import Image
 
 
 def convert_my_labels_to_imagenet(dataset_settings):
@@ -23,14 +25,15 @@ def convert_my_labels_to_imagenet(dataset_settings):
     # print(dataset_settings)
     for dataset_part in dataset_settings['dataset_parts']:
         label_folder = dataset_settings['cutout'][dataset_part]['label_folder']
-        imagenet_label_file_path = os.path.join(dataset_settings['cutout'][dataset_part]['root_folder'],'imagenet_labels.txt')
+        imagenet_label_file_path = os.path.join(dataset_settings['cutout'][dataset_part]['root_folder'],
+                                                'imagenet_labels.txt')
         print(f'imagenet annotation file will be saved at {imagenet_label_file_path}')
-        imagenet_label_file = open(imagenet_label_file_path,'a+')
-        
+        imagenet_label_file = open(imagenet_label_file_path, 'a+')
+
         try:
             for file_name in os.listdir(label_folder):
-                label_file_path = os.path.join(label_folder,file_name) 
-                with open(label_file_path,'r') as f:
+                label_file_path = os.path.join(label_folder, file_name)
+                with open(label_file_path, 'r') as f:
                     # print(label_file_path)
                     label_file = json.load(f)
 
@@ -42,15 +45,60 @@ def convert_my_labels_to_imagenet(dataset_settings):
                 imagenet_label_file.write(imagenet_line)
 
         except Exception:
-            traceback.print_exc()                    
+            traceback.print_exc()
         finally:
             imagenet_label_file.close()
 
-def write_cutouts(dataset_settings,multi_process):
+
+def write_cutouts(dataset_settings, multi_process):
     for dataset_part in dataset_settings['dataset_parts']:
-        my_cutout = Cutout(dataset_settings,dataset_part)
-        my_cutout.get_cutouts(save=True,plot=False,indices='all',multi_process=multi_process) # 12,13
+        my_cutout = Cutout(dataset_settings, dataset_part)
+        my_cutout.get_cutouts(save=True, plot=False, indices='all', multi_process=multi_process)  # 12,13
         # my_cutout.show_original_image(ind=288)
+
+
+def filter_truncated_images():
+    msg = f'Please specify the path of the folder: '
+    ans = input(msg)
+    src_folder = os.path.abspath(ans)
+
+    if not os.path.exists(src_folder):
+        print(f'Folder {src_folder} does not exist')
+        return
+
+    folder_name = os.path.split(src_folder)[1]
+    folder_path = os.path.split(src_folder)[0]
+
+
+    full_images_folder = os.path.join(folder_path, folder_name + '_full_images')
+    create_folder(full_images_folder)
+
+    truncated_images_folder = os.path.join(folder_path, folder_name + '_truncated_images')
+    create_folder(truncated_images_folder)
+
+    img_paths = Cutout.get_file_paths('', src_folder, False)
+
+    for img_path in img_paths:
+        img_name = img_path.split('\\')[-1]
+        img_name = img_name.split('/')[-1]
+        print("Img_name: " + img_name)
+
+        im = Image.open(img_path)
+        px = im.load()
+        width, height = im.size
+
+        width_offset = width/3
+        height_offset = height/3
+
+        if ((px[0, 0] == (0, 0, 0) and px[width_offset, height_offset] == (0, 0, 0)) or
+                (px[0, height - 1] == (0, 0, 0) and px[width_offset, height - height_offset] == (0, 0, 0)) or
+                (px[width - 1, 0] == (0, 0, 0) and px[width - width_offset, height_offset] == (0, 0, 0)) or
+                (px[width - 1, height - 1] == (0, 0, 0) and px[width - width_offset, height - height_offset] == (0, 0, 0))):
+            print(f'Image {img_name} is truncated')
+            im.save(os.path.join(truncated_images_folder, img_name))
+        else:
+            im.save(os.path.join(full_images_folder, img_name))
+
 
 class Utilities:
     """docstring for Utilities"""
