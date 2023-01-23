@@ -1,7 +1,6 @@
 from settings.dataset import SettingsDataset
-from utilities import write_cutouts, convert_my_labels_to_imagenet, filter_truncated_images, \
-    convert_imagenet_labels_to_linux
-
+from src.data.tools import normalize_rarePlanes_annotations
+from utilities import write_cutouts, convert_my_labels_to_imagenet, filter_truncated_images
 ### DATASET
 
 dota_settings = SettingsDataset(
@@ -33,7 +32,7 @@ fair1m_settings = SettingsDataset(
 
 rarePlanes_settings = SettingsDataset(
     dataset_name='rarePlanes',
-    dataset_parts=['train', 'val'],
+    dataset_parts=['val'],
     tasks=['bbox'],
     bbox_rotation='clockwise',
   #  instance_names=[
@@ -49,7 +48,7 @@ instance_names=[
 
 dataset_settings = [rarePlanes_settings]   # fair1m_settings]    # dota_settings]
 
-save_cutouts=True
+save_cutouts=False
 convert_to_imagenet=False
 filter_truncated_images=False
 
@@ -63,4 +62,4 @@ if convert_to_imagenet:
 if filter_truncated_images:
     filter_truncated_images()
 
-convert_imagenet_labels_to_linux()
+normalize_rarePlanes_annotations(dataset_settings[0])

@@ -49,24 +49,6 @@ def convert_my_labels_to_imagenet(dataset_settings):
         finally:
             imagenet_label_file.close()
 
-def convert_imagenet_labels_to_linux():
-    msg = f'Please specify the path of the file: '
-    ans = input(msg)
-    file = open(os.path.abspath(ans), 'r+')
-
-    newlines = []
-
-    for line in file.readlines():
-        line = line.replace('\\', '/')
-        line = line[3:]
-        line = '/media/louis/Data/' + line
-        newlines.append(line)
-
-    file.seek(0)
-    file.truncate(0)
-    file.writelines(newlines)
-    file.close()
-
 def write_cutouts(dataset_settings, multi_process):
     for dataset_part in dataset_settings['dataset_parts']:
         my_cutout = Cutout(dataset_settings, dataset_part)

@@ -47,7 +47,7 @@ class Utils:
         #     imagenet_label_file = os.path.join(cutout_folder_root,'imagenet_labels.txt')
         #     folders['imagenet_label_file']=imagenet_label_file
 
-        if filter_out_trunctated:
+        # if filter_out_trunctated:
 
         if 'seg' in self.tasks:
             seg_folders = {
@@ -71,6 +71,7 @@ class Utils:
         # label_folder = os.path.join(original_folder_base, 'labels')
 
         folders = {
+            'base_folder': original_folder_base,
             'image_folder': img_folder,
             'bounding_box_folder': os.path.join(self.dataset_folder, dataset_part, 'bounding_boxes')
             # 'label_folder': label_folder
@@ -98,7 +99,7 @@ class SettingsDataset(Utils):
         tasks, 
         dataset_parts, 
         instance_names,
-        filter_out_,
+        # filter_out_,
         bbox_rotation):
         super(SettingsDataset,self).__init__(
             dataset_name=dataset_name,
