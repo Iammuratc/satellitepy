@@ -26,7 +26,7 @@ class Utils:
         assert create_folder(cutout_folder)
         return cutout_folder
 
-    def get_cutout_folders(self, dataset_part):
+    def get_cutout_folders(self, dataset_part, filter_out_trunctated=False):
         # PATCH SAVE DIRECTORIES
         cutout_folder_root = self.get_cutout_folder(dataset_part)
         img_cutout_folder = os.path.join(cutout_folder_root, "images")
@@ -46,6 +46,8 @@ class Utils:
         # if 'class' in self.tasks:
         #     imagenet_label_file = os.path.join(cutout_folder_root,'imagenet_labels.txt')
         #     folders['imagenet_label_file']=imagenet_label_file
+
+        if filter_out_trunctated:
 
         if 'seg' in self.tasks:
             seg_folders = {
@@ -96,6 +98,7 @@ class SettingsDataset(Utils):
         tasks, 
         dataset_parts, 
         instance_names,
+        filter_out_,
         bbox_rotation):
         super(SettingsDataset,self).__init__(
             dataset_name=dataset_name,
