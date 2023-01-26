@@ -21,13 +21,15 @@ def normalize_rarePlanes_annotations(dataset_settings):
         for new_annotation in file['annotations']:
             img_name = id_to_img[new_annotation['image_id']]
             label_file_path = os.path.join(new_bbox_folder, img_name[:-3] + 'json')
-            label_file = open(label_file_path, 'r+')
-            annotations = json.load(file)
+            label_file = open(label_file_path, 'r', encoding="utf-8")
+            print(label_file_path)
+            annotations = json.load(label_file)
             label_file.close()
             annotations['annotations'].append(new_annotation)
-            file = open(label_file_path, 'w')
+            file = open(label_file_path, 'w', encoding="utf-8")
 
             json.dump(annotations, file, ensure_ascii=False, indent=4)
+            file.close()
 
 
 def get_file_paths(folder, sort=True):

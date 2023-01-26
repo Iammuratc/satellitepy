@@ -35,20 +35,20 @@ rarePlanes_settings = SettingsDataset(
     dataset_parts=['val'],
     tasks=['bbox'],
     bbox_rotation='clockwise',
-  #  instance_names=[
-     #   'Small Civil Transport/Utility',
-     #   'Medium Civil Transport/Utility',
-     #   'Large Civil Transport/Utility',
-     #   'Military Transport/Utility/AWAC',
-     #   'Military Bomber',
-     #   'Military Fighter/Interceptor/Attack',
-    #    'Military Trainer'])()
-instance_names=[
-        1, 2, 3])()
+   instance_names=[
+       'Small Civil Transport/Utility',
+       'Medium Civil Transport/Utility',
+       'Large Civil Transport/Utility',
+       'Military Transport/Utility/AWAC',
+       'Military Bomber',
+       'Military Fighter/Interceptor/Attack',
+       'Military Trainer'])()
+# instance_names=[
+#         1, 2, 3])()
 
 dataset_settings = [rarePlanes_settings]   # fair1m_settings]    # dota_settings]
 
-save_cutouts=False
+save_cutouts=True
 convert_to_imagenet=False
 filter_truncated_images=False
 
@@ -62,4 +62,4 @@ if convert_to_imagenet:
 if filter_truncated_images:
     filter_truncated_images()
 
-normalize_rarePlanes_annotations(dataset_settings[0])
+# normalize_rarePlanes_annotations(dataset_settings[0])

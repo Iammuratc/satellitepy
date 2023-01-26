@@ -11,6 +11,8 @@ from multiprocessing import Pool
 from . import geometry
 from .tools import Tools
 
+import time
+
 # SEGMENTATION DATA
 
 
@@ -66,38 +68,26 @@ class Cutout(Tools):
                 print('Please confirm it if you want to save the cutouts')
                 return 0
 
-            # if 'class' in settings['tasks']:
-            #     ans = input(f'imagenet type labels will be appended to {self.settings['cutout']['imagenet_label_file']}')
-            #     if ans != 'y':
-            #         print('Please confirm if you want to save the cutouts')
-            #     return 0
         if multi_process:
             with Pool(os.cpu_count()) as pool:
                 pool.starmap(self.get_cutout,[[img_path,mask_paths[i],bbox_paths[i],i,save,plot,indices] for i, img_path in enumerate(image_paths)])
 
         else:
-            if self.settings['dataset_name'] == 'rarePlanes':
-                file = json.load(open(bbox_paths[0], 'r'))
-                img_to_id = {}
-                for image in file['images']:
-                    img_to_id[image['file_name']] = image['id']
-
-                id_to_annotation = {}
-                for annotation in file['annotations']:
-                    if not id_to_annotation.get(annotation['image_id']):
-                        id_to_annotation[annotation['image_id']] = []
-                    id_to_annotation[annotation['image_id']].append([annotation['segmentation'][0], annotation['category_id']])
 
             for i, img_path in enumerate(image_paths):
-                bbox_path = bbox_paths[0]
-                if self.settings['dataset_name'] != 'rarePlanes':
-                    bbox_path = bbox_paths[i]
+                # bbox_path = bbox_paths[0]
+                bbox_path = bbox_paths[i]
 
-                self.get_cutout(img_path,mask_paths[i],bbox_path,i,save,plot,indices, img_to_id, id_to_annotation)
+                if self.settings['dataset_name'] == 'rarePlanes':
+                    img_name = os.path.split(img_path)[1]
+                    bbox_path = os.path.split(os.path.split(img_path)[0])[0]
+                    bbox_path = os.path.join('', bbox_path, 'bounding_boxes', img_name[:-3] + 'json')
+
+                self.get_cutout(img_path,mask_paths[i],bbox_path,i,save,plot,indices) #, img_to_id, id_to_annotation)
                 # break
             # break
 
-    def get_cutout(self,img_path,mask_path,bbox_path,i,save,plot,indices, img_to_id, id_to_annotation):
+    def get_cutout(self,img_path,mask_path,bbox_path,i,save,plot,indices): #, img_to_id, id_to_annotation):
             if indices == 'all':
                 pass
             elif i in indices:
@@ -111,11 +101,11 @@ class Cutout(Tools):
                 # cropping steps
                 img = self.get_original_image(img_path)  # cv2.imread(img_path)
                 print(img_path)
-                img_name = img_path.split('\\')[-1]
-                img_name = img_name.split('/')[-1]
+                # img_name = img_path.split('\\')[-1]
+                # img_name = img_name.split('/')[-1]
                 # BBOXES
                 # bbox_path = bbox_paths[i]
-                bbox_labels = self.get_bbox_labels(bbox_path, img_name, img_to_id, id_to_annotation)
+                bbox_labels = self.get_bbox_labels(bbox_path) #, img_name) #, img_to_id, id_to_annotation)
                 # MASK
                 # mask_path = mask_paths[i]
                 mask = self.get_original_image(mask_path, flags=1)
@@ -161,7 +151,7 @@ class Cutout(Tools):
                 traceback.print_exc()                    
 
 
-    def get_bbox_labels(self,bbox_path, img_name, img_to_id, id_to_annotation):
+    def get_bbox_labels(self,bbox_path): #, img_name, img_to_id, id_to_annotation):
         """
         Return dota type bbox labels
         bbox_labels: list([x1, y1, x2, y2, x3, y3, x4, y4, instance_name, difficult])
@@ -203,14 +193,18 @@ class Cutout(Tools):
             instance_names = []
             point_spaces = []
 
-            img_id = img_to_id[img_name]
-            for annotation in id_to_annotation[img_id]:
-                instance_names.append(annotation[1])
-                point_spaces.append(annotation[0])
+            labels = json.load(open(bbox_path, 'r'))
+            for annotation in labels['annotations']:
+
+                # img_id = img_to_id[img_name]
+                # for annotation in id_to_annotation[img_id]:
+                instance_names.append(annotation['role'])
+                point_spaces.append(annotation['segmentation'][0])
 
             coords = []
 
             for i,bbox in enumerate(point_spaces):
+                start_time = time.time()
                 A = geo.Point(bbox[0], bbox[1])
                 B = geo.Point(bbox[2], bbox[3])
                 C = geo.Point(bbox[4], bbox[5])
@@ -228,6 +222,7 @@ class Cutout(Tools):
                 bbox_label = coord
                 bbox_label.append(instance_names[i])
                 bbox_labels.append(bbox_label)
+                print(time.time() - start_time)
 
         # print(bbox_labels)
         return bbox_labels
