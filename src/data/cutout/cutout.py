@@ -205,10 +205,10 @@ class Cutout(Tools):
 
             for i,bbox in enumerate(point_spaces):
                 start_time = time.time()
-                A = geo.Point(bbox[0], bbox[1])
-                B = geo.Point(bbox[2], bbox[3])
-                C = geo.Point(bbox[4], bbox[5])
-                D = geo.Point(bbox[6], bbox[7])
+                A = geo.Point(round(bbox[0], 2), round(bbox[1], 2))
+                B = geo.Point(round(bbox[2], 2), round(bbox[3], 2))
+                C = geo.Point(round(bbox[4], 2), round(bbox[5], 2))
+                D = geo.Point(round(bbox[6], 2), round(bbox[7], 2))
 
                 lineAC = geo.Line(A, C)
                 lineBD = geo.Line(B, D)
