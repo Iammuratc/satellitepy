@@ -26,6 +26,7 @@ def filter_truncated_images(settings):
                 img_name = img_path.split('\\')[-1]
                 img_name = img_name.split('/')[-1]
                 print("Img_name: " + img_name)
+                print(img_path)
 
                 im = Image.open(img_path)
                 px = im.load()

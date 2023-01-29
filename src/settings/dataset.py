@@ -7,14 +7,15 @@ from .utils import create_folder, get_project_folder  # , get_logger
 class Utils:
     """docstring for Utils"""
 
-    def __init__(self, dataset_name, tasks):
+    def __init__(self, dataset_name, tasks, project_folder):
         super(Utils, self).__init__()
         self.dataset_name = dataset_name
         self.tasks = tasks
-        self.project_folder = get_project_folder()
+        self.project_folder = get_project_folder(project_folder)
         self.dataset_folder = self.get_dataset_folder()
 
     def get_dataset_folder(self):
+        print(self.project_folder)
         dataset_folder = os.path.join(
             self.project_folder, "data", self.dataset_name)
         assert create_folder(dataset_folder)
@@ -106,13 +107,15 @@ class SettingsDataset(Utils):
                  dataset_parts,
                  instance_names,
                  bbox_rotation,
+                 project_folder='',
                  filter_out_truncated=False):
         super(SettingsDataset, self).__init__(
             dataset_name=dataset_name,
-            tasks=tasks)
+            tasks=tasks, project_folder=project_folder)
         self.dataset_parts = dataset_parts
         self.instance_names = instance_names
         self.filter_out_truncated = filter_out_truncated
+        self.project_folder = get_project_folder(project_folder)
         self.bbox_rotation = bbox_rotation
 
     def __call__(self):

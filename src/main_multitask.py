@@ -9,7 +9,8 @@ dota_settings = SettingsDataset(
     dataset_parts=['train','val'],
     tasks=['bbox','seg'],
     bbox_rotation='clockwise',
-    instance_names=['plane'])()
+    project_folder='F:\\working',
+    instance_names=['plane'])(),
 # print(dota_settings)
 
 fair1m_settings = SettingsDataset(
@@ -17,6 +18,7 @@ fair1m_settings = SettingsDataset(
     dataset_parts=['train','val'],
     tasks=['bbox','class'],
     bbox_rotation='counter-clockwise',
+    project_folder='F:\\working',
     instance_names=[
         'Boeing787',
         'Boeing737',
@@ -37,7 +39,8 @@ rarePlanes_settings = SettingsDataset(
     tasks=['bbox'],
     bbox_rotation='clockwise',
     filter_out_truncated=True,
-   instance_names=[
+    # project_folder='F:\\working',
+    instance_names=[
        'Small Civil Transport/Utility',
        'Medium Civil Transport/Utility',
        'Large Civil Transport/Utility',
@@ -52,7 +55,7 @@ dataset_settings = [rarePlanes_settings]   # fair1m_settings]    # dota_settings
 
 save_cutouts=False
 convert_to_imagenet=False
-filter_images=True
+filter_images=False
 
 if save_cutouts:
     for my_settings in dataset_settings:

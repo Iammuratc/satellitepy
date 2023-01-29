@@ -39,24 +39,13 @@ def create_folder(folder):
         return 1
 
 
-def get_project_folder():
-    if get_project_folder.folder != '':
-        return get_project_folder.folder
-    default_folder = os.path.dirname(
+def get_project_folder(folder=''):
+    if folder:
+        create_folder(folder)
+        return folder
+    project_folder = os.path.dirname(
         os.path.dirname(
             os.path.dirname(
                 os.path.abspath(__file__))))
-    msg = f'Do you want to use the default project folder({default_folder})?[y/n] '
-    ans = input(msg)
-    if ans == 'y':
-        project_folder = default_folder
-    else:
-        msg = f'Please specify the path of the project folder: '
-        ans = input(msg)
-        project_folder = os.path.abspath(ans)
     assert create_folder(project_folder)
-    get_project_folder.folder = project_folder
     return project_folder
-
-
-get_project_folder.folder = ''
