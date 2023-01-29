@@ -1,3 +1,5 @@
+import math
+
 import cv2
 import numpy as np
 import json
@@ -204,25 +206,26 @@ class Cutout(Tools):
             coords = []
 
             for i,bbox in enumerate(point_spaces):
-                start_time = time.time()
-                A = geo.Point(round(bbox[0], 2), round(bbox[1], 2))
-                B = geo.Point(round(bbox[2], 2), round(bbox[3], 2))
-                C = geo.Point(round(bbox[4], 2), round(bbox[5], 2))
-                D = geo.Point(round(bbox[6], 2), round(bbox[7], 2))
 
-                lineAC = geo.Line(A, C)
-                lineBD = geo.Line(B, D)
-                middle = lineAC.intersection(lineBD)[0]
-                vecToC = C - middle
-                vecToA = A - middle
+                A = (bbox[0], bbox[1])
+                B = (bbox[2], bbox[3])
+                C = (bbox[4], bbox[5])
+                D = (bbox[6], bbox[7])
 
-                # coord = [(D + vecToA).x, (D + vecToA).y, (D + vecToC).x, (D + vecToC).y, (B + vecToC).x, (B + vecToC).y, (B + vecToA).x, (B + vecToA).y] #real
-                coord = [(B + vecToA).x, (B + vecToA).y, (D + vecToA).x, (D + vecToA).y, (D + vecToC).x, (D + vecToC).y, (B + vecToC).x, (B + vecToC).y]  #synthetic
+                vecBD = tuple(np.subtract(D, B))
+
+                middle = tuple(np.add(B, np.divide(vecBD, 2)))
+                vecToC = tuple(np.subtract(C, middle))
+                vecToA = tuple(np.subtract(A, middle))
+
+                coord = [np.add(D, vecToA), np.add(D, vecToC), np.add(B, vecToC), np.add(B, vecToA)] # real
+                # coord = [np.add(B, vecToA), np.add(D, vecToA), np.add(D, vecToC), np.add(B, vecToC)] # synthetic
+                coord = [item for arrays in coord for item in arrays]
+                print(coord)
                 coords.append(coord)
                 bbox_label = coord
                 bbox_label.append(instance_names[i])
                 bbox_labels.append(bbox_label)
-                print(time.time() - start_time)
 
         # print(bbox_labels)
         return bbox_labels
