@@ -197,9 +197,6 @@ class Cutout(Tools):
 
             labels = json.load(open(bbox_path, 'r'))
             for annotation in labels['annotations']:
-
-                # img_id = img_to_id[img_name]
-                # for annotation in id_to_annotation[img_id]:
                 instance_names.append(annotation['role'])
                 point_spaces.append(annotation['segmentation'][0])
 

@@ -56,49 +56,6 @@ def write_cutouts(dataset_settings, multi_process):
         # my_cutout.show_original_image(ind=288)
 
 
-def filter_truncated_images():
-    msg = f'Please specify the path of the folder: '
-    ans = input(msg)
-    src_folder = os.path.abspath(ans)
-
-    if not os.path.exists(src_folder):
-        print(f'Folder {src_folder} does not exist')
-        return
-
-    folder_name = os.path.split(src_folder)[1]
-    folder_path = os.path.split(src_folder)[0]
-
-
-    full_images_folder = os.path.join(folder_path, folder_name + '_full_images')
-    create_folder(full_images_folder)
-
-    truncated_images_folder = os.path.join(folder_path, folder_name + '_truncated_images')
-    create_folder(truncated_images_folder)
-
-    img_paths = Cutout.get_file_paths('', src_folder, False)
-
-    for img_path in img_paths:
-        img_name = img_path.split('\\')[-1]
-        img_name = img_name.split('/')[-1]
-        print("Img_name: " + img_name)
-
-        im = Image.open(img_path)
-        px = im.load()
-        width, height = im.size
-
-        width_offset = width/3
-        height_offset = height/3
-
-        if ((px[0, 0] == (0, 0, 0) and px[width_offset, height_offset] == (0, 0, 0)) or
-                (px[0, height - 1] == (0, 0, 0) and px[width_offset, height - height_offset] == (0, 0, 0)) or
-                (px[width - 1, 0] == (0, 0, 0) and px[width - width_offset, height_offset] == (0, 0, 0)) or
-                (px[width - 1, height - 1] == (0, 0, 0) and px[width - width_offset, height - height_offset] == (0, 0, 0))):
-            print(f'Image {img_name} is truncated')
-            im.save(os.path.join(truncated_images_folder, img_name))
-        else:
-            im.save(os.path.join(full_images_folder, img_name))
-
-
 class Utilities:
     """docstring for Utilities"""
 

@@ -1,8 +1,8 @@
 import os
-from .utils import create_folder, get_project_folder#, get_logger
+from .utils import create_folder, get_project_folder  # , get_logger
 
 
-#TODO:
+# TODO:
 #   Log files
 class Utils:
     """docstring for Utils"""
@@ -37,7 +37,7 @@ class Utils:
         label_cutout_folder = os.path.join(cutout_folder_root, "labels")
 
         folders = {
-            'root_folder':cutout_folder_root,
+            'root_folder': cutout_folder_root,
             'image_folder': img_cutout_folder,
             'orthogonal_image_folder': img_cutout_orthogonal_folder,
             'orthogonal_zoomed_image_folder': img_cutout_orthogonal_zoomed_folder,
@@ -47,7 +47,13 @@ class Utils:
         #     imagenet_label_file = os.path.join(cutout_folder_root,'imagenet_labels.txt')
         #     folders['imagenet_label_file']=imagenet_label_file
 
-        # if filter_out_trunctated:
+        if filter_out_trunctated:
+            full_image_folder = os.path.join(cutout_folder_root, "full_images")
+            full_orthogonal_image_folder = os.path.join(cutout_folder_root, "full_orthogonal_images")
+            full_orthogonal_zoomed_image_folder = os.path.join(cutout_folder_root, "full_orthogonal_zoomed_images")
+            folders['full_image_folder'] = full_image_folder
+            folders['full_orthogonal_image_folder'] = full_orthogonal_image_folder
+            folders['full_orthogonal_zoomed_image_folder'] = full_orthogonal_zoomed_image_folder
 
         if 'seg' in self.tasks:
             seg_folders = {
@@ -94,43 +100,42 @@ class Utils:
 class SettingsDataset(Utils):
     """docstring for SettingsDataset"""
 
-    def __init__(self, 
-        dataset_name, 
-        tasks, 
-        dataset_parts, 
-        instance_names,
-        # filter_out_,
-        bbox_rotation):
-        super(SettingsDataset,self).__init__(
+    def __init__(self,
+                 dataset_name,
+                 tasks,
+                 dataset_parts,
+                 instance_names,
+                 bbox_rotation,
+                 filter_out_truncated=False):
+        super(SettingsDataset, self).__init__(
             dataset_name=dataset_name,
             tasks=tasks)
         self.dataset_parts = dataset_parts
         self.instance_names = instance_names
-        self.bbox_rotation=bbox_rotation
+        self.filter_out_truncated = filter_out_truncated
+        self.bbox_rotation = bbox_rotation
+
     def __call__(self):
         return self.get_settings()
 
     def get_settings(self):
-
         # log_names = f'{self.dataset_name}_log'
         # log_file = os.path.join(self.get_cutout_folder(),'cutouts.log')
         # logger = get_logger(log_name,log_file)
 
-
-
         settings = {
             # 'log_names':log_name,
-            'dataset_name':self.dataset_name,
+            'dataset_name': self.dataset_name,
             'tasks': self.tasks,
-            'dataset_parts':self.dataset_parts,
-            'instance_names':{instance_name:i for i,instance_name in enumerate(self.instance_names)},
-            'bbox_rotation':self.bbox_rotation,
+            'dataset_parts': self.dataset_parts,
+            'instance_names': {instance_name: i for i, instance_name in enumerate(self.instance_names)},
+            'bbox_rotation': self.bbox_rotation,
             'original': {
                 dataset_part: self.get_original_data_folders(dataset_part)
                 for dataset_part in self.dataset_parts
             },
             'cutout': {
-                dataset_part: self.get_cutout_folders(dataset_part)
+                dataset_part: self.get_cutout_folders(dataset_part, self.filter_out_truncated)
                 for dataset_part in self.dataset_parts
             }
         }
