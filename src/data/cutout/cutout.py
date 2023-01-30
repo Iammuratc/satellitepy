@@ -1,5 +1,3 @@
-import math
-
 import cv2
 import numpy as np
 import json
@@ -7,14 +5,10 @@ import os
 import matplotlib.pyplot as plt
 import traceback
 import xml.etree.ElementTree as ET
-from sympy import geometry as geo
 from multiprocessing import Pool
 
 from . import geometry
 from .tools import Tools
-
-import time
-
 
 # SEGMENTATION DATA
 
@@ -34,7 +28,7 @@ class Cutout(Tools):
         if self.segmentation_task:
             self.original_instance_mask_folder = self.settings['original'][dataset_part]['instance_mask_folder']
 
-    def get_cutout_dict(self, img, img_path, mask, mask_path, bbox_label, ind, instance_name, instance_id):
+    def get_cutout_dict(self, img, img_path, mask, mask_path, bbox_label, ind, instance_name,instance_id):
 
         if self.bbox_rotation == 'clockwise':
             bbox = np.array(bbox_label[:8]).astype(int).reshape(4, 2)
@@ -61,107 +55,100 @@ class Cutout(Tools):
     def get_cutouts(self, save, plot, indices='all', multi_process=False):  # skip_existing
 
         image_paths = self.get_file_paths(self.original_image_folder)
-        mask_paths = self.get_file_paths(self.original_instance_mask_folder) if self.segmentation_task else [
-                                                                                                                None] * len(
-            image_paths)
+        mask_paths = self.get_file_paths(self.original_instance_mask_folder) if self.segmentation_task else [None]*len(image_paths)
         bbox_paths = self.get_file_paths(self.original_bbox_folder)
 
-        # for i in range(10):
-        #     print(image_paths[i])
-        #     print(bbox_paths[i])
-
         if save:
-            ans = input(
-                f'Cutouts are saved for the following folder:\n{self.original_image_folder}\nDo you confirm? [y/n] ')
+            ans = input(f'Cutouts are saved for the following folder:\n{self.original_image_folder}\nDo you confirm? [y/n] ')
 
             if ans != 'y':
                 print('Please confirm it if you want to save the cutouts')
                 return 0
 
+            # if 'class' in settings['tasks']:
+            #     ans = input(f'imagenet type labels will be appended to {self.settings['cutout']['imagenet_label_file']}')
+            #     if ans != 'y':
+            #         print('Please confirm if you want to save the cutouts')
+            #     return 0
         if multi_process:
             with Pool(os.cpu_count()) as pool:
-                pool.starmap(self.get_cutout,
-                             [[img_path, mask_paths[i], bbox_paths[i], i, save, plot, indices] for i, img_path in
-                              enumerate(image_paths)])
+                pool.starmap(self.get_cutout,[[img_path,mask_paths[i],bbox_paths[i],i,save,plot,indices] for i, img_path in enumerate(image_paths)])
 
         else:
             for i, img_path in enumerate(image_paths):
-                bbox_path = bbox_paths[i]
-
-                self.get_cutout(img_path, mask_paths[i], bbox_path, i, save, plot, indices)
+                self.get_cutout(img_path,mask_paths[i],bbox_paths[i],i,save,plot,indices)
                 # break
             # break
+    def get_cutout(self,img_path,mask_path,bbox_path,i,save,plot,indices):
+            if indices == 'all':
+                pass
+            elif i in indices:
+                pass
+            else:
+                return 1
 
-    def get_cutout(self, img_path, mask_path, bbox_path, i, save, plot, indices):
-        if indices == 'all':
-            pass
-        elif i in indices:
-            pass
-        else:
-            return 1
+            try:
+                # IMAGE
+                # Add padding before passing to the CutoutTools because of the
+                # cropping steps
+                img = self.get_original_image(img_path)  # cv2.imread(img_path)
+                print(img_path)
+                # BBOXES
+                # bbox_path = bbox_paths[i]
+                bbox_labels = self.get_bbox_labels(bbox_path)
+                # MASK
+                # mask_path = mask_paths[i]
+                mask = self.get_original_image(mask_path, flags=1)
+                # binary_mask = np.zeros_like(mask)
+                # cv2.inRange(mask,plane_pixel_value,plane_pixel_value,binary_mask)
 
-        try:
-            # IMAGE
-            # Add padding before passing to the CutoutTools because of the
-            # cropping steps
-            img = self.get_original_image(img_path)  # cv2.imread(img_path)
-            print(img_path)
-            # img_name = img_path.split('\\')[-1]
-            # img_name = img_name.split('/')[-1]
-            # BBOXES
-            # bbox_path = bbox_paths[i]
-            bbox_labels = self.get_bbox_labels(bbox_path)
-            # MASK
-            # mask_path = mask_paths[i]
-            mask = self.get_original_image(mask_path, flags=1)
-            # binary_mask = np.zeros_like(mask)
-            # cv2.inRange(mask,plane_pixel_value,plane_pixel_value,binary_mask)
+                bbox_ind = 0
+                for bbox_label in bbox_labels:
+                    # print(bbox_label)
+                    instance_name = bbox_label[-1]
+                    if instance_name not in self.settings['instance_names'].keys():
+                        continue
 
-            bbox_ind = 0
-            for bbox_label in bbox_labels:
-                instance_name = bbox_label[-1]
-                if instance_name not in self.settings['instance_names'].keys():
-                    continue
+                    instance_id = self.settings['instance_names'][instance_name]
+                    cutout_dict = self.get_cutout_dict(
+                        img=img,
+                        img_path=img_path,
+                        mask=mask,
+                        mask_path=mask_path,
+                        bbox_label=bbox_label,
+                        ind=bbox_ind,
+                        instance_name=instance_name,
+                        instance_id=instance_id
+                        )
+                    # print(cutout_dict)
+                    if plot:
+                        fig, ax = plt.subplots(2, 3)  # ,sharex=True,sharey=True)
+                        self.plot_cutout(ax[0, 0], cutout_dict,conf=['original', 'img'])
+                        self.plot_cutout(ax[0, 1], cutout_dict,conf=['orthogonal', 'img'])
+                        self.plot_cutout(ax[0, 2], cutout_dict, conf=['orthogonal_zoomed', 'img'])
+                        # print(cutout_dict['original_padded_cutout']['bbox']['corners'])
+                        # print(cutout_dict['orthogonal_cutout']['bbox']['corners'])
+                        # self.plot_cutout(ax[1, 0], cutout_dict,conf=['original', 'mask'])
+                        # self.plot_cutout(ax[1, 1], cutout_dict, conf=['orthogonal', 'mask'])
+                        # self.plot_cutout(ax[1, 2], cutout_dict, conf=['orthogonal_zoomed', 'mask'])
+                        plt.show()
+                    if save:
+                        self.save_cutout(self.dataset_part, cutout_dict, bbox_ind)
 
-                instance_id = self.settings['instance_names'][instance_name]
-                cutout_dict = self.get_cutout_dict(
-                    img=img,
-                    img_path=img_path,
-                    mask=mask,
-                    mask_path=mask_path,
-                    bbox_label=bbox_label,
-                    ind=bbox_ind,
-                    instance_name=instance_name,
-                    instance_id=instance_id
-                )
-                # print(cutout_dict)
-                if plot:
-                    fig, ax = plt.subplots(2, 3)  # ,sharex=True,sharey=True)
-                    self.plot_cutout(ax[0, 0], cutout_dict, conf=['original', 'img'])
-                    self.plot_cutout(ax[0, 1], cutout_dict, conf=['orthogonal', 'img'])
-                    self.plot_cutout(ax[0, 2], cutout_dict, conf=['orthogonal_zoomed', 'img'])
-                    # print(cutout_dict['original_padded_cutout']['bbox']['corners'])
-                    # print(cutout_dict['orthogonal_cutout']['bbox']['corners'])
-                    # self.plot_cutout(ax[1, 0], cutout_dict,conf=['original', 'mask'])
-                    # self.plot_cutout(ax[1, 1], cutout_dict, conf=['orthogonal', 'mask'])
-                    # self.plot_cutout(ax[1, 2], cutout_dict, conf=['orthogonal_zoomed', 'mask'])
-                    plt.show()
-                if save:
-                    self.save_cutout(self.dataset_part, cutout_dict, bbox_ind)
+                    # ### PLOT
 
-                # ### PLOT
+                    bbox_ind += 1
+            except Exception:
+                traceback.print_exc()
 
-                bbox_ind += 1
-        except Exception:
-            traceback.print_exc()
 
-    def get_bbox_labels(self, bbox_path):
+    def get_bbox_labels(self,bbox_path):
         """
         Return dota type bbox labels
         bbox_labels: list([x1, y1, x2, y2, x3, y3, x4, y4, instance_name, difficult])
         # Note: difficult is removed
         """
-        bbox_labels = []
+        bbox_labels=[]
         if self.settings['dataset_name'] == 'DOTA':
             with open(bbox_path, 'r') as f:
                 for line in f.readlines()[2:]:
@@ -178,7 +165,7 @@ class Cutout(Tools):
                 './objects/object/possibleresult/name')  # [0].text
             # BBOX CCORDINATES
             point_spaces = root.findall('./objects/object/points')
-            for i, point_space in enumerate(point_spaces):
+            for i,point_space in enumerate(point_spaces):
                 my_points = point_space.findall(
                     'point')[:4]  # remove the last coordinate
                 coords = []
@@ -188,7 +175,7 @@ class Cutout(Tools):
                     for point in my_point.text.split(','):
                         coord.append(float(point))
                     coords.append(coord)
-                    # label['bboxes'].append(coords)
+                # label['bboxes'].append(coords)
                     bbox_label = [item for sublist in coords for item in sublist]
                     bbox_label.append(instance_names[i].text)
                 bbox_labels.append(bbox_label)
@@ -249,7 +236,7 @@ class Cutout(Tools):
 
         # BBOXES
         bbox_path = bbox_paths[ind]
-        bbox_labels = self.get_bbox_labels(bbox_path)
+        bbox_labels=self.get_bbox_labels(bbox_path)
         # SHOW
         fig, ax = plt.subplots(1)
         ax.imshow(img)
@@ -267,32 +254,30 @@ class Cutout(Tools):
             file_paths.sort()
         return file_paths
 
-    def append_to_imagenet_label_file(self, cutout_dict):
+    def append_to_imagenet_label_file(self,cutout_dict):
         imagenet_label_file = self.settings['cutout']['imagenet_label_file']
-        with open(imagenet_label_file, 'a') as f:
+        with open(imagenet_label_file,'a') as f:
             f.write(cutout_dict['original']['img_path'])
-
 
 if __name__ == '__main__':
     from ..settings.dataset import SettingsDataset
-
     fair1m_settings = SettingsDataset(
-        dataset_name='fair1m',
-        dataset_parts=['val'],  # 'train',
-        tasks=['bbox'],
-        bbox_rotation='counter-clockwise',
-        instance_names=[
-            'Boeing787',
-            'Boeing737',
-            'Boeing747',
-            'Boeing787',
-            'A220',
-            'A321',
-            'A330',
-            'A350',
-            'ARJ21',
-            'C919',
-            'other-airplane'])()
+    dataset_name='fair1m',
+    dataset_parts=['val'], # 'train',
+    tasks=['bbox'],
+    bbox_rotation='counter-clockwise',
+    instance_names=[
+        'Boeing787',
+        'Boeing737',
+        'Boeing747',
+        'Boeing787',
+        'A220',
+        'A321',
+        'A330',
+        'A350',
+        'ARJ21',
+        'C919',
+        'other-airplane'])()
 
     cutout = Cutout(utils, 'val')
 
@@ -312,7 +297,7 @@ if __name__ == '__main__':
 
     # CHECK LARGE JSON LABEL DATA
     # labels = segmentation_cutout.get_labels() # dict_keys(['images', 'categories', 'annotations'])
-    # labels['images'] = [{'id': 0, 'file_name': 'P0000.png', 'ins_file_name': 'P0000_instance_id_RGB.png', 'seg_file_name': 'P0000_instance_color_RGB.png'}]
+    #labels['images'] = [{'id': 0, 'file_name': 'P0000.png', 'ins_file_name': 'P0000_instance_id_RGB.png', 'seg_file_name': 'P0000_instance_color_RGB.png'}]
     # labels['annotations'] =
     # print(labels['images'][0])
     # print(labels['annotations'][0])

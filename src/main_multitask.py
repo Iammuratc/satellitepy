@@ -1,6 +1,6 @@
 from settings.dataset import SettingsDataset
 from src.data.cutout.utilities import filter_truncated_images
-from src.data.tools import normalize_rarePlanes_annotations
+
 from utilities import write_cutouts, convert_my_labels_to_imagenet
 ### DATASET
 
@@ -9,7 +9,7 @@ dota_settings = SettingsDataset(
     dataset_parts=['train','val'],
     tasks=['bbox','seg'],
     bbox_rotation='clockwise',
-    instance_names=['plane'])(),
+    instance_names=['plane'])()
 # print(dota_settings)
 
 fair1m_settings = SettingsDataset(

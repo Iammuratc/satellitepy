@@ -8,10 +8,8 @@ import json
 import traceback
 from models.models import *
 from data.dataset.dataset import DatasetSegmentation, DatasetRecognition
-from src.settings.utils import create_folder
 from transforms import Normalize, ToTensor, AddAxis
 from data.cutout.cutout import Cutout
-from PIL import Image
 
 
 def convert_my_labels_to_imagenet(dataset_settings):
@@ -25,15 +23,14 @@ def convert_my_labels_to_imagenet(dataset_settings):
     # print(dataset_settings)
     for dataset_part in dataset_settings['dataset_parts']:
         label_folder = dataset_settings['cutout'][dataset_part]['label_folder']
-        imagenet_label_file_path = os.path.join(dataset_settings['cutout'][dataset_part]['root_folder'],
-                                                'imagenet_labels.txt')
+        imagenet_label_file_path = os.path.join(dataset_settings['cutout'][dataset_part]['root_folder'],'imagenet_labels.txt')
         print(f'imagenet annotation file will be saved at {imagenet_label_file_path}')
-        imagenet_label_file = open(imagenet_label_file_path, 'a+')
+        imagenet_label_file = open(imagenet_label_file_path,'a+')
 
         try:
             for file_name in os.listdir(label_folder):
-                label_file_path = os.path.join(label_folder, file_name)
-                with open(label_file_path, 'r') as f:
+                label_file_path = os.path.join(label_folder,file_name)
+                with open(label_file_path,'r') as f:
                     # print(label_file_path)
                     label_file = json.load(f)
 
@@ -49,12 +46,11 @@ def convert_my_labels_to_imagenet(dataset_settings):
         finally:
             imagenet_label_file.close()
 
-def write_cutouts(dataset_settings, multi_process):
+def write_cutouts(dataset_settings,multi_process):
     for dataset_part in dataset_settings['dataset_parts']:
-        my_cutout = Cutout(dataset_settings, dataset_part)
-        my_cutout.get_cutouts(save=True, plot=False, indices='all', multi_process=multi_process)  # 12,13
+        my_cutout = Cutout(dataset_settings,dataset_part)
+        my_cutout.get_cutouts(save=True,plot=False,indices='all',multi_process=multi_process) # 12,13
         # my_cutout.show_original_image(ind=288)
-
 
 class Utilities:
     """docstring for Utilities"""

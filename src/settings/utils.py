@@ -1,7 +1,7 @@
 import os
 import logging
 
-def get_logger(name, file):
+def get_logger(name,file):
     # create logger
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)

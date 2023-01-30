@@ -1,8 +1,8 @@
 import os
-from .utils import create_folder, get_project_folder  # , get_logger
+from .utils import create_folder, get_project_folder#, get_logger
 
 
-# TODO:
+#TODO:
 #   Log files
 class Utils:
     """docstring for Utils"""
@@ -15,7 +15,6 @@ class Utils:
         self.dataset_folder = self.get_dataset_folder()
 
     def get_dataset_folder(self):
-        print(self.project_folder)
         dataset_folder = os.path.join(
             self.project_folder, "data", self.dataset_name)
         assert create_folder(dataset_folder)
@@ -27,7 +26,7 @@ class Utils:
         assert create_folder(cutout_folder)
         return cutout_folder
 
-    def get_cutout_folders(self, dataset_part): #, filter_out_truncated=False):
+    def get_cutout_folders(self, dataset_part):
         # PATCH SAVE DIRECTORIES
         cutout_folder_root = self.get_cutout_folder(dataset_part)
         img_cutout_folder = os.path.join(cutout_folder_root, "images")
@@ -38,7 +37,7 @@ class Utils:
         label_cutout_folder = os.path.join(cutout_folder_root, "labels")
 
         folders = {
-            'root_folder': cutout_folder_root,
+            'root_folder':cutout_folder_root,
             'image_folder': img_cutout_folder,
             'orthogonal_image_folder': img_cutout_orthogonal_folder,
             'orthogonal_zoomed_image_folder': img_cutout_orthogonal_zoomed_folder,
@@ -48,7 +47,7 @@ class Utils:
         #     imagenet_label_file = os.path.join(cutout_folder_root,'imagenet_labels.txt')
         #     folders['imagenet_label_file']=imagenet_label_file
 
-        if 'filter' in self.tasks: # filter_out_truncated:
+        if 'filter' in self.tasks:
             full_image_folder = os.path.join(cutout_folder_root, "full_images")
             full_orthogonal_image_folder = os.path.join(cutout_folder_root, "full_orthogonal_images")
             full_orthogonal_zoomed_image_folder = os.path.join(cutout_folder_root, "full_orthogonal_zoomed_images")
@@ -107,38 +106,39 @@ class SettingsDataset(Utils):
                  dataset_parts,
                  instance_names,
                  bbox_rotation,
-                 project_folder='',
-                 filter_out_truncated=False):
+                 project_folder=''):
         super(SettingsDataset, self).__init__(
             dataset_name=dataset_name,
-            tasks=tasks, project_folder=project_folder)
+            tasks=tasks,
+            project_folder=project_folder)
         self.dataset_parts = dataset_parts
         self.instance_names = instance_names
-        # self.filter_out_truncated = filter_out_truncated
         self.project_folder = get_project_folder(project_folder)
-        self.bbox_rotation = bbox_rotation
-
+        self.bbox_rotation=bbox_rotation
     def __call__(self):
         return self.get_settings()
 
     def get_settings(self):
+
         # log_names = f'{self.dataset_name}_log'
         # log_file = os.path.join(self.get_cutout_folder(),'cutouts.log')
         # logger = get_logger(log_name,log_file)
 
+
+
         settings = {
             # 'log_names':log_name,
-            'dataset_name': self.dataset_name,
+            'dataset_name':self.dataset_name,
             'tasks': self.tasks,
-            'dataset_parts': self.dataset_parts,
-            'instance_names': {instance_name: i for i, instance_name in enumerate(self.instance_names)},
-            'bbox_rotation': self.bbox_rotation,
+            'dataset_parts':self.dataset_parts,
+            'instance_names':{instance_name:i for i,instance_name in enumerate(self.instance_names)},
+            'bbox_rotation':self.bbox_rotation,
             'original': {
                 dataset_part: self.get_original_data_folders(dataset_part)
                 for dataset_part in self.dataset_parts
             },
             'cutout': {
-                dataset_part: self.get_cutout_folders(dataset_part) #, self.filter_out_truncated)
+                dataset_part: self.get_cutout_folders(dataset_part)
                 for dataset_part in self.dataset_parts
             }
         }
