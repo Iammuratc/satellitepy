@@ -63,6 +63,10 @@ class Cutout(Tools):
         mask_paths = self.get_file_paths(self.original_instance_mask_folder) if self.segmentation_task else [None]*len(image_paths) 
         bbox_paths = self.get_file_paths(self.original_bbox_folder)
 
+        for i in range(10):
+            print(image_paths[i])
+            print(bbox_paths[i])
+
         if save:
             ans = input(f'Cutouts are saved for the following folder:\n{self.original_image_folder}\nDo you confirm? [y/n] ')
 
