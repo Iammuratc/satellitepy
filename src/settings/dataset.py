@@ -27,7 +27,7 @@ class Utils:
         assert create_folder(cutout_folder)
         return cutout_folder
 
-    def get_cutout_folders(self, dataset_part, filter_out_trunctated=False):
+    def get_cutout_folders(self, dataset_part): #, filter_out_truncated=False):
         # PATCH SAVE DIRECTORIES
         cutout_folder_root = self.get_cutout_folder(dataset_part)
         img_cutout_folder = os.path.join(cutout_folder_root, "images")
@@ -48,7 +48,7 @@ class Utils:
         #     imagenet_label_file = os.path.join(cutout_folder_root,'imagenet_labels.txt')
         #     folders['imagenet_label_file']=imagenet_label_file
 
-        if filter_out_trunctated:
+        if 'filter' in self.tasks: # filter_out_truncated:
             full_image_folder = os.path.join(cutout_folder_root, "full_images")
             full_orthogonal_image_folder = os.path.join(cutout_folder_root, "full_orthogonal_images")
             full_orthogonal_zoomed_image_folder = os.path.join(cutout_folder_root, "full_orthogonal_zoomed_images")
@@ -114,7 +114,7 @@ class SettingsDataset(Utils):
             tasks=tasks, project_folder=project_folder)
         self.dataset_parts = dataset_parts
         self.instance_names = instance_names
-        self.filter_out_truncated = filter_out_truncated
+        # self.filter_out_truncated = filter_out_truncated
         self.project_folder = get_project_folder(project_folder)
         self.bbox_rotation = bbox_rotation
 
@@ -138,7 +138,7 @@ class SettingsDataset(Utils):
                 for dataset_part in self.dataset_parts
             },
             'cutout': {
-                dataset_part: self.get_cutout_folders(dataset_part, self.filter_out_truncated)
+                dataset_part: self.get_cutout_folders(dataset_part) #, self.filter_out_truncated)
                 for dataset_part in self.dataset_parts
             }
         }

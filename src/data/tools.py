@@ -3,6 +3,13 @@ import os
 
 
 def normalize_rarePlanes_annotations(dataset_settings):
+    """
+    rarePlanes uses one annotation file for all images in one dataset part.
+    To work with the dataset more efficiently, this function creates a separate annotation file for every image.
+    Apart from the extension, the annotation file has the same name as the matching image.
+    The separate annotation files are saved in the 'bounding_boxes'-folder,
+    the original annotation file needs to be placed in its root folder (dataset part)
+    """
     for dataset_part in dataset_settings['dataset_parts']:
         original_base_folder = dataset_settings['original'][dataset_part]['base_folder']
         new_bbox_folder = dataset_settings['original'][dataset_part]['bounding_box_folder']

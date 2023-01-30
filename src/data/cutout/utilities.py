@@ -7,6 +7,11 @@ from src.settings.utils import create_folder
 
 
 def filter_truncated_images(settings):
+    """
+    Filters out truncated images for every dataset part and 'cutout folder'
+    by checking if the corners of an image are black
+    Filtered images are saved in full_'cutout folder'
+    """
     for dataset_part in settings['dataset_parts']:
         for folder in ['image_folder', 'orthogonal_image_folder', 'orthogonal_zoomed_image_folder']:
 
