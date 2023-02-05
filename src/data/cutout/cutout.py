@@ -181,12 +181,12 @@ class Cutout(Tools):
                 bbox_labels.append(bbox_label)
         elif self.settings['dataset_name'] == 'rarePlanes':
             # INSTANCE NAMES
-            instance_names = []
+            roles = []
             point_spaces = []
 
             labels = json.load(open(bbox_path, 'r'))
             for annotation in labels['annotations']:
-                instance_names.append(annotation['role'])
+                roles.append(annotation['role'])
                 point_spaces.append(annotation['segmentation'][0])
 
             coords = []
@@ -209,7 +209,7 @@ class Cutout(Tools):
                 print(coord)
                 coords.append(coord)
                 bbox_label = coord
-                bbox_label.append(instance_names[i])
+                bbox_label.append(roles[i])
                 bbox_labels.append(bbox_label)
 
         # print(bbox_labels)
