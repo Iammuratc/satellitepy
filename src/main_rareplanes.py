@@ -1,5 +1,6 @@
 from settings.dataset import SettingsDataset
 from src.data.cutout.utilities import filter_truncated_images
+from src.data.tools import normalize_rarePlanes_annotations
 
 from utilities import write_cutouts, convert_my_labels_to_imagenet
 ### DATASET
@@ -53,6 +54,7 @@ dataset_settings = [rarePlanes_settings]   # fair1m_settings]    # dota_settings
 save_cutouts=False
 convert_to_imagenet=False
 filter_images=False
+normalize_annotations=False
 
 if save_cutouts:
     for my_settings in dataset_settings:
@@ -64,4 +66,5 @@ if convert_to_imagenet:
 if filter_images:
     filter_truncated_images(dataset_settings[0])
 
-# normalize_rarePlanes_annotations(dataset_settings[0])
+if normalize_annotations:
+    normalize_rarePlanes_annotations(dataset_settings[0])
