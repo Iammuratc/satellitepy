@@ -39,7 +39,7 @@ def create_folder(folder):
         return 1
 
 
-def get_project_folder(folder=''):
+def get_project_folder(folder=None):
     if folder:
         create_folder(folder)
         return folder

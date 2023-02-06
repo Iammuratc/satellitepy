@@ -106,7 +106,7 @@ class SettingsDataset(Utils):
                  dataset_parts,
                  instance_names,
                  bbox_rotation,
-                 project_folder=''):
+                 project_folder=None):
         super(SettingsDataset, self).__init__(
             dataset_name=dataset_name,
             tasks=tasks,
