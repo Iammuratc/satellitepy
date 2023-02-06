@@ -188,7 +188,6 @@ class Cutout(Tools):
             for annotation in labels['annotations']:
                 roles.append(annotation['role'])
                 point_spaces.append(annotation['segmentation'][0])
-
             coords = []
 
             for i, bbox in enumerate(point_spaces):
@@ -203,8 +202,10 @@ class Cutout(Tools):
                 vec_to_C = np.subtract(C, middle)
                 vec_to_A = np.subtract(A, middle)
 
-                coord = [np.add(D, vec_to_A), np.add(D, vec_to_C), np.add(B, vec_to_C), np.add(B, vec_to_A)]  # real
-                # coord = [np.add(B, vec_to_A), np.add(D, vec_to_A), np.add(D, vec_to_C), np.add(B, vec_to_C)] # synthetic
+                if len(bbox) == 10:
+                    coord = [np.add(D, vec_to_A), np.add(D, vec_to_C), np.add(B, vec_to_C), np.add(B, vec_to_A)]  # real
+                else:
+                    coord = [np.add(B, vec_to_A), np.add(D, vec_to_A), np.add(D, vec_to_C), np.add(B, vec_to_C)] # synthetic
                 coord = [item for arrays in coord for item in arrays]
                 print(coord)
                 coords.append(coord)
