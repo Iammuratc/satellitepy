@@ -3,7 +3,6 @@ import os
 from PIL import Image
 
 from src.data.cutout.cutout import Cutout
-from src.settings.utils import create_folder
 
 
 def filter_truncated_images(settings):

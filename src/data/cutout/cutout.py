@@ -197,11 +197,11 @@ class Cutout(Tools):
                 C = (bbox[4], bbox[5])
                 D = (bbox[6], bbox[7])
 
-                vecBD = tuple(np.subtract(D, B))
+                vecBD = np.subtract(D, B)
 
-                middle = tuple(np.add(B, np.divide(vecBD, 2)))
-                vec_to_C = tuple(np.subtract(C, middle))
-                vec_to_A = tuple(np.subtract(A, middle))
+                middle = np.add(B, np.divide(vecBD, 2))
+                vec_to_C = np.subtract(C, middle)
+                vec_to_A = np.subtract(A, middle)
 
                 coord = [np.add(D, vec_to_A), np.add(D, vec_to_C), np.add(B, vec_to_C), np.add(B, vec_to_A)]  # real
                 # coord = [np.add(B, vec_to_A), np.add(D, vec_to_A), np.add(D, vec_to_C), np.add(B, vec_to_C)] # synthetic
