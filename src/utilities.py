@@ -26,10 +26,10 @@ def convert_my_labels_to_imagenet(dataset_settings):
         imagenet_label_file_path = os.path.join(dataset_settings['cutout'][dataset_part]['root_folder'],'imagenet_labels.txt')
         print(f'imagenet annotation file will be saved at {imagenet_label_file_path}')
         imagenet_label_file = open(imagenet_label_file_path,'a+')
-        
+
         try:
             for file_name in os.listdir(label_folder):
-                label_file_path = os.path.join(label_folder,file_name) 
+                label_file_path = os.path.join(label_folder,file_name)
                 with open(label_file_path,'r') as f:
                     # print(label_file_path)
                     label_file = json.load(f)
@@ -42,7 +42,7 @@ def convert_my_labels_to_imagenet(dataset_settings):
                 imagenet_label_file.write(imagenet_line)
 
         except Exception:
-            traceback.print_exc()                    
+            traceback.print_exc()
         finally:
             imagenet_label_file.close()
 

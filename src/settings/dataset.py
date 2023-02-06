@@ -7,11 +7,11 @@ from .utils import create_folder, get_project_folder#, get_logger
 class Utils:
     """docstring for Utils"""
 
-    def __init__(self, dataset_name, tasks):
+    def __init__(self, dataset_name, tasks, project_folder):
         super(Utils, self).__init__()
         self.dataset_name = dataset_name
         self.tasks = tasks
-        self.project_folder = get_project_folder()
+        self.project_folder = get_project_folder(project_folder)
         self.dataset_folder = self.get_dataset_folder()
 
     def get_dataset_folder(self):
@@ -47,6 +47,14 @@ class Utils:
         #     imagenet_label_file = os.path.join(cutout_folder_root,'imagenet_labels.txt')
         #     folders['imagenet_label_file']=imagenet_label_file
 
+        if 'filter' in self.tasks:
+            full_image_folder = os.path.join(cutout_folder_root, "full_images")
+            full_orthogonal_image_folder = os.path.join(cutout_folder_root, "full_orthogonal_images")
+            full_orthogonal_zoomed_image_folder = os.path.join(cutout_folder_root, "full_orthogonal_zoomed_images")
+            folders['full_image_folder'] = full_image_folder
+            folders['full_orthogonal_image_folder'] = full_orthogonal_image_folder
+            folders['full_orthogonal_zoomed_image_folder'] = full_orthogonal_zoomed_image_folder
+
         if 'seg' in self.tasks:
             seg_folders = {
                 'mask_folder': os.path.join(cutout_folder_root, 'masks'),
@@ -69,6 +77,7 @@ class Utils:
         # label_folder = os.path.join(original_folder_base, 'labels')
 
         folders = {
+            'base_folder': original_folder_base,
             'image_folder': img_folder,
             'bounding_box_folder': os.path.join(self.dataset_folder, dataset_part, 'bounding_boxes')
             # 'label_folder': label_folder
@@ -91,17 +100,20 @@ class Utils:
 class SettingsDataset(Utils):
     """docstring for SettingsDataset"""
 
-    def __init__(self, 
-        dataset_name, 
-        tasks, 
-        dataset_parts, 
-        instance_names,
-        bbox_rotation):
-        super(SettingsDataset,self).__init__(
+    def __init__(self,
+                 dataset_name,
+                 tasks,
+                 dataset_parts,
+                 instance_names,
+                 bbox_rotation,
+                 project_folder=None):
+        super(SettingsDataset, self).__init__(
             dataset_name=dataset_name,
-            tasks=tasks)
+            tasks=tasks,
+            project_folder=project_folder)
         self.dataset_parts = dataset_parts
         self.instance_names = instance_names
+        self.project_folder = get_project_folder(project_folder)
         self.bbox_rotation=bbox_rotation
     def __call__(self):
         return self.get_settings()

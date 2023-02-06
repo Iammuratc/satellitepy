@@ -55,7 +55,7 @@ class Cutout(Tools):
     def get_cutouts(self, save, plot, indices='all', multi_process=False):  # skip_existing
 
         image_paths = self.get_file_paths(self.original_image_folder)
-        mask_paths = self.get_file_paths(self.original_instance_mask_folder) if self.segmentation_task else [None]*len(image_paths) 
+        mask_paths = self.get_file_paths(self.original_instance_mask_folder) if self.segmentation_task else [None]*len(image_paths)
         bbox_paths = self.get_file_paths(self.original_bbox_folder)
 
         if save:
@@ -139,7 +139,7 @@ class Cutout(Tools):
 
                     bbox_ind += 1
             except Exception:
-                traceback.print_exc()                    
+                traceback.print_exc()
 
 
     def get_bbox_labels(self,bbox_path):
@@ -179,6 +179,40 @@ class Cutout(Tools):
                     bbox_label = [item for sublist in coords for item in sublist]
                     bbox_label.append(instance_names[i].text)
                 bbox_labels.append(bbox_label)
+        elif self.settings['dataset_name'] == 'rarePlanes':
+            # INSTANCE NAMES
+            roles = []
+            point_spaces = []
+
+            labels = json.load(open(bbox_path, 'r'))
+            for annotation in labels['annotations']:
+                roles.append(annotation['role'])
+                point_spaces.append(annotation['segmentation'][0])
+            coords = []
+
+            for i, bbox in enumerate(point_spaces):
+                A = (bbox[0], bbox[1])
+                B = (bbox[2], bbox[3])
+                C = (bbox[4], bbox[5])
+                D = (bbox[6], bbox[7])
+
+                vecBD = np.subtract(D, B)
+
+                middle = np.add(B, np.divide(vecBD, 2))
+                vec_to_C = np.subtract(C, middle)
+                vec_to_A = np.subtract(A, middle)
+
+                if len(bbox) == 10:
+                    coord = [np.add(D, vec_to_A), np.add(D, vec_to_C), np.add(B, vec_to_C), np.add(B, vec_to_A)]  # real
+                else:
+                    coord = [np.add(B, vec_to_A), np.add(D, vec_to_A), np.add(D, vec_to_C), np.add(B, vec_to_C)] # synthetic
+                coord = [item for arrays in coord for item in arrays]
+                print(coord)
+                coords.append(coord)
+                bbox_label = coord
+                bbox_label.append(roles[i])
+                bbox_labels.append(bbox_label)
+
         # print(bbox_labels)
         return bbox_labels
 

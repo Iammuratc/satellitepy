@@ -9,7 +9,7 @@ def get_logger(name,file):
     # create console handler and set level to debug
     sh = logging.StreamHandler()
     sh.setLevel(logging.DEBUG)
-        
+
     fh = logging.FileHandler(filename=file)
     fh.setLevel(logging.DEBUG)
 
@@ -24,7 +24,7 @@ def get_logger(name,file):
     # add ch to logger
     logger.addHandler(sh)
     logger.addHandler(fh)
-        
+
     return logger
 
 def create_folder(folder):
@@ -39,7 +39,10 @@ def create_folder(folder):
         return 1
 
 
-def get_project_folder():
+def get_project_folder(folder=None):
+    if folder:
+        create_folder(folder)
+        return folder
     project_folder = os.path.dirname(
         os.path.dirname(
             os.path.dirname(
