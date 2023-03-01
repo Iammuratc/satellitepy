@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import json
 # import copy
 
-from . import geometry
+from src.data.cutout import geometry
 # LEave some margin for the cutoutes, because some airplane in DOTA has
 # cutoff parts
 
@@ -19,7 +19,7 @@ class Tools(object):
         # self.cutout_size = self.utils.settings['cutout']['size']
 
         # PAD SIZE (PAD ORIGINAL IMAGE AND FIRST CUTOUT)
-        self.pad_size = 500#int(self.cutout_size * 1.5)
+        self.pad_size = 200#int(self.cutout_size * 1.5)
 
         # SEGMENTATION PATCHES
         self.segmentation_task = 'seg' in settings['tasks']
@@ -29,6 +29,10 @@ class Tools(object):
         if img_path is None:
             return None
         img = cv2.imread(img_path, flags=flags)
+        img = self.pad_image(img)
+        return img
+    
+    def pad_image(self,img,flags=1):
         if flags != 0:
             img = np.pad(
                 img,
@@ -53,14 +57,14 @@ class Tools(object):
 
     def init_cutout_dict(self, 
         instance_name, 
-        instance_id,
+        # instance_id,
         img_path, 
         mask_path=None):
         cutout_dict = {
             'file_path': None,
             'instance':{
                 'name': None,
-                'id':None,
+                # 'id':None,
                 },
             # 'cutout_size': None,
             'original': {
@@ -131,7 +135,7 @@ class Tools(object):
             },
         }
         cutout_dict['instance']['name'] = instance_name
-        cutout_dict['instance']['id'] = instance_id
+        # cutout_dict['instance']['id'] = instance_id
         cutout_dict['original']['img_path'] = img_path
         cutout_dict['original']['mask_path'] = mask_path
         # cutout_dict['cutout_size'] = self.cutout_size
@@ -208,19 +212,16 @@ class Tools(object):
 
         return cutout_dict
 
-    def set_orthogonal_cutout(self, cutout_dict, margin=0):
-
-        img = cutout_dict['original_padded_cutout']['img']
-        mask = cutout_dict['original_padded_cutout']['mask']
-        bbox = cutout_dict['original_padded_cutout']['bbox']['corners']
-
+    def rotate_cutout(self, img, mask, bbox, margin, angle):
         rect = geometry.BBox(corners=bbox)
 
-
-        angle = rect.get_orth_angle()
+        if angle == 'orthogonal':
+            angle = rect.get_orth_angle(direction='counter-clockwise')
         cx,cy = rect.get_params()[0:2]
         ### cv2.getRotationMatrix2D(center, angle, transform)
-        M = cv2.getRotationMatrix2D((cx, cy), np.rad2deg(angle), 1.0)
+        M = cv2.getRotationMatrix2D((cx, cy), np.rad2deg(angle+2*rect.params[-1]+np.pi/2), 1.0)
+        # M = cv2.getRotationMatrix2D((cx, cy), np.rad2deg(angle+2*rect.params[-1]), 1.0)
+        # M = cv2.getRotationMatrix2D((cx, cy), np.rad2deg(angle+rect.params[-1]), 1.0)
         ### cv2.warpAffine(img, rotation, dest_size)
         img_rotated = cv2.warpAffine(img, M, (img.shape[0], img.shape[1]))
         mask_rotated = cv2.warpAffine(
@@ -229,10 +230,20 @@ class Tools(object):
             (img.shape[0],
              img.shape[1]),
             flags=cv2.INTER_NEAREST) if self.segmentation_task else None
-        bbox_rotated = rect.get_orthogonal_bbox()
+        # bbox_rotated = rect.get_orthogonal_bbox()
+        bbox_rotated = rect.rotate_corners(angle-np.pi/2)
 
         img_1, mask_1, bbox_1 = self.cut_image_by_bbox(
             img_rotated, mask_rotated, bbox_rotated, margin)
+        return img_1, mask_1, bbox_1
+
+    def set_orthogonal_cutout(self, cutout_dict, margin=0):
+
+        img = cutout_dict['original_padded_cutout']['img']
+        mask = cutout_dict['original_padded_cutout']['mask']
+        bbox = cutout_dict['original_padded_cutout']['bbox']['corners']
+
+        img_1, mask_1, bbox_1 = self.rotate_cutout(img,mask,bbox,margin,angle='orthogonal')
 
         cutout_dict['orthogonal_cutout']['img'] = img_1
         cutout_dict['orthogonal_cutout']['mask'] = mask_1
@@ -260,8 +271,12 @@ class Tools(object):
     def cut_image_by_bbox(self, img, mask, bbox, margin):
         x_min, x_max, y_min, y_max = geometry.BBox.get_bbox_limits(corners=bbox)
         # print(f"Limits: {x_min, x_max, y_min, y_max}")
-        y_0, y_1 = np.array([y_min - margin, y_max + margin]).astype(int)
-        x_0, x_1 = np.array([x_min - margin, x_max + margin]).astype(int)
+        y_max_limit = y_max + margin if y_max + margin <= img.shape[0] else img.shape[0]
+        y_min_limit = y_min - margin if y_min - margin >= 0 else 0
+        x_max_limit = x_max + margin if x_max + margin <= img.shape[1] else img.shape[1]
+        x_min_limit = x_min - margin if x_min - margin >= 0 else 0
+        y_0, y_1 = np.array([y_min_limit, y_max_limit]).astype(int)
+        x_0, x_1 = np.array([x_min_limit , x_max_limit]).astype(int)
         img_1 = img[y_0:y_1, x_0:x_1, :]
         bbox_1 = bbox - [x_min, y_min] + margin
         mask_1 = mask[y_0:y_1, x_0:x_1] if self.segmentation_task else None
@@ -279,7 +294,8 @@ class Tools(object):
         cutout_name = f"{file_name}_{i}"
         cutout_img_name = f"{cutout_name}.png"
 
-        def cutout_img_path(folder): return os.path.join(folder, cutout_img_name)
+        def cutout_img_path(folder): 
+            return os.path.join(folder, cutout_img_name)
 
         # SET IMAGE PATHS
         cutout_dict['original_cutout']['img_path'] = cutout_img_path(

@@ -8,12 +8,6 @@ import numpy as np
 # from util import get_file_paths
 
 
-
-# class DatasetMultitask(Dataset):
-#     def __init__(self, settings, dataset_part, transform=None):
-    
-
-
 class DatasetSegmentation(Dataset):
     def __init__(self, settings, dataset_part, transform=None):
 
@@ -90,52 +84,6 @@ class DatasetSegmentation(Dataset):
             return contours_img
 
 
-class DatasetRecognition(Dataset):
-    def __init__(self, utils, dataset_part, transform=None):
-        # self.recognition = recognition_instance
-        self.transform = transform
-        self.hot_encoding = utils.settings['training']['hot_encoding']
-        self.patch_config = utils.settings['training']['patch_config']
-
-        self.label_patch_folder = utils.settings['patch'][dataset_part]['label_patch_folder']
-        self.label_files = os.listdir(self.label_patch_folder)
-
-        self.instance_table = utils.settings['dataset']['instance_table']
-
-        self.classes = len(self.instance_table.keys())
-
-    def __len__(self):
-        return len(self.label_files)
-
-    def __getitem__(self, ind):
-        if torch.is_tensor(ind):
-            ind = ind.tolist()
-
-        # READ LABEL FILE
-        label_file_name = self.label_files[ind]
-        label_dict = json.load(
-            open(
-                f"{self.label_patch_folder}/{label_file_name}",
-                'r'))
-
-        # GET IMAGE
-        img_path = label_dict[self.patch_config]['path']
-        img = cv2.cvtColor(cv2.imread(img_path, 1), cv2.COLOR_BGR2RGB)
-        # GET LABEL
-        label_int = self.instance_table[label_dict['instance_name']]
-        if self.hot_encoding:
-            label = np.zeros([self.classes])
-            label[label_int] = 1
-        else:
-            label = label_int
-        sample = {'image_path': img_path,
-                  'image': img,
-                  'label': label}
-
-        if self.transform:
-            sample = self.transform(sample)
-
-        return sample
 
 
 if __name__ == "__main__":

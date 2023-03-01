@@ -1,6 +1,6 @@
 import os
-from .utils import create_folder, get_project_folder#, get_logger
-
+from src.settings.utils import create_folder, get_project_folder#, get_logger
+import json
 
 #TODO:
 #   Log files
@@ -11,7 +11,7 @@ class Utils:
         super(Utils, self).__init__()
         self.dataset_name = dataset_name
         self.tasks = tasks
-        self.project_folder = get_project_folder(project_folder)
+        self.project_folder = get_project_folder(default_folder='/home/louis')
         self.dataset_folder = self.get_dataset_folder()
 
     def get_dataset_folder(self):
@@ -33,14 +33,14 @@ class Utils:
         img_cutout_orthogonal_folder = os.path.join(
             cutout_folder_root, "orthogonal_images")
         img_cutout_orthogonal_zoomed_folder = os.path.join(
-            cutout_folder_root, "orthogonal_zoomed_images")
+            cutout_folder_root, "orthogonal_images_unet_padded")
         label_cutout_folder = os.path.join(cutout_folder_root, "labels")
 
         folders = {
             'root_folder':cutout_folder_root,
             'image_folder': img_cutout_folder,
             'orthogonal_image_folder': img_cutout_orthogonal_folder,
-            'orthogonal_zoomed_image_folder': img_cutout_orthogonal_zoomed_folder,
+            'orthogonal_padded_image_folder': img_cutout_orthogonal_zoomed_folder,
             'label_folder': label_cutout_folder
         }
         # if 'class' in self.tasks:
@@ -95,26 +95,31 @@ class Utils:
         return folders
 
     # def init_logger(self,dataset_part,file,name):
+    def get_settings_path(self,dataset_name):
+        settings_folder = os.path.join(self.project_folder, "data_settings")
+        assert create_folder(settings_folder)
+        dataset_settings_path = os.path.join(settings_folder,f'{dataset_name}_settings.json')
+        return dataset_settings_path
 
 
 class SettingsDataset(Utils):
     """docstring for SettingsDataset"""
 
-    def __init__(self,
-                 dataset_name,
-                 tasks,
-                 dataset_parts,
-                 instance_names,
-                 bbox_rotation,
-                 project_folder=None):
-        super(SettingsDataset, self).__init__(
+    def __init__(self, 
+        dataset_name, 
+        tasks, 
+        dataset_parts, 
+        instance_names,
+        project_folder,
+        # bbox_rotation
+        ):
+        super(SettingsDataset,self).__init__(
             dataset_name=dataset_name,
             tasks=tasks,
             project_folder=project_folder)
         self.dataset_parts = dataset_parts
         self.instance_names = instance_names
-        self.project_folder = get_project_folder(project_folder)
-        self.bbox_rotation=bbox_rotation
+        # self.bbox_rotation=bbox_rotation
     def __call__(self):
         return self.get_settings()
 
@@ -128,11 +133,12 @@ class SettingsDataset(Utils):
 
         settings = {
             # 'log_names':log_name,
+            project_folder
             'dataset_name':self.dataset_name,
             'tasks': self.tasks,
             'dataset_parts':self.dataset_parts,
             'instance_names':{instance_name:i for i,instance_name in enumerate(self.instance_names)},
-            'bbox_rotation':self.bbox_rotation,
+            # 'bbox_rotation':self.bbox_rotation,
             'original': {
                 dataset_part: self.get_original_data_folders(dataset_part)
                 for dataset_part in self.dataset_parts
@@ -142,7 +148,14 @@ class SettingsDataset(Utils):
                 for dataset_part in self.dataset_parts
             }
         }
+
+        settings_path = self.get_settings_path(self.dataset_name)
+        with open(settings_path, 'w+') as f:
+            json.dump(settings, f, indent=4)
+
         return settings
+
+
 
 
 if __name__ == '__main__':

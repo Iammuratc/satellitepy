@@ -7,8 +7,8 @@ import traceback
 import xml.etree.ElementTree as ET
 from multiprocessing import Pool
 
-from . import geometry
-from .tools import Tools
+from src.data.cutout.geometry import BBox
+from src.data.cutout.tools import Tools
 
 # SEGMENTATION DATA
 
@@ -17,10 +17,11 @@ class Cutout(Tools):
     def __init__(self, settings, dataset_part):
         super(Cutout, self).__init__(settings)
 
+        self.project_folder = settings['project_folder']
         self.dataset_part = dataset_part
         # ORIGINAL DATASET FOLDER SETTINGS
         self.original_image_folder = self.settings['original'][dataset_part]['image_folder']
-        self.bbox_rotation = self.settings['bbox_rotation']
+        # self.bbox_rotation = self.settings['bbox_rotation']
         # self.original_binary_mask_folder = utils.settings['original'][dataset_part]['binary_mask_folder']
         # self.original_label_path = utils.settings['original'][dataset_part]['label_path']
         self.original_bbox_folder = self.settings['original'][dataset_part]['bounding_box_folder']
@@ -79,7 +80,7 @@ class Cutout(Tools):
                 self.get_cutout(img_path,mask_paths[i],bbox_paths[i],i,save,plot,indices)
                 # break
             # break
-    def get_cutout(self,img_path,mask_path,bbox_path,i,save,plot,indices):
+    def get_cutout(self,img_path,mask_path,bbox_label,i,save,plot,indices):
             if indices == 'all':
                 pass
             elif i in indices:
@@ -109,7 +110,7 @@ class Cutout(Tools):
                     if instance_name not in self.settings['instance_names'].keys():
                         continue
 
-                    instance_id = self.settings['instance_names'][instance_name]
+                    # instance_id = self.settings['instance_names'][instance_name]
                     cutout_dict = self.get_cutout_dict(
                         img=img,
                         img_path=img_path,
@@ -118,7 +119,7 @@ class Cutout(Tools):
                         bbox_label=bbox_label,
                         ind=bbox_ind,
                         instance_name=instance_name,
-                        instance_id=instance_id
+                        # instance_id=instance_id
                         )
                     # print(cutout_dict)
                     if plot:
@@ -216,7 +217,59 @@ class Cutout(Tools):
         # print(bbox_labels)
         return bbox_labels
 
-    def show_original_image(self, ind):
+    def count_instances(self):
+        label_file_names = os.listdir(self.original_bbox_folder)
+        instance_names = list(self.settings['instance_names'].keys())
+        instance_number_dict = {instance_name:0 for instance_name in instance_names}
+        for label_file_name in label_file_names:
+            bbox_path = os.path.join(self.original_bbox_folder,label_file_name)
+            bbox_labels = self.get_bbox_labels(bbox_path)
+            for bbox_label in bbox_labels:
+                instance_name = bbox_label[-1]
+                if instance_name not in instance_names:
+                    continue
+                instance_number_dict[instance_name] += 1
+
+        # print(instance_number_dict)
+        instance_number_average_dict = {instance_name:0 for instance_name in list(self.settings['instance_names'].keys())}
+        ### AVERAGE
+        total_number = sum(instance_number_dict.values())
+        for instance_name in instance_number_dict.keys():
+            instance_number_average_dict[instance_name] = instance_number_dict[instance_name]/total_number
+
+        print(instance_number_average_dict)
+                # break
+            # break
+
+    def show_original_image_from_name(self,img_name, show_labels=True):
+        img_path = os.path.join(self.original_image_folder,f'{img_name}.tif')
+        print(img_path)
+        bbox_path = os.path.join(self.original_bbox_folder,f'{img_name}.xml')
+        img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
+
+        # fig, ax = plt.subplots(1)
+        fig = plt.figure(frameon=False)
+        # fig.set_size_inches(w,h)
+        ax = plt.Axes(fig, [0., 0., 1., 1.])
+        ax.set_axis_off()
+        fig.add_axes(ax)
+        ax.imshow(img)
+        # ax.imshow(mask, alpha=0.5)
+        bbox_labels=self.get_bbox_labels(bbox_path)
+        for bbox_label in bbox_labels:
+            bbox_corners = np.array(bbox_label[:8]).astype(int).reshape(4, 2)
+            instance_name=bbox_label[-1] if show_labels else None
+            BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5, instance_name=None)
+        # plt.show()
+        # if save_dir:
+        plt.axis('off')
+        # manager = plt.get_current_fig_manager()
+        # manager.window.showMaximized()
+        # img_name = os.path.splitext(os.path.split(img_path)[1])[0]
+        plt.show()
+        return fig
+
+    def show_original_image(self, ind, show_labels=False, save_dir=None):
         # IMAGE PATHS
         image_paths = self.get_file_paths(self.original_image_folder)
         # print(image_paths)
@@ -244,9 +297,17 @@ class Cutout(Tools):
         # ax.imshow(mask, alpha=0.5)
 
         for bbox_label in bbox_labels:
-            bbox = np.array(bbox_label[:8]).astype(int).reshape(4, 2)
-            geometry.BBox.plot_bbox(corners=bbox, ax=ax, c='b', s=5)
+            bbox_corners = np.array(bbox_label[:8]).astype(int).reshape(4, 2)
+            instance_name=bbox_label[-1] if show_labels else None
+            BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5, instance_name=instance_name)
+        # plt.show()
+        # if save_dir:
+        plt.axis('off')
+        # manager = plt.get_current_fig_manager()
+        # manager.window.showMaximized()
+        # img_name = os.path.splitext(os.path.split(img_path)[1])[0]
         plt.show()
+        # plt.savefig(os.path.join(save_dir,f'{img_name}.png'))
 
     def get_file_paths(self, folder, sort=True):
         file_paths = [os.path.join(folder, file)
@@ -255,23 +316,18 @@ class Cutout(Tools):
             file_paths.sort()
         return file_paths
 
-    def append_to_imagenet_label_file(self,cutout_dict):
-        imagenet_label_file = self.settings['cutout']['imagenet_label_file']
-        with open(imagenet_label_file,'a') as f:
-            f.write(cutout_dict['original']['img_path'])
-
 if __name__ == '__main__':
-    from ..settings.dataset import SettingsDataset
+    from src.settings.dataset import SettingsDataset
     fair1m_settings = SettingsDataset(
     dataset_name='fair1m',
-    dataset_parts=['val'], # 'train',
+    dataset_parts=['train','val'], # 'train',
     tasks=['bbox'],
-    bbox_rotation='counter-clockwise',
+    # bbox_rotation='counter-clockwise',
     instance_names=[
         'Boeing787',
         'Boeing737',
         'Boeing747',
-        'Boeing787',
+        'Boeing777',
         'A220',
         'A321',
         'A330',
@@ -279,11 +335,16 @@ if __name__ == '__main__':
         'ARJ21',
         'C919',
         'other-airplane'])()
+    # print(fair1m_settings)
+    cutout = Cutout(fair1m_settings,'val')
+    ### COUNT INSTANCES
+    cutout.count_instances()
 
-    cutout = Cutout(utils, 'val')
 
-    cutout.show_original_image(ind=12)
-
+    ### SAVE BBOX PLOTTED ORIGINAL IMAGE
+    # cutout.show_original_image(ind=12)
+    # fig = cutout.show_original_image_from_name('14912')
+    # fig.savefig('temp.png')
     # PRINT FILE PATH
     # print(utils.get_file_paths(segmentation_cutout.original_image_folder))
 

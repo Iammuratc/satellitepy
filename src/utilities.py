@@ -2,15 +2,49 @@ import os
 from torchvision.transforms import Compose
 import torch
 import json
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import cv2
 import traceback
-from models.models import *
-from data.dataset.dataset import DatasetSegmentation, DatasetRecognition
-from transforms import Normalize, ToTensor, AddAxis
-from data.cutout.cutout import Cutout
+from src.models.models import *
+# from src.data.dataset.dataset import DatasetSegmentation, DatasetRecognition
+from src.transforms import Normalize, ToTensor, AddAxis
+from src.data.cutout.cutout import Cutout
 
+
+def resize_cutouts_by_padding(image_folder,save_folder,patch_size):
+    
+    for image_name in os.listdir(image_folder):
+        print(image_name)
+        image_path = os.path.join(image_folder,image_name)
+        img = cv2.imread(image_path)
+        # my_patch = np.zeros(shape=(patch_size,patch_size,3))
+        pad_size_height = int(patch_size/2-img.shape[1]/2)
+        if pad_size_height < 0:
+            pad_size_height = 0
+        pad_size_width = int(patch_size/2-img.shape[0]/2)
+        if pad_size_width < 0:
+            pad_size_width = 0
+        img_padded = np.pad(img,((pad_size_height,pad_size_height),(pad_size_width,pad_size_width),(0,0)))
+        # plt.imshow(img_padded)
+        # plt.show()
+        cv2.imwrite(os.path.join(save_folder,image_name),img_padded)
+
+def count_airplanes_in_patches(folder):
+    file_names = os.listdir(folder)
+
+    patch_origins = []
+
+    for file_name in file_names:
+        # file_path = os.path.join(folder,file_name)
+        # print(file_name)
+        patch_origin = file_name.split('_')[0]
+        patch_origins.append(patch_origin)
+        # break
+    print(len(set(patch_origins)))
+
+# def count_instances(label_folder):
+    
 
 def convert_my_labels_to_imagenet(dataset_settings):
     ''' Convert JSON labels to imagenet type annotation file
@@ -21,6 +55,7 @@ def convert_my_labels_to_imagenet(dataset_settings):
     This function takes my json file labels and create an imagenet type annotation file
     '''
     # print(dataset_settings)
+    instance_names = list(dataset_settings['instance_names'].keys())
     for dataset_part in dataset_settings['dataset_parts']:
         label_folder = dataset_settings['cutout'][dataset_part]['label_folder']
         imagenet_label_file_path = os.path.join(dataset_settings['cutout'][dataset_part]['root_folder'],'imagenet_labels.txt')
@@ -35,7 +70,8 @@ def convert_my_labels_to_imagenet(dataset_settings):
                     label_file = json.load(f)
 
                 img_path = label_file['original_cutout']['img_path']
-                instance_id = label_file['instance']['id']
+                # instance_id = label_file['instance']['id']
+                instance_id = instance_names.index(label_file['instance']['name'])
 
                 imagenet_line = f'{img_path} {instance_id}\n'
                 print(imagenet_line)
@@ -49,8 +85,8 @@ def convert_my_labels_to_imagenet(dataset_settings):
 def write_cutouts(dataset_settings,multi_process):
     for dataset_part in dataset_settings['dataset_parts']:
         my_cutout = Cutout(dataset_settings,dataset_part)
-        my_cutout.get_cutouts(save=True,plot=False,indices='all',multi_process=multi_process) # 12,13
-        # my_cutout.show_original_image(ind=288)
+        # my_cutout.get_cutouts(save=True,plot=False,indices='all',multi_process=multi_process) # 12,13
+        my_cutout.show_original_image(ind=2)
 
 class Utilities:
     """docstring for Utilities"""
@@ -59,116 +95,19 @@ class Utilities:
         # super(Utilities, self).__init__()
         self.settings = settings
 
-    # def get_file_paths(self, folder, sort=True):
-    #     file_paths = [os.path.join(folder, file)
-    #                   for file in os.listdir(folder)]
-    #     if sort:
-    #         file_paths.sort()
-    #     return file_paths
+if __name__ == '__main__':
+    from src.settings.utils import get_project_folder
+    project_folder = get_project_folder() 
+    # data_base_folder = os.path.join(project_folder,'data','DOTA','val')
+    # original_image_count = len(os.listdir(os.path.join(data_base_folder,'images')))
+    # print(original_image_count)
+    # instance_count = len(os.listdir(os.path.join(data_base_folder,'cutouts','images')))
+    # print(instance_count)
 
-    def get_model(self):
-        model_name = self.settings['model']['name']
-        if model_name == 'UNet':
-            model = UNet(init_features=self.settings['model']['init_features'])
-        elif model_name == 'Custom_0':
-            model = Custom_0()
-        else:
-            print('Please define your model first.')
-            return 0
-        return model
-
-    def get_dataset(self, dataset_parts, task):
-        if task == 'segmentation':
-            # DATASET
-            dataset = {dataset_part: DatasetSegmentation(
-                settings=self.settings,
-                dataset_part=dataset_part,
-                transform=Compose(
-                    [ToTensor(), Normalize(task=task), AddAxis()])
-            )
-                for dataset_part in dataset_parts}
-            dataset_split = self.split_dataset(dataset)
-        elif task == 'recognition':
-            dataset = {dataset_part: DatasetRecognition(
-                settings=self.settings,
-                dataset_part=dataset_part,
-                transform=Compose([ToTensor(), Normalize(task=task)])
-            )
-                for dataset_part in dataset_parts}
-            dataset_split = self.split_dataset(dataset)
-
-        return dataset_split
-
-    def split_dataset(self, dataset):
-        if self.settings['training']['split_ratio']:
-            dataset_train = dataset['train']
-            dataset_val = dataset['val']
-            # MERGE DATASETS
-            # dataset_full=dataset_train
-            dataset_full = torch.utils.data.ConcatDataset(
-                [dataset_train, dataset_val])
-            len_full_dataset = len(dataset_full)
-
-            # SPLIT RATIO
-            ratio_train, ratio_test, ratio_val = self.settings['training']['split_ratio']
-            train_size = int(ratio_train * len_full_dataset)
-            test_size = int(ratio_test * len_full_dataset)
-            val_size = len_full_dataset - train_size - test_size
-            # dataset_train, dataset_test, dataset_val = torch.utils.data.random_split(dataset_full, [train_size, test_size,val_size])
-            dataset_train = torch.utils.data.Subset(
-                dataset_full, range(train_size))
-            dataset_test = torch.utils.data.Subset(
-                dataset_full, range(train_size, train_size + test_size))
-            dataset_val = torch.utils.data.Subset(dataset_full, range(
-                train_size + test_size, train_size + test_size + val_size))
-            print(
-                f'Full dataset (train+test+val) is split into:\n{len(dataset_train)},{len(dataset_test)},{len(dataset_val)}\n')
-        else:
-            dataset_train = dataset['train']
-            dataset_test = dataset['test']
-            dataset_val = dataset['val']
-
-        dataset_split = {'train': dataset_train,
-                         'val': dataset_val,
-                         'test': dataset_test}
-        return dataset_split
-
-
-class ImageViewer(object):
-    def __init__(self, ax, instance_table, image_data):
-        self.ax = ax
-        self.image_data = image_data
-        self.instance_table = list(instance_table.keys())
-
-        self.slices = len(image_data)
-        self.ind = 0
-
-        self.im = ax.imshow(self.get_next_img())
-        self.update()
-
-    # def onscroll(self, event):
-    def on_press(self, event):
-        # print("%s %s" % (event.button, event.step))
-        # if event.button == 'up':
-        if event.key == 'd':
-            self.ind = (self.ind + 1) % self.slices
-        # else:
-        if event.key == 'a':
-            self.ind = (self.ind - 1) % self.slices
-        print(self.ind)
-        self.update()
-
-    def get_next_img(self):
-        img = cv2.cvtColor(cv2.imread(
-            self.image_data[self.ind][0]), cv2.COLOR_BGR2RGB)
-        return img
-
-    def update(self):
-
-        label = self.instance_table[self.image_data[self.ind][1]]
-        predicted = self.instance_table[self.image_data[self.ind][2]]
-
-        self.im.set_data(self.get_next_img())
-        # self.ax.set_ylabel('slice %s' % self.ind)
-        self.ax.set_title(f"Label: {label}, Predicted: {predicted}")
-        self.im.axes.figure.canvas.draw()
+    ### PAD CUTOUTS
+    image_folder = os.path.join(project_folder,'data','fair1m','val','cutouts','orthogonal_images_unet')
+    save_folder = os.path.join(project_folder,'data','fair1m','val','cutouts','orthogonal_images_unet_padded')
+    os.makedirs(save_folder,exist_ok=True)
+    resize_cutouts_by_padding(image_folder,save_folder,patch_size=128)
+    
+    # count_airplanes_in_patches(os.path.join(data_base_folder,'patches','patches_512','images'))
