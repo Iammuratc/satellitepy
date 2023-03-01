@@ -38,34 +38,6 @@ class ClassifierSegmentation(Classifier):
 
         super().train(model, loss_func, optimizer, loaders)
 
-    def get_loaders(self, batch_size):
-
-        loader_train = self.get_loader(
-            dataset=self.dataset['train'],
-            batch_size=batch_size,
-            shuffle=True)
-        loader_test = self.get_loader(
-            dataset=self.dataset['test'],
-            batch_size=batch_size,
-            shuffle=False)
-        loader_val = self.get_loader(
-            dataset=self.dataset['val'],
-            batch_size=batch_size,
-            shuffle=True)
-
-        loaders = {'train': loader_train,
-                   'test': loader_test,
-                   'val': loader_val}
-
-        return loaders
-
-    def get_loader(self, dataset, shuffle, batch_size, num_workers=4):
-        loader = torch.utils.data.DataLoader(dataset,
-                                             batch_size=batch_size,
-                                             shuffle=shuffle,
-                                             num_workers=num_workers)
-
-        return loader
 
     def get_predictions(self, model, loader):
         for i, data in enumerate(loader):
