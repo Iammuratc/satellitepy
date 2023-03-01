@@ -3,6 +3,7 @@ import logging
 import pathlib
 import logging.config
 
+
 def init_logger(config_path, log_path):
     logging.config.fileConfig(config_path, defaults={'logfilename': log_path})
 
@@ -18,7 +19,6 @@ def create_folder(folder):
     else:
         return 1
 
-
 def get_project_folder(my_folder=None):
     """Set project folder
     Para
@@ -26,6 +26,7 @@ def get_project_folder(my_folder=None):
         If my_folder is assigned, then project_folder is my_folder, if not, it is the default project folder
     """
     # if not my_folder:
+
     project_folder = os.path.dirname(
         os.path.dirname(
             os.path.dirname(
