@@ -1,8 +1,8 @@
 import configargparse
-
+from satellitepy.data.patch import get_patches
 """
 Create patches from original image and label folders 
-Save patch label details (i.e., corners, class_name) in json files in satellitepy format.
+Save patch labels in json files that are in satellitepy format.
 """
 
 def get_args():
@@ -11,7 +11,7 @@ def get_args():
     parser.add_argument('--patch-size', required=True, type=int, help='Patch size. Patches with patch_size will be created from the original images.')
     parser.add_argument('--in-image-folder', required=True, help='Folder of original images. The images in this folder will be processed.')
     parser.add_argument('--in-label-folder', required=True, help='Folder of original labels. The labels in this folder will be used to create patches.')
-    parser.add_argument('--in-label-format', required=True, help='Label file format. e.g., dota, fair1m, rareplanes.')
+    parser.add_argument('--in-label-format', required=True, help='Label file format. e.g., dota, fair1m.')
     parser.add_argument('--out-folder',
         required=True,
         help='Save folder of patches. Patches and corresponding labels will be saved into <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels.')
@@ -21,6 +21,17 @@ def get_args():
     args = parser.parse_args()
     return args
 
+def run(args):
+    in_image_folder = args.in_image_folder
+    in_label_folder = args.in_label_folder
+    in_label_format = args.in_label_format
+    patch_overlap = args.patch_overlap
+    patch_size = args.patch_size
+    truncated_object_thr = args.truncated_object_thr
+
+
+
 
 if __name__ == '__main__':
     args = get_args()
+    run(args)
