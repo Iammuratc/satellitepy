@@ -11,6 +11,7 @@ We develop an organized pipeline and a well-written documentation such that ever
 
 # Datasets
 We support the following datasets:
+
 - Fair1M
 - DOTA
 - RarePlanes
@@ -19,11 +20,5 @@ We support the following datasets:
 ## Detection
 We use [MMRotate](https://github.com/open-mmlab/mmrotate) to detect oriented bounding boxes (OBB) of coarse-grained objects in satellite images. 
 
-### Possible problems
-KeyError: 'RotatedRetinaNet is not in the models registry'
-### Solution
-Add the following lines to your config file:
-`custom_imports = dict(
-    imports=['mmrotate.models.detectors.rotated_retinanet'],
-    allow_failed_imports=False)`
+For errors during compiling the mmrotate module, refer to the [troubleshooting](docs/troubleshooting_mmrotate.md) section.
 
