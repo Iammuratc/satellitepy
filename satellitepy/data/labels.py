@@ -1,6 +1,7 @@
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
+import json
 
 def read_label(label_path,label_format):
     if isinstance(label_path,Path):
@@ -9,6 +10,8 @@ def read_label(label_path,label_format):
         return read_dota_label(label_path)
     elif label_format=='fair1m':
         return read_fair1m_label(label_path)
+    elif label_format=='satellitepy':
+        return read_satellitepy_label(label_path)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -81,6 +84,16 @@ def read_fair1m_label(label_path):
                 coord.append(float(point))
             coords.append(coord)
         labels['bboxes'].append(coords)
+    return labels
+
+def read_satellitepy_label(label_path):
+    labels = init_labels()
+
+    with open(label_path,'r') as f:
+        labels_file = json.load(f)
+
+    for key in labels.keys():
+        labels[key] = labels_file[key]
     return labels
 
 if __name__=='__main__':
