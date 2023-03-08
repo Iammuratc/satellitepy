@@ -7,7 +7,16 @@ We develop an organized pipeline and a well-written documentation such that ever
 
 # Installation
 
-`pip install satellitepy`
+`git clone git@github.com:Iammuratc/satellitepy.git`
+
+`python3 -m venv venv_satellitepy`
+
+`source venv_satellitepy/bin/activate`
+
+`pip3 install -r requirements.txt`
+
+`pip3 install -e .`
+
 
 # Datasets
 We support the following datasets:
