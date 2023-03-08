@@ -1,12 +1,10 @@
 import os
 import numpy as np
-from src.settings.utils import create_folder, get_file_paths
-from src.data.labels import read_label
-from src.data.cutout.geometry import BBox
 import torch
-from src.settings.utils import get_file_name_from_path
 import logging
 
+from satellitepy.data.labels import read_label
+from satellitepy.data.cutout.geometry import BBox
 
 from mmrotate.core.bbox import rbbox_overlaps
 from mmdet.apis.inference import init_detector, inference_detector

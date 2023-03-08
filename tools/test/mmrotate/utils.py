@@ -5,13 +5,12 @@ def add_shared_args(parser):
 	Add shared arguments of the parsers
 	Parameter
 	---------
-		parser : configargparse.ArgumentParser
-			Parser.
+	parser : configargparse.ArgumentParser
+		Parser.
 	Returns
 	-------
-		parser : configargparse.ArgumentParser
-			Parser.
-		
+	parser : configargparse.ArgumentParser
+		Parser.		
 	"""
 	parser.add_argument('--config-path', required=True, help='Path to MMRotate config file. Please refer to https://github.com/open-mmlab/mmrotate for more details.')
 	parser.add_argument('--weights-path', required=True, help='Path to MMRotate model weights file. Please refer to https://github.com/open-mmlab/mmrotate for more details.')

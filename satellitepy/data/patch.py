@@ -1,5 +1,5 @@
 import numpy as np
-
+import logging
 # TODO: 
 #   Shift the segmentation masks in get_patches and merge_patch_results
 #   Filter out the truncated objects using the object area. truncated_object_thr is not use at the moment. Edit the is_truncated function.
@@ -17,37 +17,49 @@ def get_patches(
     Original Bounding box coordinates of the objects are adjusted with respect to the patch coordinates 
     Parameters
     ----------
-        img : np.ndarray
-            Image.
-        gt_labels : dict
-            Label in satellitepy format.
-        truncated_object_thr : float
-            Truncated object threshold
-        patch_size : int
-            Patch size
-        patch_overlap : int
-            Patch overlap
+    img : np.ndarray
+        Image.
+    gt_labels : dict
+        Label in satellitepy format.
+    truncated_object_thr : float
+        Truncated object threshold
+    patch_size : int
+        Patch size
+    patch_overlap : int
+        Patch overlap
     Returns
     -------
-        patch_dict : dict
-            This dict includes patches and the corresponding labels in satellitepy format
+    patch_dict : dict
+        This dict includes patches and the corresponding labels in satellitepy format
     """
 
     # Patch coordinates in the original image
+    logger = logging.getLogger(__name__)
     y_max, x_max, ch = img.shape
     y_start_coords =  get_patch_start_coords(y_max,patch_size,patch_overlap)
     x_start_coords =  get_patch_start_coords(x_max,patch_size,patch_overlap)
     patch_start_coords = [[x,y] for x in x_start_coords for y in y_start_coords]
     patch_dict = {
-      'images':[np.zeros(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(y_start_coords))],
+      'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],
       'labels':[{label_key:[] for label_key in gt_labels.keys()} for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
       'start_coords': patch_start_coords
       }
+
+    # Not every dataset has values for all possible keys in labels. 
+    # E.g., fair1m does not have difficulty. 
+    # Remove keys with empty lists
+    keys_with_values = [key for key in gt_labels.keys() if gt_labels[key]!=[]]
+    logger.info("{} have values for this image".format(",".join(keys_with_values)))
     for i,patch_start_coord in enumerate(patch_start_coords):
+        # Patch starting coordinates
         x_0,y_0 = patch_start_coord
-        patch_img = img[y_0:y_0+patch_size,x_0:x_0+patch_size,:]
-        patch_dict['images'].append(patch_img)
+
+        # Patch image
+        patch_dict['images'][i] = img[y_0:y_0+patch_size,x_0:x_0+patch_size,:]
+
+        # Patch labels
         for i_label, bbox_corners in enumerate(gt_labels['bboxes']):
+            # Check if object s bbox is in patch
             is_truncated_bbox = is_truncated(
                 bbox_corners=bbox_corners,
                 x_0=x_0,
@@ -55,8 +67,9 @@ def get_patches(
                 patch_size=patch_size,
                 bbox_corner_threshold=2)
             if not is_truncated_bbox:
-                for key in gt_labels.keys():
+                for key in keys_with_values:
                     patch_dict['labels'][i][key].append(gt_labels[key][i_label])
+
                 # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
                 bbox_corners_shifted = np.array(patch_dict['labels'][i]['bboxes'][-1]) - [x_0,y_0]
                 patch_dict['labels'][i]['bboxes'][-1] = bbox_corners_shifted.tolist()

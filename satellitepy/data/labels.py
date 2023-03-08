@@ -1,8 +1,10 @@
 import numpy as np
 import xml.etree.ElementTree as ET
-
+from pathlib import Path
 
 def read_label(label_path,label_format):
+    if isinstance(label_path,Path):
+        label_path = str(label_path)
     if label_format=='dota' or label_format=='DOTA':
         return read_dota_label(label_path)
     elif label_format=='fair1m':
@@ -12,15 +14,18 @@ def read_label(label_path,label_format):
         exit(1)
 
 
-
-def read_dota_label(label_path):
+def init_labels():
     labels={
         'bboxes':[],
         'instance_names':[],
         'difficulty':[]}
+    return labels    
+
+
+def read_dota_label(label_path):
+    labels = init_labels()
     with open(label_path, 'r') as f:
         for line in f.readlines():
-            # bbox_labels = line[:-1].split(' ')[:-1]
             bbox_line = line.split(' ') # Corner points, category, [difficulty]
             # Original DOTA dataset has some metadata in first two lines
             # Check if the line matches with the DOTA format
@@ -46,12 +51,13 @@ def read_dota_label(label_path):
     return labels
 
 
-def read_fair1m_label(label_path):
-    labels={
-        'bboxes':[],
-        'instance_names':[]
-    }
+def read_rareplanes_label(label_path):
+    labels = init_labels()
 
+    return labels
+
+def read_fair1m_label(label_path):
+    labels = init_labels()
     root = ET.parse(label_path).getroot()
 
     file_name = root.findall('./source/filename')[0].text

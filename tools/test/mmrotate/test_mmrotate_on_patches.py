@@ -6,8 +6,8 @@ Save detected bbox details (i.e., corners, class_name) with the corresponding gr
 
 import os
 import configargparse
-from src.evaluate.mmrotate.tools import save_mmrotate_patch_results
-from src.settings.utils import create_folder, init_logger
+from satellitepy.evaluate.mmrotate.tools import save_mmrotate_patch_results
+from satellitepy.utils.path_utils import create_folder, init_logger
 from pathlib import Path
 import logging
 
@@ -33,14 +33,14 @@ def get_args():
 def main(args):
     """Application entry point."""
 
-    log_config_path = args.log_config_path
+    log_config_path = Path(args.log_config_path)
     config_path = args.config_path
     weights_path = args.weights_path
     nms_on_multiclass_thr = args.nms_on_multiclass_thr
     device = args.device
-    out_folder = args.out_folder
-    in_image_folder = args.in_image_folder
-    in_label_folder = args.in_label_folder
+    out_folder = Path(args.out_folder)
+    in_image_folder = Path(args.in_image_folder)
+    in_label_folder = Path(args.in_label_folder)
     in_label_format = args.in_label_format
     class_names = [class_name for class_name in args.class_names.split(',')]
 
