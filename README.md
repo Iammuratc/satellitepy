@@ -9,6 +9,8 @@ We develop an organized pipeline and a well-written documentation such that ever
 
 `git clone git@github.com:Iammuratc/satellitepy.git`
 
+`cd satellitepy` 
+
 `python3 -m venv venv_satellitepy`
 
 `source venv_satellitepy/bin/activate`
