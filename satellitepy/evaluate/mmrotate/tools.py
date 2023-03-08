@@ -1,16 +1,14 @@
 import mmcv
-import os
+# import os
 from pathlib import Path
 import pathlib
 import json
 from mmdet.apis.inference import init_detector, inference_detector
 import logging
-import pprint
 
-
-from src.evaluate.mmrotate.utils import get_mmrotate_model, get_result, get_gt_labels, get_det_labels, match_gt_and_det_bboxes
-from src.settings.utils import create_folder, get_file_paths, get_file_name_from_path
-from src.data.patch import get_patches, merge_patch_results
+from satellitepy.evaluate.mmrotate.utils import get_mmrotate_model, get_result, get_gt_labels, get_det_labels, match_gt_and_det_bboxes
+from satellitepy.utils.path_utils import create_folder, get_file_paths, is_file_names_match
+from satellitepy.data.patch import get_patches, merge_patch_results
 
 
 def save_mmrotate_patch_results(
@@ -52,26 +50,22 @@ def save_mmrotate_patch_results(
     mmrotate_model = get_mmrotate_model(config_path,weights_path,device)
 
     # Create result patch folder
-    patch_result_folder = pathlib.PurePath(out_folder,'results','patch_labels')
+    patch_result_folder = Path(out_folder) / 'results' / 'patch_labels'
     assert create_folder(patch_result_folder)
 
     image_paths = get_file_paths(in_image_folder)
     label_paths = get_file_paths(in_label_folder)
-    prog_bar = mmcv.ProgressBar(len(image_paths))
-
 
     for img_path,label_path in zip(image_paths,label_paths):
 
-        # Check if label and image names match
-        img_name = get_file_name_from_path(img_path)
-        label_name = get_file_name_from_path(label_path)
+        img_name = img_path.stem
         logger.info(f'{img_name} will be processed...')
 
-        is_match = img_name == label_name
+        # Check if label and image names match
+        is_match = is_file_names_match(img_path,label_path)
         if not is_match:
             logger.error('Label and image names do not match!')
             exit(1)
-
 
         # Image
         img = mmcv.imread(img_path)
@@ -90,8 +84,6 @@ def save_mmrotate_patch_results(
         # Save labels to json file
         with open(Path(patch_result_folder) / f"{img_name}.json",'w') as f:
             json.dump(result, f, indent=4)
-
-        prog_bar.update()
 
 
 def save_mmrotate_original_results(
@@ -143,7 +135,7 @@ def save_mmrotate_original_results(
 
 
     # Create result original folder
-    original_result_folder = pathlib.PurePath(out_folder,'results','original_labels')
+    original_result_folder = Path(out_folder) / 'results' / 'original_labels'
     assert create_folder(original_result_folder)
 
 
@@ -154,11 +146,11 @@ def save_mmrotate_original_results(
     temp_count = 0
     for img_path,label_path in zip(image_paths,label_paths):
         # Check if label and image names match
-        img_name = get_file_name_from_path(img_path)
-        label_name = get_file_name_from_path(label_path)
+        img_name = img_path.stem
         logger.info(f'{img_name} will be processed...')
 
-        is_match = img_name == label_name
+        # Check if label and image names match
+        is_match = is_file_names_match(img_path,label_path)
         if not is_match:
             logger.error('Label and image names do not match!')
             exit(1)
