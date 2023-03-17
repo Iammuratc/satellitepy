@@ -12,6 +12,8 @@ def read_label(label_path,label_format):
         return read_fair1m_label(label_path)
     elif label_format=='satellitepy':
         return read_satellitepy_label(label_path)
+    elif label_format=='rareplanes' or label_format=='rarePlanes':
+        return read_rareplanes_label(label_path)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -56,7 +58,25 @@ def read_dota_label(label_path):
 
 def read_rareplanes_label(label_path):
     labels = init_labels()
+    file = json.load(open(label_path, 'r'))
 
+    for annotation in file['annotations']:
+        points = annotation['segmentation'][0]
+
+        A = (points[0], points[1])
+        B = (points[2], points[3])
+        C = (points[4], points[5])
+        D = (points[6], points[7])
+        # converting polygon-annotations to bounding box
+        vecBD = tuple(np.subtract(D, B))
+        middle = tuple(np.add(B, np.divide(vecBD, 2)))
+        vecToC = tuple(np.subtract(C, middle))
+        vecToA = tuple(np.subtract(A, middle))
+
+        corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(), np.add(B, vecToA).tolist()]
+
+        labels['bboxes'].append(corners)
+        labels['instance_names'].append(annotation['role'])
     return labels
 
 def read_fair1m_label(label_path):
