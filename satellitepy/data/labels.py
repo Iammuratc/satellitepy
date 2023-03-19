@@ -17,16 +17,85 @@ def read_label(label_path,label_format):
         exit(1)
 
 
-def init_labels():
+def init_satellitepy_label():
+    """
+    This function creates an empty labels dict in satellitepy format.
+    Returns
+    -------
+    labels : dict of str
+        bboxes : list
+            Bounding box corners for every object
+        mask : list of Path
+            Path to segmentation mask of objects
+        classes : dict of str
+            '0' : coarse grained classes (e.g., airplane,ship)
+            '1' : fine grained classes (e.g., A220, passenger ship)
+            '2' : very fine grained classes (e.g., A220-100)
+        difficulty : list of int
+            Detection difficulty of the object. Only DOTA provides this. 
+            For example, clouds make the detection task difficult. 
+        attributes : dict of str
+            This value only serves for Rareplanes at the moment. 
+            Please check the rareplanes paper for details.
+            'engines' : dict of str
+                'no_engines' : int
+                    Number of engines
+                'propulsion' : str
+                    unpowered, jet, propeller
+            'fuselage' : dict of str
+                'canards' : bool
+                'length' : float
+            'wings' : dict of str
+                'wing_span' : float
+                'wing_shape' : str
+                    swept, straight, delta, variable_swept
+                'wing_position' : str
+                    low_mounted, high_mounted
+            'tail' : dict of str
+                'no_tail_fins' : int
+                    1, 2
+            'role' : dict of str
+                'civil' : str
+                    large_transport, medium_transport, small_transport
+                'military' : str
+                    fighter, bomber, transport, trainer
+    """
     labels={
         'bboxes':[],
-        'instance_names':[],
-        'difficulty':[]}
+        'classes':{
+            '0':[],
+            '1':[],
+            '2':[]
+        },
+        'difficulty':[],
+        'attributes':{
+            'engines':{
+                'no_engines':[],
+                'propulsion':[]
+            },
+            'fuselage':{
+                'canards':[],
+                'length':[]
+            },
+            'wings':{
+                'wing_span':[],
+                'wing_shape':[],
+                'wing_position':[],
+            },
+            'tail':{
+                'no_tail_fins':[]
+            },
+            'role':{
+                'civil':[],
+                'military':[]
+            }
+        }
+    }
     return labels    
 
 
 def read_dota_label(label_path):
-    labels = init_labels()
+    labels = init_satellitepy_label()
     with open(label_path, 'r') as f:
         for line in f.readlines():
             bbox_line = line.split(' ') # Corner points, category, [difficulty]
@@ -55,12 +124,12 @@ def read_dota_label(label_path):
 
 
 def read_rareplanes_label(label_path):
-    labels = init_labels()
+    labels = init_satellitepy_label()
 
     return labels
 
 def read_fair1m_label(label_path):
-    labels = init_labels()
+    labels = init_satellitepy_label()
     root = ET.parse(label_path).getroot()
 
     file_name = root.findall('./source/filename')[0].text
@@ -87,7 +156,7 @@ def read_fair1m_label(label_path):
     return labels
 
 def read_satellitepy_label(label_path):
-    labels = init_labels()
+    labels = init_satellitepy_label()
 
     with open(label_path,'r') as f:
         labels_file = json.load(f)
