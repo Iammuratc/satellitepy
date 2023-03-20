@@ -3,6 +3,18 @@ from pathlib import Path
 import logging.config
 
 
+def get_project_folder():
+    """
+    Get the project folder.
+    Returns
+    -------
+    project_folder : Path
+        <your-path-to-satellitepy>
+    """
+    project_folder = Path(__file__).resolve(strict=True).parent.parent.parent
+    return project_folder
+
+
 def init_logger(config_path, log_path):
     """
     Initate the logger. This function is mostly called from the tools scripts.
@@ -17,6 +29,7 @@ def init_logger(config_path, log_path):
     Initiate the log file at log_path using config_path
     """
     logging.config.fileConfig(config_path, defaults={'logfilename': log_path})
+
 
 def create_folder(folder):
     """
@@ -40,7 +53,8 @@ def create_folder(folder):
     else:
         return 1
 
-def get_file_paths(folder,sort=True):
+
+def get_file_paths(folder, sort=True):
     """
     Get file paths in a folder.
     Parameters
@@ -54,10 +68,12 @@ def get_file_paths(folder,sort=True):
     file_paths : list of Path
         Absolute file paths in folder
     """
-    file_paths = [Path(file_path) for file_path in folder.glob('**/*') if file_path.is_file()]
+    file_paths = [Path(file_path)
+                  for file_path in folder.glob('**/*') if file_path.is_file()]
     if sort:
         file_paths.sort()
     return file_paths
+
 
 def is_file_names_match(*file_paths):
     """
@@ -75,6 +91,7 @@ def is_file_names_match(*file_paths):
     for file_path in file_paths:
         file_names.append(file_path.stem)
     return file_names.count(file_names[0]) == len(file_names)
+
 
 def zip_matched_files(*folders):
     """
