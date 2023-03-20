@@ -1,8 +1,12 @@
 import numpy as np
 import logging
 # TODO: 
+#   Padding image wrt patch size
 #   Shift the segmentation masks in get_patches and merge_patch_results
 #   Filter out the truncated objects using the object area. truncated_object_thr is not use at the moment. Edit the is_truncated function.
+
+# Init log
+logger = logging.getLogger(__name__)
 
 def get_patches(
     img,
@@ -33,12 +37,22 @@ def get_patches(
         This dict includes patches and the corresponding labels in satellitepy format
     """
 
-    # Patch coordinates in the original image
-    logger = logging.getLogger(__name__)
+    # Get image shape
     y_max, x_max, ch = img.shape
-    y_start_coords =  get_patch_start_coords(y_max,patch_size,patch_overlap)
-    x_start_coords =  get_patch_start_coords(x_max,patch_size,patch_overlap)
+
+    # Pad image so full patches are possible
+    x_pad_size = get_pad_size(x_max,patch_size,patch_overlap)
+    y_pad_size = get_pad_size(y_max,patch_size,patch_overlap)
+    img_padded = np.pad(img,pad_width=((0,y_pad_size),(0,x_pad_size),(0,0)))
+
+    y_max_padded, x_max_padded, ch = img_padded.shape
+
+    # Patch coordinates in the padded image
+    y_start_coords =  get_patch_start_coords(y_max_padded,patch_size,patch_overlap)
+    x_start_coords =  get_patch_start_coords(x_max_padded,patch_size,patch_overlap)
     patch_start_coords = [[x,y] for x in x_start_coords for y in y_start_coords]
+
+    # Init patch dictionary
     patch_dict = {
       'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],
       'labels':[{label_key:[] for label_key in gt_labels.keys()} for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
@@ -55,7 +69,7 @@ def get_patches(
         x_0,y_0 = patch_start_coord
 
         # Patch image
-        patch_dict['images'][i] = img[y_0:y_0+patch_size,x_0:x_0+patch_size,:]
+        patch_dict['images'][i] = img_padded[y_0:y_0+patch_size,x_0:x_0+patch_size,:]
 
         # Patch labels
         for i_label, bbox_corners in enumerate(gt_labels['bboxes']):
@@ -77,7 +91,37 @@ def get_patches(
                 continue
     return patch_dict
 
-def get_patch_start_coords(coord_max, patch_size, overlap):
+def get_pad_size(coord_max, patch_size, patch_overlap):
+    """
+    Get patch starting coordinates with respect to original image size.
+    Parameters
+    ----------
+    coord_max : int
+        Maximum value of the given axis.
+    patch_size : int
+        Patch size
+    overlap : int
+        Overlapping part between the neighboring patches
+    Returns
+    -------
+    pad_size : int
+        Pad size of the given axis
+        E.g., img size = 1000, patch size = 512, overlap = 0, resulting image = 1024 
+        E.g., img size = 1000, patch size = 512, overlap = 10, resulting image = 1014
+    """
+    pad_size = 0
+    quotient, remainder = divmod(coord_max+patch_overlap, patch_size)
+    if quotient==0 and remainder==0:
+        msg = 'No pixels are found in image!'
+        logger.error(msg)
+        raise Exception(msg)
+    if remainder != 0:
+        new_coord_size = (quotient+1)*patch_size-patch_overlap
+        pad_size = new_coord_size - coord_max
+    return pad_size
+
+
+def get_patch_start_coords(coord_max, patch_size, patch_overlap):
     """
     Get patch starting coordinates with respect to original image size.
     Parameters
@@ -93,12 +137,14 @@ def get_patch_start_coords(coord_max, patch_size, overlap):
     coords : list
         Starting coordinates of the given axis
     """
-    coords = []
-    stride = patch_size - overlap
-    coord_i = 0
-    while (coord_i + stride) < coord_max:
-        coords.append(coord_i)
-        coord_i = coord_i + stride
+    quotient, remainder = divmod(coord_max+patch_overlap, patch_size)
+    if remainder != 0:
+        msg = f"{remainder} number of pixels will be discarded"
+        logger.warning(msg)
+    
+    coords = [0]
+    for i in range(1,quotient):
+        coords.append(i*patch_size-patch_overlap)
     return coords
 
 def is_truncated(bbox_corners,x_0,y_0,patch_size,bbox_corner_threshold):
