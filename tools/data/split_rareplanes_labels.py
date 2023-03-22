@@ -20,7 +20,7 @@ def get_args():
                         help='Save folder of new labels. Labels will be saved into <out-folder>/labels.')
     parser.add_argument('--log-config-path', default=project_folder /
                         Path("configs/log.config"), type=Path, help='Log config file.')
-    parser.add_argument('--log-path', type=Path, help='Log config file.')
+    parser.add_argument('--log-path', type=Path, help='Log file path.')
     args = parser.parse_args()
     return args
 
