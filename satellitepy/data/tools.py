@@ -1,11 +1,13 @@
 import json
+import logging
 import os
-import cv2
 from pathlib import Path
 
-from satellitepy.utils.path_utils import create_folder, get_file_paths, zip_matched_files
-from satellitepy.data.patch import get_patches
+import cv2
+
 from satellitepy.data.labels import read_label
+from satellitepy.data.patch import get_patches
+from satellitepy.utils.path_utils import create_folder, zip_matched_files
 
 
 def save_patches(
@@ -82,40 +84,52 @@ def save_patches(
                 json.dump(patch_label,f)
 
 
-
-
-def normalize_rarePlanes_annotations(dataset_settings):
+def split_rareplanes_labels(
+        label_file,
+        out_folder
+    ):
     """
-    rarePlanes uses one annotation file for all images in one dataset part.
-    To work with the dataset more efficiently, this function creates a separate annotation file for every image.
-    Apart from the extension, the annotation file has the same name as the matching image.
-    The separate annotation files are saved in the 'bounding_boxes'-folder,
-    the original annotation file needs to be placed in its root folder (dataset part)
-    """
-    for dataset_part in dataset_settings['dataset_parts']:
-        original_base_folder = dataset_settings['original'][dataset_part]['base_folder']
-        new_bbox_folder = dataset_settings['original'][dataset_part]['bounding_box_folder']
+        Save patches from the original images
+        Parameters
+        ----------
+        label_file : Path
+            Input label file. This single label file will be split up.
+        out_folder : Path
+            Output folder. New labels will be saved into <out-folder>/labels
+        Returns
+        -------
+        Save labels in <out-folder>/labels
+        """
 
-        annotation_path = get_file_paths(original_base_folder)[0]
-        file = json.load(open(annotation_path, 'r'))
+    logger = logging.getLogger(__name__)
 
-        id_to_img = {}
-        for image in file['images']:
-            id_to_img[image['id']] = image['file_name']
-            label_file = open(os.path.join(new_bbox_folder, image['file_name'][:-3] + 'json'), 'w')
-            annotations = {'annotations': []}
-            json.dump(annotations, label_file, indent=4)
-            label_file.close()
+    # Create output folder
+    out_label_folder = Path(out_folder)
+    assert create_folder(out_label_folder)
 
-        for new_annotation in file['annotations']:
-            img_name = id_to_img[new_annotation['image_id']]
-            label_file_path = os.path.join(new_bbox_folder, img_name[:-3] + 'json')
-            label_file = open(label_file_path, 'r', encoding="utf-8")
-            print(label_file_path)
-            annotations = json.load(label_file)
-            label_file.close()
-            annotations['annotations'].append(new_annotation)
-            file = open(label_file_path, 'w', encoding="utf-8")
+    label_path = Path(label_file)
 
-            json.dump(annotations, file, ensure_ascii=False, indent=4)
-            file.close()
+    file = json.load(open(label_path, 'r'))
+
+    id_to_img = {}
+    for image in file['images']:
+        id_to_img[image['id']] = image['file_name']
+        label_file_path = os.path.join(out_label_folder, image['file_name'][:-3] + 'json')
+        label_file = open(label_file_path, 'w')
+        logger.info(f'Initializing annotations for {label_file_path}')
+        annotations = {'annotations': []}
+        json.dump(annotations, label_file, indent=4)
+        label_file.close()
+
+    for new_annotation in file['annotations']:
+        img_name = id_to_img[new_annotation['image_id']]
+        label_file_path = os.path.join(out_label_folder, img_name[:-3] + 'json')
+        label_file = open(label_file_path, 'r', encoding="utf-8")
+        logger.info(f'Saving annotation for {label_file_path}')
+        annotations = json.load(label_file)
+        label_file.close()
+        annotations['annotations'].append(new_annotation)
+        file = open(label_file_path, 'w', encoding="utf-8")
+
+        json.dump(annotations, file, ensure_ascii=False, indent=4)
+        file.close()
