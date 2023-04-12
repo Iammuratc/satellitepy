@@ -14,6 +14,8 @@ def get_patches(
     truncated_object_thr,
     patch_size,
     patch_overlap,
+    include_object_classes,
+    exclude_object_classes,
     ):
     """
     Produce patches from the original image using the labels. 
@@ -31,6 +33,13 @@ def get_patches(
         Patch size
     patch_overlap : int
         Patch overlap
+    include_object_classes: list[str]
+        A list of object class names that shall be included as ground truth for the patches. 
+        Takes precedence over exclude_object_classes, i.e. if both are provided, 
+        only include_object_classes will be considered.
+    exclude_object_classes: list[str]
+        A list of object class names that shall be excluded as ground truth for the patches.
+        include_object_classes takes precedence and overrides the behaviour of this parameter.
     Returns
     -------
     patch_dict : dict
@@ -72,7 +81,12 @@ def get_patches(
         patch_dict['images'][i] = img_padded[y_0:y_0+patch_size,x_0:x_0+patch_size,:]
 
         # Patch labels
-        for i_label, bbox_corners in enumerate(gt_labels['bboxes']):
+        for i_label, (bbox_corners, instance_name) in enumerate(
+                zip(gt_labels['bboxes'], gt_labels["instance_names"])
+            ):
+            # Check if the object class name is whitelisted or not blacklisted
+            if not is_valid_object_class(instance_name, include_object_classes, exclude_object_classes):
+                continue
             # Check if object s bbox is in patch
             is_truncated_bbox = is_truncated(
                 bbox_corners=bbox_corners,
@@ -90,6 +104,33 @@ def get_patches(
             else:
                 continue
     return patch_dict
+
+def is_valid_object_class(object_class_name, include_object_classes, exclude_object_classes):
+    """
+    Checks whether the given object class name is valid w.r.t. 
+    the given include_object_classes and exclude_object_classes lists.
+    If include_object_classes is not None, this function will return whether the object_class_name
+    is included in that list.
+    If exclude_object_classes is not None and include_object_classes is None, this function will
+    return whether the given object_class_name is not in the exclude list.
+    Parameters
+    ----------
+    object_class_name : str
+        The name of the object class.
+    include_object_classes: list[str]
+        A list of object class names that shall be included as ground truth for the patches. 
+        Takes precedence over exclude_object_classes, i.e. if both are provided, 
+        only include_object_classes will be considered.
+    exclude_object_classes: list[str]
+        A list of object class names that shall be excluded as ground truth for the patches.
+        include_object_classes takes precedence and overrides the behaviour of this parameter.
+    """
+    if include_object_classes is not None:
+        return object_class_name in include_object_classes
+    elif exclude_object_classes is not None:
+        return object_class_name not in exclude_object_classes
+    else:
+        return True
 
 def get_pad_size(coord_max, patch_size, patch_overlap):
     """

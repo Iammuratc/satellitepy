@@ -16,6 +16,8 @@ def save_patches(
     truncated_object_thr,
     patch_size,
     patch_overlap,
+    include_object_classes,
+    exclude_object_classes
     ):
     """
     Save patches from the original images
@@ -35,6 +37,13 @@ def save_patches(
         Patch size
     patch_overlap : int
         Patch overlap
+    include_object_classes: list[str]
+        A list of object class names that shall be included as ground truth for the patches. 
+        Takes precedence over exclude_object_classes, i.e. if both are provided, 
+        only include_object_classes will be considered.
+    exclude_object_classes: list[str]
+        A list of object class names that shall be excluded as ground truth for the patches.
+        include_object_classes takes precedence and overrides the behaviour of this parameter.
     Returns
     -------
     Save patches in <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
@@ -60,6 +69,8 @@ def save_patches(
             truncated_object_thr,
             patch_size,
             patch_overlap,
+            include_object_classes,
+            exclude_object_classes
             )
 
         count_patches = len(patches['images'])
