@@ -1,2 +1,6 @@
 *.pyc
 *.tex
+# install cache and whatnot
+**/*.egg*
+# launch.json for nvim-dap and vscode
+**/launch.json
