@@ -79,7 +79,7 @@ def save_patches(
             patch_label = patches['labels'][i]
             patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
             with open(str(patch_label_path),'w') as f:
-                json.dump(patch_label,f)
+                json.dump(patch_label,f,indent=4)
 
 
 
