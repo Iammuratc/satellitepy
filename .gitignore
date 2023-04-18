@@ -1,2 +1,4 @@
 *.pyc
 *.tex
+venv_satellitepy/*
+satellitepy.egg-info
