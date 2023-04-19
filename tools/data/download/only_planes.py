@@ -1,14 +1,16 @@
 import configargparse
 from pathlib import Path
-from satellitepy.data.tools import save_patches
-from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
-from shutil import unpack_archive
+from satellitepy.utils.path_utils import init_logger, unzip_files_in_folder
 import logging
 import wget
+"""
+Automatically downloads OnlyPlanes Dataset and saves it in given folder.
+If needed can also extract downloaded zip directly
+"""
 
 DATASET_NAME = "only_planes"
-DATASET="https://msdsdiag.blob.core.windows.net/naivelogicblob/OnlyPlanes/OnlyPlanes_dataset_08122022.zip"
-SRC="https://msdsdiag.blob.core.windows.net/naivelogicblob/OnlyPlanes/final_aug22"
+DATASET_URL="https://msdsdiag.blob.core.windows.net/naivelogicblob/OnlyPlanes/OnlyPlanes_dataset_08122022.zip"
+SYNTHATIC_URL="https://msdsdiag.blob.core.windows.net/naivelogicblob/OnlyPlanes/final_aug22"
 
 def get_args():
     """Arguments parser."""
@@ -40,33 +42,24 @@ def run(args):
 
     logger.info('Downloading Synthatic...')
     logger.info('Downloading 1/4')
-    wget.download(SRC + "/onlyplanes_faster_rcnn_r50-0034999.pth", out = synthatic.resolve()) # binary object detection model
+    wget.download(SYNTHATIC_URL + "/onlyplanes_faster_rcnn_r50-config.yaml", out = str(synthatic)) # binary object detection config
     logger.info('Downloading 2/4')
-    wget.download(SRC + "/onlyplanes_faster_rcnn_r50-config.yaml", out = synthatic.resolve()) # binary object detection config
+    wget.download(SYNTHATIC_URL + "/onlyplanes_mask_rcnn_r50-config.yaml", out = str(synthatic)) # instance segmentation config
     logger.info('Downloading 3/4')
-    wget.download(SRC + "/onlyplanes_mask_rcnn_r50-0024999.pth", out = synthatic.resolve()) # instance segmentation model
+    wget.download(SYNTHATIC_URL + "/onlyplanes_mask_rcnn_r50-0024999.pth", out = str(synthatic)) # instance segmentation model
     logger.info('Downloading 4/4')
-    wget.download(SRC + "/onlyplanes_mask_rcnn_r50-config.yaml", out = synthatic.resolve()) # instance segmentation config
+    wget.download(SYNTHATIC_URL + "/onlyplanes_faster_rcnn_r50-0034999.pth", out = str(synthatic)) # binary object detection model
     logger.info('Finished Downloading Synthatic')
 
     logger.info('Downloading Dataset...')
-    wget.download(DATASET, out = in_folder.resolve())
-
-    if unzip:
-        zip_files = in_folder.rglob("*.zip")
-        while True:
-            try:
-                path = next(zip_files)
-            except StopIteration:
-                break # no more files
-            except PermissionError:
-                logging.exception("Permission error! Cant open file")
-            else:
-                extract_dir = path.with_name(path.stem)
-                logging.info("Unzipping " + str(path))
-                unpack_archive(str(path), str(extract_dir), 'zip')  
-
+    wget.download(DATASET_URL, out = str(in_folder))
     logger.info('Finished downloading ' + DATASET_NAME)
+    
+    if unzip:
+        logger.info('Start unzipping')
+        unzip_files_in_folder(in_folder)
+        logger.info('Finished unzipping')
+
 
 if __name__ == '__main__':
     args = get_args()
