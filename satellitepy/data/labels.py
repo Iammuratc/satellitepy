@@ -73,7 +73,7 @@ def fill_none_to_empty_keys(labels,not_available_tasks):
 def init_satellitepy_label():
     """
     This function creates an empty labels dict in satellitepy format.
-    Do not use underdash "_" in key names, because "_" will be 
+    WARNING: Do not use underdash "_" in key names, because "_" will be 
     used in parsing the nested task names (e.g., attributes_engines_no-engines) within other functions.
     Returns
     -------
@@ -201,6 +201,44 @@ def read_dota_label(label_path):
             fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
+def read_fair1m_label(label_path):
+    labels = init_satellitepy_label()
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for dota
+    available_tasks=['bboxes','classes_0','classes_1']
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+
+
+
+    root = ET.parse(label_path).getroot()
+
+    file_name = root.findall('./source/filename')[0].text
+
+    # Instance names
+    instance_names = root.findall(
+        './objects/object/possibleresult/name')
+    for instance_name in instance_names:
+        labels['classes']['0'].append('object')
+        labels['classes']['1'].append(instance_name.text)
+
+    # BBOX CCORDINATES
+    point_spaces = root.findall('./objects/object/points')
+    for point_space in point_spaces:
+        # remove the last coordinate points
+        my_points = point_space.findall('point')[:4]  
+        coords = []
+        for my_point in my_points:
+            coord = []
+            for point in my_point.text.split(','):
+                coord.append(float(point))
+            coords.append(coord)
+        labels['bboxes'].append(coords)
+        fill_none_to_empty_keys(labels,not_available_tasks)
+
+    return labels
 
 def read_rareplanes_label(label_path):
     labels = init_labels()
@@ -235,32 +273,6 @@ def read_rareplanes_label(label_path):
         labels['instance_names'].append(annotation['role'])
     return labels
 
-def read_fair1m_label(label_path):
-    labels = init_satellitepy_label()
-    root = ET.parse(label_path).getroot()
-
-    file_name = root.findall('./source/filename')[0].text
-
-    # Instance names
-    instance_names = root.findall(
-        './objects/object/possibleresult/name')
-    for instance_name in instance_names:
-        labels['instance_names'].append(instance_name.text)
-
-    # BBOX CCORDINATES
-    point_spaces = root.findall('./objects/object/points')
-    for point_space in point_spaces:
-        # remove the last coordinate points
-        my_points = point_space.findall('point')[:4]  
-        coords = []
-        for my_point in my_points:
-            # [[[x1,y1],[x2,y2]],[[x1,y1]]]
-            coord = []
-            for point in my_point.text.split(','):
-                coord.append(float(point))
-            coords.append(coord)
-        labels['bboxes'].append(coords)
-    return labels
 
 def read_satellitepy_label(label_path):
     labels = init_satellitepy_label()
