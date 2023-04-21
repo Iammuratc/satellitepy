@@ -1,6 +1,6 @@
 import configargparse
 from pathlib import Path
-from satellitepy.utils.path_utils import init_logger, unzip_files_in_folder
+from satellitepy.utils.path_utils import init_logger, unzip_files_in_folder, create_folder
 from shutil import rmtree
 from torrentp import TorrentDownloader
 import logging
@@ -31,7 +31,7 @@ def run(args):
     log_config = Path(args.log_config)
     unzip = bool(args.unzip)
 
-    in_folder.mkdir(parents=True, exist_ok=True)
+    create_folder(in_folder)
     log_path = Path(in_folder) / "download.log" if args.log_path == None else args.log_path
     init_logger(config_path=log_config, log_path=log_path)
     logger = logging.getLogger(__name__)

@@ -1,10 +1,10 @@
 import configargparse
 from pathlib import Path
-from satellitepy.utils.path_utils import init_logger, unzip_files_in_folder
+from satellitepy.utils.path_utils import init_logger, unzip_files_in_folder, create_folder
 import logging
 import wget
 """
-Automatically downloads OnlyPlanes Dataset and saves it in given folder.
+This script will download real and synthetic part of OnlyPlanes at the same time
 If needed can also extract downloaded zip directly
 """
 
@@ -31,8 +31,8 @@ def run(args):
     unzip = bool(args.unzip)
     synthatic = Path(args.in_folder) / Path(DATASET_NAME + "_synthatic")
 
-    in_folder.mkdir(parents=True, exist_ok=True)
-    synthatic.mkdir(parents=True, exist_ok=True)
+    create_folder(in_folder)
+    create_folder(synthatic)
 
     log_path = Path(in_folder) / "download.log" if args.log_path == None else args.log_path
     init_logger(config_path=log_config, log_path=log_path)
