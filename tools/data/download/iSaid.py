@@ -2,6 +2,14 @@ import configargparse
 from pathlib import Path
 from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
 import logging
+import subprocess
+import zipfile
+import fnmatch
+try:
+    import gdown
+except ImportError:
+    subprocess.check_call(["pip", "install", "gdown"])
+    import gdown
 
 """
 Download the iSaid-Dataset
@@ -11,8 +19,6 @@ def get_args():
     """Argument Parser"""
     project_folder = get_project_folder()
     parser = configargparse.ArgumentParser(description = __doc__)
-    parser.add_argument('--download', required = True, type = str,
-                        help = 'Which dataset to download. Type iSaid for iSaid datatset')
     parser.add_argument('--in-folder', default = project_folder/Path('in_folder/iSaid/'), type = Path,
                         help = 'Which folder to save the dataset into')
     parser.add_argument('--unpack', action = 'store_true', help = 'Unpack the dataset')
@@ -23,34 +29,25 @@ def get_args():
     return args
 
 def main(args):
-    if args.download == 'iSaid':
-        import subprocess
-        import zipfile
-        import fnmatch
-        try:
-            import gdown
-        except ImportError:
-            subprocess.check_call(["pip", "install", "gdown"])
-        import gdown
-
-        parent_folder = Path(args.in_folder)
-        assert create_folder(parent_folder)
-        train_folder = parent_folder/Path("train")
-        assert create_folder(train_folder)
-        train_semanticMask_img_folder = train_folder/Path("semanticMask_img")
-        assert create_folder(train_semanticMask_img_folder)
-        train_instanceMask_img_folder = train_folder/Path("instanceMask_img")
-        assert create_folder(train_instanceMask_img_folder)
-        val_folder = parent_folder/Path("val")
-        assert create_folder(val_folder)
-        val_semanticMask_img_folder = val_folder/Path("semanticMask_imgs")
-        assert create_folder(val_semanticMask_img_folder)
-        val_instanceMask_img_folder = val_folder/Path("instanceMask_imgs")
-        assert create_folder(val_instanceMask_img_folder)
-        test_folder = parent_folder/Path("test")
-        assert create_folder(test_folder)
-        test_img_folder = test_folder/Path("imgs")
-        assert create_folder(test_img_folder)
+  
+    parent_folder = Path(args.in_folder)
+    assert create_folder(parent_folder)
+    train_folder = parent_folder/Path("train")
+    assert create_folder(train_folder)
+    train_semanticMask_img_folder = train_folder/Path("semanticMask_img")
+    assert create_folder(train_semanticMask_img_folder)
+    train_instanceMask_img_folder = train_folder/Path("instanceMask_img")
+    assert create_folder(train_instanceMask_img_folder)
+    val_folder = parent_folder/Path("val")
+    assert create_folder(val_folder)
+    val_semanticMask_img_folder = val_folder/Path("semanticMask_imgs")
+    assert create_folder(val_semanticMask_img_folder)
+    val_instanceMask_img_folder = val_folder/Path("instanceMask_imgs")
+    assert create_folder(val_instanceMask_img_folder)
+    test_folder = parent_folder/Path("test")
+    assert create_folder(test_folder)
+    test_img_folder = test_folder/Path("imgs")
+    assert create_folder(test_img_folder)
 
     train_semanticMask_img_file_id = "1YLjZ1cmA9PH3OfzMF-eq6T-O9FTGvSrx"
     train_instanceMask_img_file_id = "12XhSgEt_Xw4FJQxLJZgMutw3awoAq2Ve"
