@@ -143,7 +143,7 @@ def main(args):
 
     # Init logger
     log_path = Path(
-        parent_folder) / 'download_dota.log' if args.log_path == None else args.log_path
+        parent_folder) / 'download_iSaid.log' if args.log_path == None else args.log_path
     init_logger(config_path=args.log_config_path, log_path=log_path)
     logger = logging.getLogger(__name__)
     if args.log_path == None:
