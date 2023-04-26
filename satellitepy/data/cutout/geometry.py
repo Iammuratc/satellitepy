@@ -11,9 +11,7 @@ class BBox:
     - Parametrization of bbox corner points, i.e., corner points >> center_x, center_y, height, length, rotation angle
     - Params to points, i.e.,  center_x, center_y, height, length, rotation angle >> corner points
     - Rotation calculations of bounding boxes
-
     '''
-
     def __init__(self, **kwargs):
         is_corners = 'corners' in kwargs.keys() 
         is_params = 'params' in kwargs.keys()

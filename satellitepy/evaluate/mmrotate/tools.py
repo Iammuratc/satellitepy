@@ -6,7 +6,7 @@ import json
 from mmdet.apis.inference import init_detector, inference_detector
 import logging
 
-from satellitepy.evaluate.mmrotate.utils import get_mmrotate_model, get_result, get_gt_labels, get_det_labels, match_gt_and_det_bboxes
+from satellitepy.evaluate.mmrotate.utils import get_mmrotate_model, get_result, get_gt_labels, get_det_labels, match_gt_and_det_bboxes, set_conf_mat_from_result
 from satellitepy.utils.path_utils import create_folder, get_file_paths, is_file_names_match
 from satellitepy.data.patch import get_patches, merge_patch_results
 
@@ -202,4 +202,42 @@ def save_mmrotate_original_results(
             json.dump(result, f, indent=4)
 
 
+def calculate_map(
+    in_result_folder,
+    instance_names,
+    confidence_score_threshold,
+    iou_thresholds,
+    out_folder):
 
+    # Get logger
+    logger = logging.getLogger(__name__)
+
+    # Add background to instance_names
+    instance_names = instance_names + ['Background']
+
+    # Init confusion matrix
+    ## Confusion matrix shape description:
+    ### Iou thresholds
+    ### Ground truth
+    ### Detected label
+    conf_mat = np.zeros(shape=(len(iou_thresholds),len(instance_names),len(instance_names)))
+
+    # Result paths
+    result_paths = get_file_paths(in_result_folder)
+
+    # (Surely) Detected gt label indices
+    ## These indices have greater values than both iou and confidence score thresholds
+    det_gt_bbox_indices = []
+
+    logger.info(f'The following result file will be evaluated: {result_path}')
+    for result_path in result_paths:
+        # Result json file
+        with open(result_path,'r') as result_file:
+            result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches' 
+        
+        set_conf_mat_from_result(
+            conf_mat,
+            result,
+            instance_names,
+            confidence_score_threshold,
+            iou_thresholds)

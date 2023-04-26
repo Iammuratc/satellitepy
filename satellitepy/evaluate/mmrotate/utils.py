@@ -187,3 +187,41 @@ def nms_on_multi_class(result,nms_iou_thr):
             result_nms_to_numpy.append(np.array(det_bboxes))
 
     return result_nms_to_numpy
+
+
+def set_conf_mat_from_result(
+    conf_mat,
+    result,
+    instance_names,
+    confidence_score_threshold,
+    iou_thresholds):
+    # Iterate through the confidence scores of the detected bounding boxes
+    for i,confidence_score in enumerate(result['det_labels']['confidence_scores']):
+        ## If the confidence score is lower than threshold, skip the object
+        if confidence_score<confidence_score_threshold:
+            continue
+        ## If not, check if iou score is greater than iou_threshold
+        for ii,iou_threshold in enumerate(iou_thresholds):
+            if result['matches']['iou']['scores']<iou_threshold:
+                continue
+            else:
+                det_gt_bbox_indices.append(result['matches']['iou']['indexes'][ii])
+                det_gt_instance_name = result['gt_labels']['instance_names'][ii]
+                ## Set instance name to Background if it is not defined by the user
+                det_gt_instance_name = 'Background' if det_gt_instance_name not in instance_names else det_gt_instance_name 
+                det_gt_index = instance_names.index(det_gt_instance_name)
+                ## Det index
+                det_index = instance_names.index(result['det_labels']['instance_names'][ii])
+                conf_mat[ii,det_gt_index,det_index] += 1
+
+            # If a ground truth label is not detected (i.e., undetected) at all, add as detected Background label
+            undet_gt_bbox_indices = list(range(len(result['gt_labels']['instance_names'])).difference(det_gt_bbox_indices)) 
+            for undet_gt_bbox_ind in undetected_bbox_indices:
+                undet_gt_instance_name = result['gt_labels']['instance_names'][undet_gt_bbox_ind]
+                ## Set instance name to Background if it is not defined by the user
+                undet_gt_instance_name = 'Background' if undet_gt_instance_name not in instance_names else undet_gt_instance_name 
+                undet_gt_index = instance_names.index(undet_gt_instance_name)
+
+                conf_mat[ii,undet_gt_index,instance_names.index('Background')] += 1
+
+        print(conf_mat[ii])

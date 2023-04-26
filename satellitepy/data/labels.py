@@ -84,7 +84,7 @@ def init_satellitepy_label():
             Path to segmentation mask of objects
         classes : dict of str
             '0' : list of str
-                coarse grained classes (e.g., airplane,ship)
+                coarse grained classes. It has to be one of these three types: airplane,ship,vehicle
             '1' : list of str 
                 fine grained classes (e.g., A220, passenger ship)
             '2' : list of str 
@@ -210,8 +210,6 @@ def read_fair1m_label(label_path):
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
-
-
 
     root = ET.parse(label_path).getroot()
 
