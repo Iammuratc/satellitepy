@@ -1,9 +1,99 @@
 import numpy as np
 import cv2
 
+def Angle(Corners):
+    '''This function converts the boundingbox from Corners to the center, width, height, angle notation.
+    Angle must be between 0 and 2*pi, an angle of 0 means hight aligns with y direction.
+    Shapes: [...,4,2] to [...,5]'''
 
-# TODO: 
-#   
+    if isinstance(Corners, list):
+        Corners = np.array(Corners)
+    elif isinstance(Corners, np.ndarray):
+        Corners=Corners
+    else:
+        raise Exception('Corners have to be either list or numpy array')
+    
+    if Corners.shape[-2:]!=(4,2):
+        raise Exception('Last two dimension of Boxes must be [4,2] but are:',Corners.shape[-2:],' instead.')
+    
+
+    #Extract the centerposition, width, height and angle from the Boxes array
+    c1,c2,c3,c4=Corners[...,0,:],Corners[...,1,:],Corners[...,2,:],Corners[...,3,:]
+
+
+    #Calculate the new representation:
+    cx=(c1[...,0]+c2[...,0]+c3[...,0]+c4[...,0])/4
+    cy=(c1[...,1]+c2[...,1]+c3[...,1]+c4[...,1])/4
+
+    height=np.linalg.norm(c1-c2,2,-1)
+    width=np.linalg.norm(c1-c4,2,-1)
+
+
+    #calculate the angel in intervall -pi to pi
+    angle=np.arctan2(c1[...,1]-c4[...,1],c1[...,0]-c4[...,0])
+    #convert the angle to the intevall 0 to 2'pi
+    angle=angle-np.sign(angle)*np.pi+np.pi
+
+    
+    Boxes_shape=list(Corners.shape)[0:-1]
+    Boxes_shape[-1]=5
+
+
+    Boxes=np.zeros(Boxes_shape)
+    Boxes[...,0]=cx
+    Boxes[...,1]=cy
+    Boxes[...,2]=width
+    Boxes[...,3]=height
+    Boxes[...,4]=angle
+    
+    return Boxes
+
+
+def Corners(Boxes):
+    '''This function converts the boundingbox from center, width, height, angle to the corners notation.
+    Angle must be between 0 and 2*pi, an angle of 0 means hight aligns with y direction.
+    Shapes: [...,5] to [...,4,2]'''
+
+    if isinstance(Boxes, list):
+        Boxes = np.array(Boxes)
+    elif isinstance(Boxes, np.ndarray):
+        Boxes=Boxes
+    else:
+        raise Exception('Corners have to be either list or numpy array')
+    
+    if Boxes.shape[-1]!=5:
+        raise Exception('Last dimension of Boxes must be 5 but is:',Boxes.shape[-1],' instead.')
+    
+    #Extract the centerposition, width, height and angle from the Boxes array
+    x,y,w,h,angle=Boxes[...,0],Boxes[...,1],Boxes[...,2],Boxes[...,3],Boxes[...,4]
+
+    #Calculate the four corners of the Boxes(first one is to left for angle=0, rest follow clockwise)
+    x1,y1=x+np.cos(angle)*w/2-np.sin(angle)*h/2,y+np.sin(angle)*w/2-np.cos(angle)*h/2
+
+    x2,y2=x+np.cos(angle)*w/2+np.sin(angle)*h/2,y+np.sin(angle)*w/2+np.cos(angle)*h/2
+
+    x3,y3=x-np.cos(angle)*w/2+np.sin(angle)*h/2,y-np.sin(angle)*w/2+np.cos(angle)*h/2
+
+    x4,y4=x-np.cos(angle)*w/2-np.sin(angle)*h/2,y-np.sin(angle)*w/2-np.cos(angle)*h/2
+
+    #Create the Array containin the corners
+    Boxes_shape=list(Boxes.shape)
+    Boxes_shape[-1]=4
+    Boxes_shape.append(2)
+
+    #Fill in the Corners Array with the previously calculated corners
+    Boxes_corner=np.zeros(Boxes_shape)
+    Boxes_corner[...,0,0]=x1
+    Boxes_corner[...,0,1]=y1
+    Boxes_corner[...,1,0]=x2
+    Boxes_corner[...,1,1]=y2
+    Boxes_corner[...,2,0]=x3
+    Boxes_corner[...,2,1]=y3
+    Boxes_corner[...,3,0]=x4
+    Boxes_corner[...,3,1]=y4
+
+    
+    return Boxes_corner
 
 class BBox:
     '''
