@@ -14,6 +14,8 @@ def read_label(label_path,label_format):
         return read_satellitepy_label(label_path)
     elif label_format=='rareplanes' or label_format=='rarePlanes':
         return read_rareplanes_label(label_path)
+    elif label_format=='ship_net':
+        return read_ship_net_label(label_path)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -241,7 +243,7 @@ def read_fair1m_label(label_path):
     return labels
 
 def read_rareplanes_label(label_path):
-    labels = init_labels()
+    labels = init_satellitepy_label()
 
     ## Default available tasks for dota
     available_tasks=['bboxes','difficulty','classes_0','classes_1']
@@ -249,8 +251,6 @@ def read_rareplanes_label(label_path):
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
-
-
 
     file = json.load(open(label_path, 'r'))
 
@@ -272,6 +272,45 @@ def read_rareplanes_label(label_path):
         labels['bboxes'].append(corners)
         labels['instance_names'].append(annotation['role'])
     return labels
+
+def read_ship_net_label(label_path):
+    labels = init_satellitepy_label()
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for dota
+    available_tasks=['bboxes', 'difficulty', 'classes_0','classes_1']
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+
+    root = ET.parse(label_path).getroot()
+    # Instance names
+    instance_names = root.findall('./object/name')
+    for instance_name in instance_names:
+        labels['classes']['0'].append('ship')
+        labels['classes']['1'].append(instance_name.text)
+
+    instance_difficulties = root.findall('./object/difficult')
+    for instance_difficulty in instance_difficulties:
+        labels['difficulty'].append(instance_difficulty.text)
+
+    # BBOX CCORDINATES
+    point_spaces = root.findall('./object/polygon')
+    for point_space in point_spaces:
+        # remove the last coordinate points
+        my_points = point_space.findall('.//') 
+        coords = []
+        corner = []
+        for my_point in my_points:
+            corner.append(int(float(my_point.text)))
+            if 'y' in my_point.tag:
+                coords.append(corner)
+                corner = []
+
+        labels['bboxes'].append(coords)
+        fill_none_to_empty_keys(labels,not_available_tasks)
+    return labels
+
 
 
 def read_satellitepy_label(label_path):
