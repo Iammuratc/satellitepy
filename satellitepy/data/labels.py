@@ -2,6 +2,7 @@ import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import json
+import os
 
 def read_label(label_path,label_format):
     if isinstance(label_path,Path):
@@ -16,6 +17,8 @@ def read_label(label_path,label_format):
         return read_rareplanes_label(label_path)
     elif label_format=='ship_net':
         return read_ship_net_label(label_path)
+    elif label_format =='ucas':
+        return read_ucas_label(label_path)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -311,7 +314,42 @@ def read_ship_net_label(label_path):
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
+def read_ucas_label(label_path):
+    labels = init_satellitepy_label()
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for dota
+    available_tasks=['bboxes', 'classes_0']
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+    
+    file = open(label_path, 'r')
+    for line in file.readlines():
+        bbox = line.split()[:8]
+        coords_x = bbox[0::2]
+        coords_y = bbox[1::2]
+        coords = []
+        corner = []
+        for i in range(0, len(coords_x)):
+            corner.append(int(float(coords_x[i])))
+            corner.append(int(float(coords_y[i])))
+            coords.append(corner)
+            corner = []
+        labels['bboxes'].append(coords)
 
+        # Using label path to determine object type
+        if 'CAR' in str(label_path):
+            labels['classes']['0'].append('car')
+        elif 'PLANE' in str(label_path):
+            labels['classes']['0'].append('airplane')
+        else:
+            labels['classes']['0'].append(None)
+
+        fill_none_to_empty_keys(labels,not_available_tasks)
+    return labels
+
+    
 
 def read_satellitepy_label(label_path):
     labels = init_satellitepy_label()
