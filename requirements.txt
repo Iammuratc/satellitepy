@@ -1,4 +1,4 @@
 configargparse
 wget
 torrentp
-patoolib
+patool

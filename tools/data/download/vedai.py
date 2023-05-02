@@ -2,6 +2,7 @@ import urllib.request
 import patoolib
 import logging
 import configargparse
+from pathlib import Path
 from satellitepy.utils.path_utils import init_logger, create_folder
 
 
@@ -11,25 +12,22 @@ DATASET_URL = "https://downloads.greyc.fr/vedai/"
 def get_args():
 	"""Arguments parser."""
 	parser = configargparse.ArgumentParser(description=__doc__)
-	parser.add_argument('--in-folder', type=str(Path, required=True,
-						help='Folder where the dataset should be downloaded to.')
-	parser.add_argument('--log-config', type=str(Path, required=True,
-						help='Whether to write to log to file.')
-	parser.add_argument('--log-path', type=str(Path, required=False,
-						help='Where the log config should be saved.')
+	parser.add_argument('--in-folder', type=Path, required=True, help='Folder where the dataset should be downloaded to.')
+	parser.add_argument('--log-config', type=Path, required=True, help='Whether to write to log to file.')
+	parser.add_argument('--log-path', type=Path, required=False,help='Where the log config should be saved.')
 	parser.add_argument('--unzip', type=bool, required=True, help="If datasets with compressed files should be automatically unzipped")
 	args = parser.parse_args()
 	return args
 
 def download_VEDAI(in_path, log_config, log_path=None, unzip=True):
-	if (type(in_path) != str or type(unzip) != bool or type(log_config) != bool): raise TypeError() # Sanity-checking inputs
-	if (log_config and (type(log_path) != str and log_path != None) ): raise TypeError()
-	in_path = str(str(Path(in_path) / DATASET_NAME)
+	#if (type(in_path) != str or type(unzip) != bool or type(log_config) != bool): raise TypeError() # Sanity-checking inputs
+	#if (log_config and (type(log_path) != str and log_path != None) ): raise TypeError()
+	in_path = str(Path(in_path) / DATASET_NAME)
 	if not (Path(in_path).is_dir()):
-		create_folder(in_path) #creates directory if not already existing
+		create_folder(Path(in_path)) #creates directory if not already existing
 	if (log_config):
-		if (log_path == None): log_path = str(Path(in_path,"download.log")
-		init_logger(config_path, log_path)
+		if (log_path == None): log_path = str(Path(in_path) / "download.log")
+		init_logger("configs/log.config", log_path)
 	if (log_path != None): log_path = str(Path(in_path) / "download.log") # Set log file location
 	try:
 		files1024 = []
@@ -47,22 +45,22 @@ def download_VEDAI(in_path, log_config, log_path=None, unzip=True):
 		devkit = urllib.request.urlretrieve(DATASET_URL + "DevKit.tar", str(Path(in_path) / "DevKit.tar"))[0] 
 		tos = urllib.request.urlretrieve(DATASET_URL + "TermsandConditionsofUseVeDAI2014.pdf", str(Path(in_path) / "TermsandConditionsofUseVeDAI2014.pdf"))[0]
 	except Exception as e:
-		if (logging): logging.error("Failed to download dataset with the following error:\n"+ str(e)))
+		if (logging): logging.error("Failed to download dataset with the following error:\n"+ str(e))
 	else:
 		if (logging): logging.info("Download complete.")
 		if (logging): logging.info("Merging files.")
 		try:
-			file512 = str(Path(in_path,"Vehicules512.tar")
-			file1024 = str(Path(in_path,"Vehicules1024.tar")
+			file512 = str(Path(in_path) / "Vehicules512.tar")
+			file1024 = str(Path(in_path) /"Vehicules1024.tar")
 			for part in files512:
-				with open(file512) / "ab") as whole, open(part) / "rb") as fragment:
-					whole.write(fragment.read()))
+				with open(file512, "ab") as whole, open(part, "rb") as fragment:
+					whole.write(fragment.read())
 				pathlib.Path.unlink(part)
 			for part in files1024:
-				with open(file1024) / "ab") as whole, open(part) / "rb") as fragment:
-					whole.write(fragment.read()))
+				with open(file1024, "ab") as whole, open(part, "rb") as fragment:
+					whole.write(fragment.read())
 				pathlib.Path.unlink(part)
-		except Error: 
+		except Exception: 
 			if (logging): logging.error("Failed to merge files.")
 		if (unzip):
 			try:
@@ -72,7 +70,7 @@ def download_VEDAI(in_path, log_config, log_path=None, unzip=True):
 				patoolib.extract_archive(file512, outdir=in_path)
 				patoolib.extract_archive(file1024, outdir=in_path)
 			except patoolib.util.PatoolError as e:
-				if (logging): logging.warning("There has been an error when attempting to extract tape archive(s):\n" + str(e)))
+				if (logging): logging.warning("There has been an error when attempting to extract tape archive(s):\n" + str(e))
 			else:
 				if (logging): logging.info("Archive extracted.")
 
