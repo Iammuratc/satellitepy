@@ -60,20 +60,20 @@ def main(args):
 
     #train data
     url = f"https://drive.google.com/uc?id={train_semanticMask_img_file_id}"
-    output_path = parent_folder/train_folder/Path("train_semanticMask.zip")
+    output_path = train_folder/Path("train_semanticMask.zip")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
     
 
     url = f"https://drive.google.com/uc?id={train_instanceMask_img_file_id}"
-    output_path = parent_folder/train_folder/Path("train_instanceMask.zip")
+    output_path = train_folder/Path("train_instanceMask.zip")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
 
     url = f"https://drive.google.com/uc?id={train_annotion_id}"
-    output_path = parent_folder/train_folder/Path("train.json")
+    output_path = train_folder/Path("train.json")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
@@ -90,19 +90,19 @@ def main(args):
 
     #val data
     url = f"https://drive.google.com/uc?id={val_semanticMask_img_file_id}"
-    output_path = parent_folder/val_folder/Path("val_semanticMask.zip")
+    output_path = val_folder/Path("val_semanticMask.zip")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
 
     url = f"https://drive.google.com/uc?id={val_instanceMask_img_file_id}"
-    output_path = parent_folder/val_folder/Path("val_instanceMask.zip")
+    output_path = val_folder/Path("val_instanceMask.zip")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
 
     url = f"https://drive.google.com/uc?id={val_annotion_id}"
-    output_path = parent_folder/val_folder/Path("val.json")
+    output_path = val_folder/Path("val.json")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
@@ -120,13 +120,13 @@ def main(args):
     #test data
     for id in test_img_file_ids:
         url = f"https://drive.google.com/uc?id={id}"
-        output_path = parent_folder/test_folder/Path(f"{id}.zip")
+        output_path = test_folder/Path(f"{id}.zip")
         output = str(output_path)
         if Path(output).is_file() == False:
             gdown.download(url, output, quiet = False)
         
     url = f"https://drive.google.com/uc?id={test_annotion_id}"
-    output_path = parent_folder/test_folder/Path("test.json")
+    output_path = test_folder/Path("test.json")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
