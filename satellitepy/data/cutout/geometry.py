@@ -1,105 +1,15 @@
 import numpy as np
 import cv2
 
-def Angle(Corners):
-    '''This function converts the boundingbox from Corners to the center, width, height, angle notation.
-    Angle must be between 0 and 2*pi, an angle of 0 means hight aligns with y direction.
-    Shapes: [...,4,2] to [...,5]'''
 
-    if isinstance(Corners, list):
-        Corners = np.array(Corners)
-    elif isinstance(Corners, np.ndarray):
-        Corners=Corners
-    else:
-        raise Exception('Corners have to be either list or numpy array')
-    
-    if Corners.shape[-2:]!=(4,2):
-        raise Exception('Last two dimension of Boxes must be [4,2] but are:',Corners.shape[-2:],' instead.')
-    
-
-    #Extract the centerposition, width, height and angle from the Boxes array
-    c1,c2,c3,c4=Corners[...,0,:],Corners[...,1,:],Corners[...,2,:],Corners[...,3,:]
-
-
-    #Calculate the new representation:
-    cx=(c1[...,0]+c2[...,0]+c3[...,0]+c4[...,0])/4
-    cy=(c1[...,1]+c2[...,1]+c3[...,1]+c4[...,1])/4
-
-    height=np.linalg.norm(c1-c2,2,-1)
-    width=np.linalg.norm(c1-c4,2,-1)
-
-
-    #calculate the angel in intervall -pi to pi
-    angle=np.arctan2(c1[...,1]-c4[...,1],c1[...,0]-c4[...,0])
-    #convert the angle to the intevall 0 to 2'pi
-    angle=angle-np.sign(angle)*np.pi+np.pi
-
-    
-    Boxes_shape=list(Corners.shape)[0:-1]
-    Boxes_shape[-1]=5
-
-
-    Boxes=np.zeros(Boxes_shape)
-    Boxes[...,0]=cx
-    Boxes[...,1]=cy
-    Boxes[...,2]=width
-    Boxes[...,3]=height
-    Boxes[...,4]=angle
-    
-    return Boxes
-
-
-def Corners(Boxes):
-    '''This function converts the boundingbox from center, width, height, angle to the corners notation.
-    Angle must be between 0 and 2*pi, an angle of 0 means hight aligns with y direction.
-    Shapes: [...,5] to [...,4,2]'''
-
-    if isinstance(Boxes, list):
-        Boxes = np.array(Boxes)
-    elif isinstance(Boxes, np.ndarray):
-        Boxes=Boxes
-    else:
-        raise Exception('Corners have to be either list or numpy array')
-    
-    if Boxes.shape[-1]!=5:
-        raise Exception('Last dimension of Boxes must be 5 but is:',Boxes.shape[-1],' instead.')
-    
-    #Extract the centerposition, width, height and angle from the Boxes array
-    x,y,w,h,angle=Boxes[...,0],Boxes[...,1],Boxes[...,2],Boxes[...,3],Boxes[...,4]
-
-    #Calculate the four corners of the Boxes(first one is to left for angle=0, rest follow clockwise)
-    x1,y1=x+np.cos(angle)*w/2-np.sin(angle)*h/2,y+np.sin(angle)*w/2-np.cos(angle)*h/2
-
-    x2,y2=x+np.cos(angle)*w/2+np.sin(angle)*h/2,y+np.sin(angle)*w/2+np.cos(angle)*h/2
-
-    x3,y3=x-np.cos(angle)*w/2+np.sin(angle)*h/2,y-np.sin(angle)*w/2+np.cos(angle)*h/2
-
-    x4,y4=x-np.cos(angle)*w/2-np.sin(angle)*h/2,y-np.sin(angle)*w/2-np.cos(angle)*h/2
-
-    #Create the Array containin the corners
-    Boxes_shape=list(Boxes.shape)
-    Boxes_shape[-1]=4
-    Boxes_shape.append(2)
-
-    #Fill in the Corners Array with the previously calculated corners
-    Boxes_corner=np.zeros(Boxes_shape)
-    Boxes_corner[...,0,0]=x1
-    Boxes_corner[...,0,1]=y1
-    Boxes_corner[...,1,0]=x2
-    Boxes_corner[...,1,1]=y2
-    Boxes_corner[...,2,0]=x3
-    Boxes_corner[...,2,1]=y3
-    Boxes_corner[...,3,0]=x4
-    Boxes_corner[...,3,1]=y4
-
-    
-    return Boxes_corner
+# TODO: 
+#   
 
 class BBox:
     '''
     This class does the followings:
-    - Parametrization of bbox corner points, i.e., corner points >> center_x, center_y, height, length, rotation angle
-    - Params to points, i.e.,  center_x, center_y, height, length, rotation angle >> corner points
+    - Parametrization of bbox corner points, i.e., corner points >> center_x, center_y, width, height, rotation angle
+    - Params to points, i.e.,  center_x, center_y, width, height, rotation angle >> corner points
     - Rotation calculations of bounding boxes
 
     '''
@@ -107,30 +17,43 @@ class BBox:
     def __init__(self, **kwargs):
         is_corners = 'corners' in kwargs.keys() 
         is_params = 'params' in kwargs.keys()
+
+        #ensure that the bbox is either in corner or parameter paramtrization
         if is_corners:
             corners = kwargs['corners']
+
+            #ensure that the bbox is a np array
             if isinstance(corners, list):
                 self.corners = np.array(corners)
             elif isinstance(corners, np.ndarray):
                 self.corners = corners
             else:
                 raise Exception('Corners have to be either list or numpy array')
-            # self.params = self.get_params_cv2()
+            
+            #ensure that the bbox has the correct shape
+            if np.shape(corners)[-2:]!=(4,2):
+                raise Exception('The bbox in corner parametrization must end in shape (4,2) but has shape:',np.shape(corners))
             self.params = self.get_params()
+
+
         elif is_params:
-            # params = np.array(kwargs['params'])
             params = kwargs['params']
+
+            #ensure that the bbox is a np array
             if isinstance(params, list):
                 params = np.array(params)
             elif isinstance(params, np.ndarray):
                 self.params = params            
             else:
                 raise Exception('Params have to be either list or numpy array')
+            
+            #ensure that the bbox has the correct shape
+            if np.shape(params)[-1]!=5:
+                raise Exception('The bbox in parameter parametrization must end in shape (5) but has shape:',np.shape(params))
             self.params = params
             self.corners=self.get_corners()
         else:
             raise Exception('Either corners or params have to be defined to create a BBox instance')
-            return 0
 
     def get_neighbor_corner_dif(self,corners,i):
         i_0 = i
@@ -144,47 +67,63 @@ class BBox:
 
 
     def get_corners(self):
-        cx,cy,h,w,angle = self.params
+        '''convert the angle representation into the corner representation.
+        the corners are in the clockwise orientation with the angle pointing through the face between corners 0 and 1.'''
 
-        corners = np.array([
-            [cx+w/2.0,cy+h/2.0],
-            [cx+w/2.0,cy-h/2.0],
-            [cx-w/2.0,cy-h/2.0],
-            [cx-w/2.0,cy+h/2.0]])
+        #Extract the centerposition, width, height and angle from the Boxes array
+        x,y,h,w,angle=self.params
 
+        #Calculate the four corners of the Boxes(first one is to left for angle=0, rest follow clockwise)
+        x1,y1=x-np.cos(angle)*h/2+np.sin(angle)*w/2,y+np.sin(angle)*h/2+np.cos(angle)*w/2
 
-        corners = self.rotate_corners(corners=corners,angle=angle)
-        # print(corners)
-        return corners
+        x2,y2=x+np.cos(angle)*h/2+np.sin(angle)*w/2,y-np.sin(angle)*h/2+np.cos(angle)*w/2
+
+        x3,y3=x+np.cos(angle)*h/2-np.sin(angle)*w/2,y-np.sin(angle)*h/2-np.cos(angle)*w/2
+
+        x4,y4=x-np.cos(angle)*h/2-np.sin(angle)*w/2,y+np.sin(angle)*h/2-np.cos(angle)*w/2
+
+        #Fill in the Corners Array with the previously calculated corners
+
+        return [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]
 
     def get_params_cv2(self):
         (x_c, y_c), (width, height), angle = cv2.minAreaRect(self.corners)
         return x_c, y_c, width, height, angle
 
     def get_params(self):
-        cx = np.sum(self.corners[:, 0]) / 4.0
-        cy = np.sum(self.corners[:, 1]) / 4.0
+        '''This function converts the bbox from the corner representation into the parameter representation.
+        'cx' and 'cy' are the center of the bbox,
+        'h' and 'w' are the hight and width of the bbox and
+        'angle' is the angle of the bbox'''
 
-        # def x_dif(i_0, i_1): return self.corners[i_0, 0] - self.corners[i_1, 0]
-        # def y_dif(i_0, i_1): return self.corners[i_0, 1] - self.corners[i_1, 1]
-        direction = self.get_direction()
+        #Extract the centerposition, width, height and angle from the Boxes array
+        c1,c2,c3,c4=self.corners[0,:],self.corners[1,:],self.corners[2,:],self.corners[3,:]
 
-        x_dif_0_1, y_dif_0_1,_ = self.get_neighbor_corner_dif(self.corners,i=0)
-        x_dif_1_2, y_dif_1_2,_ = self.get_neighbor_corner_dif(self.corners,i=1)
-        if direction == 'clockwise':
-            h = np.sqrt(x_dif_0_1**2 + y_dif_0_1**2)
-            w = np.sqrt(x_dif_1_2**2 + y_dif_1_2**2)
-            arctan2_angle = np.arctan2(y_dif_0_1,x_dif_0_1)
-        elif direction == 'counter-clockwise':
-            w = np.sqrt(x_dif_0_1**2 + y_dif_0_1**2)
-            h = np.sqrt(x_dif_1_2**2 + y_dif_1_2**2)
-            arctan2_angle = np.arctan2(y_dif_1_2,x_dif_1_2)
 
-        # angle = np.arctan(y_dif(0, 1) / x_dif(0, 1))
-        # print(f'arctan result : {angle}')
-        # print(f'arctan2 result: {arctan2_angle}')
-        # direction = self.get_direction(self.corners)
-        return [cx, cy, h, w, arctan2_angle] # 2*np.pi-
+        #Calculate the new representation:
+        cx=(c1[0]+c2[0]+c3[0]+c4[0])/4
+        cy=(c1[1]+c2[1]+c3[1]+c4[1])/4
+
+        width=(np.linalg.norm(c1-c2,2,-1)+np.linalg.norm(c3-c4,2,-1))/2
+        height=(np.linalg.norm(c1-c4,2,-1)+np.linalg.norm(c2-c3,2,-1))/2
+
+        #calculate the angel in intervall -pi to pi
+        direction=self.get_direction()
+
+        if direction=='clockwise':
+            angle=np.arctan2(c1[1]-c2[1],c2[0]-c1[0])
+            if angle!=0:
+                angle=angle+np.pi-np.sign(angle)*np.pi
+
+        elif direction=='counter-clockwise':
+            angle=np.arctan2(c1[1]-c2[1],c1[0]-c2[0])
+            if angle!=0:
+                angle=angle+np.pi-np.sign(angle)*np.pi
+            
+
+
+
+        return [cx,cy,width,height,angle]
 
     # def get_corners(self):
     def switch_direction(self,bbox):
@@ -195,25 +134,22 @@ class BBox:
         bbox[3, :] = coord_1
         bbox[1, :] = coord_3
         return bbox
+    
     def get_direction(self,corners=None):
-        '''
-        Get the direction of corners (clockwise or counter-clockwise)
+        '''compute the direction of the corners by utilizing the cross-product between the two vectors spanning three corners, by pretending they are two vectors in three dimensions (both in the x,y plane)
+        negative value of z component -> clockwise, positive value of z-component -> couter clockwise, z=0 -> the first two points are identical -> there is no propper bounding box
         '''
         if corners==None:
             corners = self.corners
 
-        sum_over_edges = 0
-        corners = np.append(corners,[corners[0]],axis=0) # append the first element to enable the sum over ege calculation
-        for i in range(len(corners)-1):
-            x_dif, _, y_sum = self.get_neighbor_corner_dif(corners,i)
-            # print(f'x dif and y sum: {x_dif},{y_sum}')
-            sum_over_edges += x_dif*y_sum
-        # print(f'sum over edges is {sum_over_edges}')
-        if sum_over_edges >= 0:
+        corners_expanded=np.concatenate([corners,np.zeros([4,1])],-1)
+        cross=np.cross(corners_expanded[1]-corners_expanded[0],corners_expanded[1]-corners_expanded[2])
+        
+        if cross[2] <= 0:
             return 'counter-clockwise'
         else:
             return 'clockwise'
-
+    
 
     def get_orth_angle(self,direction=None):  # ,img_shape):
         '''
@@ -245,22 +181,6 @@ class BBox:
         # bbox = np.atleast_2d(self.bbox)
         # return np.squeeze((R @ (self.corners.T - o.T) + o.T).T)
         return np.squeeze((R @ (corners.T - o.T) + o.T).T)
-
-    # def get_orthogonal_bbox_by_limits(self, corners, return_params):
-    #     x_coords = corners[:, 0]
-    #     y_coords = corners[:, 1]
-    #     x_coord_min, x_coord_max = np.amin(x_coords), np.amax(x_coords)
-    #     y_coord_min, y_coord_max = np.amin(y_coords), np.amax(y_coords)
-
-    #     if return_params:
-    #         h = y_coord_max - y_coord_min
-    #         w = x_coord_max - x_coord_min
-    #         return [x_coord_min + w / 2.0, y_coord_min + h / 2.0, w, h]
-    #     else:
-    #         return [[x_coord_min, y_coord_max],
-    #                 [x_coord_max, y_coord_max],
-    #                 [x_coord_max, y_coord_min],
-    #                 [x_coord_min, y_coord_min]]
 
     @staticmethod
     def plot_bbox(corners, ax, c='b', s=15, instance_name=None):
@@ -296,27 +216,9 @@ if __name__ == "__main__":
     import random
     import cv2
 
-    corners = np.array([[43.0, 46.0], [47.0, 87.0], [86.0, 83.0], [81.0, 41.0]])
-
-    my_bbox = BBox(corners=corners)
-    orth_bbox = my_bbox.get_orthogonal_bbox()
-    # print(rect.bbox)
-
-    # print(orth_bbox)
-
-    fig,ax = plt.subplots(1)
-    ax.set_ylim([0,256])
-    ax.set_xlim([0,256])
-
-    my_bbox.plot_bbox(ax=ax,corners=my_bbox.corners,c='y')
-
-    my_bbox.plot_bbox(ax=ax,corners=orth_bbox,c='b')
-
-    plt.show()
-
-    # P = np.asarray(shapely.wkt.loads('POLYGON ((51.0 3.0, 51.3 3.61, 51.3 3.0, 51.0 3.0))'))
-    # P = shapely.wkt.loads(
-    #     'POLYGON ((51.0 3.0, 51.3 3.61, 51.3 3.0, 51.6 4.0, 51.0 3.0))')
-    # # print(np.array(P.exterior.coords))
-    # bbox = np.array(P.exterior.coords)[0:4, :]
-    # print(bbox)
+    #test the code
+    for i in range(100):
+        x=np.random.uniform(0,2*np.pi,[5])
+        my_bbox = BBox(params=x)
+        my_bbox2=BBox(corners=my_bbox.get_corners())
+        print(np.sum(np.abs(-x+my_bbox2.get_params())))
