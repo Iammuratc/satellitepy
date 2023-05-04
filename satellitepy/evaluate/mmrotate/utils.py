@@ -193,35 +193,110 @@ def set_conf_mat_from_result(
     conf_mat,
     result,
     instance_names,
-    confidence_score_threshold,
+    conf_score_thresholds,
     iou_thresholds):
-    # Iterate through the confidence scores of the detected bounding boxes
-    for i,confidence_score in enumerate(result['det_labels']['confidence_scores']):
-        ## If the confidence score is lower than threshold, skip the object
-        if confidence_score<confidence_score_threshold:
-            continue
-        ## If not, check if iou score is greater than iou_threshold
-        for ii,iou_threshold in enumerate(iou_thresholds):
-            if result['matches']['iou']['scores']<iou_threshold:
-                continue
-            else:
-                det_gt_bbox_indices.append(result['matches']['iou']['indexes'][ii])
-                det_gt_instance_name = result['gt_labels']['instance_names'][ii]
+
+    for i_iou_th, iou_th in enumerate(iou_thresholds):
+        for i_conf_score_th, conf_score_th in enumerate(conf_score_thresholds):
+            # (Surely) Detected gt label indices
+            ## These indices have greater values than both iou and confidence score thresholds
+            det_gt_bbox_indices = []
+
+            # Iterate over the confidence scores of the detected bounding boxes
+            for i_conf_score, conf_score in enumerate(result['det_labels']['confidence_scores']):
+                ## If the confidence score is lower than threshold, skip the object
+                if conf_score<conf_score_th:
+                    continue
+                ## Check if iou score is greater than iou_threshold
+                iou_score = result['matches']['iou']['scores'][i_conf_score]
+                if iou_score < iou_th:
+                    continue
+
+                gt_index = result['matches']['iou']['indexes'][i_conf_score]
+                det_gt_bbox_indices.append(gt_index)
+                det_gt_instance_name = result['gt_labels']['instance_names'][gt_index]
                 ## Set instance name to Background if it is not defined by the user
                 det_gt_instance_name = 'Background' if det_gt_instance_name not in instance_names else det_gt_instance_name 
                 det_gt_index = instance_names.index(det_gt_instance_name)
                 ## Det index
-                det_index = instance_names.index(result['det_labels']['instance_names'][ii])
-                conf_mat[ii,det_gt_index,det_index] += 1
+                det_index = instance_names.index(result['det_labels']['instance_names'][i_conf_score])
+                conf_mat[i_iou_th,i_conf_score_th,det_gt_index,det_index] += 1
 
-            # If a ground truth label is not detected (i.e., undetected) at all, add as detected Background label
-            undet_gt_bbox_indices = list(range(len(result['gt_labels']['instance_names'])).difference(det_gt_bbox_indices)) 
-            for undet_gt_bbox_ind in undetected_bbox_indices:
+            # If a ground truth label is undetected, add it as a detected Background label
+            # print(set(det_gt_bbox_indices))
+            undet_gt_bbox_indices = set(range(len(result['gt_labels']['instance_names']))) - set(det_gt_bbox_indices) 
+            # print(len(undet_gt_bbox_indices))
+            for undet_gt_bbox_ind in undet_gt_bbox_indices:
                 undet_gt_instance_name = result['gt_labels']['instance_names'][undet_gt_bbox_ind]
                 ## Set instance name to Background if it is not defined by the user
-                undet_gt_instance_name = 'Background' if undet_gt_instance_name not in instance_names else undet_gt_instance_name 
+                undet_gt_instance_name = 'Background' if undet_gt_instance_name not in instance_names else undet_gt_instance_name
                 undet_gt_index = instance_names.index(undet_gt_instance_name)
 
-                conf_mat[ii,undet_gt_index,instance_names.index('Background')] += 1
+                conf_mat[i_iou_th, i_conf_score_th, undet_gt_index, instance_names.index('Background')] += 1
+            # print(undet_gt_bbox_indices)
+    print(conf_mat[0,0,:,:])
 
-        print(conf_mat[ii])
+    return conf_mat
+
+def get_precision_recall(conf_mat):
+    """
+    Calculate precision,recall and average precision from confusion matrix
+    Parameters
+    ----------
+    conf_mat : np.ndarray
+        Confusion matrix with shape=(len(iou_thresholds),len(instance_names),len(instance_names)). Rows are ground truth, columns are predictions.
+    Returns
+    -------
+    ap : np.ndarray
+        Average precision with shape=len(instance_names)
+    """
+
+    len_iou_thresholds = conf_mat.shape[0]
+    len_instance_names = conf_mat.shape[1]
+
+    precision = np.zeros(shape=(len_iou_thresholds,len_instance_names))
+    recall = np.zeros(shape=(len_iou_thresholds,len_instance_names))
+    ap = np.zeros(shape=(len_iou_thresholds,len_instance_names))
+
+    for iou_i in range(len_iou_thresholds):
+        for i in range(len_instance_names): ## Row is GT
+            tp = 0
+            fp = 0
+            fn = 0
+            for j in range(len_instance_names):
+                # Precision
+                # if (i == conf_mat.shape[0]) and (j != conf_mat.shape[0]):
+                #     fn += conf_mat[i,j]
+                # elif (j == conf_mat.shape[0]) and (i != conf_mat.shape[0]):
+                #     fp += conf_mat[i,j]
+                # elif (j == conf_mat.shape[0]-1) and (i == conf_mat.shape[0]-1):
+                #     continue
+                if i == j:
+                    tp = conf_mat[iou_i,i,j]
+                else:
+                    fn += conf_mat[iou_i,i,j]
+                    fp += conf_mat[iou_i,j,i]
+                # print(tp,fp,fn)
+            precision[iuo_i,i] = tp/(tp+fp)
+            recall[iou_i,i] = tp/(tp+fn)
+    print("precision")
+    print(precision)
+    print("recall")
+    print(recall)
+    # ap = np.array(precisions).nanmean(axis=0)
+    # average_precision = np.nanmean(np.array(precisions),axis=0)
+    # for i, instance_name in enumerate(instance_names):
+    #     av_pre = average_precision[i]*100
+    #     print(instance_name,f'{av_pre:.4f}')
+    # for iou_i in range(len_iou_thresholds-1):
+    #     for i in range(len_instance_names-1):
+    #         precision_i_0 = precision[iou_i,i]
+    #         precision_i_1 = precision[iou_i,i+1]
+    #         recall_i_0 = recall[iou_i,i]
+    #         recall_i_1 = recall[iou_i,i+1]
+
+    #         area_i = np.abs(precision_i_1 - precision_i_0) * np.abs(recall_i_1 - recall_i_0)
+
+    #         ap[iou_i,i]
+
+    return precision, recall
