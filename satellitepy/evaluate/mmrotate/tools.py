@@ -7,10 +7,12 @@ from mmdet.apis.inference import init_detector, inference_detector
 import logging
 import numpy as np
 
-from satellitepy.evaluate.mmrotate.utils import get_mmrotate_model, get_result, get_gt_labels, get_det_labels, match_gt_and_det_bboxes, set_conf_mat_from_result
+from satellitepy.evaluate.mmrotate.utils import get_mmrotate_model, get_result, get_gt_labels, get_det_labels, match_gt_and_det_bboxes, set_conf_mat_from_result, get_precision_recall
 from satellitepy.utils.path_utils import create_folder, get_file_paths, is_file_names_match
 from satellitepy.data.patch import get_patches, merge_patch_results
 
+# TODO:
+#   set_conf_mat_from_result reads the gt instance names from class_1, implement a way to read different class levels
 
 def save_mmrotate_patch_results(
     out_folder,
@@ -217,28 +219,33 @@ def calculate_map(
     instance_names = instance_names + ['Background']
 
     # Init confusion matrix
-    ## Confusion matrix shape description:
-    ### Iou thresholds
-    ### Ground truth
-    ### Detected label
+    conf_mat = np.zeros(shape=(len(iou_thresholds),len(conf_score_thresholds),len(instance_names),len(instance_names)))
 
     # Result paths
     result_paths = get_file_paths(in_result_folder)
 
-    temp_count = 0
     for result_path in result_paths:
         logger.info(f'The following result file will be evaluated: {result_path}')
         # Result json file
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches' 
         
-        conf_mat = np.zeros(shape=(len(iou_thresholds),len(conf_score_thresholds),len(instance_names),len(instance_names)))
-        set_conf_mat_from_result(
+        conf_mat = set_conf_mat_from_result(
             conf_mat,
             result,
             instance_names,
             conf_score_thresholds,
             iou_thresholds)
-        if temp_count == 19:
-            break
-        temp_count += 1
+
+    precision, recall = get_precision_recall(conf_mat)
+    print('Instance names are')
+    print(instance_names)
+    print('Precision at confidence score threshold = 0.5 and iou threshold = 0.5 ')
+    print(precision[0,10])
+    print('Recall at confidence score threshold = 0.5 and iou threshold = 0.5 ')
+    print(recall[0,10])
+
+    print('Precision at all confidence score thresholds and iuo threshold = 0.5')
+    print(precision[0,:])
+    print('Recall at all confidence score thresholds and iou threshold = 0.5 ')
+    print(recall[0,:])
