@@ -13,6 +13,8 @@ def read_label(label_path, label_format):
         return read_fair1m_label(label_path)
     elif label_format == 'satellitepy':
         return read_satellitepy_label(label_path)
+    elif label_format == 'rareplanes_real' or label_format == 'rarePlanes_real':
+        return read_rareplanes_real_label(label_path)
     elif label_format == 'rareplanes_synthetic' or label_format == 'rarePlanes_synthetic':
         return read_rareplanes_synthetic_label(label_path)
     else:
