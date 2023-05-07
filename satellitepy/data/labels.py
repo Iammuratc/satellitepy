@@ -1,6 +1,7 @@
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from satellitepy.utils.xview_dictionary import classes
 import json
 import os
 
@@ -19,6 +20,8 @@ def read_label(label_path,label_format):
         return read_ship_net_label(label_path)
     elif label_format =='ucas':
         return read_ucas_label(label_path)
+    elif label_format == 'xview':
+        return read_xview_labels(label_path)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -349,7 +352,48 @@ def read_ucas_label(label_path):
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
+def read_xview_labels(label_path):
+    labels = init_satellitepy_label()
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for dota
+    available_tasks=['bboxes', 'classes_0', 'classes_1']
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
     
+    file = json.load(open(label_path, 'r'))
+    for annotation in file['annotations']:
+        coords = annotation['properties']['bounds_imcoords'].split(',')
+        xmin = int(coords[0])
+        ymin = int(coords[1])
+        xmax = int(coords[2])
+        ymax = int(coords[3])
+        labels['bboxes'].append([[xmin, ymin], [xmax, ymin], [xmin, ymax], [xmax, ymax]])
+
+        type_class = int(annotation['properties']['type_id'])
+        if type_class in classes['vehicles']:
+            labels['classes']['0'].append('vehicle')
+            labels['classes']['1'].append(classes['vehicles'][type_class])
+        elif type_class in classes['ships']:
+            labels['classes']['0'].append('ship')
+            labels['classes']['1'].append(classes['ships'][type_class])
+        elif type_class in classes['airplanes']:
+            labels['classes']['0'].append('airplane')
+            labels['classes']['1'].append(classes['airplanes'][type_class])
+        elif type_class in classes['helicopter']:
+            labels['classes']['0'].append('helicopter')
+            labels['classes']['1'].append(None)
+        elif type_class in classes['objects']:
+            labels['classes']['0'].append('object')
+            labels['classes']['1'].append(classes['objects'][type_class])
+        else:
+            labels['classes']['0'].append(None)
+            labels['classes']['1'].append(None)
+
+
+        fill_none_to_empty_keys(labels,not_available_tasks)
+    return labels
 
 def read_satellitepy_label(label_path):
     labels = init_satellitepy_label()

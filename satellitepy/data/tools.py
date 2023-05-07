@@ -133,3 +133,55 @@ def split_rareplanes_labels(
 
         json.dump(annotations, file, ensure_ascii=False, indent=4)
         file.close()
+
+
+def split_xview_labels(
+        label_file,
+        out_folder
+    ):
+    """
+        Save patches from the original images
+        Parameters
+        ----------
+        label_file : Path
+            Input label file. This single label file will be split up.
+        out_folder : Path
+            Output folder. New labels will be saved into <out-folder>/labels
+        Returns
+        -------
+        Save labels in <out-folder>/labels
+        """
+
+    logger = logging.getLogger(__name__)
+
+    # Create output folder
+    out_label_folder = Path(out_folder)
+    assert create_folder(out_label_folder)
+
+    label_path = Path(label_file)
+
+    file = json.load(open(label_path, 'r'))
+
+    id_to_img = {}
+    for image in file['features']:
+        id_to_img[image['properties']["image_id"]] = image['properties']['image_id']
+        label_file_path = os.path.join(out_label_folder, image['properties']["image_id"][:-3] + 'geojson')
+        label_file = open(label_file_path, 'w')
+        logger.info(f'Initializing annotations for {label_file_path}')
+        annotations = {'annotations': [image]}
+        json.dump(annotations, label_file, indent=4)
+        label_file.close()
+
+    for new_annotation in file['features']:
+        img_name = id_to_img[new_annotation["properties"]['image_id']]
+        label_file_path = os.path.join(out_label_folder, img_name[:-3] + 'geojson')
+        label_file = open(label_file_path, 'r', encoding="utf-8")
+        logger.info(f'Saving annotation for {label_file_path}')
+        annotations = json.load(label_file)
+        label_file.close()
+        annotations['annotations'].append(new_annotation)
+
+        file = open(label_file_path, 'w', encoding="utf-8")
+
+        json.dump(annotations, file, ensure_ascii=False, indent=4)
+        file.close()
