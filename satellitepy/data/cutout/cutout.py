@@ -7,8 +7,8 @@ import traceback
 import xml.etree.ElementTree as ET
 from multiprocessing import Pool
 
-from src.data.cutout.geometry import BBox
-from src.data.cutout.tools import Tools
+from satellitepy.data.cutout.geometry import BBox
+from satellitepy.data.cutout.tools import Tools
 
 # SEGMENTATION DATA
 
@@ -21,7 +21,7 @@ class Cutout(Tools):
         self.dataset_part = dataset_part
         # ORIGINAL DATASET FOLDER SETTINGS
         self.original_image_folder = self.settings['original'][dataset_part]['image_folder']
-        # self.bbox_rotation = self.settings['bbox_rotation']
+        self.bbox_rotation = self.settings['bbox_rotation']
         # self.original_binary_mask_folder = utils.settings['original'][dataset_part]['binary_mask_folder']
         # self.original_label_path = utils.settings['original'][dataset_part]['label_path']
         self.original_bbox_folder = self.settings['original'][dataset_part]['bounding_box_folder']
@@ -29,10 +29,19 @@ class Cutout(Tools):
         if self.segmentation_task:
             self.original_instance_mask_folder = self.settings['original'][dataset_part]['instance_mask_folder']
 
-    def get_cutout_dict(self, img, img_path, mask, mask_path, bbox_label, ind, instance_name,instance_id):
+    def get_cutout_dict(self, 
+                        img, 
+                        img_path, 
+                        mask, 
+                        mask_path, 
+                        bbox_label, 
+                        ind, 
+                        instance_name,
+                        #instance_id = 1
+                        ):
 
         if self.bbox_rotation == 'clockwise':
-            bbox = np.array(bbox_label[:8]).astype(int).reshape(4, 2)
+            bbox = np.array(bbox_label[:8]).astype(float).astype(int).reshape(4, 2)
             # print(bbox)
             bbox_copy = bbox.copy()
             coord_1 = bbox_copy[1, :]
@@ -47,7 +56,7 @@ class Cutout(Tools):
 
         cutout_dict = self.init_cutout_dict(
             instance_name=instance_name,
-            instance_id=instance_id,
+            # instance_id=instance_id,
             img_path=img_path,
             mask_path=mask_path)
         cutout_dict = self.set_cutout_params(cutout_dict, img, bbox, mask)
@@ -80,7 +89,8 @@ class Cutout(Tools):
                 self.get_cutout(img_path,mask_paths[i],bbox_paths[i],i,save,plot,indices)
                 # break
             # break
-    def get_cutout(self,img_path,mask_path,bbox_label,i,save,plot,indices):
+
+    def get_cutout(self,img_path,mask_path,bbox_path,i,save,plot,indices):
             if indices == 'all':
                 pass
             elif i in indices:
@@ -150,6 +160,7 @@ class Cutout(Tools):
         # Note: difficult is removed
         """
         bbox_labels=[]
+
         if self.settings['dataset_name'] == 'DOTA':
             with open(bbox_path, 'r') as f:
                 for line in f.readlines()[2:]:
@@ -224,6 +235,7 @@ class Cutout(Tools):
         for label_file_name in label_file_names:
             bbox_path = os.path.join(self.original_bbox_folder,label_file_name)
             bbox_labels = self.get_bbox_labels(bbox_path)
+
             for bbox_label in bbox_labels:
                 instance_name = bbox_label[-1]
                 if instance_name not in instance_names:
@@ -317,28 +329,29 @@ class Cutout(Tools):
         return file_paths
 
 if __name__ == '__main__':
-    from src.settings.dataset import SettingsDataset
-    fair1m_settings = SettingsDataset(
-    dataset_name='fair1m',
-    dataset_parts=['train','val'], # 'train',
-    tasks=['bbox'],
+    pass
+    # from satellitepy.settings.dataset import SettingsDataset
+    # fair1m_settings = SettingsDataset(
+    # dataset_name='fair1m',
+    # dataset_parts=['train','val'], # 'train',
+    # tasks=['bbox'],
     # bbox_rotation='counter-clockwise',
-    instance_names=[
-        'Boeing787',
-        'Boeing737',
-        'Boeing747',
-        'Boeing777',
-        'A220',
-        'A321',
-        'A330',
-        'A350',
-        'ARJ21',
-        'C919',
-        'other-airplane'])()
+    # instance_names=[
+    #     'Boeing787',
+    #     'Boeing737',
+    #     'Boeing747',
+    #     'Boeing777',
+    #     'A220',
+    #     'A321',
+    #     'A330',
+    #     'A350',
+    #     'ARJ21',
+    #     'C919',
+    #     'other-airplane'])()
     # print(fair1m_settings)
-    cutout = Cutout(fair1m_settings,'val')
+    # cutout = Cutout(fair1m_settings,'val')
     ### COUNT INSTANCES
-    cutout.count_instances()
+    # cutout.count_instances()
 
 
     ### SAVE BBOX PLOTTED ORIGINAL IMAGE
