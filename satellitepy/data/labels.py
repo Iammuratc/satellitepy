@@ -324,6 +324,7 @@ def read_rareplanes_real_label(label_path):
 
 
 def read_rareplanes_synthetic_label(label_path):
+    print('read_synthetic_rareplanes')
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_synthetic
@@ -362,13 +363,16 @@ def read_rareplanes_synthetic_label(label_path):
         labels['classes']['0'].append('airplane')
         role = annotation['category_id']
         match role:
-            case '1':  # Small Civil Transport/Utility
+            case 1:  # Small Civil Transport/Utility
+                role = 'Small_Civil_Transport/Utility'
                 labels['attributes']['role']['civil'].append(role)
                 labels['attributes']['role']['military'].append(None)
-            case '2':  # Medium Civil Transport/Utility
+            case 2:  # Medium Civil Transport/Utility
+                role = 'Medium_Civil_Transport/Utility'
                 labels['attributes']['role']['civil'].append(role)
                 labels['attributes']['role']['military'].append(None)
-            case '3':  # Large Civil Transport/Utility
+            case 3:  # Large Civil Transport/Utility
+                role = 'Large_Civil_Transport/Utility'
                 labels['attributes']['role']['civil'].append(role)
                 labels['attributes']['role']['military'].append(None)
             case _:
