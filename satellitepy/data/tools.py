@@ -7,8 +7,8 @@ import cv2
 
 from satellitepy.data.labels import read_label
 from satellitepy.data.patch import get_patches
+from satellitepy.data.chip import get_chips
 from satellitepy.utils.path_utils import create_folder, zip_matched_files
-
 
 def save_patches(
     image_folder,
@@ -82,6 +82,44 @@ def save_patches(
             patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
             with open(str(patch_label_path),'w') as f:
                 json.dump(patch_label,f,indent=4)
+
+def save_chips(
+    label_format,
+    image_folder,
+    label_folder,
+    out_folder,
+    margin_size        
+    ):
+
+    out_folder_images = out_folder / "images"
+    out_folder_labels = out_folder / "labels"
+
+    assert create_folder(out_folder_images)
+    assert create_folder(out_folder_labels)
+
+    for img_path, label_path in zip_matched_files(image_folder, label_folder):
+        img = cv2.imread(str(img_path))
+        label = read_label(label_path, label_format)
+        
+        chips = get_chips(img, label, margin_size)
+
+        count_chips = len(chips['images'])
+        img_name = img_path.stem
+
+
+        for i in range(count_chips):
+
+            chip_img_path = out_folder_images / f"{img_name}_{i}.png"
+            chip_img = chips['images'][i]
+
+            if not chip_img.size == 0:
+                cv2.imwrite(str(chip_img_path), chip_img)
+
+            chip_label = chips['labels']
+            chip_label_path = out_folder_labels / f"{img_name}.txt"
+
+            with open(str(chip_label_path), 'w') as f:
+                json.dump(chip_label, f, indent=4)
 
 
 def split_rareplanes_labels(
