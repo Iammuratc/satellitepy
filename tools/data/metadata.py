@@ -35,15 +35,15 @@ def get_geo_data(file):
     result["spatial_resolution_dy"] = yres
     result["image_width"] = img_width
     result["image_height"] = img_height
-    result["geometry"] = geom_polygon.wkt
+    result["projection_specific_geometry"] = geom_polygon.wkt
 
     if result["srid"] == "4326":
-        result["geography"] = result["geometry"]
+        result["epsg4326_geometry"] = result["projection_specific_geometry"]
     else:
         orig_projection = pyproj.CRS(result["srs"])
         target_projection = pyproj.CRS(4326)
         project = pyproj.Transformer.from_crs(orig_projection, target_projection,always_xy=True).transform
-        result["geography"] = transform(project, geom_polygon).wkt
+        result["epsg4326_geometry"] = transform(project, geom_polygon).wkt
     
     del ds
     return result
