@@ -1,0 +1,6 @@
+README.md
+setup.py
+satellitepy.egg-info/PKG-INFO
+satellitepy.egg-info/SOURCES.txt
+satellitepy.egg-info/dependency_links.txt
+satellitepy.egg-info/top_level.txt
