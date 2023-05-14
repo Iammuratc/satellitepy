@@ -78,6 +78,33 @@ def fill_none_to_empty_keys(labels,not_available_tasks):
             labels[keys[0]][keys[1]][keys[2]].append(None)
     return labels
 
+def satellitepy_labels_empty(labels):
+    """
+    This function checks whether the labels dict in satellitepy format is empty.
+    Returns
+    -------
+    bool: Whether it is empty
+    """
+    # every key in the dict has ultimately a list as value
+    # we recursively go through the dict until the value is a list
+    # we collect booleans telling us whether the found lists are empty or not
+    # the labels dict is empty if every list value is empty
+    def inner(d):
+        # recursion stop
+        if isinstance(d, list):
+            return [len(d) > 0]
+        # recursion
+        elif isinstance(d, dict):
+            checklist = []
+            for v in d.values(): 
+                checklist += inner(v)
+            return checklist
+        # unexpected => raise error
+        else:
+            raise ValueError("expected labels dict in satellitepy format to only contain keys and values of type list")
+        
+    return not any(inner(labels))
+
 def init_satellitepy_label():
     """
     This function creates an empty labels dict in satellitepy format.
