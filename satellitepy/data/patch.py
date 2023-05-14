@@ -127,7 +127,9 @@ def is_valid_object_class(object_class_name, include_object_classes, exclude_obj
         A list of object class names that shall be excluded as ground truth for the patches.
         include_object_classes takes precedence and overrides the behaviour of this parameter.
     """
-    if include_object_classes is not None:
+    if object_class_name is None:
+        return False
+    elif include_object_classes is not None:
         return object_class_name in include_object_classes
     elif exclude_object_classes is not None:
         return object_class_name not in exclude_object_classes
