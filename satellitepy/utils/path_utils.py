@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from shutil import unpack_archive
 import logging.config
 
 
@@ -118,3 +119,24 @@ def zip_matched_files(*folders):
             logger.error('File names do not match!')
             exit(1)
         yield file_paths
+
+def unzip_files_in_folder(path):
+    """
+    Unzips all files in a given directory
+    Parameters
+    ---------
+    path : Path to folder
+    """
+
+    zip_files = path.rglob("*.zip")
+    while True:
+        try:
+            path = next(zip_files)
+        except StopIteration:
+            break # no more files
+        except PermissionError:
+            logging.exception("Permission error! Cant open file")
+        else:
+            extract_dir = path.with_name(path.stem)
+            logging.info("Unzipping " + str(path))
+            unpack_archive(str(path), str(extract_dir), 'zip')  
