@@ -6,8 +6,9 @@ import json
 from mmdet.apis.inference import init_detector, inference_detector
 import logging
 import numpy as np
+import matplotlib.pyplot as plt
 
-from satellitepy.evaluate.mmrotate.utils import get_mmrotate_model, get_result, get_gt_labels, get_det_labels, match_gt_and_det_bboxes, set_conf_mat_from_result, get_precision_recall
+from satellitepy.evaluate.mmrotate.utils import *
 from satellitepy.utils.path_utils import create_folder, get_file_paths, is_file_names_match
 from satellitepy.data.patch import get_patches, merge_patch_results
 
@@ -210,7 +211,8 @@ def calculate_map(
     instance_names,
     conf_score_thresholds,
     iou_thresholds,
-    out_folder):
+    out_folder,
+    plot_pr):
 
     # Get logger
     logger = logging.getLogger(__name__)
@@ -237,15 +239,23 @@ def calculate_map(
             conf_score_thresholds,
             iou_thresholds)
 
-    precision, recall = get_precision_recall(conf_mat)
-    print('Instance names are')
-    print(instance_names)
-    print('Precision at confidence score threshold = 0.5 and iou threshold = 0.5 ')
-    print(precision[0,10])
-    print('Recall at confidence score threshold = 0.5 and iou threshold = 0.5 ')
-    print(recall[0,10])
-
+    precision, recall = get_precision_recall(conf_mat,sort_values=True)
     print('Precision at all confidence score thresholds and iuo threshold = 0.5')
     print(precision[0,:])
     print('Recall at all confidence score thresholds and iou threshold = 0.5 ')
     print(recall[0,:])
+    ap = get_average_precision(precision,recall)
+    print(ap)
+    if plot_pr:
+        fig, ax = plt.subplots()
+        ax.plot(recall[0,:],precision[0,:])
+        ax.set_ylabel('Precision')
+        ax.set_xlabel('Recall')
+        plt.show()
+    # print('Instance names are')
+    # print(instance_names)
+    # print('Precision at confidence score threshold = 0.5 and iou threshold = 0.5 ')
+    # print(precision[0,10])
+    # print('Recall at confidence score threshold = 0.5 and iou threshold = 0.5 ')
+    # print(recall[0,10])
+

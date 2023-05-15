@@ -27,6 +27,7 @@ def get_args():
     parser.add_argument('--confidence-score-thresholds', default=None, type=str, help='Confidence score threshold. If the detected object has a lower' 
         'confidence score than this threshold, the object will be ignored. Default value is range(0,1.01,0.05).')
     parser.add_argument('--iou-thresholds', default=None, type=str, help='Iou thresholds. Default value is range(0.5,0.96,0.05)')
+    parser.add_argument('--plot-pr', default=False, type=bool, help='Plot the PR curve.')
     parser.add_argument('--log-config-path', default=project_folder /
                         Path("configs/log.config"), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, help='Log will be saved here. Default value is <out-folder>/evaluations.log')
@@ -40,7 +41,8 @@ def main(args):
     in_result_folder = Path(args.in_result_folder)
     instance_names = [instance_name for instance_name in args.instance_names.split(',')]
     iou_thresholds = [float(iou_threshold) for iou_threshold in args.iou_thresholds.split(',')] if args.iou_thresholds != None else [x / 100.0 for x in range(50, 96, 5)]
-    conf_score_thresholds = [float(confidence_score_threshold) for confidence_score_threshold in args.confidence_score_thresholds.split(',')] if args.confidence_score_thresholds != None else [x / 100.0 for x in range(0, 101, 5)]
+    conf_score_thresholds = [float(confidence_score_threshold) for confidence_score_threshold in args.confidence_score_thresholds.split(',')] if args.confidence_score_thresholds != None else [x / 100.0 for x in range(0, 96, 5)]
+    plot_pr = args.plot_pr
     out_folder = Path(args.out_folder)
     assert create_folder(out_folder)
     # Init logger
@@ -58,7 +60,8 @@ def main(args):
         instance_names,
         conf_score_thresholds,
         iou_thresholds,
-        out_folder)
+        out_folder,
+        plot_pr)
 
 if __name__ == '__main__':
     args = get_args()
