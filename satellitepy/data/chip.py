@@ -49,7 +49,7 @@ def get_chips(img, gt_labels, margin_size=100):
         
         set_chip_keys(all_satellitepy_keys, chips_dict['labels'], gt_labels, i)
 
-        chips_dict[bbox_type][-1] = chip_bbox 
+        chips_dict[bbox_type][-1] = chip_bbox.tolist()
         chips_dict['images'].append(chip_img)
 
     return chips_dict
