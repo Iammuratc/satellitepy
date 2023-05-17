@@ -10,16 +10,13 @@ def create_chip(img, hbbox):
 
     return chip_img
 
+def apply_margin(hbbox, margin_size, max_y, max_x):
+    x_0 = min(max(hbbox[0] - margin_size, 0), max_x)
+    x_1 = min(max(hbbox[1] + margin_size, 0), max_x)
+    y_0 = min(max(hbbox[2] - margin_size, 0), max_y)
+    y_1 = min(max(hbbox[3] + margin_size, 0), max_y)
 
-def get_hbbox(bbox, margin_size, max_y, max_x):
-    x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox)
-
-    x_0 = min(max(x_min - margin_size, 0), max_x)
-    x_1 = min(max(x_max + margin_size, 0), max_x)
-    y_0 = min(max(y_min - margin_size, 0), max_y)
-    y_1 = min(max(y_max + margin_size, 0), max_y)
-
-    return x_0, x_1, y_0, y_1
+    return np.array([x_0, x_1, y_0, y_1])
 
 def get_chips(img, gt_labels, margin_size=100):
     height, width, channels = img.shape
@@ -41,8 +38,14 @@ def get_chips(img, gt_labels, margin_size=100):
     bboxes = gt_labels[bbox_type]
 
     for i, bbox in enumerate(bboxes):
-        bbox = np.array(bbox)
-        hbbox = get_hbbox(bbox, margin_size, height, width)
+        bbox = np.array(bbox).astype(int)
+
+        if bbox_type == "obboxes":
+            hbbox = BBox.get_bbox_limits(bbox)
+        else:        
+            hbbox = bbox
+
+        hbbox = apply_margin(hbbox, margin_size, height, width)
 
         chip_img = create_chip(img, hbbox)
         chip_bbox = bbox - [hbbox[0], hbbox[2]]
@@ -53,7 +56,6 @@ def get_chips(img, gt_labels, margin_size=100):
         chips_dict['images'].append(chip_img)
 
     return chips_dict
-
 
 def set_chip_keys(
     all_satellitepy_keys,
