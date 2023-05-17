@@ -33,7 +33,7 @@ def get_chips(img, gt_labels, margin_size=100):
 
     bbox_type = ""
 
-    if "obboxes" in gt_labels:
+    if gt_labels['obboxes'] != [None]:
         bbox_type = "obboxes"
     else:
         bbox_type = "hbboxes"
