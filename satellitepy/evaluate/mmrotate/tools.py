@@ -244,6 +244,7 @@ def calculate_map(
     print(precision[0,:])
     print('Recall at all confidence score thresholds and iou threshold = 0.5 ')
     print(recall[0,:])
+    print('AP')
     ap = get_average_precision(precision,recall)
     print(ap)
     if plot_pr:
@@ -252,10 +253,3 @@ def calculate_map(
         ax.set_ylabel('Precision')
         ax.set_xlabel('Recall')
         plt.show()
-    # print('Instance names are')
-    # print(instance_names)
-    # print('Precision at confidence score threshold = 0.5 and iou threshold = 0.5 ')
-    # print(precision[0,10])
-    # print('Recall at confidence score threshold = 0.5 and iou threshold = 0.5 ')
-    # print(recall[0,10])
-

@@ -234,7 +234,7 @@ def set_conf_mat_from_result(
 
     return conf_mat
 
-def get_precision_recall(conf_mat,sort_values=True):
+def get_precision_recall(conf_mat,sort_values=True,complete_curve=True):
     """
     Calculate precision,recall and average precision from confusion matrix
     Parameters
@@ -242,9 +242,11 @@ def get_precision_recall(conf_mat,sort_values=True):
     conf_mat : np.ndarray
         Confusion matrix with shape=len(iou_thresholds),len(conf_score_thresholds),len(instance_names),len(instance_names). 
         Rows are ground truth, columns are predictions.
-    sorted : boolean
+    sorted : bool
         If True, precision and recall values will be modified such that they are in the ascending/descending order.
         This prevents the up-down ziczacs in PR plots
+    complete_curve : bool
+        If True, precision and recall values will be bound to x- and y-axis on the PR curves
     Returns
     -------
     precision : np.ndarray
@@ -296,6 +298,11 @@ def get_precision_recall(conf_mat,sort_values=True):
                     ## Set the current value to the previous value
                     if r_0 > r_1:
                         recall[i_iou,len_conf_score_thresholds-i_conf_score_th-1,i] = r_0
+    if complete_curve:
+        precision = np.pad(precision,((0,0),(1,0),(0,0)))
+        precision = np.pad(precision,((0,0),(0,1),(0,0)),'edge')
+        recall = np.pad(recall,((0,0),(0,1),(0,0)))
+        recall = np.pad(recall,((0,0),(1,0),(0,0)),'edge')
     return precision, recall
 
 def get_average_precision(precision,recall):
