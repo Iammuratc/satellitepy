@@ -32,6 +32,17 @@
       "module": "tools.data.create_patches",
       "justMyCode": true,
       "console": "externalTerminal"
+    },
+    {
+      "name": "Python: Test Dataset",
+      "type": "python",
+      "request": "launch",
+      "env": {
+        "CUDA_LAUNCH_BLOCKING": "1"
+      },
+      "args": [],
+      "module": "satellitepy.data.dataset.mtl_dataset",
+      "justMyCode": true
     }
   ]
 }
