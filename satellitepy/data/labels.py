@@ -14,8 +14,8 @@ def read_label(label_path,label_format):
         return read_satellitepy_label(label_path)
     elif label_format=='rareplanes' or label_format=='rarePlanes':
         return read_rareplanes_label(label_path)
-    elif label_format=="vhr" or label_format=="VHR":
-        return read_VHR_label(label_path)
+    elif label_format=="dior" or label_format=="DIOR":
+        return read_DIOR_label(label_path)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -275,50 +275,37 @@ def read_rareplanes_label(label_path):
         labels['instance_names'].append(annotation['role'])
     return labels
 
-def read_VHR_label(label_path):
+def read_DIOR_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for VHR
-    available_tasks=['bboxes', 'classes_0', "classes_1"]
+    available_tasks=['bboxes', "difficulty", 'classes_0', "classes_1"]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
-
-    lut = { # Look-up Table for classes_1
-                "1": None,
-                "2": None,
-                "3": 'storagetank',
-                "4": 'baseballdiamond',
-                "5": 'tennis court',
-                "6": 'basketballcourt',
-                "7": 'groundtrackfield',
-                "8": 'harbor',
-                "9": 'bridge',
-               "10": None,
-                }
-
-    files = Path(label_path).glob('*.txt')
+    
+    files = Path(label_path).glob('*.xml')
     for file in files:
         handler = open(file, "r")
-        for line in handler.readlines():
-            vals = line.replace('(','').replace(')','').split(',')
-
-            labels['bboxes'].append([vals[0:2],vals[2:4]])
-            # The first two values are the top-right, the next two the bottom left corner
-
-            typ = vals[-1].strip()
-            if typ == "1":
-                    labels['classes']['0'].append('airplane')
-            elif typ == "2":
-                    labels['classes']['0'].append('ship')
-            elif typ == "10":
-                    labels['classes']['0'].append('vehicle')
-
-            else:
-                    labels['classes']['0'].append('object')
-
-            labels['classes']['1'].append(lut[typ])
+        root = ( ET.parse(handler) ).getroot()
+        for elem in root.findall("object"):
+            typ = elem.find("name").text
+            
+            if typ == "ship" or typ == "vehicle" or typ == "airplane" : # object of interest
+                    labels['classes']['0'].append(typ)
+                    labels['classes']['1'].append(None)
+            else :
+                    labels['classes']['0'].append("object")
+                    labels['classes']['1'].append(typ)
+            
+            bndbox = elem.find("bndbox")
+            xmin = int(bndbox.find("xmin").text)
+            xmax = int(bndbox.find("xmax").text)
+            ymin = int(bndbox.find("ymin").text)
+            ymax = int(bndbox.find("ymax").text)
+            labels['bboxes'].append([[xmin,ymin],[xmax,ymax]])
+            
         handler.close()
 
     fill_none_to_empty_keys(labels,not_available_tasks)
