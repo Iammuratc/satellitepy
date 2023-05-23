@@ -37,8 +37,50 @@ def run(args):
 
     json_file_names = [filename for filename in os.listdir(label_folder) if filename.endswith('.json') or filename.endswith('.geojson')]
 
+    global dictionary
     dictionary = {
-        'classes': {}
+        'classes': {},
+        'attributes': {
+            'engines': {
+                'no-engines': 0,
+                'propulsion': {
+                    'unpowered': 0,
+                    'jet': 0,
+                    'propeller': 0
+                }
+            },
+            'fuselage': {
+                'canards': 0,
+                'length': 0
+            },
+            'wings': {
+                'wing-span': 0,
+                'wing-shape': {
+                    'swept': 0,
+                    'straight': 0,
+                    'delta': 0,
+                    'variable_swept': 0
+                },
+                'wing-position': {
+                    'low_mounted': 0,
+                    'high_mounted': 0
+                }
+            },
+            'no-tail-fins': 0,
+            'role': {
+                'civil': {
+                    'large_transport': 0,
+                    'medium_transport': 0,
+                    'small_transport': 0
+                },
+                'military': {
+                    'fighter': 0,
+                    'bomber': 0,
+                    'transport': 0,
+                    'trainer': 0
+                }
+            }
+        }
     }
 
     features = ['obboxes', 'hbboxes', 'masks', 'difficulty']
@@ -61,6 +103,36 @@ def run(args):
                     dictionary[feature] += 1
                 else: 
                     dictionary[feature] = 1
+        
+        if label_format == 'satellitepy' or label_format == 'rareplanes':
+
+            if section_handler(["attributes", "engines", "no-engines"], labels):
+                dictionary['attributes']['engines']['no-engines'] += labels["attributes"]["engines"]["no-engines"][0]
+                dictionary['attributes']['engines']['propulsion'][labels["attributes"]["engines"]['propulsion'][0]] += 1
+            
+            if section_handler(["attributes", "fuselage", "canards"], labels):
+                if labels["attributes"]["fuselage"]["canards"][0]:
+                    dictionary["attributes"]["fuselage"]["canards"] += 1
+
+            section_handler(["attributes", "fuselage", "length"], labels, add_one=True)
+            
+            section_handler(["attributes", "wings", "wing-span"], labels, add_one=True)    
+
+            if section_handler(["attributes", "wings", "wing-shape"], labels):
+                dictionary['attributes']['wings']['wing-shape'][labels["attributes"]["wings"]['wing-shape'][0]] += 1
+
+            if section_handler(["attributes", "wings", "wing-position"], labels):
+                dictionary['attributes']['wings']['wing-position'][labels["attributes"]["wings"]['wing-position'][0]] += 1
+
+            if section_handler(["attributes", "tail", "no-tail-fins"], labels):
+                dictionary["attributes"]["no-tail-fins"] += labels["attributes"]["tail"]["no-tail-fins"][0]
+
+            if section_handler(["attributes", "role", "civil"], labels):
+                dictionary['attributes']['role']['civil'][labels["attributes"]["role"]['civil'][0]] += 1
+
+            if section_handler(["attributes", "role", "military"], labels):
+                dictionary['attributes']['role']['military'][labels["attributes"]["role"]['military'][0]] += 1
+
 
     pp = pprint.PrettyPrinter(indent=2)
     if tasks:
@@ -80,6 +152,20 @@ def run(args):
         pp.pprint(dictionary)
 
     logger.info('Finished analysing')
+
+
+def section_handler(keys, label, add_one=False):
+    global dictionary
+    for key in keys:
+        label = label[key]
+    
+    exists = (label != [None] and len(label) >0)
+
+    if exists and add_one:
+        dictionary[keys[0]][keys[1]][keys[2]] += 1
+        return
+
+    return exists
 
 
 if __name__ == '__main__':
