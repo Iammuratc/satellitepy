@@ -86,8 +86,10 @@ def init_satellitepy_label():
     Returns
     -------
     labels : dict of str
-        bboxes : list
-            Bounding box corners for every object
+        hbboxes : list
+            Horizontal bounding box corners for every object
+        obboxes : list
+            Oriented bounding box corners for every object
         masks : list of Path
             Path to segmentation mask of objects
         classes : dict of str
@@ -127,7 +129,8 @@ def init_satellitepy_label():
                     fighter, bomber, transport, trainer
     """
     labels={
-        'bboxes':[],
+        'hbboxes':[],
+        'obboxes': [],
         'masks':[],
         'classes':{
             '0':[],
@@ -165,7 +168,7 @@ def read_dota_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['bboxes','difficulty','classes_0','classes_1']
+    available_tasks=['obboxes','difficulty','classes_0','classes_1']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -204,7 +207,7 @@ def read_dota_label(label_path):
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
-            labels['bboxes'].append(bbox_corners)
+            labels['obboxes'].append(bbox_corners)
 
             fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
@@ -213,7 +216,7 @@ def read_fair1m_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['bboxes','classes_0','classes_1']
+    available_tasks=['obboxes','classes_0','classes_1']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -243,7 +246,7 @@ def read_fair1m_label(label_path):
             for point in my_point.text.split(','):
                 coord.append(float(point))
             coords.append(coord)
-        labels['bboxes'].append(coords)
+        labels['obboxes'].append(coords)
         fill_none_to_empty_keys(labels,not_available_tasks)
 
     return labels
@@ -252,7 +255,7 @@ def read_rareplanes_label(label_path):
     labels = init_satellitepy_label()
 
     ## Default available tasks for dota
-    available_tasks=['bboxes','difficulty','classes_0','classes_1']
+    available_tasks=['hbboxes','difficulty','classes_0','classes_1']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -275,7 +278,7 @@ def read_rareplanes_label(label_path):
 
         corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(), np.add(B, vecToA).tolist()]
 
-        labels['bboxes'].append(corners)
+        labels['hbboxes'].append(corners)
         labels['instance_names'].append(annotation['role'])
     return labels
 
@@ -283,7 +286,7 @@ def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['bboxes', 'difficulty', 'classes_0','classes_1']
+    available_tasks=['obboxes', 'difficulty', 'classes_0','classes_1']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -313,7 +316,7 @@ def read_ship_net_label(label_path):
                 coords.append(corner)
                 corner = []
 
-        labels['bboxes'].append(coords)
+        labels['obboxes'].append(coords)
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
@@ -321,7 +324,7 @@ def read_ucas_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['bboxes', 'classes_0']
+    available_tasks=['obboxes', 'classes_0']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -339,7 +342,7 @@ def read_ucas_label(label_path):
             corner.append(int(float(coords_y[i])))
             coords.append(corner)
             corner = []
-        labels['bboxes'].append(coords)
+        labels['obboxes'].append(coords)
 
         # Using label path to determine object type
         if 'CAR' in str(label_path):
@@ -356,7 +359,7 @@ def read_xview_labels(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['bboxes', 'classes_0', 'classes_1']
+    available_tasks=['hbboxes', 'classes_0', 'classes_1']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -369,7 +372,7 @@ def read_xview_labels(label_path):
         ymin = int(coords[1])
         xmax = int(coords[2])
         ymax = int(coords[3])
-        labels['bboxes'].append([[xmin, ymin], [xmax, ymin], [xmin, ymax], [xmax, ymax]])
+        labels['hbboxes'].append([[xmin, ymin], [xmax, ymin], [xmin, ymax], [xmax, ymax]])
 
         type_class = int(annotation['properties']['type_id'])
         if type_class in classes['vehicles']:
