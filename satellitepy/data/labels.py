@@ -200,10 +200,14 @@ def read_dota_label(label_path):
             if len(category_words) == 2 and category_words[1]=='vehicle':
                 labels['classes']['0'].append(category_words[1]) # vehicle
                 labels['classes']['1'].append(category) # small-vehicle
-            else:
+            elif category=='plane' or category=='ship' or category=='helicopter':
+                # Airplane is the common word
+                category = 'airplane' if category == 'plane' else category
                 labels['classes']['0'].append(category) # plane, ship
                 labels['classes']['1'].append(None) #
-
+            else:
+                labels['classes']['0'].append('object') # 
+                labels['classes']['1'].append(category) #
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
@@ -232,8 +236,18 @@ def read_fair1m_label(label_path):
     instance_names = root.findall(
         './objects/object/possibleresult/name')
     for instance_name in instance_names:
-        labels['classes']['0'].append('object')
-        labels['classes']['1'].append(instance_name.text)
+        if instance_name.text in ['A321','A220','other-airplane','ARJ21','Boeing737','Boeing747','Boeing787','A330','Boeing777','C919','A350']:
+            labels['classes']['0'].append('airplane')
+            labels['classes']['1'].append(instance_name.text)
+        elif instance_name.text in ['Cargo Truck','Small Car','Dump Truck','Van','Excavator','Bus','other-vehicle','Truck Tractor','Tractor','Trailer']:
+            labels['classes']['0'].append('vehicle')
+            labels['classes']['1'].append(instance_name.text)
+        elif instance_name.text in ['Liquid Cargo Ship','Passenger Ship','Dry Cargo Ship','Motorboat','Engineering Ship','Tugboat','Fishing Boat','other-ship','Warship']:
+            labels['classes']['0'].append('ship')
+            labels['classes']['1'].append(instance_name.text)
+        else:
+            labels['classes']['0'].append('object')
+            labels['classes']['1'].append(instance_name.text)
 
     # BBOX CCORDINATES
     point_spaces = root.findall('./objects/object/points')
@@ -279,7 +293,7 @@ def read_rareplanes_label(label_path):
         corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(), np.add(B, vecToA).tolist()]
 
         labels['hbboxes'].append(corners)
-        labels['instance_names'].append(annotation['role'])
+        labels['classes_0'].append(annotation['role'])
     return labels
 
 def read_ship_net_label(label_path):
