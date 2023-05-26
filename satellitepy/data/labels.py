@@ -1,7 +1,7 @@
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from satellitepy.utils.xview_dictionary import classes
+from satellitepy.data.utils import get_xview_classes
 import json
 import os
 
@@ -21,7 +21,9 @@ def read_label(label_path,label_format):
     elif label_format =='ucas':
         return read_ucas_label(label_path)
     elif label_format == 'xview':
-        return read_xview_labels(label_path)
+        print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
+            ' Then pass label_format as satellitepy for those labels.')
+        exit(1)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -200,10 +202,14 @@ def read_dota_label(label_path):
             if len(category_words) == 2 and category_words[1]=='vehicle':
                 labels['classes']['0'].append(category_words[1]) # vehicle
                 labels['classes']['1'].append(category) # small-vehicle
-            else:
+            elif category=='plane' or category=='ship' or category=='helicopter':
+                # Airplane is the common word
+                category = 'airplane' if category == 'plane' else category
                 labels['classes']['0'].append(category) # plane, ship
                 labels['classes']['1'].append(None) #
-
+            else:
+                labels['classes']['0'].append('object') # 
+                labels['classes']['1'].append(category) #
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
@@ -222,8 +228,6 @@ def read_fair1m_label(label_path):
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
 
-
-
     root = ET.parse(label_path).getroot()
 
     file_name = root.findall('./source/filename')[0].text
@@ -232,8 +236,18 @@ def read_fair1m_label(label_path):
     instance_names = root.findall(
         './objects/object/possibleresult/name')
     for instance_name in instance_names:
-        labels['classes']['0'].append('object')
-        labels['classes']['1'].append(instance_name.text)
+        if instance_name.text in ['A321','A220','other-airplane','ARJ21','Boeing737','Boeing747','Boeing787','A330','Boeing777','C919','A350']:
+            labels['classes']['0'].append('airplane')
+            labels['classes']['1'].append(instance_name.text)
+        elif instance_name.text in ['Cargo Truck','Small Car','Dump Truck','Van','Excavator','Bus','other-vehicle','Truck Tractor','Tractor','Trailer']:
+            labels['classes']['0'].append('vehicle')
+            labels['classes']['1'].append(instance_name.text)
+        elif instance_name.text in ['Liquid Cargo Ship','Passenger Ship','Dry Cargo Ship','Motorboat','Engineering Ship','Tugboat','Fishing Boat','other-ship','Warship']:
+            labels['classes']['0'].append('ship')
+            labels['classes']['1'].append(instance_name.text)
+        else:
+            labels['classes']['0'].append('object')
+            labels['classes']['1'].append(instance_name.text)
 
     # BBOX CCORDINATES
     point_spaces = root.findall('./objects/object/points')
@@ -279,7 +293,7 @@ def read_rareplanes_label(label_path):
         corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(), np.add(B, vecToA).tolist()]
 
         labels['hbboxes'].append(corners)
-        labels['instance_names'].append(annotation['role'])
+        labels['classes_0'].append(annotation['role'])
     return labels
 
 def read_ship_net_label(label_path):
@@ -355,55 +369,8 @@ def read_ucas_label(label_path):
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
-def read_xview_labels(label_path):
-    labels = init_satellitepy_label()
-    # Get all not available tasks so we can append None to those tasks
-    ## Default available tasks for dota
-    available_tasks=['hbboxes', 'classes_0', 'classes_1']
-    ## All possible tasks
-    all_tasks = get_all_satellitepy_keys()
-    ## Not available tasks
-    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
-    
-    file = json.load(open(label_path, 'r'))
-    for annotation in file['annotations']:
-        coords = annotation['properties']['bounds_imcoords'].split(',')
-        xmin = int(coords[0])
-        ymin = int(coords[1])
-        xmax = int(coords[2])
-        ymax = int(coords[3])
-        labels['hbboxes'].append([[xmin, ymin], [xmax, ymin], [xmin, ymax], [xmax, ymax]])
-
-        type_class = int(annotation['properties']['type_id'])
-        if type_class in classes['vehicles']:
-            labels['classes']['0'].append('vehicle')
-            labels['classes']['1'].append(classes['vehicles'][type_class])
-        elif type_class in classes['ships']:
-            labels['classes']['0'].append('ship')
-            labels['classes']['1'].append(classes['ships'][type_class])
-        elif type_class in classes['airplanes']:
-            labels['classes']['0'].append('airplane')
-            labels['classes']['1'].append(classes['airplanes'][type_class])
-        elif type_class in classes['helicopter']:
-            labels['classes']['0'].append('helicopter')
-            labels['classes']['1'].append(None)
-        elif type_class in classes['objects']:
-            labels['classes']['0'].append('object')
-            labels['classes']['1'].append(classes['objects'][type_class])
-        else:
-            labels['classes']['0'].append(None)
-            labels['classes']['1'].append(None)
-
-
-        fill_none_to_empty_keys(labels,not_available_tasks)
-    return labels
 
 def read_satellitepy_label(label_path):
-    labels = init_satellitepy_label()
-
     with open(label_path,'r') as f:
-        labels_file = json.load(f)
-
-    for key in labels.keys():
-        labels[key] = labels_file[key]
+        labels = json.load(f)
     return labels
