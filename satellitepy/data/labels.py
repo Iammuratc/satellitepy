@@ -18,7 +18,7 @@ def read_label(label_path,label_format):
         return read_rareplanes_real_label(label_path)
     elif label_format == 'rareplanes_synthetic' or label_format == 'rarePlanes_synthetic':
         return read_rareplanes_synthetic_label(label_path)
-        elif label_format == 'ship_net':
+    elif label_format == 'ship_net':
         return read_ship_net_label(label_path)
     elif label_format == 'ucas':
         return read_ucas_label(label_path)
@@ -272,7 +272,7 @@ def read_rareplanes_real_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_real
-    available_tasks = ['obboxes', 'classes_0', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
+    available_tasks = ['hbboxes', 'obboxes', 'classes_0', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
                        'attributes_fuselage_canards', 'attributes_fuselage_length', 'attributes_wings_wing-span',
                        'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins',
                        'attributes_role_civil', 'attributes_role_military']
@@ -288,6 +288,8 @@ def read_rareplanes_real_label(label_path):
 
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
+
+        labels['hbboxes'].append(points)
 
         A = (points[0], points[1])
         B = (points[2], points[3])
@@ -351,9 +353,10 @@ def read_rareplanes_synthetic_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_synthetic
-    available_tasks = ['bboxes', 'classes_0',
-                       #  'masks',
-                       'attributes_role_civil', 'attributes_role_military']
+    available_tasks = ['hbboxes'  'obboxes', 'classes_0', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
+     'attributes_fuselage_canards', 'attributes_fuselage_length', 'attributes_wings_wing-span',
+     'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins',
+     'attributes_role_civil', 'attributes_role_military']
 
     # ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
@@ -361,12 +364,13 @@ def read_rareplanes_synthetic_label(label_path):
     # ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
 
-    file = json.load(open(label_path, 'r'))
     with open(label_path, 'r') as f:
         file = json.load(f)
 
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
+
+        labels['hbboxes'].append(points)
 
         A = (points[0], points[1])
         B = (points[2], points[3])
@@ -384,7 +388,19 @@ def read_rareplanes_synthetic_label(label_path):
         # masks missing
 
         labels['obboxes'].append(corners)
-        labels['classes']['0'].append('role')
+        labels['classes']['0'].append('airplane')
+        labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
+        labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
+        match annotation['canards']:
+            case 'yes':
+                labels['attributes']['fuselage']['canards'].append(True)
+            case 'no':
+                labels['attributes']['fuselage']['canards'].append(False)
+        labels['attributes']['fuselage']['length'].append(float(annotation['length']))
+        labels['attributes']['wings']['wing-span'].append(float(annotation['wingspan']))
+        labels['attributes']['wings']['wing-shape'].append(annotation['wing_type'])
+        labels['attributes']['wings']['wing-position'].append(annotation['wing_position'])
+        labels['attributes']['tail']['no-tail-fins'].append(int(annotation['num_tail_fins']))
         role = annotation['category_id']
         match role:
             case 1:  # Small Civil Transport/Utility
