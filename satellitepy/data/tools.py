@@ -56,8 +56,6 @@ def save_patches(
         # Labels
         gt_labels = read_label(label_path,label_format)
 
-
-
         # Save results with the corresponding ground truth
         patches = get_patches(
             img,
@@ -65,11 +63,7 @@ def save_patches(
             truncated_object_thr,
             patch_size,
             patch_overlap,
-        )
-
-        if str(label_path) == "../data/rareplanes/test_real/labels/126_104001000C4AEE00_tile_1323.json":
-            print(gt_labels)                # <- before get_patches
-            print(patches['labels'])        # -> after get_patches
+            )
 
         count_patches = len(patches['images'])
         for i in range(count_patches):
