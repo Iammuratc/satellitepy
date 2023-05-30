@@ -15,7 +15,7 @@ def read_label(label_path,label_format):
     elif label_format=='rareplanes' or label_format=='rarePlanes':
         return read_rareplanes_label(label_path)
     elif label_format=="dior" or label_format=="DIOR":
-        return read_DIOR_label(label_path)
+        return read_dior_label(label_path)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -275,7 +275,7 @@ def read_rareplanes_label(label_path):
         labels['instance_names'].append(annotation['role'])
     return labels
 
-def read_DIOR_label(label_path):
+def read_dior_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for VHR
