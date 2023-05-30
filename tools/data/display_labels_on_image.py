@@ -7,6 +7,7 @@ import logging
 Show labels (e.g., bounding boxes) on an image
 """
 
+<<<<<<< HEAD
 project_folder = get_project_folder()
 
 def get_args():
@@ -53,3 +54,18 @@ def run(args):
 if __name__ == '__main__':
     args = get_args()
     run(args)
+=======
+# TODO: 
+#	Accept arguments from terminal
+
+if __name__ == '__main__':
+    # args = get_args()
+    # run(args)
+	# img_path = '/home/murat/Projects/satellitepy/data/fair1m/train/images/16483.tif'
+	img_path = '/home/murat/Projects/satellitepy/data/fair1m/train/images/16487.tif'
+	
+	label_path = '/home/murat/Projects/satellitepy/data/fair1m/train/bounding_boxes/16487.xml'
+	label_format = 'fair1m'
+
+	show_labels_on_image(img_path,label_path,label_format)
+>>>>>>> e615560 (display image on a hard path)
