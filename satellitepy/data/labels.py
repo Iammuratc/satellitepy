@@ -1,7 +1,9 @@
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from satellitepy.data.utils import get_xview_classes
 import json
+import os
 
 def read_label(label_path,label_format):
     if isinstance(label_path,Path):
@@ -14,6 +16,14 @@ def read_label(label_path,label_format):
         return read_satellitepy_label(label_path)
     elif label_format=='rareplanes' or label_format=='rarePlanes':
         return read_rareplanes_label(label_path)
+    elif label_format=='ship_net':
+        return read_ship_net_label(label_path)
+    elif label_format =='ucas':
+        return read_ucas_label(label_path)
+    elif label_format == 'xview':
+        print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
+            ' Then pass label_format as satellitepy for those labels.')
+        exit(1)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -78,8 +88,10 @@ def init_satellitepy_label():
     Returns
     -------
     labels : dict of str
-        bboxes : list
-            Bounding box corners for every object
+        hbboxes : list
+            Horizontal bounding box corners for every object
+        obboxes : list
+            Oriented bounding box corners for every object
         masks : list of Path
             Path to segmentation mask of objects
         classes : dict of str
@@ -119,7 +131,8 @@ def init_satellitepy_label():
                     fighter, bomber, transport, trainer
     """
     labels={
-        'bboxes':[],
+        'hbboxes':[],
+        'obboxes': [],
         'masks':[],
         'classes':{
             '0':[],
@@ -157,7 +170,7 @@ def read_dota_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['bboxes','difficulty','classes_0','classes_1']
+    available_tasks=['obboxes','difficulty','classes_0','classes_1']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -189,14 +202,18 @@ def read_dota_label(label_path):
             if len(category_words) == 2 and category_words[1]=='vehicle':
                 labels['classes']['0'].append(category_words[1]) # vehicle
                 labels['classes']['1'].append(category) # small-vehicle
-            else:
+            elif category=='plane' or category=='ship' or category=='helicopter':
+                # Airplane is the common word
+                category = 'airplane' if category == 'plane' else category
                 labels['classes']['0'].append(category) # plane, ship
                 labels['classes']['1'].append(None) #
-
+            else:
+                labels['classes']['0'].append('object') # 
+                labels['classes']['1'].append(category) #
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
-            labels['bboxes'].append(bbox_corners)
+            labels['obboxes'].append(bbox_corners)
 
             fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
@@ -205,7 +222,7 @@ def read_fair1m_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['bboxes','classes_0','classes_1']
+    available_tasks=['obboxes','classes_0','classes_1']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -219,8 +236,18 @@ def read_fair1m_label(label_path):
     instance_names = root.findall(
         './objects/object/possibleresult/name')
     for instance_name in instance_names:
-        labels['classes']['0'].append('object')
-        labels['classes']['1'].append(instance_name.text)
+        if instance_name.text in ['A321','A220','other-airplane','ARJ21','Boeing737','Boeing747','Boeing787','A330','Boeing777','C919','A350']:
+            labels['classes']['0'].append('airplane')
+            labels['classes']['1'].append(instance_name.text)
+        elif instance_name.text in ['Cargo Truck','Small Car','Dump Truck','Van','Excavator','Bus','other-vehicle','Truck Tractor','Tractor','Trailer']:
+            labels['classes']['0'].append('vehicle')
+            labels['classes']['1'].append(instance_name.text)
+        elif instance_name.text in ['Liquid Cargo Ship','Passenger Ship','Dry Cargo Ship','Motorboat','Engineering Ship','Tugboat','Fishing Boat','other-ship','Warship']:
+            labels['classes']['0'].append('ship')
+            labels['classes']['1'].append(instance_name.text)
+        else:
+            labels['classes']['0'].append('object')
+            labels['classes']['1'].append(instance_name.text)
 
     # BBOX CCORDINATES
     point_spaces = root.findall('./objects/object/points')
@@ -233,22 +260,20 @@ def read_fair1m_label(label_path):
             for point in my_point.text.split(','):
                 coord.append(float(point))
             coords.append(coord)
-        labels['bboxes'].append(coords)
+        labels['obboxes'].append(coords)
         fill_none_to_empty_keys(labels,not_available_tasks)
 
     return labels
 
 def read_rareplanes_label(label_path):
-    labels = init_labels()
+    labels = init_satellitepy_label()
 
     ## Default available tasks for dota
-    available_tasks=['bboxes','difficulty','classes_0','classes_1']
+    available_tasks=['hbboxes','difficulty','classes_0','classes_1']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
-
-
 
     file = json.load(open(label_path, 'r'))
 
@@ -267,17 +292,85 @@ def read_rareplanes_label(label_path):
 
         corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(), np.add(B, vecToA).tolist()]
 
-        labels['bboxes'].append(corners)
-        labels['instance_names'].append(annotation['role'])
+        labels['hbboxes'].append(corners)
+        labels['classes_0'].append(annotation['role'])
+    return labels
+
+def read_ship_net_label(label_path):
+    labels = init_satellitepy_label()
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for dota
+    available_tasks=['obboxes', 'difficulty', 'classes_0','classes_1']
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+
+    root = ET.parse(label_path).getroot()
+    # Instance names
+    instance_names = root.findall('./object/name')
+    for instance_name in instance_names:
+        labels['classes']['0'].append('ship')
+        labels['classes']['1'].append(instance_name.text)
+
+    instance_difficulties = root.findall('./object/difficult')
+    for instance_difficulty in instance_difficulties:
+        labels['difficulty'].append(instance_difficulty.text)
+
+    # BBOX CCORDINATES
+    point_spaces = root.findall('./object/polygon')
+    for point_space in point_spaces:
+        # remove the last coordinate points
+        my_points = point_space.findall('.//') 
+        coords = []
+        corner = []
+        for my_point in my_points:
+            corner.append(int(float(my_point.text)))
+            if 'y' in my_point.tag:
+                coords.append(corner)
+                corner = []
+
+        labels['obboxes'].append(coords)
+        fill_none_to_empty_keys(labels,not_available_tasks)
+    return labels
+
+def read_ucas_label(label_path):
+    labels = init_satellitepy_label()
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for dota
+    available_tasks=['obboxes', 'classes_0']
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+    
+    file = open(label_path, 'r')
+    for line in file.readlines():
+        bbox = line.split()[:8]
+        coords_x = bbox[0::2]
+        coords_y = bbox[1::2]
+        coords = []
+        corner = []
+        for i in range(0, len(coords_x)):
+            corner.append(int(float(coords_x[i])))
+            corner.append(int(float(coords_y[i])))
+            coords.append(corner)
+            corner = []
+        labels['obboxes'].append(coords)
+
+        # Using label path to determine object type
+        if 'CAR' in str(label_path):
+            labels['classes']['0'].append('car')
+        elif 'PLANE' in str(label_path):
+            labels['classes']['0'].append('airplane')
+        else:
+            labels['classes']['0'].append(None)
+
+        fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
 
 def read_satellitepy_label(label_path):
-    labels = init_satellitepy_label()
-
     with open(label_path,'r') as f:
-        labels_file = json.load(f)
-
-    for key in labels.keys():
-        labels[key] = labels_file[key]
+        labels = json.load(f)
     return labels

@@ -6,7 +6,9 @@ import logging
 from satellitepy.data.labels import read_label
 from satellitepy.data.cutout.geometry import BBox
 
-from mmrotate.core.bbox import rbbox_overlaps
+from shapely.geometry import Polygon
+
+# from mmrotate.core.bbox import rbbox_overlaps
 from mmdet.apis.inference import init_detector, inference_detector
 from mmcv.ops import nms_rotated
 
@@ -96,7 +98,7 @@ def get_det_labels(mmrotate_result,class_names,nms_on_multiclass_thr):
         for class_bbox in class_bboxes:
             my_bbox = BBox(params=class_bbox[:5])
             det_labels['instance_names'].append(class_names[class_bboxes_ind])
-            det_labels['bboxes'].append(my_bbox.corners.tolist())
+            det_labels['bboxes'].append(my_bbox.corners)
             det_labels['confidence_scores'].append(class_bbox[-1])
     return det_labels
 
@@ -122,7 +124,10 @@ def match_gt_and_det_bboxes(gt_labels,det_labels):
     det_label_params = [BBox(corners=my_bbox).params for my_bbox in det_labels['bboxes']] if len(det_labels['bboxes'])!=0 else []
     gt_label_params = [BBox(corners=my_bbox).params for my_bbox in gt_labels['bboxes']] if len(gt_labels['bboxes'])!=0 else []
 
-    ious = rbbox_overlaps(torch.FloatTensor(det_label_params), torch.FloatTensor(gt_label_params))
+    ## Old IOU calculation (keep it for now 12.05)
+    # ious = rbbox_overlaps(torch.FloatTensor(det_label_params), torch.FloatTensor(gt_label_params))
+    ## New IOU calculation
+    ious = get_ious(det_labels['bboxes'], gt_labels['bboxes'])
     for i,iou in enumerate(ious):
         # ROW: detected bboxes
         # COL: gt bboxes
@@ -333,3 +338,30 @@ def get_average_precision(precision,recall):
                 ap_i = precision[i_iou,i_conf_score_th,i] * (recall[i_iou,i_conf_score_th-1,i] - recall[i_iou,i_conf_score_th,i])
                 ap[i_iou,i] += ap_i
     return ap
+
+def get_ious(bboxes_1,bboxes_2):
+    '''
+    This functions returns the IOUs for two bbox sets, e.g., ground truth and detected bboxes
+    Parameters
+    ----------
+    bboxes_1 : list
+        List of bounding box corners
+    bboxes_2 : list
+        List of bounding box corners
+    Returns
+    -------
+    ious : np.ndarray
+        IOU matrix with the shape [len(bboxes_1),len(bboxes_2)]
+    '''
+    polygons_1 = [Polygon(bbox) for bbox in bboxes_1]
+    polygons_2 = [Polygon(bbox) for bbox in bboxes_2]
+
+    ious = np.zeros(shape=(len(bboxes_1),len(bboxes_2)))
+
+    for i, p1 in enumerate(polygons_1):
+        for j, p2 in enumerate(polygons_2):
+            intersection_area = p1.intersection(p2).area 
+            iou = intersection_area / (p1.area + p2.area - intersection_area)
+            ious[i,j] = iou
+
+    return ious

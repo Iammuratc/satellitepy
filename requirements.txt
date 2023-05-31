@@ -1,1 +1,4 @@
 configargparse
+wget
+torrentp
+patool
