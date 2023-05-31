@@ -50,6 +50,8 @@ def save_patches(
     assert create_folder(out_image_folder)
     assert create_folder(out_label_folder)
 
+    assert len(out_image_folder) == len(out_label_folder) == len(out_mask_folder)
+
     for img_path, label_path in zip_matched_files(image_folder,label_folder):
         # Image
         img = cv2.imread(str(img_path))

@@ -96,7 +96,7 @@ def init_satellitepy_label():
             Path to segmentation mask of objects
         classes : dict of str
             '0' : list of str
-                coarse grained classes (e.g., airplane,ship)
+                coarse grained classes. It has to be one of these three types: airplane,ship,vehicle
             '1' : list of str 
                 fine grained classes (e.g., A220, passenger ship)
             '2' : list of str 
