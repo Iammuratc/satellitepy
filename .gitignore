@@ -1,2 +1,3 @@
 *.pyc
 *.tex
+*/**/launch.json
