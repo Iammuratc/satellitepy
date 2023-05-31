@@ -77,7 +77,7 @@ def save_patches(
 
             # Save patch image
             patch_img = patches['images'][i]
-            patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png" 
+            patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png"
             cv2.imwrite(str(patch_image_path),patch_img)
 
             # Save patch labels
