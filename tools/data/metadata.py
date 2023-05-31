@@ -51,6 +51,5 @@ def get_geo_data(file):
 import sys
 
 if __name__ == "__main__":
-    #image_path = '/home/simon/unibw/data/dem/gaofen/train/images/1.tif'
     image_path = sys.argv[1]
     print(get_geo_data(image_path))
