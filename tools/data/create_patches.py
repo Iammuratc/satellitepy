@@ -11,7 +11,6 @@ Save patch labels in json files that are in satellitepy format.
 
 
 def get_args():
-    print(sys.argv)
     """Arguments parser."""
     project_folder = get_project_folder()
     parser = configargparse.ArgumentParser(description=__doc__)
