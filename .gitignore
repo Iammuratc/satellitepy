@@ -1,3 +1,4 @@
 *.pyc
 *.tex
-*/**/launch.json
+launch.json
+satellitepy.egg-info
