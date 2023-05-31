@@ -146,6 +146,13 @@ class MTLDataset(Dataset):
         return items
 
     def split_into_task_specific_datasets(self):
+        """
+        Splits this MTL Dataset into multiple TaskSpecificDatasets.
+        
+        Returns
+        -------
+        dict: A mapping task:TaskSpecificDataset
+        """
         task_specific = {}
 
         for task_id in self.tasks.keys():
