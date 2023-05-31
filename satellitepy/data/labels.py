@@ -279,7 +279,7 @@ def read_dior_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for VHR
-    available_tasks=['bboxes', "difficulty", 'classes_0', "classes_1"]
+    available_tasks=['bboxes', 'classes_0', "classes_1"]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
