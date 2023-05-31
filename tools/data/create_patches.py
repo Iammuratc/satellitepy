@@ -19,6 +19,7 @@ def get_args():
                         help='Folder of original images. The images in this folder will be processed.')
     parser.add_argument('--in-label-folder', type=Path, required=True,
                         help='Folder of original labels. The labels in this folder will be used to create patches.')
+    parser.add_argument('--in-mask-folder', type=Path, help='Required for iSAID label format')
     parser.add_argument('--in-label-format', type=Path, required=True,
                         help='Label file format. e.g., dota, fair1m.')
     parser.add_argument('--out-folder',
@@ -40,6 +41,8 @@ def run(args):
     in_image_folder = Path(args.in_image_folder)
     in_label_folder = Path(args.in_label_folder)
     in_label_format = str(args.in_label_format)
+    if (args.in_mask_folder != None):
+        in_mask_folder = Path(args.in_mask_folder)
     out_folder = Path(args.out_folder)
     patch_overlap = int(args.patch_overlap)
     patch_size = int(args.patch_size)
@@ -65,9 +68,8 @@ def run(args):
         truncated_object_thr=truncated_object_thr,
         patch_size=patch_size,
         patch_overlap=patch_overlap,
+        mask_folder = in_mask_folder,
     )
-
-
 if __name__ == '__main__':
     args = get_args()
     run(args)

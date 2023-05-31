@@ -1,13 +1,15 @@
 import json
 import logging
 import os
+import numpy as np
 from pathlib import Path
 
 import cv2
 
 from satellitepy.data.labels import read_label
 from satellitepy.data.patch import get_patches
-from satellitepy.utils.path_utils import create_folder, zip_matched_files
+from satellitepy.utils.path_utils import create_folder, get_file_paths
+from satellitepy.data.cutout.geometry import BBox
 
 
 def save_patches(
@@ -18,6 +20,7 @@ def save_patches(
     truncated_object_thr,
     patch_size,
     patch_overlap,
+    mask_folder = None
     ):
     """
     Save patches from the original images
@@ -27,6 +30,8 @@ def save_patches(
         Input image folder. Images in this folder will be processed.
     label_folder : Path
         Input label folder. Labels in this folder will be used to create patch labels.
+    mask_folder : Path
+        Input mask folder. Masks in this folder will be used to create patch masks
     label_format : str
         Input label format.
     out_folder : Path
@@ -48,40 +53,83 @@ def save_patches(
 
     assert create_folder(out_image_folder)
     assert create_folder(out_label_folder)
+    img_paths = get_file_paths(image_folder)
+    label_paths = get_file_paths(label_folder)
+    if mask_folder:
+         mask_paths = get_file_paths(mask_folder)
+    else:
+        mask_paths = [None] * len(img_paths)
+   
+    if (len(img_paths)==len(label_paths)==len(mask_paths)):
+        for img_path, label_path, mask_path in zip(img_paths,label_paths,mask_paths):
+            # Image
+            img = cv2.imread(str(img_path))
+            # Labels
+            if (mask_folder):
+                gt_labels = read_label(label_path,label_format,mask_path)
+            else:
+                gt_labels = read_label(label_path,label_format)
+            # Mask
+            if mask_path:
+                mask = cv2.imread(str(mask_path))
+            else: None
 
-    for img_path, label_path in zip_matched_files(image_folder,label_folder):
-        # Image
-        img = cv2.imread(str(img_path))
-        # Labels
-        gt_labels = read_label(label_path,label_format)
-
-        # Save results with the corresponding ground truth
-        patches = get_patches(
+            # Save results with the corresponding ground truth
+            patches = get_patches(
             img,
             gt_labels,
             truncated_object_thr,
             patch_size,
             patch_overlap,
+            mask,
             )
 
-        count_patches = len(patches['images'])
-        for i in range(count_patches):
-            # Get original image name for naming patch files
-            img_name = img_path.stem
+            count_patches = len(patches['images'])
+            for i in range(count_patches):
+                # Get original image name for naming patch files
+                img_name = img_path.stem
 
-            # Patch starting coordinates
-            patch_x0, patch_y0 = patches['start_coords'][i]
+                # Patch starting coordinates
+                patch_x0, patch_y0 = patches['start_coords'][i]
 
-            # Save patch image
-            patch_img = patches['images'][i]
-            patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png" 
-            cv2.imwrite(str(patch_image_path),patch_img)
+                # Save patch image
+                patch_img = patches['images'][i]
+                patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png" 
+                cv2.imwrite(str(patch_image_path),patch_img)
 
-            # Save patch labels
-            patch_label = patches['labels'][i]
-            patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
-            with open(str(patch_label_path),'w') as f:
-                json.dump(patch_label,f,indent=4)
+                # Save patch labels
+                patch_label = patches['labels'][i]
+                patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
+                with open(str(patch_label_path),'w') as f:
+                    json.dump(patch_label,f,indent=4)
+
+        # if mask_path:
+        #     out_label_paths = get_file_paths(out_label_folder)
+        #     out_mask_paths = get_file_paths(out_mask_folder)
+        #     test_num = 0
+        #     bbx = 'bboxes'
+        #     for l,m in zip(out_label_paths, out_mask_paths):
+        #         test_num1 = 0
+        #         print("#######" + str(test_num) + "#######")
+        #         test_num +=1
+        #         img = cv2.imread(str(m))
+        #         img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        #         with open(l,'r') as f:
+        #             l_data = json.load(f)
+        #             if ('obboxes' in list(l_data)):
+        #                 bbx = 'obboxes'
+        #             elif ('hbboxes' in list(l_data)):
+        #                 bbx = 'hbboxes'
+        #             for v in range(len(l_data[bbx])):
+        #                 print(test_num1)
+        #                 test_num1 +=1
+        #                 tmp_mask = np.zeros((img.shape[0],img.shape[1]), dtype=np.uint8)
+        #                 pts = np.array([l_data[bbx][v]], dtype = np.int32)
+        #                 cv2.fillPoly(tmp_mask, pts, 255)
+        #                 coord = np.argwhere((tmp_mask == 255) & (img != 0)).tolist()
+        #                 l_data['mask-indices'][v] = coord
+        #                 with open(l,'w') as f:
+        #                     json.dump(l_data,f,indent=4)
 
 
 def split_rareplanes_labels(

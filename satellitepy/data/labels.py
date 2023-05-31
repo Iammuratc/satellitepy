@@ -2,12 +2,17 @@ import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import json
+import cv2
 
-def read_label(label_path,label_format):
+from satellitepy.data.cutout.geometry import BBox
+
+def read_label(label_path,label_format, mask_path = None):
     if isinstance(label_path,Path):
         label_path = str(label_path)
     if label_format=='dota' or label_format=='DOTA':
         return read_dota_label(label_path)
+    elif label_format == 'isaid' or label_format == 'iSAID':
+        return read_dota_label_with_isaid(label_path, mask_path)
     elif label_format=='fair1m':
         return read_fair1m_label(label_path)
     elif label_format=='satellitepy':
@@ -24,7 +29,7 @@ def get_all_satellitepy_keys():
     Returns
     -------
     all_keys : list of str
-        E.g. ['bboxes','masks','classes_0','attributes_engines_propulsion']
+        E.g. ['bboxes','mask-indices','classes_0','attributes_engines_propulsion']
     """
 
     labels = init_satellitepy_label()
@@ -80,8 +85,8 @@ def init_satellitepy_label():
     labels : dict of str
         bboxes : list
             Bounding box corners for every object
-        masks : list of Path
-            Path to segmentation mask of objects
+        mask-indices : list of int
+            Pixel value of masks
         classes : dict of str
             '0' : list of str
                 coarse grained classes (e.g., airplane,ship)
@@ -120,7 +125,7 @@ def init_satellitepy_label():
     """
     labels={
         'bboxes':[],
-        'masks':[],
+        'mask-indices':[],
         'classes':{
             '0':[],
             '1':[],
@@ -199,6 +204,64 @@ def read_dota_label(label_path):
             labels['bboxes'].append(bbox_corners)
 
             fill_none_to_empty_keys(labels,not_available_tasks)
+    return labels
+
+def read_dota_label_with_isaid(label_path, mask_path):
+    labels = init_satellitepy_label()
+    available_tasks=['bboxes','mask-indices','difficulty','classes_0','classes_1']
+    all_tasks = get_all_satellitepy_keys()
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+    
+    with open(label_path, 'r') as f:
+        for line in f.readlines():
+            bbox_line = line.split(' ') # Corner points, category, [difficulty]
+            # Original DOTA dataset has some metadata in first two lines
+            # Check if the line matches with the DOTA format
+            len_bbox_line = len(bbox_line)
+            if len_bbox_line==10:
+                # Difficulty defined
+                difficulty = bbox_line[-1].rstrip()
+                labels['difficulty'].append(difficulty)
+                category_i = -2
+            elif len_bbox_line==9:
+                # No difficulty defined
+                category_i = -1
+                labels['difficulty'].append(None)
+            else:
+                continue
+
+            # Classes
+            category = bbox_line[category_i].rstrip()
+            ## large-vehicle and small-vehicle should be handled individually
+            ### class_0 = vehicle, class_1 = large-vehicle
+            category_words = category.split('-')
+            if len(category_words) == 2 and category_words[1]=='vehicle':
+                labels['classes']['0'].append(category_words[1]) # vehicle
+                labels['classes']['1'].append(category) # small-vehicle
+            elif category == 'ship' or category == 'plane':
+                labels['classes']['0'].append(category) # plane, ship
+                labels['classes']['1'].append(None)
+            else:
+                labels['classes']['0'].append('object') 
+                labels['classes']['1'].append(category) # everything not a vehicle, ship or plane (harbor, etc.)
+
+            # BBoxes
+            bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
+            bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
+            labels['bboxes'].append(bbox_corners)
+
+            # Masks
+            img = cv2.imread(str(mask_path))
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+            tmp_mask = np.zeros((img.shape[0],img.shape[1]), dtype=np.uint8)
+            pts = np.array([bbox_corners], dtype = np.int32)
+            cv2.fillPoly(tmp_mask, pts, 255)
+            coord = np.argwhere((tmp_mask == 255) & (img != 0)).tolist()
+            labels['mask-indices'].append(coord)
+
+            fill_none_to_empty_keys(labels,not_available_tasks)   
+
+ 
     return labels
 
 def read_fair1m_label(label_path):
