@@ -18,7 +18,7 @@ def apply_margin(hbbox, margin_size, max_y, max_x):
 
     return np.array([x_0, x_1, y_0, y_1])
 
-def get_chips(img, gt_labels, margin_size=100):
+def get_chips(img, gt_labels, margin_size=100, include_object_classes=None, exclude_object_classes=None):
     height, width, channels = img.shape
     
     all_satellitepy_keys = get_all_satellitepy_keys()
@@ -38,6 +38,16 @@ def get_chips(img, gt_labels, margin_size=100):
     bboxes = gt_labels[bbox_type]
 
     for i, bbox in enumerate(bboxes):
+
+        is_valid_class = False
+        for k, v in gt_labels['classes'].items():
+            if is_valid_object_class(v[i], include_object_classes, exclude_object_classes):
+                is_valid_class = True
+                break
+
+        if not is_valid_class:
+            continue
+
         bbox = np.array(bbox).astype(int)
 
         if bbox_type == "obboxes":
@@ -72,3 +82,16 @@ def set_chip_keys(
             chip_labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][i])
         elif len(keys) == 3:
             chip_labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][i])
+
+def is_valid_object_class(object_class_name, include_object_classes, exclude_object_classes):
+    """
+    see patch.py for more information
+    """
+    if object_class_name is None:
+        return False
+    elif include_object_classes is not None:
+        return object_class_name in include_object_classes
+    elif exclude_object_classes is not None:
+        return object_class_name not in exclude_object_classes
+    else:
+        return True

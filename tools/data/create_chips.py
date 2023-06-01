@@ -22,6 +22,10 @@ def get_args():
                         help='Margin size of the chip to be created.')
     parser.add_argument('--log-config-path', default=project_folder /
                     Path("configs/log.config"), type=Path, help='Log config file.')
+    parser.add_argument('--include-object-classes', nargs="*", type=str, default=None,
+                        help='A list of object class names that shall be included. Ignores all other object classes if not None. Takes precedence over --exclude-object-classes.')
+    parser.add_argument('--exclude-object-classes', nargs="*", type=str, default=None, 
+                        help='A list of object class names that shall be excluded. Includes all other object classes. Overriden by --include-object-classes if set.')
     
     args = parser.parse_args()
     return args
@@ -34,6 +38,9 @@ def run(args):
     out_folder = Path(args.out_folder)
     out_folder_images = out_folder / Path("images")
     out_folder_labels = out_folder / Path("labels")
+
+    include_object_classes = list(args.include_object_classes) if args.include_object_classes is not None else None
+    exclude_object_classes = list(args.exclude_object_classes) if args.exclude_object_classes is not None else None
 
     margin_size = int(args.margin_size)
 
@@ -52,9 +59,10 @@ def run(args):
         image_folder = in_img_folder,
         label_folder = in_label_folder,
         out_folder = out_folder,
-        margin_size = margin_size
+        margin_size = margin_size,
+        include_object_classes=include_object_classes,
+        exclude_object_classes=exclude_object_classes
     )
-
 
 if __name__ == "__main__":
     args = get_args()

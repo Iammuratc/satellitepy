@@ -88,7 +88,9 @@ def save_chips(
     image_folder,
     label_folder,
     out_folder,
-    margin_size        
+    margin_size,
+    include_object_classes,
+    exclude_object_classes     
     ):
 
     out_folder_images = out_folder / "images"
@@ -101,7 +103,13 @@ def save_chips(
         img = cv2.imread(str(img_path))
         label = read_label(label_path, label_format)
         
-        chips = get_chips(img, label, margin_size)
+        chips = get_chips(
+            img, 
+            label, 
+            margin_size,
+            include_object_classes,
+            exclude_object_classes
+        )
 
         count_chips = len(chips['images'])
         img_name = img_path.stem
