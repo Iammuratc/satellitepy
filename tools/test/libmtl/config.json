@@ -1,0 +1,34 @@
+{
+  "train": {
+    "datasets": {
+      "dota": {
+        "image_folder": "/home/simon/unibw/data/satpy/dota/train/img/images",
+        "label_folder": "/home/simon/unibw/data/satpy/dota/train/labels",
+        "label_format": "dota"
+      }
+    },
+    "tasks": {
+      "classification": {
+        "dataset_ids": ["dota"],
+        "label": "classes"
+      }
+    },
+    "align_len": "min"
+  },
+  "test": {
+    "datasets": {
+      "dota": {
+        "image_folder": "/home/simon/unibw/data/satpy/dota/val/imgs/images",
+        "label_folder": "/home/simon/unibw/data/satpy/dota/val/labels",
+        "label_format": "dota"
+      }
+    },
+    "tasks": {
+      "classification": {
+        "dataset_ids": ["dota"],
+        "label": "classes"
+      }
+    },
+    "align_len": "min"
+  }
+}

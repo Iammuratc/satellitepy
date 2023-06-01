@@ -7,7 +7,7 @@ from pathlib import Path
 from satellitepy.utils.path_utils import zip_matched_files
 from satellitepy.data.labels import read_label
 
-def prepare_image(image_path: str):
+def prepare_image(image_path: Path):
     """
     Loads an image from the given path, transforms it to a (C, H, W) tensor and 
     normalizes its values between [0, 1] if its max value is above 1.
@@ -18,6 +18,8 @@ def prepare_image(image_path: str):
         The path to the image.
     """
     cv2_image = cv2.imread(image_path.absolute().as_posix())
+    # just for testing: todo remove
+    cv2_image = cv2.resize(cv2_image, (800, 800))
     image = torch.from_numpy(cv2_image).permute((2, 0, 1))
 
     if image.max() > 1:
@@ -37,7 +39,7 @@ class TaskSpecificDataset(Dataset):
         A list of task specific item mappings.
     """
     def __init__(self, data: dict, task_specific_data_mapping: list):
-        self.super().__init__()
+        super().__init__()
         self.data = data
         self.task_specific_data_mapping = task_specific_data_mapping
         self.length = len(self.task_specific_data_mapping)
@@ -58,9 +60,9 @@ class TaskSpecificDataset(Dataset):
         image_path, label_path, label_format = self.data[dataset_id][dataset_idx]
         image = prepare_image(image_path)
         label = read_label(label_path, label_format)[task_label]
-        mapping[k] = (image, label)
-
-        return mapping
+        # debug test: todo think about solution of accessing correct label
+        label = int(0) 
+        return (image, label)
 
 class MTLDataset(Dataset):
     """
@@ -119,7 +121,7 @@ class MTLDataset(Dataset):
             
             for dataset_id in task_cfg["dataset_ids"]:
                 for dataset_idx in range(len(self.data[dataset_id])):
-                    idx_mappings.append(dataset_id, dataset_idx, task_cfg["label"]))
+                    idx_mappings.append((dataset_id, dataset_idx, task_cfg["label"]))
 
             self.task_data_mapping[task_id] = idx_mappings
             self.task_sample_counts[task_id] = len(idx_mappings)
@@ -177,8 +179,8 @@ class MTLDataset(Dataset):
             dataset_id, dataset_idx, task_label = v[global_idx % self.task_sample_counts[k]]
             image_path, label_path, label_format = self.data[dataset_id][dataset_idx]
             image = prepare_image(image_path)
-            label = read_label(label_path, label_format)[task_label]
-            mapping[k] = (image, label)
+            label = read_label(label_path, label_format)
+            mapping[k] = (image, label[task_label])
 
         return mapping
 

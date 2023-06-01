@@ -1,0 +1,16 @@
+README.md
+setup.py
+satellitepy.egg-info/PKG-INFO
+satellitepy.egg-info/SOURCES.txt
+satellitepy.egg-info/dependency_links.txt
+satellitepy.egg-info/top_level.txt
+satellitepy/data/__init__.py
+satellitepy/data/labels.py
+satellitepy/data/patch.py
+satellitepy/data/tools.py
+satellitepy/data/utils.py
+satellitepy/data/dataset/__init__.py
+satellitepy/data/dataset/classification.py
+satellitepy/data/dataset/data.py
+satellitepy/data/dataset/dataset.py
+satellitepy/data/dataset/mtl_dataset.py
