@@ -4,6 +4,7 @@ import cv2
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import logging
 
 from satellitepy.utils.path_utils import create_folder, get_file_paths, zip_matched_files
 from satellitepy.data.patch import get_patches
@@ -84,11 +85,9 @@ def save_patches(
                 json.dump(patch_label,f)
 
 
-def show_labels_on_image(img_path,label_path,label_format,show_labels=True):
-    # img_path = os.path.join(self.original_image_folder,f'{img_name}.tif')
-    # print(img_path)
-    # bbox_path = os.path.join(self.original_bbox_folder,f'{img_name}.xml')
-    img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
+def show_labels_on_image(img_path,label_path,label_format,output_folder,show_bboxes):
+    logger = logging.getLogger(__name__)
+    img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
     gt_labels = read_label(label_path,label_format)
 
     # fig, ax = plt.subplots(1)
@@ -99,14 +98,16 @@ def show_labels_on_image(img_path,label_path,label_format,show_labels=True):
     fig.add_axes(ax)
     ax.imshow(img)
     # ax.imshow(mask, alpha=0.5)
-
-    for bbox in gt_labels['bboxes']:
-        bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)
-        BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5, instance_name=None)
+    if show_bboxes:
+        for bbox in gt_labels['bboxes']:
+            bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)
+            BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5, instance_name=None)
     plt.axis('off')
     # manager = plt.get_current_fig_manager()
     # manager.window.showMaximized()
     plt.show()
+    plt.savefig(output_folder / Path(img_path.stem + ".png"))
+    logger.info(f'Saved labels on {output_folder / Path(img_path.stem + ".png")}')
     return fig
 
 
