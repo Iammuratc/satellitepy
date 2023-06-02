@@ -2,15 +2,15 @@
   "train": {
     "datasets": {
       "dota": {
-        "image_folder": "/home/simon/unibw/data/satpy/dota/train/img/images",
-        "label_folder": "/home/simon/unibw/data/satpy/dota/train/labels",
+        "image_folder": "/home/simon/unibw/data/satpy/dota_chips/train/images",
+        "label_folder": "/home/simon/unibw/data/satpy/dota_chips/train/labels",
         "label_format": "dota"
       }
     },
     "tasks": {
       "classification": {
         "dataset_ids": ["dota"],
-        "label": "classes"
+        "label": "classes.1"
       }
     },
     "align_len": "min"
@@ -18,15 +18,15 @@
   "test": {
     "datasets": {
       "dota": {
-        "image_folder": "/home/simon/unibw/data/satpy/dota/val/imgs/images",
-        "label_folder": "/home/simon/unibw/data/satpy/dota/val/labels",
+        "image_folder": "/home/simon/unibw/data/satpy/dota_chips/val/images",
+        "label_folder": "/home/simon/unibw/data/satpy/dota_chips/val/labels",
         "label_format": "dota"
       }
     },
     "tasks": {
       "classification": {
         "dataset_ids": ["dota"],
-        "label": "classes"
+        "label": "classes.1"
       }
     },
     "align_len": "min"
