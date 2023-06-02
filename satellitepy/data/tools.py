@@ -125,6 +125,8 @@ def save_chips(
 
             if not chip_img.size == 0:
                 cv2.imwrite(str(chip_img_path), chip_img)
+            else:
+                continue
 
             chip_label = get_label_by_idx(chips['labels'], i)
             chip_label_path = out_folder_labels / f"{img_name}_{i}.txt"
