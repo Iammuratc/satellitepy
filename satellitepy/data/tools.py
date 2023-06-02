@@ -127,7 +127,7 @@ def save_chips(
                 cv2.imwrite(str(chip_img_path), chip_img)
 
             chip_label = get_label_by_idx(chips['labels'], i)
-            chip_label_path = out_folder_labels / f"{img_name}.txt"
+            chip_label_path = out_folder_labels / f"{img_name}_{i}.txt"
 
             with open(str(chip_label_path), 'w') as f:
                 json.dump(chip_label, f, indent=4)
