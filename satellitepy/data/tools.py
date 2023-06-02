@@ -126,12 +126,32 @@ def save_chips(
             if not chip_img.size == 0:
                 cv2.imwrite(str(chip_img_path), chip_img)
 
-            chip_label = chips['labels']
+            chip_label = get_label_by_idx(chips['labels'], i)
             chip_label_path = out_folder_labels / f"{img_name}.txt"
 
             with open(str(chip_label_path), 'w') as f:
                 json.dump(chip_label, f, indent=4)
 
+def get_label_by_idx(satpy_labels: dict, i: int):
+    """
+    Creates a copy of the satpy_labels dict by doing the following:
+    Sets each list to a singleton list correponding to the item at position i.
+    """
+    def inner(input_dict, output_dict):
+        for k in input_dict.keys():
+            if isinstance(input_dict[k], dict):
+                output_dict.setdefault(k, {})
+                inner(input_dict[k], output_dict[k])
+            else:
+                value = input_dict[k][i]
+                if isinstance(value, list):
+                    output_dict[k] = value
+                else:
+                    output_dict[k] = [value]
+
+    result = {}
+    inner(satpy_labels, result)
+    return result
 
 def split_rareplanes_labels(
         label_file,
