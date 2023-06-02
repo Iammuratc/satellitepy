@@ -1,7 +1,6 @@
 from torch.utils.data.dataset import Dataset
 import cv2
 import torch
-import numpy as np
 from pathlib import Path
 
 from satellitepy.utils.path_utils import zip_matched_files
@@ -59,14 +58,31 @@ class TaskSpecificDataset(Dataset):
         dataset_id, dataset_idx, task_label = self.task_specific_data_mapping[idx % self.length]
         image_path, label_path, label_format = self.data[dataset_id][dataset_idx]
         image = prepare_image(image_path)
-        label = read_label(label_path, label_format)[task_label]
-        # debug test: todo think about solution of accessing correct label
-        label = int(0) 
+        label = read_label(label_path, label_format)
+        label = access_label(label, task_label)
         return (image, label)
+
+def access_label(satpy_dict: dict, task_label: str):
+    access_list = task_label.split(".")
+
+    if len(access_list) == 0:
+        return None
+
+    item = satpy_dict[access_list[0]]
+
+    for a in access_list[1:]:
+        item = item[a]
+
+    if isinstance(item, list) and len(item) == 1:
+        return item[0]
+
+    return item
 
 class MTLDataset(Dataset):
     """
     The dataset for satellitepy's multitask learning approach. 
+    Made for satellite chips. Default pytorch collate might not work, if 
+    not used with chips.
 
     Parameters
     ----------
@@ -119,6 +135,8 @@ class MTLDataset(Dataset):
         for task_id, task_cfg in self.tasks.items():
             idx_mappings = []
             
+            # order of dataset_ids is important
+            # maximizing overlap between tasks -> minimizing dataloading
             for dataset_id in task_cfg["dataset_ids"]:
                 for dataset_idx in range(len(self.data[dataset_id])):
                     idx_mappings.append((dataset_id, dataset_idx, task_cfg["label"]))
@@ -162,7 +180,7 @@ class MTLDataset(Dataset):
 
         return task_specific
 
-    def get_by_global_idx(self, global_idx):
+    def get_by_global_idx_task_map(self, global_idx):
         """
         Returns a task_id:item map depending on the global_idx.
 
@@ -180,13 +198,44 @@ class MTLDataset(Dataset):
             image_path, label_path, label_format = self.data[dataset_id][dataset_idx]
             image = prepare_image(image_path)
             label = read_label(label_path, label_format)
-            mapping[k] = (image, label[task_label])
+            label = access_label(label, task_label)
+            mapping[k] = (image, label)
 
         return mapping
 
+    def get_by_global_idx_satpy(self, global_idx: int):
+        """
+        Returns a list of tuples (image, satpy_labels).
+        Warning: satpy_labels can contain None/NaN values, needs to be considered in loss.
+
+        Parameters
+        ----------
+        global_idx: int
+            The item idx.
+        """
+        images = []
+        labels = []
+        found_items = {}
+
+        for k,v in self.task_data_mapping.items():
+            dataset_id, dataset_idx, _ = v[global_idx % self.task_sample_counts[k]]
+
+            if dataset_idx in found_items.get(dataset_id, []):
+                continue
+
+            image_path, label_path, label_format = self.data[dataset_id][dataset_idx]
+            image = prepare_image(image_path)
+            label = read_label(label_path, label_format)
+            images.append(image)
+            labels.append(label)
+            found_items.setdefault(dataset_id, [])
+            found_items[dataset_id].append(dataset_idx)
+
+        return images, labels
+
     def __getitem__(self, idx):
-        # int <-> access by global_idx
-        return self.get_by_global_idx(idx)
+        # int <-> access by global_idx return satpy style (with None values)
+        return self.get_by_global_idx_satpy(idx)
 
     def __len__(self):
         if self.align_len == 'max':
@@ -194,15 +243,3 @@ class MTLDataset(Dataset):
         else:
             return min(self.task_sample_counts.values())
 
-if __name__ == "__main__":
-    # dataset with differently sized images
-    dataset = MTLDataset(
-        image_folders=["/home/simon/unibw/data/satpy/dota/train/img/images"],
-        label_folders=["/home/simon/unibw/data/satpy/dota/train/labels"],
-        label_formats=["dota"]
-    )
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, collate_fn=lambda x: x)
-    
-    for batch in dataloader:
-        print(batch)
-        break

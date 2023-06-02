@@ -31,28 +31,22 @@ def main(params):
         satpy_cfg = json.load(f)
     
     train_set = MTLDataset(satpy_cfg["train"])
-    train_task_specific_datasets = train_set.split_into_task_specific_datasets()
-    train_task_specific_dataloader = {}
-
-    for k, v in train_task_specific_datasets.items():
-        train_task_specific_dataloader[k] = DataLoader(
-            dataset=v,
-            batch_size=params.train_bs,
-            shuffle=True,
-            pin_memory=True,
-            drop_last=True
-        )
+    train_dataloader = DataLoader(
+        dataset=train_set,
+        batch_size=params.train_bs,
+        shuffle=True,
+        pin_memory=True,
+        drop_last=True,
+        collate_fn=lambda x: x
+    )
 
     test_set = MTLDataset(satpy_cfg["test"])
-    test_task_specific_datasets = test_set.split_into_task_specific_datasets()
-    test_task_specific_dataloader = {}
-
-    for k, v in test_task_specific_datasets.items():
-        test_task_specific_dataloader[k] = DataLoader(
-            dataset=v,
-            batch_size=params.test_bs,
-            pin_memory=True,
-        )
+    test_dataloader = DataLoader(
+        dataset=test_set,
+        batch_size=params.test_bs,
+        pin_memory=True,
+        collate_fn=lambda x: x
+    )
     
     # define tasks
     task_dict = {'classification': {'metrics':['Acc'], 
@@ -84,17 +78,18 @@ def main(params):
 
     decoders = nn.ModuleDict({task: nn.Linear(512, 18) for task in list(task_dict.keys())})
     
-    NYUmodel = Trainer(task_dict=task_dict, 
+    SatpyTrainer = Trainer(task_dict=task_dict, 
                           weighting=weighting_method.__dict__[params.weighting], 
                           architecture=architecture_method.__dict__[params.arch], 
                           encoder_class=Encoder, 
                           decoders=decoders,
                           rep_grad=params.rep_grad,
-                          multi_input=True,
+                          multi_input=False,
                           optim_param=optim_param,
                           scheduler_param=scheduler_param,
+                          satpy_input=True,
                           **kwargs)
-    NYUmodel.train(train_task_specific_dataloader, test_task_specific_dataloader, params.epochs)
+    SatpyTrainer.train(train_dataloader, test_dataloader, params.epochs)
     
 if __name__ == "__main__":
     params = parse_args(LibMTL_args)
