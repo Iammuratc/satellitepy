@@ -23,5 +23,6 @@
         "step"
       ]
     }
+    // python -m tools.test.libmtl.train_satpy --weighting EW --arch HPS --satpy_config_path /home/simon/unibw/satellitepy/tools/test/libmtl/config.json --gpu_id 0 --scheulder step
   ]
 }

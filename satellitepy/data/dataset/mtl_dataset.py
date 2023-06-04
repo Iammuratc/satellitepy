@@ -4,7 +4,16 @@ import torch
 from pathlib import Path
 
 from satellitepy.utils.path_utils import zip_matched_files
-from satellitepy.data.labels import read_label
+from satellitepy.data.labels import read_label, init_satellitepy_label, merge_satpy_label_dict, torchify_satpy_label_dict
+
+# for testing purposes, remove when proper map is create
+DOTA_IDX_MAP = {
+    "object": 0,
+    "vehicle": 1,
+    "airplane": 2,
+    "ship": 3,
+    "helicopter": 4
+}
 
 def prepare_image(image_path: Path):
     """
@@ -17,8 +26,8 @@ def prepare_image(image_path: Path):
         The path to the image.
     """
     cv2_image = cv2.imread(image_path.absolute().as_posix())
-    # just for testing: todo remove
-    cv2_image = cv2.resize(cv2_image, (800, 800))
+    # todo remove
+    cv2_image = cv2.resize(cv2_image, (400, 400))
     image = torch.from_numpy(cv2_image).permute((2, 0, 1))
 
     if image.max() > 1:
@@ -37,9 +46,10 @@ class TaskSpecificDataset(Dataset):
     task_specific_data_mapping: list
         A list of task specific item mappings.
     """
-    def __init__(self, data: dict, task_specific_data_mapping: list):
+    def __init__(self, data: dict, task_id: str, task_specific_data_mapping: list):
         super().__init__()
         self.data = data
+        self.task_id = task_id
         self.task_specific_data_mapping = task_specific_data_mapping
         self.length = len(self.task_specific_data_mapping)
 
@@ -55,15 +65,15 @@ class TaskSpecificDataset(Dataset):
         idx: int
             The item idx.
         """
-        dataset_id, dataset_idx, task_label = self.task_specific_data_mapping[idx % self.length]
+        dataset_id, dataset_idx = self.task_specific_data_mapping[idx % self.length]
         image_path, label_path, label_format = self.data[dataset_id][dataset_idx]
         image = prepare_image(image_path)
         label = read_label(label_path, label_format)
-        label = access_label(label, task_label)
+        label = access_label(label, self.task_id)
         return (image, label)
 
 def access_label(satpy_dict: dict, task_label: str):
-    access_list = task_label.split(".")
+    access_list = task_label.split("_")
 
     if len(access_list) == 0:
         return None
@@ -132,14 +142,14 @@ class MTLDataset(Dataset):
                     dataset_cfg["label_format"]
             )
 
-        for task_id, task_cfg in self.tasks.items():
+        for task_id, dataset_ids in self.tasks.items():
             idx_mappings = []
             
             # order of dataset_ids is important
             # maximizing overlap between tasks -> minimizing dataloading
-            for dataset_id in task_cfg["dataset_ids"]:
+            for dataset_id in dataset_ids:
                 for dataset_idx in range(len(self.data[dataset_id])):
-                    idx_mappings.append((dataset_id, dataset_idx, task_cfg["label"]))
+                    idx_mappings.append((dataset_id, dataset_idx))
 
             self.task_data_mapping[task_id] = idx_mappings
             self.task_sample_counts[task_id] = len(idx_mappings)
@@ -176,7 +186,7 @@ class MTLDataset(Dataset):
         task_specific = {}
 
         for task_id in self.tasks.keys():
-            task_specific[task_id] = TaskSpecificDataset(self.data, self.task_data_mapping[task_id])
+            task_specific[task_id] = TaskSpecificDataset(self.data, task_id, self.task_data_mapping[task_id])
 
         return task_specific
 
@@ -194,11 +204,11 @@ class MTLDataset(Dataset):
         # task_data_mapping:
         # "task_id": [(dataset_id, dataset_idx, task_label)]
         for k, v in self.task_data_mapping.items():
-            dataset_id, dataset_idx, task_label = v[global_idx % self.task_sample_counts[k]]
+            dataset_id, dataset_idx = v[global_idx % self.task_sample_counts[k]]
             image_path, label_path, label_format = self.data[dataset_id][dataset_idx]
             image = prepare_image(image_path)
             label = read_label(label_path, label_format)
-            label = access_label(label, task_label)
+            label = access_label(label, k)
             mapping[k] = (image, label)
 
         return mapping
@@ -214,24 +224,22 @@ class MTLDataset(Dataset):
             The item idx.
         """
         images = []
-        labels = []
-        found_items = {}
+        labels = init_satellitepy_label()
+        seen = []
 
         for k,v in self.task_data_mapping.items():
-            dataset_id, dataset_idx, _ = v[global_idx % self.task_sample_counts[k]]
+            dataset_id, dataset_idx = v[global_idx % self.task_sample_counts[k]]
+            image_path, label_path, label_format = self.data[dataset_id][dataset_idx]
 
-            if dataset_idx in found_items.get(dataset_id, []):
+            image_key = f"{dataset_id}__MTL_DS__{dataset_idx}"
+
+            if image_key in seen:
                 continue
 
-            image_path, label_path, label_format = self.data[dataset_id][dataset_idx]
-            image = prepare_image(image_path)
-            label = read_label(label_path, label_format)
-            images.append(image)
-            labels.append(label)
-            found_items.setdefault(dataset_id, [])
-            found_items[dataset_id].append(dataset_idx)
+            merge_satpy_label_dict(labels, read_label(label_path, label_format))
+            images.append(prepare_image(image_path))
 
-        return images, labels
+        return torch.stack(images, dim=0), torchify_satpy_label_dict(labels)
 
     def __getitem__(self, idx):
         # int <-> access by global_idx return satpy style (with None values)

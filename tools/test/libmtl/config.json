@@ -4,14 +4,11 @@
       "dota": {
         "image_folder": "/home/simon/unibw/data/satpy/dota_chips/train/images",
         "label_folder": "/home/simon/unibw/data/satpy/dota_chips/train/labels",
-        "label_format": "dota"
+        "label_format": "satellitepy"
       }
     },
     "tasks": {
-      "classification": {
-        "dataset_ids": ["dota"],
-        "label": "classes.1"
-      }
+      "classes_0": ["dota"]
     },
     "align_len": "min"
   },
@@ -20,14 +17,11 @@
       "dota": {
         "image_folder": "/home/simon/unibw/data/satpy/dota_chips/val/images",
         "label_folder": "/home/simon/unibw/data/satpy/dota_chips/val/labels",
-        "label_format": "dota"
+        "label_format": "satellitepy"
       }
     },
     "tasks": {
-      "classification": {
-        "dataset_ids": ["dota"],
-        "label": "classes.1"
-      }
+      "classes_0": ["dota"]
     },
     "align_len": "min"
   }

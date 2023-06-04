@@ -4,6 +4,7 @@ from pathlib import Path
 from satellitepy.data.utils import get_xview_classes
 import json
 import os
+import torch
 
 def read_label(label_path,label_format):
     if isinstance(label_path,Path):
@@ -167,6 +168,48 @@ def init_satellitepy_label():
     }
     return labels    
 
+def merge_satpy_label_dict(target_satpy_labels: dict, to_add: dict):
+    for k in target_satpy_labels.keys():
+        if isinstance(target_satpy_labels[k], dict):
+            merge_satpy_label_dict(target_satpy_labels[k], to_add[k])
+        else:
+            # we expect final values to always be lists
+            target_satpy_labels[k] += to_add[k]
+
+# for testing purposes, remove when proper map is create
+DOTA_IDX_MAP = {
+    "object": 0,
+    "vehicle": 1,
+    "airplane": 2,
+    "ship": 3,
+    "helicopter": 4,
+}
+
+def torchify_satpy_label(key: str, value: list):
+    # for testing, todo: extend 
+    if key == "classes_0":
+        prep_list = [int(DOTA_IDX_MAP[v]) if v is not None else torch.nan for v in value]
+    elif key == "difficulty":
+        prep_list = [int(v) if v is not None else torch.nan for v in value]
+    else:
+        # todo change when extending
+        prep_list = [torch.nan if v is not None else torch.nan for v in value]
+
+    return torch.tensor(prep_list)
+
+def torchify_satpy_label_dict(satpy_label: dict):
+    torchified = {}
+
+    def inner(d: dict, prop_key = None):
+        for k, values in d.items():
+            inner_prop_key = k if prop_key == None else f"{prop_key}_{k}"
+            if isinstance(values, dict):
+                inner(values, inner_prop_key)
+            else:
+                torchified[inner_prop_key] = torchify_satpy_label(inner_prop_key, values)
+
+    inner(satpy_label)
+    return torchified
 
 def read_dota_label(label_path):
     labels = init_satellitepy_label()

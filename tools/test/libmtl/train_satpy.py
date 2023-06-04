@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import json
 from satellitepy.data.dataset.mtl_dataset import MTLDataset
+from satellitepy.utils.libmtl.task_target_mapping import build_targets
 
 from LibMTL import Trainer
 from LibMTL.model import resnet18
@@ -13,6 +14,7 @@ from LibMTL.utils import set_random_seed, set_device
 from LibMTL.config import LibMTL_args, prepare_args
 import LibMTL.weighting as weighting_method
 import LibMTL.architecture as architecture_method
+
 
 def parse_args(parser):
     parser.add_argument('--aug', action='store_true', default=False, help='data augmentation')
@@ -37,7 +39,6 @@ def main(params):
         shuffle=True,
         pin_memory=True,
         drop_last=True,
-        collate_fn=lambda x: x
     )
 
     test_set = MTLDataset(satpy_cfg["test"])
@@ -45,15 +46,10 @@ def main(params):
         dataset=test_set,
         batch_size=params.test_bs,
         pin_memory=True,
-        collate_fn=lambda x: x
     )
     
     # define tasks
-    task_dict = {'classification': {'metrics':['Acc'], 
-                              'metrics_fn': AccMetric(),
-                              'loss_fn': CELoss(),
-                              'weight': [1]}, 
-                 }
+    task_dict = build_targets(satpy_cfg["train"]["tasks"])
     
     # define encoder and decoders
     class Encoder(nn.Module):
