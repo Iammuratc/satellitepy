@@ -13,26 +13,26 @@ def get_args():
     """Arguments parser."""
     project_folder = get_project_folder()
     parser = configargparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--patch-size', required=True, type=int,
+    parser.add_argument('--patch-size', type=int,
                         help='Patch size. Patches with patch-size will be created from the original images.')
-    parser.add_argument('--in-image-folder', type=Path, required=True,
+    parser.add_argument('--in-image-folder', type=Path,
                         help='Folder of original images. The images in this folder will be processed.')
-    parser.add_argument('--in-label-folder', type=Path, required=True,
+    parser.add_argument('--in-label-folder', type=Path,
                         help='Folder of original labels. The labels in this folder will be used to create patches.')
-    parser.add_argument('--in-mask-folder', type=Path, help='Required for iSAID label format')
-    parser.add_argument('--in-label-format', type=Path, required=True,
+    parser.add_argument('--in-mask-folder', type=Path, required = False,
+                        help='Folder of original mask images. The mask images in this folder will be used to set mask pixel coordinates in out labels.')
+    parser.add_argument('--in-label-format', type=Path,
                         help='Label file format. e.g., dota, fair1m.')
     parser.add_argument('--out-folder',
                         type=Path,
-                        required=True,
                         help='Save folder of patches. Patches and corresponding labels will be saved into <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels.')
     parser.add_argument('--truncated-object-thr', default=0.5, type=float, help='If (truncated-object-thr x object area) is not in the patch area, the object will be filtered out.'
                         '1 if the object is completely in the patch, 0 if not.')
-    parser.add_argument('--patch-overlap', required=True, type=int, help='Overlapping size of neighboring patches. In CNN terminology, stride = patch-size - patch-overlap.'
+    parser.add_argument('--patch-overlap', type=int, help='Overlapping size of neighboring patches. In CNN terminology, stride = patch-size - patch-overlap.'
                         'If necessary, the original image will be padded with zeros to create full size patches.')
     parser.add_argument('--log-config-path', default=project_folder /
                         Path("configs/log.config"), type=Path, help='Log config file.')
-    parser.add_argument('--log-path', type=Path, help='Log config file.')
+    parser.add_argument('--log-path', type=Path, required=False, help='Log path.')
     args = parser.parse_args()
     return args
 

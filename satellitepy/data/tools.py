@@ -9,7 +9,7 @@ import cv2
 from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys
 from satellitepy.data.patch import get_patches
 from satellitepy.data.utils import get_xview_classes
-from satellitepy.utils.path_utils import create_folder, zip_matched_files
+from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
 
 
 def save_patches(
@@ -46,34 +46,28 @@ def save_patches(
     -------
     Save patches in <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
     """
+    logger = logging.getLogger(__name__)
 
     # Create output folders
-    out_image_folder = Path(out_folder) / f'patch_{patch_size}' / 'images'
-    out_label_folder = Path(out_folder) / f'patch_{patch_size}' / 'labels'
+    out_image_folder = Path(out_folder) / 'images'
+    out_label_folder = Path(out_folder) / 'labels'
 
     assert create_folder(out_image_folder)
     assert create_folder(out_label_folder)
     img_paths = get_file_paths(image_folder)
     label_paths = get_file_paths(label_folder)
     if mask_folder:
-         mask_paths = get_file_paths(mask_folder)
+        mask_paths = get_file_paths(mask_folder)
     else:
         mask_paths = [None] * len(img_paths)
-   
     if (len(img_paths)==len(label_paths)==len(mask_paths)):
         for img_path, label_path, mask_path in zip(img_paths,label_paths,mask_paths):
+            mask_name = mask_path.name if mask_path != None else None
+            logger.info(f"{img_path.name}, {label_path.name}, {mask_name}")
             # Image
             img = cv2.imread(str(img_path))
             # Labels
-            if (mask_folder):
-                gt_labels = read_label(label_path,label_format,mask_path)
-            else:
-                gt_labels = read_label(label_path,label_format)
-            # Mask
-            if mask_path:
-                mask = cv2.imread(str(mask_path))
-            else: None
-
+            gt_labels = read_label(label_path,label_format,mask_path)
             # Save results with the corresponding ground truth
             patches = get_patches(
             img,
@@ -81,7 +75,6 @@ def save_patches(
             truncated_object_thr,
             patch_size,
             patch_overlap,
-            mask,
             )
 
             count_patches = len(patches['images'])
@@ -102,35 +95,6 @@ def save_patches(
                 patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
                 with open(str(patch_label_path),'w') as f:
                     json.dump(patch_label,f,indent=4)
-
-        # if mask_path:
-        #     out_label_paths = get_file_paths(out_label_folder)
-        #     out_mask_paths = get_file_paths(out_mask_folder)
-        #     test_num = 0
-        #     bbx = 'bboxes'
-        #     for l,m in zip(out_label_paths, out_mask_paths):
-        #         test_num1 = 0
-        #         print("#######" + str(test_num) + "#######")
-        #         test_num +=1
-        #         img = cv2.imread(str(m))
-        #         img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        #         with open(l,'r') as f:
-        #             l_data = json.load(f)
-        #             if ('obboxes' in list(l_data)):
-        #                 bbx = 'obboxes'
-        #             elif ('hbboxes' in list(l_data)):
-        #                 bbx = 'hbboxes'
-        #             for v in range(len(l_data[bbx])):
-        #                 print(test_num1)
-        #                 test_num1 +=1
-        #                 tmp_mask = np.zeros((img.shape[0],img.shape[1]), dtype=np.uint8)
-        #                 pts = np.array([l_data[bbx][v]], dtype = np.int32)
-        #                 cv2.fillPoly(tmp_mask, pts, 255)
-        #                 coord = np.argwhere((tmp_mask == 255) & (img != 0)).tolist()
-        #                 l_data['mask-indices'][v] = coord
-        #                 with open(l,'w') as f:
-        #                     json.dump(l_data,f,indent=4)
-
 
 def split_rareplanes_labels(
         label_file,
