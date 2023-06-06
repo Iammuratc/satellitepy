@@ -36,7 +36,7 @@ def get_all_satellitepy_keys():
     Returns
     -------
     all_keys : list of str
-        E.g. ['bboxes','masks','classes_coarse-class','attributes_engines_propulsion']
+        E.g. ['bboxes','masks','coarse-class','attributes_engines_propulsion']
     """
 
     labels = init_satellitepy_label()
@@ -96,15 +96,14 @@ def init_satellitepy_label():
             Oriented bounding box corners for every object
         masks : list of Path
             Path to segmentation mask of objects
-        classes : dict of str
-            'coarse-class' : list of str
-                coarse grained classes. It has to be one of these three types: airplane,ship,vehicle
-            'fine-class' : list of str 
-                fine grained classes (e.g., A220, passenger ship)
-            'object-role' : list of str 
-                INSERT HERE
-            'very-fine-class': list or str
-                very fine grained classes (e.g., A220-100)
+        'coarse-class' : list of str
+            coarse grained classes. It has to be one of these three types: airplane,ship,vehicle
+        'fine-class' : list of str 
+            fine grained classes (e.g., A220, passenger ship)
+        'object-role' : list of str 
+            INSERT HERE
+        'very-fine-class': list or str
+            very fine grained classes (e.g., A220-100)
         difficulty : list of int
             Detection difficulty of the object. Only DOTA provides this. 
             For example, clouds make the detection task difficult. 
@@ -138,12 +137,10 @@ def init_satellitepy_label():
         'hbboxes':[],
         'obboxes': [],
         'masks':[],
-        'classes':{
-            'coarse-class':[],
-            'fine-class':[],
-            'object-role':[],
-            'very-fine-class': []
-        },
+        'coarse-class':[],
+        'fine-class':[],
+        'object-role':[],
+        'very-fine-class': [],
         'difficulty':[],
         'attributes':{
             'engines':{
@@ -175,7 +172,7 @@ def read_dota_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes','difficulty','classes_coarse-class','classes_fine-class']
+    available_tasks=['obboxes','difficulty','coarse-class','fine-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -205,16 +202,16 @@ def read_dota_label(label_path):
             ### class_coarse-class = vehicle, class_fine-class = large-vehicle
             category_words = category.split('-')
             if len(category_words) == 2 and category_words[1]=='vehicle':
-                labels['classes']['coarse-class'].append(category_words[1]) # vehicle
-                labels['classes']['fine-class'].append(category) # small-vehicle
+                labels['coarse-class'].append(category_words[1]) # vehicle
+                labels['fine-class'].append(category) # small-vehicle
             elif category=='plane' or category=='ship' or category=='helicopter':
                 # Airplane is the common word
                 category = 'airplane' if category == 'plane' else category
-                labels['classes']['coarse-class'].append(category) # plane, ship
-                labels['classes']['fine-class'].append(None) #
+                labels['coarse-class'].append(category) # plane, ship
+                labels['fine-class'].append(None) #
             else:
-                labels['classes']['coarse-class'].append('object') #
-                labels['classes']['fine-class'].append(category) #
+                labels['coarse-class'].append('object') #
+                labels['fine-class'].append(category) #
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
@@ -227,7 +224,7 @@ def read_fair1m_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes','classes_coarse-class','classes_fine-class']
+    available_tasks=['obboxes','coarse-class','fine-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -242,17 +239,17 @@ def read_fair1m_label(label_path):
         './objects/object/possibleresult/name')
     for instance_name in instance_names:
         if instance_name.text in ['A321','A220','other-airplane','ARJ21','Boeing737','Boeing747','Boeing787','A330','Boeing777','C919','A350']:
-            labels['classes']['coarse-class'].append('airplane')
-            labels['classes']['fine-class'].append(instance_name.text)
+            labels['coarse-class'].append('airplane')
+            labels['fine-class'].append(instance_name.text)
         elif instance_name.text in ['Cargo Truck','Small Car','Dump Truck','Van','Excavator','Bus','other-vehicle','Truck Tractor','Tractor','Trailer']:
-            labels['classes']['coarse-class'].append('vehicle')
-            labels['classes']['fine-class'].append(instance_name.text)
+            labels['coarse-class'].append('vehicle')
+            labels['fine-class'].append(instance_name.text)
         elif instance_name.text in ['Liquid Cargo Ship','Passenger Ship','Dry Cargo Ship','Motorboat','Engineering Ship','Tugboat','Fishing Boat','other-ship','Warship']:
-            labels['classes']['coarse-class'].append('ship')
-            labels['classes']['fine-class'].append(instance_name.text)
+            labels['coarse-class'].append('ship')
+            labels['fine-class'].append(instance_name.text)
         else:
-            labels['classes']['coarse-class'].append('object')
-            labels['classes']['fine-class'].append(instance_name.text)
+            labels['coarse-class'].append('object')
+            labels['fine-class'].append(instance_name.text)
 
     # BBOX CCORDINATES
     point_spaces = root.findall('./objects/object/points')
@@ -275,8 +272,8 @@ def read_rareplanes_real_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_real
-    available_tasks = ['hbboxes', 'obboxes', 'classes_coarse-class', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
-                       'attributes_fuselage_canards', 'attributes_fuselage_length', 'attributes_wings_wing-span',
+    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
+                       'attributes_fuselage_canards', 'cd ..cd', 'attributes_wings_wing-span',
                        'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins',
                        'attributes_role_civil', 'attributes_role_military']
 
@@ -308,7 +305,7 @@ def read_rareplanes_real_label(label_path):
                    np.add(B, vecToA).tolist()]
 
         labels['obboxes'].append(corners)
-        labels['classes']['coarse-class'].append('airplane')
+        labels['coarse-class'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
         labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
         match annotation['canards']:
@@ -356,7 +353,7 @@ def read_rareplanes_synthetic_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_synthetic
-    available_tasks = ['hbboxes'  'obboxes', 'classes_coarse-class', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
+    available_tasks = ['hbboxes'  'obboxes', 'coarse-class', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
      'attributes_fuselage_canards', 'attributes_fuselage_length', 'attributes_wings_wing-span',
      'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins',
      'attributes_role_civil', 'attributes_role_military']
@@ -391,7 +388,7 @@ def read_rareplanes_synthetic_label(label_path):
         # masks missing
 
         labels['obboxes'].append(corners)
-        labels['classes']['coarse-class'].append('airplane')
+        labels['coarse-class'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
         labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
         match annotation['canards']:
@@ -428,7 +425,7 @@ def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes', 'difficulty', 'classes_coarse-class','classes_fine-class']
+    available_tasks=['obboxes', 'difficulty', 'coarse-class','fine-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -438,8 +435,8 @@ def read_ship_net_label(label_path):
     # Instance names
     instance_names = root.findall('./object/name')
     for instance_name in instance_names:
-        labels['classes']['coarse-class'].append('ship')
-        labels['classes']['fine-class'].append(instance_name.text)
+        labels['coarse-class'].append('ship')
+        labels['fine-class'].append(instance_name.text)
 
     instance_difficulties = root.findall('./object/difficult')
     for instance_difficulty in instance_difficulties:
@@ -466,7 +463,7 @@ def read_ucas_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes', 'classes_coarse-class']
+    available_tasks=['obboxes', 'coarse-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -488,15 +485,14 @@ def read_ucas_label(label_path):
 
         # Using label path to determine object type
         if 'CAR' in str(label_path):
-            labels['classes']['coarse-class'].append('car')
+            labels['coarse-class'].append('car')
         elif 'PLANE' in str(label_path):
-            labels['classes']['coarse-class'].append('airplane')
+            labels['coarse-class'].append('airplane')
         else:
-            labels['classes']['coarse-class'].append(None)
+            labels['coarse-class'].append(None)
 
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
-
 
 def read_satellitepy_label(label_path):
     with open(label_path,'r') as f:
