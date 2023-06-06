@@ -15,7 +15,8 @@ def read_label(label_path,label_format, mask_path = None):
         return read_fair1m_label(label_path)
     elif label_format=='satellitepy':
         return read_satellitepy_label(label_path)
-
+    elif label_format=="dior" or label_format=="DIOR":
+        return read_dior_label(label_path)
     elif label_format=="vhr" or label_format=="VHR":
         return read_vhr_label(label_path)
     elif label_format == 'rareplanes_real' or label_format == 'rarePlanes_real':
@@ -479,11 +480,44 @@ def read_VHR_label(label_path):
     fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
+
+def read_dior_label(label_path):
+    labels = init_satellitepy_label()
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for VHR
+    available_tasks=['bboxes', "difficulty", 'classes_0', "classes_1"]
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+    
+    handler = open(file, "r")
+    root = ( ET.parse(handler) ).getroot()
+    for elem in root.findall("object"):
+            typ = elem.find("name").text
+            if typ == "ship" or typ == "vehicle" or typ == "airplane" : # object of interest
+                    labels['classes']['0'].append(typ)
+                    labels['classes']['1'].append(None)
+            else :
+                    labels['classes']['0'].append("object")
+                    labels['classes']['1'].append(typ)
+            bndbox = elem.find("bndbox")
+            xmin = int(bndbox.find("xmin").text)
+            xmax = int(bndbox.find("xmax").text)
+            ymin = int(bndbox.find("ymin").text)
+            ymax = int(bndbox.find("ymax").text)
+            labels['bboxes'].append([[xmin,ymin],[xmax,ymax]])        
+    handler.close()
+
+    fill_none_to_empty_keys(labels,not_available_tasks)
+    return labels
+
 def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
     available_tasks=['obboxes', 'difficulty', 'classes_0','classes_1']
+
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -494,7 +528,6 @@ def read_ship_net_label(label_path):
     for instance_name in instance_names:
         labels['classes']['0'].append('ship')
         labels['classes']['1'].append(instance_name.text)
-
     instance_difficulties = root.findall('./object/difficult')
     for instance_difficulty in instance_difficulties:
         labels['difficulty'].append(instance_difficulty.text)
