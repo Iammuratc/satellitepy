@@ -117,7 +117,8 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,show_bbo
     if show_bboxes:
         for bbox in gt_labels['bboxes']:
             bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)
-            BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5, instance_name=None)
+            BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5, instance_name=gt_labels['instance_names'][0])
+            fig.canvas.draw()
     plt.axis('off')
     # manager = plt.get_current_fig_manager()
     # manager.window.showMaximized()
@@ -126,11 +127,15 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,show_bbo
     logger.info(f'Saved labels on {output_folder / Path(img_path.stem + ".png")}')
     return fig
 
+<<<<<<< HEAD
 
 def split_rareplanes_labels(
         label_file,
         out_folder
     ):
+=======
+def normalize_rarePlanes_annotations(dataset_settings):
+>>>>>>> 3ce08bd (Added instance names on images)
     """
         Save patches from the original images
         Parameters
