@@ -101,8 +101,6 @@ class MMRotateEval(object):
                 # print(instance_name_gt, instance_name_original_cutout, instance_name_orthogonal_cutout)
             
             ## Process not detected bboxes
-            # print(bboxes_gt)
-            # print(det_bboxes_binary)
             undetected_bbox_indices = list(set(range(len(bboxes_gt))).difference(det_bboxes_binary)) 
             # print(undetected_bbox_indices)
             for bbox_ind_gt in undetected_bbox_indices:
