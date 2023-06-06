@@ -43,6 +43,8 @@ def run(args):
     in_label_format = str(args.in_label_format)
     if (args.in_mask_folder != None):
         in_mask_folder = Path(args.in_mask_folder)
+    else:
+        in_mask_folder = None
     out_folder = Path(args.out_folder)
     patch_overlap = int(args.patch_overlap)
     patch_size = int(args.patch_size)
