@@ -207,7 +207,7 @@ def read_dota_label(label_path, mask_path=None):
             # Classes
             category = bbox_line[category_i].rstrip()
             ## large-vehicle and small-vehicle should be handled individually
-            ### class_0 = vehicle, class_1 = large-vehicle
+            ### class_coarse-class = vehicle, class_fine-class = large-vehicle
             category_words = category.split('-')
             if len(category_words) == 2 and category_words[1]=='vehicle':
                 labels['coarse-class'].append(category_words[1]) # vehicle
@@ -517,7 +517,6 @@ def read_ship_net_label(label_path):
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
     available_tasks=['obboxes', 'difficulty', 'coarse-class','fine-class']
-
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -588,4 +587,3 @@ def read_satellitepy_label(label_path):
     with open(label_path,'r') as f:
         labels = json.load(f)
     return labels
-
