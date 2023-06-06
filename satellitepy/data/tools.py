@@ -118,7 +118,9 @@ def save_patches(
                 with open(str(patch_label_path),'w') as f:
                     json.dump(patch_label,f,indent=4)
 
-def show_labels_on_image(img_path,label_path,label_format,output_folder,show_bboxes):
+    else: logger.error("Folder lengths unequal!")
+
+def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks):
     logger = logging.getLogger(__name__)
     img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
     gt_labels = read_label(label_path,label_format)
@@ -131,12 +133,27 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,show_bbo
     fig.add_axes(ax)
     ax.imshow(img)
     # ax.imshow(mask, alpha=0.5)
-    if show_bboxes:
-        for i in range(0, len(gt_labels['obboxes'])):
-            bbox = gt_labels['obboxes'][i]
-            bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)
-            BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5, instance_name=gt_labels['classes']['1'][i])
+    
+    classes = list(filter(lambda x: 'classes' in x, tasks))
+    if classes:
+        class_index = classes[0].split('_')
+    
+    if classes or 'bboxes' in tasks:
+        bboxes = 'obboxes'
+
+        if len(gt_labels['obboxes']) < 1:
+            bboxes = 'hbboxes'
+
+        for i in range(0, len(gt_labels[bboxes])):
+            bbox = gt_labels[bboxes][i]
+            bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2) 
+            if classes:
+                x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
+                ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[class_index[0]][class_index[1]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+            if 'bboxes' in tasks:
+                BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
             fig.canvas.draw()
+
     plt.axis('off')
     # manager = plt.get_current_fig_manager()
     # manager.window.showMaximized()
