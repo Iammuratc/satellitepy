@@ -190,7 +190,6 @@ class BBox:
                     [corners[i - 1][1], coord[1]], c=c)
         if instance_name is not None:
             x_min, x_max, y_min, y_max = BBox.get_bbox_limits(corners)
-            
             ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=instance_name, fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom') #  fontweight='bold',
         # ax.scatter(corners[0][0], corners[0][1], c='r', s=s)
         return ax
