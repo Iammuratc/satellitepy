@@ -2,6 +2,7 @@ import urllib.request
 import patoolib
 import logging
 import configargparse
+import os
 from pathlib import Path
 from satellitepy.utils.path_utils import init_logger, create_folder
 
@@ -50,16 +51,16 @@ def download_VEDAI(in_path, log_config, log_path=None, unzip=True):
 		if (logging): logging.info("Download complete.")
 		if (logging): logging.info("Merging files.")
 		try:
-			file512 = str(Path(in_path) / "Vehicules512.tar")
-			file1024 = str(Path(in_path) /"Vehicules1024.tar")
+			file512 = os.path.join(in_path,"Vehicules512.tar")
+			file1024 = os.path.join(in_path,"Vehicules1024.tar")
 			for part in files512:
 				with open(file512, "ab") as whole, open(part, "rb") as fragment:
 					whole.write(fragment.read())
-				pathlib.Path.unlink(part)
+				os.remove(part)
 			for part in files1024:
 				with open(file1024, "ab") as whole, open(part, "rb") as fragment:
 					whole.write(fragment.read())
-				pathlib.Path.unlink(part)
+				os.remove(part)
 		except Exception: 
 			if (logging): logging.error("Failed to merge files.")
 		if (unzip):

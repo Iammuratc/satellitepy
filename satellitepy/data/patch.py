@@ -2,7 +2,6 @@ import numpy as np
 import logging
 from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys
 # TODO: 
-#   Shift the segmentation masks in get_patches and merge_patch_results
 #   Filter out the truncated objects using the object area. truncated_object_thr is not use at the moment. Edit the is_truncated function.
 
 # Init log
@@ -31,23 +30,25 @@ def get_patches(
         Patch size
     patch_overlap : int
         Patch overlap
+    mask : np.ndarray
+        Mask Image
     Returns
     -------
     patch_dict : dict
         This dict includes patches and the corresponding labels in satellitepy format
     """
 
-    # Get image shape
+    # Get image and mask image shape 
     y_max, x_max, ch = img.shape
 
-    # Pad image so full patches are possible
+    # Pad image and mask image so full patches are possible
     x_pad_size = get_pad_size(x_max,patch_size,patch_overlap)
     y_pad_size = get_pad_size(y_max,patch_size,patch_overlap)
     img_padded = np.pad(img,pad_width=((0,y_pad_size),(0,x_pad_size),(0,0)))
 
     y_max_padded, x_max_padded, ch = img_padded.shape
 
-    # Patch coordinates in the padded image
+    # Patch coordinates in the padded image and mask image
     y_start_coords =  get_patch_start_coords(y_max_padded,patch_size,patch_overlap)
     x_start_coords =  get_patch_start_coords(x_max_padded,patch_size,patch_overlap)
     patch_start_coords = [[x,y] for x in x_start_coords for y in y_start_coords]
@@ -56,36 +57,48 @@ def get_patches(
     patch_dict = {
       'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],
       'labels':[init_satellitepy_label() for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
-      'start_coords': patch_start_coords
+      'start_coords': patch_start_coords,
       }
 
-    all_satellitepy_keys = get_all_satellitepy_keys()
     for i,patch_start_coord in enumerate(patch_start_coords):
         # Patch starting coordinates
         x_0,y_0 = patch_start_coord
 
-        # Patch image
+        # Patch image and mask image
         patch_dict['images'][i] = img_padded[y_0:y_0+patch_size,x_0:x_0+patch_size,:]
+        
+        for j, (hbbox, obbox) in enumerate(zip(gt_labels['hbboxes'],gt_labels['obboxes'])):
+            hbb_defined = hbbox != None
+            obb_defined = obbox != None
 
-        # Patch labels
-        for i_label, bbox_corners in enumerate(gt_labels['bboxes']):
-            # Check if object s bbox is in patch
-            is_truncated_bbox = is_truncated(
-                bbox_corners=bbox_corners,
-                x_0=x_0,
-                y_0=y_0,
-                patch_size=patch_size,
-                bbox_corner_threshold=2)
-            if not is_truncated_bbox:
-                # for key in keys_with_values:
-                # patch_dict['labels'][i][key].append(gt_labels[key][i_label])
-                patch_dict['labels'][i] = set_patch_keys(all_satellitepy_keys, patch_dict['labels'][i], gt_labels, i_label)
-                # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
-                bbox_corners_shifted = np.array(patch_dict['labels'][i]['bboxes'][-1]) - [x_0,y_0]
-                patch_dict['labels'][i]['bboxes'][-1] = bbox_corners_shifted.tolist()
+            if hbb_defined and obb_defined:
+                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, consider_additional=True)
+
+            elif hbb_defined:
+                shift_bboxes(patch_dict, gt_labels, j, i , 'hbboxes', patch_start_coord, hbbox, patch_size)
+
+            elif obb_defined:
+                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size)
+                
             else:
-                continue
+                logger.error('Error reading bounding boxes! No bounding boxes found')
+                exit(1)
     return patch_dict
+    
+def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, consider_additional=False, additional='hbboxes'):
+    x_0, y_0 = patch_start_coord
+    is_truncated_bbox = is_truncated(bbox_corners=bbox_corners, x_0=x_0, y_0=y_0, patch_size=patch_size, bbox_corner_threshold=2)
+    if not is_truncated_bbox:
+        patch_dict['labels'][i] = set_patch_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
+        # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
+        bbox_corners_shifted = np.array(patch_dict['labels'][i][bboxes][-1]) - [x_0, y_0]
+        patch_dict['labels'][i][bboxes][-1] = bbox_corners_shifted.tolist()
+        mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2,1)
+        patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
+        if consider_additional:
+            patch_dict['labels'][i] = set_patch_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
+            bbox_corners_shifted = np.array(patch_dict['labels'][i][additional][-1]) - [x_0, y_0]
+            patch_dict['labels'][i][additional][-1] = bbox_corners_shifted.tolist()
 
 def get_pad_size(coord_max, patch_size, patch_overlap):
     """
