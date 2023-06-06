@@ -15,6 +15,9 @@ def read_label(label_path,label_format, mask_path = None):
         return read_fair1m_label(label_path)
     elif label_format=='satellitepy':
         return read_satellitepy_label(label_path)
+
+    elif label_format=="vhr" or label_format=="VHR":
+        return read_vhr_label(label_path)
     elif label_format == 'rareplanes_real' or label_format == 'rarePlanes_real':
         return read_rareplanes_real_label(label_path)
     elif label_format == 'rareplanes_synthetic' or label_format == 'rarePlanes_synthetic':
@@ -427,6 +430,54 @@ def read_rareplanes_synthetic_label(label_path):
 
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
+ 
+def read_VHR_label(label_path):
+    labels = init_satellitepy_label()
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for VHR
+    available_tasks=['bboxes', 'classes_0', "classes_1"]
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+    
+    lut = { # Look-up Table for classes_1
+                "1": None,
+                "2": None,
+                "3": 'storagetank',
+                "4": 'baseballdiamond',
+                "5": 'tennis court',
+                "6": 'basketballcourt',
+                "7": 'groundtrackfield',
+                "8": 'harbor',
+                "9": 'bridge',
+               "10": None,
+                }
+    files = Path(label_path).glob('*.txt')
+    for file in files:
+        handler = open(file, "r")
+        for line in handler.readlines():
+            vals = line.replace('(','').replace(')','').split(',')
+            
+            labels['bboxes'].append([vals[0:2],vals[2:4]])
+            # The first two values are the top-right, the next two the bottom left corner
+            
+            typ = vals[-1].strip()
+            if typ == "1":
+                    labels['classes']['0'].append('airplane')
+            elif typ == "2":
+                    labels['classes']['0'].append('ship')
+            elif typ == "10":
+                    labels['classes']['0'].append('vehicle')
+                                   
+            else:
+                    labels['classes']['0'].append('object')
+                
+            labels['classes']['1'].append(lut[typ])
+        handler.close()
+            
+    fill_none_to_empty_keys(labels,not_available_tasks)
+    return labels
 
 def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
@@ -437,7 +488,6 @@ def read_ship_net_label(label_path):
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
-
     root = ET.parse(label_path).getroot()
     # Instance names
     instance_names = root.findall('./object/name')
@@ -500,6 +550,7 @@ def read_ucas_label(label_path):
 
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
+
 
 
 def read_satellitepy_label(label_path):
