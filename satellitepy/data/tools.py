@@ -5,8 +5,9 @@ from pathlib import Path
 
 import cv2
 
-from satellitepy.data.labels import read_label
+from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys
 from satellitepy.data.patch import get_patches
+from satellitepy.data.utils import get_xview_classes
 from satellitepy.utils.path_utils import create_folder, zip_matched_files
 
 
@@ -58,6 +59,8 @@ def save_patches(
     assert create_folder(out_image_folder)
     assert create_folder(out_label_folder)
 
+    assert len(out_image_folder) == len(out_label_folder) == len(out_mask_folder)
+
     for img_path, label_path in zip_matched_files(image_folder,label_folder):
         # Image
         img = cv2.imread(str(img_path))
@@ -85,7 +88,7 @@ def save_patches(
 
             # Save patch image
             patch_img = patches['images'][i]
-            patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png" 
+            patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png"
             cv2.imwrite(str(patch_image_path),patch_img)
 
             # Save patch labels
@@ -185,7 +188,9 @@ def split_xview_labels(
 
     for new_annotation in file['features']:
         img_name = id_to_img[new_annotation["properties"]['image_id']]
-        label_file_path = os.path.join(out_label_folder, img_name[:-3] + 'geojson')
+        label_file_path = out_label_folder / f"{img_name[:-3]}geojson"
+        if label_file_path.exists():
+            continue
         label_file = open(label_file_path, 'r', encoding="utf-8")
         logger.info(f'Saving annotation for {label_file_path}')
         annotations = json.load(label_file)
@@ -196,3 +201,79 @@ def split_xview_labels(
 
         json.dump(annotations, file, ensure_ascii=False, indent=4)
         file.close()
+
+def save_xview_in_satellitepy_format(out_folder,label_path):
+    """
+    Parameters
+    ----------
+    label_path : Path
+        One big annotation file for all the images
+    out_folder : Path
+        Output folder. New labels will be saved into <out-folder>
+    Returns
+    -------
+    Save a label file for each image
+    """
+    # Create outut folder
+    logger = logging.getLogger(__name__)
+    logger.info(f'Initializing save_xview_in_satellitepy_format')
+
+
+    labels = json.load(open(label_path, 'r'))
+    all_image_names = []
+    for feature in labels['features']:
+        all_image_names.append(feature['properties']['image_id'])
+
+    image_dicts = {img_name:init_satellitepy_label() for img_name in set(all_image_names)}
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for dota
+    available_tasks=['hbboxes', 'classes_0', 'classes_1']
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+
+    classes = get_xview_classes()
+
+    img_name_for_log = list(image_dicts.keys())[0]        
+    for feature in labels['features']:
+        img_name = feature['properties']['image_id']
+        if img_name != img_name_for_log:
+            img_name_for_log = img_name
+            logger.info(f"Following image will be written: {img_name_for_log}")
+        coords = feature['properties']['bounds_imcoords'].split(',')
+        xmin = int(coords[0])
+        ymin = int(coords[1])
+        xmax = int(coords[2])
+        ymax = int(coords[3])
+        image_dicts[img_name]['hbboxes'].append([[xmin, ymin], [xmax, ymin], [xmin, ymax], [xmax, ymax]])
+
+        type_class = int(feature['properties']['type_id'])
+        if type_class in classes['vehicles']:
+            image_dicts[img_name]['classes']['0'].append('vehicle')
+            image_dicts[img_name]['classes']['1'].append(classes['vehicles'][type_class])
+        elif type_class in classes['ships']:
+            image_dicts[img_name]['classes']['0'].append('ship')
+            image_dicts[img_name]['classes']['1'].append(classes['ships'][type_class])
+        elif type_class in classes['airplanes']:
+            image_dicts[img_name]['classes']['0'].append('airplane')
+            image_dicts[img_name]['classes']['1'].append(classes['airplanes'][type_class])
+        elif type_class in classes['helicopter']:
+            image_dicts[img_name]['classes']['0'].append('helicopter')
+            image_dicts[img_name]['classes']['1'].append(None)
+        elif type_class in classes['objects']:
+            image_dicts[img_name]['classes']['0'].append('object')
+            image_dicts[img_name]['classes']['1'].append(classes['objects'][type_class])
+        else:
+            image_dicts[img_name]['classes']['0'].append(None)
+            image_dicts[img_name]['classes']['1'].append(None)
+
+
+        fill_none_to_empty_keys(image_dicts[img_name],not_available_tasks)
+
+    # Save satellitepy labels
+    for img_name, satellitepy_dict in image_dicts.items():
+        label_name = f"{Path(img_name).stem}.json"
+        label_path = out_folder / label_name
+        with open(str(label_path),'w') as f:
+            json.dump(satellitepy_dict,f,indent=4)

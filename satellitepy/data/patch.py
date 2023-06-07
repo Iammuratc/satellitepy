@@ -63,49 +63,65 @@ def get_patches(
 
     # Init patch dictionary
     patch_dict = {
-      'images':[],
-      'labels':[], # label_key:[] for label_key in gt_labels.keys()
-      'start_coords': []
-    }
+      'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],
+      'labels':[init_satellitepy_label() for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
+      'start_coords': patch_start_coords,
+      }
 
-    all_satellitepy_keys = get_all_satellitepy_keys()
-    for patch_start_coord in patch_start_coords:
+    for i,patch_start_coord in enumerate(patch_start_coords):
         # Patch starting coordinates
         x_0,y_0 = patch_start_coord
-        patch_labels = init_satellitepy_label()
+        length = max(len(gt_labels['obboxes']), len(gt_labels['hbboxes']))
+        patch_dict['images'][i] = img_padded[y_0:y_0+patch_size,x_0:x_0+patch_size,:]
 
         # Patch labels
-        for i_label, bbox_corners in enumerate(gt_labels['bboxes']):
-            # Check if the object class name is whitelisted or not blacklisted
-            contains_valid_object = []
-            for k, v in gt_labels['classes'].items():
-                contains_valid_object.append(
-                    is_valid_object_class(v[i_label], include_object_classes, exclude_object_classes)
-                )
-            if not any(contains_valid_object):
+        for j, (hbbox, obbox) in enumerate(zip(gt_labels['hbboxes'],gt_labels['obboxes'])):
+            hbb_defined = hbbox != None
+            obb_defined = obbox != None
+
+            class_targets = gt_labels['classes']['0'][j] + gt_labels['classes']['1'][j] + gt_labels['classes']['2'][j]
+            if not any([
+                is_valid_object_class(
+                    ct, include_object_classes, exclude_object_classes
+                ) for ct in class_targets]
+            ):
                 continue
-            # Check if object s bbox is in patch
-            is_truncated_bbox = is_truncated(
-                bbox_corners=bbox_corners,
-                x_0=x_0,
-                y_0=y_0,
-                patch_size=patch_size,
-                bbox_corner_threshold=2)
-            if not is_truncated_bbox:
-                # for key in keys_with_values:
-                # patch_dict['labels'][i][key].append(gt_labels[key][i_label])
-                patch_labels = set_patch_keys(all_satellitepy_keys, patch_labels, gt_labels, i_label)
-                # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
-                bbox_corners_shifted = np.array(patch_labels['bboxes'][-1]) - [x_0,y_0]
-                patch_labels['bboxes'][-1] = bbox_corners_shifted.tolist()
 
-        # only add the patch, if it does contain labels
-        if not satellitepy_labels_empty(patch_labels):
-            patch_dict['images'].append(img_padded[y_0:y_0+patch_size,x_0:x_0+patch_size,:])
-            patch_dict['labels'].append(patch_labels)
-            patch_dict['start_coords'].append(patch_start_coord)
+            if hbb_defined and obb_defined:
+                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, consider_additional=True)
 
+            elif hbb_defined:
+                shift_bboxes(patch_dict, gt_labels, j, i , 'hbboxes', patch_start_coord, hbbox, patch_size)
+
+            elif obb_defined:
+                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size)
+                
+            else:
+                logger.error('Error reading bounding boxes! No bounding boxes found')
+                exit(1)
+            
+        # remove current patch from the patch dict, if it does not contain any labels
+        if satellitepy_labels_empty(patch_dict["labels"][i]):
+            patch_dict['images'].pop(i)
+            patch_dict['labels'].pop(i)
+            patch_dict['start_coords'].pop(i)
+ 
     return patch_dict
+    
+def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, consider_additional=False, additional='hbboxes'):
+    x_0, y_0 = patch_start_coord
+    is_truncated_bbox = is_truncated(bbox_corners=bbox_corners, x_0=x_0, y_0=y_0, patch_size=patch_size, bbox_corner_threshold=2)
+    if not is_truncated_bbox:
+        # for key in keys_with_values:
+        # patch_dict['labels'][i][key].append(gt_labels[key][i_label])
+        patch_dict['labels'][i] = set_patch_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
+        # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
+        bbox_corners_shifted = np.array(patch_dict['labels'][i][bboxes][-1]) - [x_0, y_0]
+        patch_dict['labels'][i][bboxes][-1] = bbox_corners_shifted.tolist()
+        if consider_additional:
+            patch_dict['labels'][i] = set_patch_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
+            bbox_corners_shifted = np.array(patch_dict['labels'][i][additional][-1]) - [x_0, y_0]
+            patch_dict['labels'][i][additional][-1] = bbox_corners_shifted.tolist()
 
 def is_valid_object_class(object_class_name, include_object_classes, exclude_object_classes):
     """
