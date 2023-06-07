@@ -6,11 +6,10 @@ from pathlib import Path
 
 import cv2
 
-from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys
+from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys, satellitepy_labels_empty
 from satellitepy.data.patch import get_patches
 from satellitepy.data.utils import get_xview_classes
 from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
-
 
 def save_patches(
     image_folder,
@@ -90,6 +89,9 @@ def save_patches(
 
             count_patches = len(patches['images'])
             for i in range(count_patches):
+                if satellitepy_labels_empty(patches["labels"][i]):
+                    continue
+
                 # Get original image name for naming patch files
                 img_name = img_path.stem
 

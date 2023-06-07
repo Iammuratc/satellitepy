@@ -32,7 +32,6 @@ def get_patches(
         Patch size
     patch_overlap : int
         Patch overlap
-<<<<<<< HEAD
     include_object_classes: list[str]
         A list of object class names that shall be included as ground truth for the patches. 
         Takes precedence over exclude_object_classes, i.e. if both are provided, 
@@ -40,10 +39,8 @@ def get_patches(
     exclude_object_classes: list[str]
         A list of object class names that shall be excluded as ground truth for the patches.
         include_object_classes takes precedence and overrides the behaviour of this parameter.
-=======
     mask : np.ndarray
         Mask Image
->>>>>>> main
     Returns
     -------
     patch_dict : dict
@@ -82,7 +79,7 @@ def get_patches(
             hbb_defined = hbbox != None
             obb_defined = obbox != None
 
-            class_targets = gt_labels['classes']['0'][j] + gt_labels['classes']['1'][j] + gt_labels['classes']['2'][j]
+            class_targets = [gt_labels['classes']['0'][j], gt_labels['classes']['1'][j], gt_labels['classes']['2'][j]]
             if not any([
                 is_valid_object_class(
                     ct, include_object_classes, exclude_object_classes
@@ -103,12 +100,6 @@ def get_patches(
                 logger.error('Error reading bounding boxes! No bounding boxes found')
                 exit(1)
             
-        # remove current patch from the patch dict, if it does not contain any labels
-        if satellitepy_labels_empty(patch_dict["labels"][i]):
-            patch_dict['images'].pop(i)
-            patch_dict['labels'].pop(i)
-            patch_dict['start_coords'].pop(i)
- 
     return patch_dict
     
 def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, consider_additional=False, additional='hbboxes'):
@@ -119,8 +110,9 @@ def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_co
         # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
         bbox_corners_shifted = np.array(patch_dict['labels'][i][bboxes][-1]) - [x_0, y_0]
         patch_dict['labels'][i][bboxes][-1] = bbox_corners_shifted.tolist()
-        mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2,1)
-        patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
+        if patch_dict["labels"][i]["masks"][-1] is not None:
+            mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2,1)
+            patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
         if consider_additional:
             patch_dict['labels'][i] = set_patch_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
             bbox_corners_shifted = np.array(patch_dict['labels'][i][additional][-1]) - [x_0, y_0]
