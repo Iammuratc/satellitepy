@@ -68,19 +68,19 @@ def main(args):
     #train data
     for id in train_img_file_ids:
         url = f"https://drive.google.com/uc?id={id}"
-        output_path = parent_folder/train_folder/Path(f"{id}.zip")
+        output_path = train_folder/Path(f"{id}.zip")
         output = str(output_path)
         if Path(output).is_file() == False:
             gdown.download(url, output, quiet = False)
 
     url = f"https://drive.google.com/uc?id={train_label_file_id}"
-    output_path = parent_folder/train_folder/Path("train_labels.zip")
+    output_path = train_folder/Path("train_labels.zip")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
 
     url = f"https://drive.google.com/uc?id={train_label_hbb_file_id}"
-    output_path = parent_folder/train_folder/Path("train_labels_hbb.zip")
+    output_path = train_folder/Path("train_labels_hbb.zip")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
@@ -100,19 +100,19 @@ def main(args):
 
     #val data
     url = f"https://drive.google.com/uc?id={val_img_file_id}"
-    output_path = parent_folder/val_folder/Path(f"{val_img_file_id}.zip")
+    output_path = val_folder/Path(f"{val_img_file_id}.zip")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
 
     url = f"https://drive.google.com/uc?id={val_label_file_id}"
-    output_path = parent_folder/val_folder/Path("val_labels.zip")
+    output_path = val_folder/Path("val_labels.zip")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
     
     url = f"https://drive.google.com/uc?id={val_label_hbb_file_id}"
-    output_path = parent_folder/val_folder/Path("val_labels_hbb.zip")
+    output_path = val_folder/Path("val_labels_hbb.zip")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
@@ -125,23 +125,22 @@ def main(args):
                         zip_ref.extractall(val_label_folder)
                 elif fnmatch.fnmatch(file, "*/val_labels_hbb.zip"):
                     with zipfile.ZipFile(file) as zip_ref:
-                        zip_ref.extractall(val_label_folder)
+                        zip_ref.extractall(val_label_folder_hbb)
                 else:
                     with zipfile.ZipFile(file) as zip_ref:
                         zip_ref.extractall(val_img_folder)
 
     #test data
     url = f"https://drive.google.com/uc?id={test_json_id}"
-    output_path = parent_folder/test_folder/Path("test_info.json")
+    output_path = test_folder/Path("test_info.json")
     output = str(output_path)
     if Path(output).is_file() == False:
         gdown.download(url, output, quiet = False)
 
     for id in test_img_file_ids:
         url = f"https://drive.google.com/uc?id={id}"
-        output_path = parent_folder/test_folder/Path(f"{id}.zip")
+        output_path = test_folder/Path(f"{id}.zip")
         output = str(output_path)
-        print("echo")
         if Path(output).is_file() == False:
             gdown.download(url, output, quiet = False)
 
