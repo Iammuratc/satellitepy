@@ -3,8 +3,13 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from satellitepy.data.utils import get_xview_classes, set_mask
 import json
+import cv2 
+import numpy as np
+from scipy.ndimage import find_objects, generate_binary_structure, label
 
 from satellitepy.data.cutout.geometry import BBox
+
+
 
 def read_label(label_path,label_format, mask_path = None):
     if isinstance(label_path,Path):
@@ -589,4 +594,42 @@ def read_ucas_label(label_path):
 def read_satellitepy_label(label_path):
     with open(label_path,'r') as f:
         labels = json.load(f)
+    return labels
+
+def read_isprs_label(label_path):
+    labels = init_satellitepy_label()
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for dota
+    available_tasks=['hbboxes', 'coarse-class']
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+
+    img = cv2.imread(label_path)
+    
+    # bleaching every color except yellow
+    hsv= cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
+    yellow = np.uint8([[[0, 255, 255]]])
+    hsvYellow = cv2.cvtColor(yellow, cv2.COLOR_BGR2HSV)
+
+    lower=np.array([20,100,100])
+    upper=np.array([40,255,255])
+
+    mask=cv2.inRange(hsv,lower,upper)
+
+    s = generate_binary_structure(2, 2)
+
+    # figuring out the hbboxes for the yellow segements
+    labeled_image, num_features = label(mask, structure=s)
+    objs = find_objects(labeled_image)
+
+    for obj in objs:
+        points = [[obj[1].start, obj[0].start], [obj[1].stop, obj[0].start], [obj[1].stop, obj[0].stop], [obj[1].start, obj[0].stop]]
+
+        labels['coarse-class'].append('car')
+        labels['hbboxes'].append(points)
+
+        fill_none_to_empty_keys(labels, not_available_tasks)
+
     return labels
