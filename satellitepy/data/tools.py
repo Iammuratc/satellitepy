@@ -6,11 +6,10 @@ from pathlib import Path
 
 import cv2
 
-from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys
+from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys, satellitepy_labels_empty
 from satellitepy.data.patch import get_patches
 from satellitepy.data.utils import get_xview_classes
 from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
-
 
 def save_patches(
     image_folder,
@@ -20,6 +19,8 @@ def save_patches(
     truncated_object_thr,
     patch_size,
     patch_overlap,
+    include_object_classes,
+    exclude_object_classes,
     mask_folder = None
     ):
     """
@@ -42,6 +43,13 @@ def save_patches(
         Patch size
     patch_overlap : int
         Patch overlap
+    include_object_classes: list[str]
+        A list of object class names that shall be included as ground truth for the patches. 
+        Takes precedence over exclude_object_classes, i.e. if both are provided, 
+        only include_object_classes will be considered.
+    exclude_object_classes: list[str]
+        A list of object class names that shall be excluded as ground truth for the patches.
+        include_object_classes takes precedence and overrides the behaviour of this parameter.
     Returns
     -------
     Save patches in <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
@@ -75,10 +83,15 @@ def save_patches(
             truncated_object_thr,
             patch_size,
             patch_overlap,
+            include_object_classes,
+            exclude_object_classes
             )
 
             count_patches = len(patches['images'])
             for i in range(count_patches):
+                if satellitepy_labels_empty(patches["labels"][i]):
+                    continue
+
                 # Get original image name for naming patch files
                 img_name = img_path.stem
 
