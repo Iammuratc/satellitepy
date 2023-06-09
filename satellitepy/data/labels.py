@@ -18,7 +18,7 @@ def read_label(label_path,label_format, mask_path = None):
     elif label_format=="dior" or label_format=="DIOR":
         return read_dior_label(label_path)
     elif label_format=="vhr" or label_format=="VHR":
-        return read_vhr_label(label_path)
+        return read_VHR_label(label_path)
     elif label_format == 'rareplanes_real' or label_format == 'rarePlanes_real':
         return read_rareplanes_real_label(label_path)
     elif label_format == 'rareplanes_synthetic' or label_format == 'rarePlanes_synthetic':
@@ -491,7 +491,7 @@ def read_dior_label(label_path):
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
     
-    handler = open(file, "r")
+    handler = open(label_path, "r")
     root = ( ET.parse(handler) ).getroot()
     for elem in root.findall("object"):
             typ = elem.find("name").text
