@@ -1,27 +1,27 @@
 {
   "train": {
     "datasets": {
-      "dota": {
+      "satellitepy": {
         "image_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/train/images",
         "label_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/train/labels",
         "label_format": "satellitepy"
       }
     },
     "tasks": {
-      "classes_0": ["dota"]
+      "classes_0": ["satellitepy"]
     },
     "align_len": "min"
   },
   "test": {
     "datasets": {
-      "dota": {
-        "image_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/val/images",
-        "label_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/val/labels",
+      "satellitepy": {
+        "image_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/test/images",
+        "label_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/test/labels",
         "label_format": "satellitepy"
       }
     },
     "tasks": {
-      "classes_0": ["dota"]
+      "classes_0": ["satellitepy"]
     },
     "align_len": "min"
   }
