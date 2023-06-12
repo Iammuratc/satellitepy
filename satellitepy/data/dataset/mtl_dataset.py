@@ -1,44 +1,15 @@
 from torch.utils.data.dataset import Dataset
 import cv2
 import torch
+import numpy as np
 from pathlib import Path
+import logging
 
 from satellitepy.utils.path_utils import zip_matched_files
 from satellitepy.data.labels import read_label, init_satellitepy_label, merge_satpy_label_dict 
+from satellitepy.data.torchify import torchify_satpy_label_dict
 
-DOTA_IDX_MAP = {
-    "object": 0,
-    "vehicle": 1,
-    "airplane": 2,
-    "ship": 3,
-    "helicopter": 4,
-}
-
-def torchify_satpy_label(key: str, value: list):
-    # for testing, todo: extend 
-    if key == "classes_0":
-        prep_list = [int(DOTA_IDX_MAP[v]) if v is not None else torch.nan for v in value]
-    elif key == "difficulty":
-        prep_list = [int(v) if v is not None else torch.nan for v in value]
-    else:
-        # todo change when extending
-        prep_list = [torch.nan if v is not None else torch.nan for v in value]
-
-    return torch.tensor(prep_list)
-
-def torchify_satpy_label_dict(satpy_label: dict):
-    torchified = {}
-
-    def inner(d: dict, prop_key = None):
-        for k, values in d.items():
-            inner_prop_key = k if prop_key == None else f"{prop_key}_{k}"
-            if isinstance(values, dict):
-                inner(values, inner_prop_key)
-            else:
-                torchified[inner_prop_key] = torchify_satpy_label(inner_prop_key, values)
-
-    inner(satpy_label)
-    return torchified
+logger = logging.getLogger(__name__)
 
 def prepare_image(image_path: Path):
     """
@@ -59,6 +30,22 @@ def prepare_image(image_path: Path):
         image = image.float() / 255.0
 
     return image
+
+def access_label(satpy_dict: dict, task_label: str):
+    access_list = task_label.split("_")
+
+    if len(access_list) == 0:
+        return None
+
+    item = satpy_dict[access_list[0]]
+
+    for a in access_list[1:]:
+        item = item[a]
+
+    if isinstance(item, list) and len(item) == 1:
+        return item[0]
+
+    return item
 
 class TaskSpecificDataset(Dataset):
     """
@@ -97,22 +84,6 @@ class TaskSpecificDataset(Dataset):
         label = access_label(label, self.task_id)
         return (image, label)
 
-def access_label(satpy_dict: dict, task_label: str):
-    access_list = task_label.split("_")
-
-    if len(access_list) == 0:
-        return None
-
-    item = satpy_dict[access_list[0]]
-
-    for a in access_list[1:]:
-        item = item[a]
-
-    if isinstance(item, list) and len(item) == 1:
-        return item[0]
-
-    return item
-
 class MTLDataset(Dataset):
     """
     The dataset for satellitepy's multitask learning approach. 
@@ -138,10 +109,7 @@ class MTLDataset(Dataset):
             }
         },
         "tasks": {
-            <id>: { # task id
-                "dataset_ids": [<id>, ...], # which datasets from the datasets mapping provide data for this task
-                "label": <label_id> # task target from the satpy label dict format
-            }
+            <task_id>: [<dataset_id>, ...], # which datasets from the datasets mapping provide data for this task
         },
         "align_len": <'max'|'min'>, # whether the length of this dataset is dictated by the 
                                        minimal or maximal length of all (task, ConcatDataset) tuples.
@@ -178,6 +146,47 @@ class MTLDataset(Dataset):
 
             self.task_data_mapping[task_id] = idx_mappings
             self.task_sample_counts[task_id] = len(idx_mappings)
+
+        self.possible_targets = self.get_all_possible_targets()
+
+    def get_all_possible_targets(self):
+        labels = init_satellitepy_label()
+        seen = []
+        
+        logger.info("computing all possible satpy targets to torchify labels...")
+
+        for global_idx in range(len(self)):
+            for k,v in self.task_data_mapping.items():
+                dataset_id, dataset_idx = v[global_idx % self.task_sample_counts[k]]
+                _, label_path, label_format = self.data[dataset_id][dataset_idx]
+
+                image_key = f"{dataset_id}__MTL_DS__{dataset_idx}"
+
+                if image_key in seen:
+                    continue
+
+                merge_satpy_label_dict(labels, read_label(label_path, label_format))
+
+        possible_targets = {}
+
+        def distinctify_satpy_label_dict(src: dict, trgt: dict):
+            for k, v in src.items():
+                if isinstance(v, dict):
+                    trgt.setdefault(k, {})
+                    distinctify_satpy_label_dict(v, trgt[k])
+                elif (isinstance(v, list) 
+                    and len(v) > 0 
+                    and not np.all(np.array(v) == None)
+                    and len(np.array(v).shape) == 1 
+                    and not isinstance(v[0], float)):
+                    trgt[k] = list(set(v))
+                    sorted(trgt[k])
+                    trgt[k] = {val: idx for idx, val in enumerate(trgt[k]) if val is not None}
+                else:
+                    trgt[k] = None
+
+        distinctify_satpy_label_dict(labels, possible_targets)
+        return possible_targets
 
     def get_dataset_items(self, image_folder: str, label_folder: str, label_format: str):
         """
@@ -264,7 +273,8 @@ class MTLDataset(Dataset):
             merge_satpy_label_dict(labels, read_label(label_path, label_format))
             images.append(prepare_image(image_path))
 
-        return torch.stack(images, dim=0), torchify_satpy_label_dict(labels)
+        test = torchify_satpy_label_dict(labels, self.possible_targets)
+        return torch.stack(images, dim=0), torchify_satpy_label_dict(labels, self.possible_targets)
 
     def __getitem__(self, idx):
         # int <-> access by global_idx return satpy style (with None values)

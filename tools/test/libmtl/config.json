@@ -2,8 +2,8 @@
   "train": {
     "datasets": {
       "dota": {
-        "image_folder": "/home/simon/unibw/data/satpy/dota_chips/train/images",
-        "label_folder": "/home/simon/unibw/data/satpy/dota_chips/train/labels",
+        "image_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/train/images",
+        "label_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/train/labels",
         "label_format": "satellitepy"
       }
     },
@@ -15,8 +15,8 @@
   "test": {
     "datasets": {
       "dota": {
-        "image_folder": "/home/simon/unibw/data/satpy/dota_chips/val/images",
-        "label_folder": "/home/simon/unibw/data/satpy/dota_chips/val/labels",
+        "image_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/val/images",
+        "label_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/val/labels",
         "label_format": "satellitepy"
       }
     },

@@ -127,11 +127,9 @@ def init_satellitepy_label():
             'tail' : dict of str
                 'no-tail-fins' : list of int
                     1, 2
-            'role' : dict of str
-                'civil' : list of str
-                    large_transport, medium_transport, small_transport
-                'military' : list of str
-                    fighter, bomber, transport, trainer
+            'role' : list of str
+                large_transport, medium_transport, small_transport
+                fighter, bomber, transport, trainer
     """
     labels={
         'hbboxes':[],
@@ -160,10 +158,7 @@ def init_satellitepy_label():
             'tail':{
                 'no-tail-fins':[]
             },
-            'role':{
-                'civil':[],
-                'military':[]
-            }
+            'role': []
         }
     }
     return labels    
@@ -175,41 +170,6 @@ def merge_satpy_label_dict(target_satpy_labels: dict, to_add: dict):
         else:
             # we expect final values to always be lists
             target_satpy_labels[k] += to_add[k]
-
-# for testing purposes, remove when proper map is create
-DOTA_IDX_MAP = {
-    "object": 0,
-    "vehicle": 1,
-    "airplane": 2,
-    "ship": 3,
-    "helicopter": 4,
-}
-
-def torchify_satpy_label(key: str, value: list):
-    # for testing, todo: extend 
-    if key == "classes_0":
-        prep_list = [int(DOTA_IDX_MAP[v]) if v is not None else torch.nan for v in value]
-    elif key == "difficulty":
-        prep_list = [int(v) if v is not None else torch.nan for v in value]
-    else:
-        # todo change when extending
-        prep_list = [torch.nan if v is not None else torch.nan for v in value]
-
-    return torch.tensor(prep_list)
-
-def torchify_satpy_label_dict(satpy_label: dict):
-    torchified = {}
-
-    def inner(d: dict, prop_key = None):
-        for k, values in d.items():
-            inner_prop_key = k if prop_key == None else f"{prop_key}_{k}"
-            if isinstance(values, dict):
-                inner(values, inner_prop_key)
-            else:
-                torchified[inner_prop_key] = torchify_satpy_label(inner_prop_key, values)
-
-    inner(satpy_label)
-    return torchified
 
 def read_dota_label(label_path):
     labels = init_satellitepy_label()
@@ -332,7 +292,7 @@ def read_rareplanes_real_label(label_path):
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
 
-        labels['hbboxes'].append(points)
+        # ??? labels['hbboxes'].append(points)
 
         A = (points[0], points[1])
         B = (points[2], points[3])
@@ -348,14 +308,20 @@ def read_rareplanes_real_label(label_path):
                    np.add(B, vecToA).tolist()]
 
         labels['obboxes'].append(corners)
+        minx = np.array(corners)[:, 0].min()
+        miny = np.array(corners)[:, 1].min()
+        maxx = np.array(corners)[:, 0].max()
+        maxy = np.array(corners)[:, 1].max()
+        labels["hbboxes"].append([[minx, miny], [maxx, miny], [maxx, maxy], [minx, maxy]])
         labels['classes']['0'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
         labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
         match annotation['canards']:
+            # binary classification
             case 'yes':
-                labels['attributes']['fuselage']['canards'].append(True)
+                labels['attributes']['fuselage']['canards'].append(1.0)
             case 'no':
-                labels['attributes']['fuselage']['canards'].append(False)
+                labels['attributes']['fuselage']['canards'].append(0.0)
         labels['attributes']['fuselage']['length'].append(float(annotation['length']))
         labels['attributes']['wings']['wing-span'].append(float(annotation['wingspan']))
         labels['attributes']['wings']['wing-shape'].append(annotation['wing_type'])
@@ -364,26 +330,19 @@ def read_rareplanes_real_label(label_path):
         role = annotation['role']
         match role:
             case 'Small Civil Transport/Utility':
-                labels['attributes']['role']['civil'].append(role)
-                labels['attributes']['role']['military'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Medium Civil Transport/Utility':
-                labels['attributes']['role']['civil'].append(role)
-                labels['attributes']['role']['military'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Large Civil Transport/Utility':
-                labels['attributes']['role']['civil'].append(role)
-                labels['attributes']['role']['military'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Military Transport/Utility/AWAC':
-                labels['attributes']['role']['military'].append(role)
-                labels['attributes']['role']['civil'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Military Fighter/Interceptor/Attack':
-                labels['attributes']['role']['military'].append(role)
-                labels['attributes']['role']['civil'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Military Trainer':
-                labels['attributes']['role']['military'].append(role)
-                labels['attributes']['role']['civil'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Military Bomber':
-                labels['attributes']['role']['military'].append(role)
-                labels['attributes']['role']['civil'].append(None)
+                labels['attributes']['role'].append(role)
             case _:
                 raise Exception(f'Unexpected role found: {role}')
 
