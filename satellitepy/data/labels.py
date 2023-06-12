@@ -159,10 +159,7 @@ def init_satellitepy_label():
             'tail':{
                 'no-tail-fins':[]
             },
-            'role':{
-                'civil':[],
-                'military':[]
-            }
+            'role': []
         }
     }
     return labels    
@@ -321,26 +318,19 @@ def read_rareplanes_real_label(label_path):
         role = annotation['role']
         match role:
             case 'Small Civil Transport/Utility':
-                labels['attributes']['role']['civil'].append(role)
-                labels['attributes']['role']['military'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Medium Civil Transport/Utility':
-                labels['attributes']['role']['civil'].append(role)
-                labels['attributes']['role']['military'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Large Civil Transport/Utility':
-                labels['attributes']['role']['civil'].append(role)
-                labels['attributes']['role']['military'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Military Transport/Utility/AWAC':
-                labels['attributes']['role']['military'].append(role)
-                labels['attributes']['role']['civil'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Military Fighter/Interceptor/Attack':
-                labels['attributes']['role']['military'].append(role)
-                labels['attributes']['role']['civil'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Military Trainer':
-                labels['attributes']['role']['military'].append(role)
-                labels['attributes']['role']['civil'].append(None)
+                labels['attributes']['role'].append(role)
             case 'Military Bomber':
-                labels['attributes']['role']['military'].append(role)
-                labels['attributes']['role']['civil'].append(None)
+                labels['attributes']['role'].append(role)
             case _:
                 raise Exception(f'Unexpected role found: {role}')
 
