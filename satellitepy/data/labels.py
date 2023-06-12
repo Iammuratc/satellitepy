@@ -289,7 +289,7 @@ def read_rareplanes_real_label(label_path):
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
 
-        labels['hbboxes'].append(points)
+        labels['hbboxes'].append(None)
 
         A = (points[0], points[1])
         B = (points[2], points[3])
