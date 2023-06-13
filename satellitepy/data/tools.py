@@ -131,9 +131,7 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks):
     ax.imshow(img)
     # ax.imshow(mask, alpha=0.5)
     
-    classes = list(filter(lambda x: 'classes' in x, tasks))
-    if classes:
-        class_index = classes[0].split('_')
+    classes = list(filter(lambda x: 'class' in x, tasks))
     
     if classes or 'bboxes' in tasks:
         bboxes = 'obboxes'
@@ -146,37 +144,11 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks):
             bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2) 
             if classes:
                 x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
-                ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[class_index[0]][class_index[1]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+                ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
             if 'bboxes' in tasks:
                 BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
             fig.canvas.draw()
 
-    plt.axis('off')
-    # manager = plt.get_current_fig_manager()
-    # manager.window.showMaximized()
-    plt.show()
-    plt.savefig(output_folder / Path(img_path.stem + ".png"))
-    logger.info(f'Saved labels on {output_folder / Path(img_path.stem + ".png")}')
-    return fig
-
-
-def show_labels_on_image(img_path,label_path,label_format,output_folder,show_bboxes):
-    logger = logging.getLogger(__name__)
-    img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
-    gt_labels = read_label(label_path,label_format)
-
-    # fig, ax = plt.subplots(1)
-    fig = plt.figure(frameon=False)
-    # fig.set_size_inches(w,h)
-    ax = plt.Axes(fig, [0., 0., 1., 1.])
-    ax.set_axis_off()
-    fig.add_axes(ax)
-    ax.imshow(img)
-    # ax.imshow(mask, alpha=0.5)
-    if show_bboxes:
-        for bbox in gt_labels['bboxes']:
-            bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)
-            BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5, instance_name=None)
     plt.axis('off')
     # manager = plt.get_current_fig_manager()
     # manager.window.showMaximized()
