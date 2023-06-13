@@ -131,7 +131,13 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks):
     ax.imshow(img)
     # ax.imshow(mask, alpha=0.5)
     
+<<<<<<< HEAD
     classes = list(filter(lambda x: 'class' in x, tasks))
+=======
+    classes = list(filter(lambda x: 'classes' in x, tasks))
+    if classes:
+        class_index = classes[0].split('_')
+>>>>>>> 86aa47fec8c00ffdeb493fac797574fa5abf7ddf
     
     if classes or 'bboxes' in tasks:
         bboxes = 'obboxes'
@@ -144,7 +150,11 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks):
             bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2) 
             if classes:
                 x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
+<<<<<<< HEAD
                 ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+=======
+                ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[class_index[0]][class_index[1]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+>>>>>>> 86aa47fec8c00ffdeb493fac797574fa5abf7ddf
             if 'bboxes' in tasks:
                 BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
             fig.canvas.draw()
@@ -157,6 +167,10 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks):
     logger.info(f'Saved labels on {output_folder / Path(img_path.stem + ".png")}')
     return fig
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 86aa47fec8c00ffdeb493fac797574fa5abf7ddf
 def split_rareplanes_labels(
         label_file,
         out_folder

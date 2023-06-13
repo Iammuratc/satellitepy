@@ -38,7 +38,11 @@ def run(args):
     tasks = args.tasks
 
     if tasks == None:
+<<<<<<< HEAD
         tasks = ['bboxes', 'coarse-class']
+=======
+        tasks = ['bboxes', 'classes_0']
+>>>>>>> 86aa47fec8c00ffdeb493fac797574fa5abf7ddf
     log_path = output_folder / f'display_labels.log' if args.log_path == None else args.log_path
 
     init_logger(config_path=args.log_config_path, log_path=log_path)
