@@ -117,31 +117,30 @@ def save_patches(
 
     else: logger.error("Folder lengths unequal!")
 
-def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks):
+def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks,mask_path):
     logger = logging.getLogger(__name__)
     img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
-    gt_labels = read_label(label_path,label_format)
+    
+    gt_labels = read_label(label_path,label_format, mask_path)
 
-    # fig, ax = plt.subplots(1)
     fig = plt.figure(frameon=False)
-    # fig.set_size_inches(w,h)
+    
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     fig.add_axes(ax)
     ax.imshow(img)
-    # ax.imshow(mask, alpha=0.5)
     
-<<<<<<< HEAD
     classes = list(filter(lambda x: 'class' in x, tasks))
-=======
-    classes = list(filter(lambda x: 'classes' in x, tasks))
-    if classes:
-        class_index = classes[0].split('_')
->>>>>>> 86aa47fec8c00ffdeb493fac797574fa5abf7ddf
-    
+
+    if 'masks' in tasks:
+        logger.info('Adding masks to Image')
+        for mask_indices in gt_labels['masks']:
+            ax.plot(mask_indices[0],mask_indices[1])
+
+
     if classes or 'bboxes' in tasks:
         bboxes = 'obboxes'
-
+        logger.info('Adding bounding boxes/labels to image')
         if len(gt_labels['obboxes']) < 1:
             bboxes = 'hbboxes'
 
@@ -150,27 +149,17 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks):
             bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2) 
             if classes:
                 x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
-<<<<<<< HEAD
                 ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
-=======
-                ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[class_index[0]][class_index[1]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
->>>>>>> 86aa47fec8c00ffdeb493fac797574fa5abf7ddf
             if 'bboxes' in tasks:
                 BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
             fig.canvas.draw()
 
     plt.axis('off')
-    # manager = plt.get_current_fig_manager()
-    # manager.window.showMaximized()
     plt.show()
     plt.savefig(output_folder / Path(img_path.stem + ".png"))
     logger.info(f'Saved labels on {output_folder / Path(img_path.stem + ".png")}')
     return fig
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 86aa47fec8c00ffdeb493fac797574fa5abf7ddf
 def split_rareplanes_labels(
         label_file,
         out_folder
