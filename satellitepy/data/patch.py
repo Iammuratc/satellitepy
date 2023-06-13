@@ -79,7 +79,7 @@ def get_patches(
             hbb_defined = hbbox != None
             obb_defined = obbox != None
 
-            class_targets = [gt_labels['classes']['0'][j], gt_labels['classes']['1'][j], gt_labels['classes']['2'][j]]
+            class_targets = [gt_labels['coarse-class'][j], gt_labels['fine-class'][j], gt_labels['very-fine-class'][j]]
             if not any([
                 is_valid_object_class(
                     ct, include_object_classes, exclude_object_classes
