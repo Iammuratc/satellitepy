@@ -3,6 +3,9 @@ import logging
 import os
 import numpy as np
 from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
+import logging
 
 import cv2
 
@@ -10,6 +13,9 @@ from satellitepy.data.labels import read_label, init_satellitepy_label, fill_non
 from satellitepy.data.patch import get_patches
 from satellitepy.data.utils import get_xview_classes
 from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
+
+from satellitepy.data.labels import read_label
+from satellitepy.data.cutout.geometry import BBox
 
 def save_patches(
     image_folder,
@@ -109,6 +115,51 @@ def save_patches(
                 with open(str(patch_label_path),'w') as f:
                     json.dump(patch_label,f,indent=4)
 
+    else: logger.error("Folder lengths unequal!")
+
+def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks,mask_path):
+    logger = logging.getLogger(__name__)
+    img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
+    
+    gt_labels = read_label(label_path,label_format, mask_path)
+
+    fig = plt.figure(frameon=False)
+    
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    ax.imshow(img)
+    
+    classes = list(filter(lambda x: 'class' in x, tasks))
+
+    if 'masks' in tasks:
+        logger.info('Adding masks to Image')
+        for mask_indices in gt_labels['masks']:
+            ax.plot(mask_indices[0],mask_indices[1])
+
+
+    if classes or 'bboxes' in tasks:
+        bboxes = 'obboxes'
+        logger.info('Adding bounding boxes/labels to image')
+        if len(gt_labels['obboxes']) < 1:
+            bboxes = 'hbboxes'
+
+        for i in range(0, len(gt_labels[bboxes])):
+            bbox = gt_labels[bboxes][i]
+            bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2) 
+            if classes:
+                x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
+                ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+            if 'bboxes' in tasks:
+                BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
+            fig.canvas.draw()
+
+    plt.axis('off')
+    plt.show()
+    plt.savefig(output_folder / Path(img_path.stem + ".png"))
+    logger.info(f'Saved labels on {output_folder / Path(img_path.stem + ".png")}')
+    return fig
+
 def split_rareplanes_labels(
         label_file,
         out_folder
@@ -158,7 +209,6 @@ def split_rareplanes_labels(
 
         json.dump(annotations, file, ensure_ascii=False, indent=4)
         file.close()
-
 
 def split_xview_labels(
         label_file,
