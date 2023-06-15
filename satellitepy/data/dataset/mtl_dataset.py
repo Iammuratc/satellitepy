@@ -11,7 +11,7 @@ from satellitepy.data.torchify import torchify_satpy_label_dict
 
 logger = logging.getLogger(__name__)
 
-def prepare_image(image_path: Path):
+def prepare_image(image_path: Path, augmentation):
     """
     Loads an image from the given path, transforms it to a (C, H, W) tensor and 
     normalizes its values between [0, 1] if its max value is above 1.
@@ -22,12 +22,12 @@ def prepare_image(image_path: Path):
         The path to the image.
     """
     cv2_image = cv2.imread(image_path.absolute().as_posix())
-    # todo remove
-    cv2_image = cv2.resize(cv2_image, (400, 400))
     image = torch.from_numpy(cv2_image).permute((2, 0, 1))
 
     if image.max() > 1:
         image = image.float() / 255.0
+
+    image = augmentation(image)
 
     return image
 
@@ -117,8 +117,10 @@ class MTLDataset(Dataset):
     }
     """
     def __init__(self, 
-            cfg: dict
+            cfg: dict,
+                 image_augmentation = lambda x: x
         ):
+        self.image_augmentation = image_augmentation
         self.datasets = cfg["datasets"]
         self.tasks = cfg["tasks"]
         self.align_len = cfg["align_len"]
@@ -180,12 +182,14 @@ class MTLDataset(Dataset):
                     and len(np.array(v).shape) == 1 
                     and not isinstance(v[0], float)):
                     trgt[k] = list(set(v))
-                    sorted(trgt[k])
-                    trgt[k] = {val: idx for idx, val in enumerate(trgt[k]) if val is not None}
+                    sorted(trgt[k], key=lambda x: (x is None, x))
+                    trgt[k] = [val for val in trgt[k] if val is not None]
+                    trgt[k] = {val: idx for idx, val in enumerate(trgt[k])}
                 else:
                     trgt[k] = None
 
         distinctify_satpy_label_dict(labels, possible_targets)
+        self.possible_targets = possible_targets
         return possible_targets
 
     def get_dataset_items(self, image_folder: str, label_folder: str, label_format: str):
@@ -240,7 +244,7 @@ class MTLDataset(Dataset):
         for k, v in self.task_data_mapping.items():
             dataset_id, dataset_idx = v[global_idx % self.task_sample_counts[k]]
             image_path, label_path, label_format = self.data[dataset_id][dataset_idx]
-            image = prepare_image(image_path)
+            image = prepare_image(image_path, self.image_augmentation)
             label = read_label(label_path, label_format)
             label = access_label(label, k)
             mapping[k] = (image, label)
@@ -271,9 +275,8 @@ class MTLDataset(Dataset):
                 continue
 
             merge_satpy_label_dict(labels, read_label(label_path, label_format))
-            images.append(prepare_image(image_path))
+            images.append(prepare_image(image_path, self.image_augmentation))
 
-        test = torchify_satpy_label_dict(labels, self.possible_targets)
         return torch.stack(images, dim=0), torchify_satpy_label_dict(labels, self.possible_targets)
 
     def __getitem__(self, idx):

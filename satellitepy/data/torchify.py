@@ -2,11 +2,9 @@ import torch
 
 def torchify_satpy_label(value: list, possible_values: dict):
     if possible_values is not None:
-        prep_list = [int(possible_values[v]) if v is not None else torch.nan for v in value]
+        return torch.tensor([possible_values[v] if v is not None else torch.nan for v in value])
     else:
-        prep_list = [torch.nan if v is not None else torch.nan for v in value]
-
-    return torch.tensor(prep_list)
+        return torch.tensor([v if v is not None else torch.nan for v in value])
 
 def torchify_satpy_label_dict(satpy_label: dict, possible_values: dict):
     torchified = {}

@@ -8,7 +8,10 @@
       }
     },
     "tasks": {
-      "classes_0": ["satellitepy"]
+      "attributes_engines_no-engines": ["satellitepy"],
+      "attributes_engines_propulsion": ["satellitepy"],
+      "attributes_wings_wing-span": ["satellitepy"],
+      "attributes_role": ["satellitepy"]
     },
     "align_len": "min"
   },
@@ -21,7 +24,10 @@
       }
     },
     "tasks": {
-      "classes_0": ["satellitepy"]
+      "attributes_engines_no-engines": ["satellitepy"],
+      "attributes_engines_propulsion": ["satellitepy"],
+      "attributes_wings_wing-span": ["satellitepy"],
+      "attributes_role": ["satellitepy"]
     },
     "align_len": "min"
   }

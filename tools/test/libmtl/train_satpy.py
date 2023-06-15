@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import json
 from satellitepy.data.dataset.mtl_dataset import MTLDataset
 from satellitepy.utils.libmtl.task_target_mapping import build_targets
+import torchvision
 
 from LibMTL import Trainer
 from LibMTL.model import resnet18
@@ -32,7 +33,7 @@ def main(params):
     with open(params.satpy_config_path, "r") as f:
         satpy_cfg = json.load(f)
     
-    train_set = MTLDataset(satpy_cfg["train"])
+    train_set = MTLDataset(satpy_cfg["train"], torchvision.transforms.Resize((100, 100), antialias=True))
     train_dataloader = DataLoader(
         dataset=train_set,
         batch_size=params.train_bs,
@@ -41,7 +42,7 @@ def main(params):
         drop_last=True,
     )
 
-    test_set = MTLDataset(satpy_cfg["test"])
+    test_set = MTLDataset(satpy_cfg["test"], torchvision.transforms.Resize((100, 100), antialias=True))
     test_dataloader = DataLoader(
         dataset=test_set,
         batch_size=params.test_bs,
@@ -72,7 +73,29 @@ def main(params):
             out = self.hidden_layer(out)
             return out
 
-    decoders = nn.ModuleDict({task: nn.Linear(512, 18) for task in list(task_dict.keys())})
+    decoders = nn.ModuleDict({
+        "attributes_engines_no-engines": nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 5)
+        ),
+        "attributes_engines_propulsion": nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 3)
+        ),
+        "attributes_wings_wing-span": nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 1),
+            nn.Flatten(start_dim=0)
+        ),
+        "attributes_role": nn.Sequential(
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 7)
+        )
+    })
     
     SatpyTrainer = Trainer(task_dict=task_dict, 
                           weighting=weighting_method.__dict__[params.weighting], 
