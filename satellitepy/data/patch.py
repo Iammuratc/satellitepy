@@ -225,10 +225,11 @@ def is_truncated(bbox_corners,x_0,y_0,patch_size,relative_area_treshhold):
     is_truncated : bool
         False if the part of the object inside the patch is smaller than the treshhold
     """
-    patch_coords = ((x_0,y_0),(x_0,patch_size),(patch_size,patch_size),(patch_size,y_0))
+    patch_coords = ((x_0,y_0),(x_0,y_0+patch_size),(x_0+patch_size,y_0+patch_size),(x_0+patch_size,y_0))
     patch = Polygon(patch_coords)
     bbox = Polygon(bbox_corners)
     return relative_area_treshhold >= shapely.area(shapely.intersection(bbox, patch))/shapely.area(bbox)
+
 
 def merge_patch_results(patch_dict):
     """
