@@ -543,24 +543,54 @@ def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes', 'difficulty', 'coarse-class','fine-class']
+    available_tasks=['obboxes', 'difficulty', 'coarse-class','fine-class','very-fine-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+    
+    
+    lut = {
+	1 : ["other ship","other ship"],
+	2 : ["warship","other warship"],
+	3 : ["warship","submarine"],
+	4 : ["warship","aircraft carrier"],
+	5 : ["warship","cruiser"],
+	6 : ["warship","destroyer"],
+	7 : ["warship","frigate"],
+	8 : ["warship","patrol"],
+	9 : ["warship","landing"],
+	10: ["warship","commander"],
+	11: ["warship","auxiliary ship"],
+	12: ["merchant ship","other merchant"],
+	13: ["merchant ship","container ship"],
+	14: ["merchant ship","roll-on/roll-off"],
+	15: ["merchant ship","rargo"],
+	16: ["merchant ship","rarge"],
+	17: ["merchant ship","rugboat"],
+	18: ["merchant ship","ferry"],
+	19: ["merchant ship","yacht"],
+	20: ["merchant ship","sailboat"],
+	21: ["merchant ship","fishing vessel"],
+	22: ["merchant ship","oil tanker"],
+	23: ["merchant ship","hovercraft"],
+	24: ["merchant ship","motorboat"]
+}
     root = ET.parse(label_path).getroot()
-    # Instance names
-    instance_names = root.findall('./object/name')
-    for instance_name in instance_names:
-        labels['coarse-class'].append('ship')
-        labels['fine-class'].append(instance_name.text)
-    instance_difficulties = root.findall('./object/difficult')
-    for instance_difficulty in instance_difficulties:
-        labels['difficulty'].append(instance_difficulty.text)
-
-    # BBOX CCORDINATES
-    point_spaces = root.findall('./object/polygon')
-    for point_space in point_spaces:
+    elems = root.findall("object")
+    
+    for elem in elems:
+        if elem.find("level_0").text=="2": # Dock
+            labels['coarse-class'].append("object")
+            labels['fine-class'].append("dock")
+            labels['very-fine-class'].append("dock")
+        else : # Ship
+            lvl3class = int(elem.find("level_3").text)
+            labels['coarse-class'].append("ship")
+            labels['fine-class'].append((lut[lvl3class])[0])
+            labels['fine-class'].append((lut[lvl3class])[1])
+        # BBOX CCORDINATES
+        point_space = elem.find("polygon")
         # remove the last coordinate points
         my_points = point_space.findall('.//')
         coords = []
@@ -570,9 +600,11 @@ def read_ship_net_label(label_path):
             if 'y' in my_point.tag:
                 coords.append(corner)
                 corner = []
-
         labels['obboxes'].append(coords)
-        fill_none_to_empty_keys(labels,not_available_tasks)
+        #DIFFICULTY
+        labels['difficulty'].append(elem.find("difficult").text)
+        
+    fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
 def read_ucas_label(label_path):
