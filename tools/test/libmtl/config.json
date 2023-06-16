@@ -2,8 +2,8 @@
   "train": {
     "datasets": {
       "satellitepy": {
-        "image_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/train/images",
-        "label_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/train/labels",
+        "image_folder": "/home/simon/data/satellitepy/rareplane_chips/train/images",
+        "label_folder": "/home/simon/data/satellitepy/rareplane_chips/train/labels",
         "label_format": "satellitepy"
       }
     },
@@ -18,8 +18,8 @@
   "test": {
     "datasets": {
       "satellitepy": {
-        "image_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/test/images",
-        "label_folder": "/home/simon/unibw/data/satpy/rareplanes_chips/test/labels",
+        "image_folder": "/home/simon/data/satellitepy/rareplane_chips/test/images",
+        "label_folder": "/home/simon/data/satellitepy/rareplane_chips/test/labels",
         "label_format": "satellitepy"
       }
     },
