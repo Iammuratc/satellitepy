@@ -1,6 +1,8 @@
 import numpy as np
 import logging
 from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, satellitepy_labels_empty
+import shapely
+from shapely.geometry import Polygon
 # TODO: 
 #   Filter out the truncated objects using the object area. truncated_object_thr is not use at the moment. Edit the is_truncated function.
 
@@ -88,13 +90,13 @@ def get_patches(
                 continue
 
             if hbb_defined and obb_defined:
-                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, consider_additional=True)
+                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr, consider_additional=True)
 
             elif hbb_defined:
-                shift_bboxes(patch_dict, gt_labels, j, i , 'hbboxes', patch_start_coord, hbbox, patch_size)
+                shift_bboxes(patch_dict, gt_labels, j, i , 'hbboxes', patch_start_coord, hbbox, patch_size, truncated_object_thr)
 
             elif obb_defined:
-                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size)
+                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr)
                 
             else:
                 logger.error('Error reading bounding boxes! No bounding boxes found')
@@ -102,9 +104,9 @@ def get_patches(
             
     return patch_dict
     
-def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, consider_additional=False, additional='hbboxes'):
+def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, truncated_object_thr, consider_additional=False, additional='hbboxes'):
     x_0, y_0 = patch_start_coord
-    is_truncated_bbox = is_truncated(bbox_corners=bbox_corners, x_0=x_0, y_0=y_0, patch_size=patch_size, bbox_corner_threshold=2)
+    is_truncated_bbox = is_truncated(bbox_corners=bbox_corners, x_0=x_0, y_0=y_0, patch_size=patch_size, relative_area_treshhold=truncated_object_thr)
     if not is_truncated_bbox:
         patch_dict['labels'][i] = set_patch_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
         # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
@@ -203,7 +205,7 @@ def get_patch_start_coords(coord_max, patch_size, patch_overlap):
         coords.append(i*patch_size-patch_overlap)
     return coords
 
-def is_truncated(bbox_corners,x_0,y_0,patch_size,bbox_corner_threshold):
+def is_truncated(bbox_corners,x_0,y_0,patch_size,relative_area_treshhold):
     """
     Check if bbox is in the patch
     Parameters
@@ -216,23 +218,17 @@ def is_truncated(bbox_corners,x_0,y_0,patch_size,bbox_corner_threshold):
         y coordinate of patch start
     patch_size : int
         Patch size
-    bbox_corner_threshold : int
-        Number of corners that should be in the patch
+    relative_area_treshhold : float
+        % of object that should be in the image
     Returns
     ------
     is_truncated : bool
-        False if the object is in the patch
+        False if the part of the object inside the patch is smaller than the treshhold
     """
-    bbox_corners_in_patch = 0
-    for coord in bbox_corners:
-        if (x_0 <= coord[0] <= x_0 + patch_size) and (
-                y_0 <= coord[1] <= y_0 + patch_size):
-            bbox_corners_in_patch += 1
-    if bbox_corners_in_patch >= bbox_corner_threshold:
-        return False
-    else:
-        return True
-
+    patch_coords = ((x_0,y_0),(x_0,patch_size),(patch_size,patch_size),(patch_size,y_0))
+    patch = Polygon(patch_coords)
+    bbox = Polygon(bbox_corners)
+    return relative_area_treshhold >= shapely.area(shapely.intersection(bbox, patch))/shapely.area(bbox)
 
 def merge_patch_results(patch_dict):
     """
