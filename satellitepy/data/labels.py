@@ -585,10 +585,10 @@ def read_ship_net_label(label_path):
             labels['fine-class'].append("dock")
             labels['very-fine-class'].append("dock")
         else : # Ship
-            lvl3class = int(elem.find("level_3").text)
+            lvl3class = int(elem.find("level_2").text)
             labels['coarse-class'].append("ship")
             labels['fine-class'].append((lut[lvl3class])[0])
-            labels['fine-class'].append((lut[lvl3class])[1])
+            labels['very-fine-class'].append((lut[lvl3class])[1])
         # BBOX CCORDINATES
         point_space = elem.find("polygon")
         # remove the last coordinate points
