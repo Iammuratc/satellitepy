@@ -92,7 +92,25 @@ def save_chips(
     include_object_classes,
     exclude_object_classes     
     ):
-
+    """
+    Save chips from the original images
+    Parameters
+    ----------
+    label_format : str,
+        Resembles the label format (e.g. dota, fair1m, etc.)
+    image_folder : Path
+        Input image folder. Images in this folder will be processed.
+    label_folder : Path
+        Input label folder. Labels in this folder will be used to create patch labels.
+    out_folder : Path
+        Output folder. Patches and corresponding labels will be saved into <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
+    include_object_classes : list
+        Classes that will be saved,
+    exclude_object_classes : list
+        Classes that wont be saved
+    Returns
+    -------
+    """
     out_folder_images = out_folder / "images"
     out_folder_labels = out_folder / "labels"
 
