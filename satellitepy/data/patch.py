@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys
+from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
 # TODO: 
 #   Shift the segmentation masks in get_patches and merge_patch_results
 #   Filter out the truncated objects using the object area. truncated_object_thr is not use at the moment. Edit the is_truncated function.
@@ -79,7 +79,7 @@ def get_patches(
             if not is_truncated_bbox:
                 # for key in keys_with_values:
                 # patch_dict['labels'][i][key].append(gt_labels[key][i_label])
-                patch_dict['labels'][i] = set_patch_keys(all_satellitepy_keys, patch_dict['labels'][i], gt_labels, i_label)
+                patch_dict['labels'][i] = set_image_keys(all_satellitepy_keys, patch_dict['labels'][i], gt_labels, i_label)
                 # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
                 bbox_corners_shifted = np.array(patch_dict['labels'][i]['bboxes'][-1]) - [x_0,y_0]
                 patch_dict['labels'][i]['bboxes'][-1] = bbox_corners_shifted.tolist()
@@ -200,33 +200,3 @@ def merge_patch_results(patch_dict):
                 merged_det_labels[key].extend(patch_dict['det_labels'][i][key])
 
     return merged_det_labels
-
-def set_patch_keys(
-    all_satellitepy_keys,
-    patch_labels,
-    gt_labels,
-    gt_label_i):
-    """
-    Set object labels for the patch 
-    Parameters
-    ----------
-    patch_labels : dict of str
-        Dict in satellitepy format 
-    gt_labels : dict of str
-        Dict in satellitepy format 
-    gt_label_i : int
-        Index of object in gt_labels
-    Returns
-    -------
-    patch_labels : dict of str
-        Dict in satellitepy format. Only the objects within the patch
-    """
-    for task in all_satellitepy_keys:
-        keys = task.split('_')
-        if len(keys)==1:
-            patch_labels[keys[0]].append(gt_labels[keys[0]][gt_label_i])
-        elif len(keys)==2:
-            patch_labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][gt_label_i])
-        elif len(keys)==3:
-            patch_labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][gt_label_i])
-    return patch_labels

@@ -3,7 +3,7 @@ Toolset for creating chips
 '''
 import numpy as np
 from satellitepy.data.cutout.geometry import BBox
-from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys
+from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
 
 def create_chip(img, hbbox):
     chip_img = img[hbbox[2]:hbbox[3], hbbox[0]:hbbox[1], :]
@@ -60,28 +60,12 @@ def get_chips(img, gt_labels, margin_size=100, include_object_classes=None, excl
         chip_img = create_chip(img, hbbox)
         chip_bbox = bbox - [hbbox[0], hbbox[2]]
         
-        set_chip_keys(all_satellitepy_keys, chips_dict['labels'], gt_labels, i)
+        set_image_keys(all_satellitepy_keys, chips_dict['labels'], gt_labels, i)
 
         chips_dict[bbox_type][-1] = chip_bbox.tolist()
         chips_dict['images'].append(chip_img)
 
     return chips_dict
-
-def set_chip_keys(
-    all_satellitepy_keys,
-    chip_labels,
-    gt_labels,
-    i):
-
-    for task in all_satellitepy_keys:
-        keys = task.split("_")
-
-        if len(keys) == 1:
-            chip_labels[keys[0]].append(gt_labels[keys[0]][i])
-        elif len(keys) == 2:
-            chip_labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][i])
-        elif len(keys) == 3:
-            chip_labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][i])
 
 def is_valid_object_class(object_class_name, include_object_classes, exclude_object_classes):
     """

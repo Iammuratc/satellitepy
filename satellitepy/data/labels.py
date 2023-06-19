@@ -49,6 +49,31 @@ def get_all_satellitepy_keys():
                             all_keys.append(f"{key_0}_{key_1}_{key_2}")
     return all_keys
 
+def set_image_keys(all_satellitepy_keys, chip_labels, gt_labels, i):
+    """
+    Set object labels for the patch 
+    Parameters
+    ----------
+    patch_labels : dict of str
+        Dict in satellitepy format 
+    gt_labels : dict of str
+        Dict in satellitepy format 
+    gt_label_i : int
+        Index of object in gt_labels
+    Returns
+    -------
+    patch_labels : dict of str
+        Dict in satellitepy format. Only the objects within the patch
+    """
+    for task in all_satellitepy_keys:
+        keys = task.split("_")
+
+        if len(keys) == 1:
+            chip_labels[keys[0]].append(gt_labels[keys[0]][i])
+        elif len(keys) == 2:
+            chip_labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][i])
+        elif len(keys) == 3:
+            chip_labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][i])
 
 def fill_none_to_empty_keys(labels,not_available_tasks):
     """
