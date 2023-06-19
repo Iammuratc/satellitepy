@@ -106,7 +106,7 @@ def get_patches(
     
 def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, truncated_object_thr, consider_additional=False, additional='hbboxes'):
     x_0, y_0 = patch_start_coord
-    is_truncated_bbox = is_truncated(bbox_corners=bbox_corners, x_0=x_0, y_0=y_0, patch_size=patch_size, relative_area_treshhold=truncated_object_thr)
+    is_truncated_bbox = is_truncated(bbox_corners=bbox_corners, x_0=x_0, y_0=y_0, patch_size=patch_size, relative_area_threshold=truncated_object_thr)
     if not is_truncated_bbox:
         patch_dict['labels'][i] = set_patch_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
         # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
@@ -205,7 +205,7 @@ def get_patch_start_coords(coord_max, patch_size, patch_overlap):
         coords.append(i*patch_size-patch_overlap)
     return coords
 
-def is_truncated(bbox_corners,x_0,y_0,patch_size,relative_area_treshhold):
+def is_truncated(bbox_corners,x_0,y_0,patch_size,relative_area_threshold):
     """
     Check if bbox is in the patch
     Parameters
@@ -218,17 +218,17 @@ def is_truncated(bbox_corners,x_0,y_0,patch_size,relative_area_treshhold):
         y coordinate of patch start
     patch_size : int
         Patch size
-    relative_area_treshhold : float
-        % of object that should be in the image
+    relative_area_threshold : float
+        % of object that should be in the image in range of [0.0, 1.0]
     Returns
     ------
     is_truncated : bool
-        False if the part of the object inside the patch is smaller than the treshhold
+        False if the part of the object inside the patch is smaller than the threshold
     """
     patch_coords = ((x_0,y_0),(x_0,y_0+patch_size),(x_0+patch_size,y_0+patch_size),(x_0+patch_size,y_0))
     patch = Polygon(patch_coords)
     bbox = Polygon(bbox_corners)
-    return relative_area_treshhold >= shapely.area(shapely.intersection(bbox, patch))/shapely.area(bbox)
+    return relative_area_threshold >= shapely.area(shapely.intersection(bbox, patch))/shapely.area(bbox)
 
 
 def merge_patch_results(patch_dict):
