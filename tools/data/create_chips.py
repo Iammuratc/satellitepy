@@ -36,8 +36,6 @@ def run(args):
     in_label_folder = Path(args.in_label_folder)
 
     out_folder = Path(args.out_folder)
-    out_folder_images = out_folder / Path("images")
-    out_folder_labels = out_folder / Path("labels")
 
     include_object_classes = list(args.include_object_classes) if args.include_object_classes is not None else None
     exclude_object_classes = list(args.exclude_object_classes) if args.exclude_object_classes is not None else None
