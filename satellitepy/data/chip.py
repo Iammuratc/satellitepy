@@ -30,7 +30,7 @@ def get_chips(img, gt_labels, margin_size=100, include_object_classes=None, excl
 
     bbox_type = ""
 
-    if gt_labels['obboxes'] != [None]:
+    if not None in gt_labels['obboxes'] and len(gt_labels['obboxes']) != 0:
         bbox_type = "obboxes"
     else:
         bbox_type = "hbboxes"
@@ -38,7 +38,6 @@ def get_chips(img, gt_labels, margin_size=100, include_object_classes=None, excl
     bboxes = gt_labels[bbox_type]
 
     for i, bbox in enumerate(bboxes):
-
         is_valid_class = False
         for k, v in gt_labels['classes'].items():
             if is_valid_object_class(v[i], include_object_classes, exclude_object_classes):
