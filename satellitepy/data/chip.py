@@ -38,6 +38,7 @@ def get_chips(img, gt_labels, margin_size=100, include_object_classes=None, excl
     bboxes = gt_labels[bbox_type]
 
     for i, bbox in enumerate(bboxes):
+        
         is_valid_class = False
 
         # Needs to be fixed once merged
@@ -60,11 +61,21 @@ def get_chips(img, gt_labels, margin_size=100, include_object_classes=None, excl
 
         chip_img = create_chip(img, hbbox)
         chip_bbox = bbox - [hbbox[0], hbbox[2]]
-        
+
         set_image_keys(all_satellitepy_keys, chips_dict['labels'], gt_labels, i)
 
-        chips_dict["labels"][bbox_type][-1] = chip_bbox.tolist()
+        chips_dict['labels'][bbox_type][-1] = chip_bbox.tolist()
         chips_dict['images'].append(chip_img)
+
+        
+        if gt_labels['masks'][i] != None:
+            chip_mask = np.array(gt_labels['masks'][i])
+
+            chip_mask[0] -= hbbox[0]
+            chip_mask[1] -= hbbox[2]
+
+            chips_dict['labels']['masks'][-1] = chip_mask.tolist()
+
 
     return chips_dict
 
