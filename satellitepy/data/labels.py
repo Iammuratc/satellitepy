@@ -61,6 +61,31 @@ def get_all_satellitepy_keys():
                             all_keys.append(f"{key_0}_{key_1}_{key_2}")
     return all_keys
 
+def set_image_keys(all_satellitepy_keys, chip_labels, gt_labels, i):
+    """
+    Set object labels for the patch 
+    Parameters
+    ----------
+    patch_labels : dict of str
+        Dict in satellitepy format 
+    gt_labels : dict of str
+        Dict in satellitepy format 
+    gt_label_i : int
+        Index of object in gt_labels
+    Returns
+    -------
+    patch_labels : dict of str
+        Dict in satellitepy format. Only the objects within the patch
+    """
+    for task in all_satellitepy_keys:
+        keys = task.split("_")
+
+        if len(keys) == 1:
+            chip_labels[keys[0]].append(gt_labels[keys[0]][i])
+        elif len(keys) == 2:
+            chip_labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][i])
+        elif len(keys) == 3:
+            chip_labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][i])
 
 def fill_none_to_empty_keys(labels,not_available_tasks):
     """
@@ -190,12 +215,6 @@ def init_satellitepy_label():
             },
             'tail':{
                 'no-tail-fins':[]
-            },
-            'role':{
-                'civil':[],
-                'military':[]
-            }
-        }
     }
     return labels    
 
@@ -329,7 +348,7 @@ def read_rareplanes_real_label(label_path):
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
 
-        labels['hbboxes'].append(points)
+        labels['hbboxes'].append(None)
 
         A = (points[0], points[1])
         B = (points[2], points[3])
@@ -359,29 +378,7 @@ def read_rareplanes_real_label(label_path):
         labels['attributes']['wings']['wing-position'].append(annotation['wing_position'])
         labels['attributes']['tail']['no-tail-fins'].append(int(annotation['num_tail_fins']))
         role = annotation['role']
-        if role == 'Small Civil Transport/Utility':
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
-        elif role== 'Medium Civil Transport/Utility':
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
-        elif role== 'Large Civil Transport/Utility':
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
-        elif role=='Military Transport/Utility/AWAC':
-            labels['attributes']['role']['military'].append(role)
-            labels['attributes']['role']['civil'].append(None)
-        elif role=='Military Fighter/Interceptor/Attack':
-            labels['attributes']['role']['military'].append(role)
-            labels['attributes']['role']['civil'].append(None)
-        elif role=='Military Trainer':
-            labels['attributes']['role']['military'].append(role)
-            labels['attributes']['role']['civil'].append(None)
-        elif role=='Military Bomber':
-            labels['attributes']['role']['military'].append(role)
-            labels['attributes']['role']['civil'].append(None)
-        else:
-            raise Exception(f'Unexpected role found: {role}')
+        labels['object-role'].append(role)
 
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
@@ -441,21 +438,16 @@ def read_rareplanes_synthetic_label(label_path):
         labels['attributes']['wings']['wing-position'].append(annotation['wing_position'])
         labels['attributes']['tail']['no-tail-fins'].append(int(annotation['num_tail_fins']))
         role = annotation['category_id']
+        
         if role == 1:  # Small Civil Transport/Utility
-            role = 'Small_Civil_Transport/Utility'
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
+            labels['object-role'].append('Small_Civil_Transport/Utility')
         elif role ==2:  # Medium Civil Transport/Utility
-            role = 'Medium_Civil_Transport/Utility'
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
+            labels['object-role'].append('Medium_Civil_Transport/Utility')
         elif role ==3:  # Large Civil Transport/Utility
+            labels['object-role'].append('Large_Civil_Transport/Utility')
             role = 'Large_Civil_Transport/Utility'
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
         else:
-                raise Exception(f'Unexpected role found: {role}')
-
+            raise Exception(f'Unexpected role found: {role}')
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
  

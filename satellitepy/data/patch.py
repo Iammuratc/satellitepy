@@ -1,6 +1,7 @@
 import numpy as np
 import logging
-from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, satellitepy_labels_empty
+from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
+
 # TODO: 
 #   Filter out the truncated objects using the object area. truncated_object_thr is not use at the moment. Edit the is_truncated function.
 
@@ -106,7 +107,9 @@ def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_co
     x_0, y_0 = patch_start_coord
     is_truncated_bbox = is_truncated(bbox_corners=bbox_corners, x_0=x_0, y_0=y_0, patch_size=patch_size, bbox_corner_threshold=2)
     if not is_truncated_bbox:
-        patch_dict['labels'][i] = set_patch_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
+        # for key in keys_with_values:
+        # patch_dict['labels'][i][key].append(gt_labels[key][i_label])
+        patch_dict['labels'][i] = set_image_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
         # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
         bbox_corners_shifted = np.array(patch_dict['labels'][i][bboxes][-1]) - [x_0, y_0]
         patch_dict['labels'][i][bboxes][-1] = bbox_corners_shifted.tolist()
@@ -114,7 +117,7 @@ def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_co
             mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2,1)
             patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
         if consider_additional:
-            patch_dict['labels'][i] = set_patch_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
+            patch_dict['labels'][i] = set_image_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
             bbox_corners_shifted = np.array(patch_dict['labels'][i][additional][-1]) - [x_0, y_0]
             patch_dict['labels'][i][additional][-1] = bbox_corners_shifted.tolist()
 
@@ -260,33 +263,3 @@ def merge_patch_results(patch_dict):
                 merged_det_labels[key].extend(patch_dict['det_labels'][i][key])
 
     return merged_det_labels
-
-def set_patch_keys(
-    all_satellitepy_keys,
-    patch_labels,
-    gt_labels,
-    gt_label_i):
-    """
-    Set object labels for the patch 
-    Parameters
-    ----------
-    patch_labels : dict of str
-        Dict in satellitepy format 
-    gt_labels : dict of str
-        Dict in satellitepy format 
-    gt_label_i : int
-        Index of object in gt_labels
-    Returns
-    -------
-    patch_labels : dict of str
-        Dict in satellitepy format. Only the objects within the patch
-    """
-    for task in all_satellitepy_keys:
-        keys = task.split('_')
-        if len(keys)==1:
-            patch_labels[keys[0]].append(gt_labels[keys[0]][gt_label_i])
-        elif len(keys)==2:
-            patch_labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][gt_label_i])
-        elif len(keys)==3:
-            patch_labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][gt_label_i])
-    return patch_labels

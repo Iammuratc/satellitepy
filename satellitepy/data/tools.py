@@ -11,10 +11,9 @@ import cv2
 
 from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys, satellitepy_labels_empty
 from satellitepy.data.patch import get_patches
+from satellitepy.data.chip import get_chips
 from satellitepy.data.utils import get_xview_classes
 from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
-
-from satellitepy.data.labels import read_label
 from satellitepy.data.cutout.geometry import BBox
 
 def save_patches(
@@ -108,15 +107,103 @@ def save_patches(
                 patch_img = patches['images'][i]
                 patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png" 
                 cv2.imwrite(str(patch_image_path),patch_img)
-
+                
                 # Save patch labels
                 patch_label = patches['labels'][i]
                 patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
                 with open(str(patch_label_path),'w') as f:
                     json.dump(patch_label,f,indent=4)
 
-    else: logger.error("Folder lengths unequal!")
+    else: 
+      logger.error("Folder lengths unequal!")
 
+def save_chips(
+    label_format,
+    image_folder,
+    label_folder,
+    out_folder,
+    margin_size,
+    include_object_classes,
+    exclude_object_classes     
+    ):
+    """
+    Save chips from the original images
+    Parameters
+    ----------
+    label_format : str,
+        Resembles the label format (e.g. dota, fair1m, etc.)
+    image_folder : Path
+        Input image folder. Images in this folder will be processed.
+    label_folder : Path
+        Input label folder. Labels in this folder will be used to create patch labels.
+    out_folder : Path
+        Output folder. Patches and corresponding labels will be saved into <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
+    include_object_classes : list
+        Classes that will be saved,
+    exclude_object_classes : list
+        Classes that wont be saved
+    Returns
+    -------
+    """
+    out_folder_images = out_folder / "images"
+    out_folder_labels = out_folder / "labels"
+
+    assert create_folder(out_folder_images)
+    assert create_folder(out_folder_labels)
+
+    for img_path, label_path in zip_matched_files(image_folder, label_folder):
+        img = cv2.imread(str(img_path))
+        label = read_label(label_path, label_format)
+        
+        chips = get_chips(
+            img, 
+            label, 
+            margin_size,
+            include_object_classes,
+            exclude_object_classes
+        )
+
+        count_chips = len(chips['images'])
+        img_name = img_path.stem
+
+
+        for i in range(count_chips):
+
+            chip_img_path = out_folder_images / f"{img_name}_{i}.png"
+            chip_img = chips['images'][i]
+
+            if not chip_img.size == 0:
+                cv2.imwrite(str(chip_img_path), chip_img)
+            else:
+                continue
+
+            chip_label = get_label_by_idx(chips['labels'], i)
+            chip_label_path = out_folder_labels / f"{img_name}_{i}.txt"
+
+            with open(str(chip_label_path), 'w') as f:
+                json.dump(chip_label, f, indent=4)
+
+def get_label_by_idx(satpy_labels: dict, i: int):
+    """
+    Creates a copy of the satpy_labels dict by doing the following:
+    Sets each list to a singleton list correponding to the item at position i.
+    """
+    def inner(input_dict, output_dict):
+        for k in input_dict.keys():
+            if isinstance(input_dict[k], dict):
+                output_dict.setdefault(k, {})
+                inner(input_dict[k], output_dict[k])
+            else:
+                value = input_dict[k][i]
+                if isinstance(value, list):
+                    output_dict[k] = value
+                else:
+                    output_dict[k] = [value]
+
+    result = {}
+    inner(satpy_labels, result)
+    return result
+      
 def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks,mask_path):
     logger = logging.getLogger(__name__)
     img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
@@ -159,6 +246,7 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks,ma
     plt.savefig(output_folder / Path(img_path.stem + ".png"))
     logger.info(f'Saved labels on {output_folder / Path(img_path.stem + ".png")}')
     return fig
+  
 
 def split_rareplanes_labels(
         label_file,
