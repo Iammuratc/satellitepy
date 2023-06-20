@@ -1,15 +1,20 @@
 import json
 import logging
 import os
+import numpy as np
 from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
+import logging
 
 import cv2
 
-from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys
+from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys, satellitepy_labels_empty
 from satellitepy.data.patch import get_patches
 from satellitepy.data.chip import get_chips
 from satellitepy.data.utils import get_xview_classes
-from satellitepy.utils.path_utils import create_folder, zip_matched_files
+from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
+from satellitepy.data.cutout.geometry import BBox
 
 def save_patches(
     image_folder,
@@ -19,6 +24,9 @@ def save_patches(
     truncated_object_thr,
     patch_size,
     patch_overlap,
+    include_object_classes,
+    exclude_object_classes,
+    mask_folder = None
     ):
     """
     Save patches from the original images
@@ -28,6 +36,8 @@ def save_patches(
         Input image folder. Images in this folder will be processed.
     label_folder : Path
         Input label folder. Labels in this folder will be used to create patch labels.
+    mask_folder : Path
+        Input mask folder. Masks in this folder will be used to create patch masks
     label_format : str
         Input label format.
     out_folder : Path
@@ -38,53 +48,74 @@ def save_patches(
         Patch size
     patch_overlap : int
         Patch overlap
+    include_object_classes: list[str]
+        A list of object class names that shall be included as ground truth for the patches. 
+        Takes precedence over exclude_object_classes, i.e. if both are provided, 
+        only include_object_classes will be considered.
+    exclude_object_classes: list[str]
+        A list of object class names that shall be excluded as ground truth for the patches.
+        include_object_classes takes precedence and overrides the behaviour of this parameter.
     Returns
     -------
     Save patches in <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
     """
+    logger = logging.getLogger(__name__)
 
     # Create output folders
-    out_image_folder = Path(out_folder) / f'patch_{patch_size}' / 'images'
-    out_label_folder = Path(out_folder) / f'patch_{patch_size}' / 'labels'
+    out_image_folder = Path(out_folder) / 'images'
+    out_label_folder = Path(out_folder) / 'labels'
 
     assert create_folder(out_image_folder)
     assert create_folder(out_label_folder)
-
-    assert len(out_image_folder) == len(out_label_folder) == len(out_mask_folder)
-
-    for img_path, label_path in zip_matched_files(image_folder,label_folder):
-        # Image
-        img = cv2.imread(str(img_path))
-        # Labels
-        gt_labels = read_label(label_path,label_format)
-
-        # Save results with the corresponding ground truth
-        patches = get_patches(
+    img_paths = get_file_paths(image_folder)
+    label_paths = get_file_paths(label_folder)
+    if mask_folder:
+        mask_paths = get_file_paths(mask_folder)
+    else:
+        mask_paths = [None] * len(img_paths)
+    if (len(img_paths)==len(label_paths)==len(mask_paths)):
+        for img_path, label_path, mask_path in zip(img_paths,label_paths,mask_paths):
+            mask_name = mask_path.name if mask_path != None else None
+            logger.info(f"{img_path.name}, {label_path.name}, {mask_name}")
+            # Image
+            img = cv2.imread(str(img_path))
+            # Labels
+            gt_labels = read_label(label_path,label_format,mask_path)
+            # Save results with the corresponding ground truth
+            patches = get_patches(
             img,
             gt_labels,
             truncated_object_thr,
             patch_size,
             patch_overlap,
+            include_object_classes,
+            exclude_object_classes
             )
 
-        count_patches = len(patches['images'])
-        for i in range(count_patches):
-            # Get original image name for naming patch files
-            img_name = img_path.stem
+            count_patches = len(patches['images'])
+            for i in range(count_patches):
+                if satellitepy_labels_empty(patches["labels"][i]):
+                    continue
 
-            # Patch starting coordinates
-            patch_x0, patch_y0 = patches['start_coords'][i]
+                # Get original image name for naming patch files
+                img_name = img_path.stem
 
-            # Save patch image
-            patch_img = patches['images'][i]
-            patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png"
-            cv2.imwrite(str(patch_image_path),patch_img)
+                # Patch starting coordinates
+                patch_x0, patch_y0 = patches['start_coords'][i]
 
-            # Save patch labels
-            patch_label = patches['labels'][i]
-            patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
-            with open(str(patch_label_path),'w') as f:
-                json.dump(patch_label,f,indent=4)
+                # Save patch image
+                patch_img = patches['images'][i]
+                patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png" 
+                cv2.imwrite(str(patch_image_path),patch_img)
+                
+                # Save patch labels
+                patch_label = patches['labels'][i]
+                patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
+                with open(str(patch_label_path),'w') as f:
+                    json.dump(patch_label,f,indent=4)
+
+    else: 
+      logger.error("Folder lengths unequal!")
 
 def save_chips(
     label_format,
@@ -172,6 +203,50 @@ def get_label_by_idx(satpy_labels: dict, i: int):
     result = {}
     inner(satpy_labels, result)
     return result
+      
+def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks,mask_path):
+    logger = logging.getLogger(__name__)
+    img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
+    
+    gt_labels = read_label(label_path,label_format, mask_path)
+
+    fig = plt.figure(frameon=False)
+    
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    ax.imshow(img)
+    
+    classes = list(filter(lambda x: 'class' in x, tasks))
+
+    if 'masks' in tasks:
+        logger.info('Adding masks to Image')
+        for mask_indices in gt_labels['masks']:
+            ax.plot(mask_indices[0],mask_indices[1])
+
+
+    if classes or 'bboxes' in tasks:
+        bboxes = 'obboxes'
+        logger.info('Adding bounding boxes/labels to image')
+        if len(gt_labels['obboxes']) < 1:
+            bboxes = 'hbboxes'
+
+        for i in range(0, len(gt_labels[bboxes])):
+            bbox = gt_labels[bboxes][i]
+            bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2) 
+            if classes:
+                x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
+                ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+            if 'bboxes' in tasks:
+                BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
+            fig.canvas.draw()
+
+    plt.axis('off')
+    plt.show()
+    plt.savefig(output_folder / Path(img_path.stem + ".png"))
+    logger.info(f'Saved labels on {output_folder / Path(img_path.stem + ".png")}')
+    return fig
+  
 
 def split_rareplanes_labels(
         label_file,
@@ -222,7 +297,6 @@ def split_rareplanes_labels(
 
         json.dump(annotations, file, ensure_ascii=False, indent=4)
         file.close()
-
 
 def split_xview_labels(
         label_file,

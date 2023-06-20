@@ -1,8 +1,8 @@
 import numpy as np
 import logging
 from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
+
 # TODO: 
-#   Shift the segmentation masks in get_patches and merge_patch_results
 #   Filter out the truncated objects using the object area. truncated_object_thr is not use at the moment. Edit the is_truncated function.
 
 # Init log
@@ -14,6 +14,8 @@ def get_patches(
     truncated_object_thr,
     patch_size,
     patch_overlap,
+    include_object_classes,
+    exclude_object_classes,
     ):
     """
     Produce patches from the original image using the labels. 
@@ -31,23 +33,32 @@ def get_patches(
         Patch size
     patch_overlap : int
         Patch overlap
+    include_object_classes: list[str]
+        A list of object class names that shall be included as ground truth for the patches. 
+        Takes precedence over exclude_object_classes, i.e. if both are provided, 
+        only include_object_classes will be considered.
+    exclude_object_classes: list[str]
+        A list of object class names that shall be excluded as ground truth for the patches.
+        include_object_classes takes precedence and overrides the behaviour of this parameter.
+    mask : np.ndarray
+        Mask Image
     Returns
     -------
     patch_dict : dict
         This dict includes patches and the corresponding labels in satellitepy format
     """
 
-    # Get image shape
+    # Get image and mask image shape 
     y_max, x_max, ch = img.shape
 
-    # Pad image so full patches are possible
+    # Pad image and mask image so full patches are possible
     x_pad_size = get_pad_size(x_max,patch_size,patch_overlap)
     y_pad_size = get_pad_size(y_max,patch_size,patch_overlap)
     img_padded = np.pad(img,pad_width=((0,y_pad_size),(0,x_pad_size),(0,0)))
 
     y_max_padded, x_max_padded, ch = img_padded.shape
 
-    # Patch coordinates in the padded image
+    # Patch coordinates in the padded image and mask image
     y_start_coords =  get_patch_start_coords(y_max_padded,patch_size,patch_overlap)
     x_start_coords =  get_patch_start_coords(x_max_padded,patch_size,patch_overlap)
     patch_start_coords = [[x,y] for x in x_start_coords for y in y_start_coords]
@@ -56,38 +67,40 @@ def get_patches(
     patch_dict = {
       'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],
       'labels':[init_satellitepy_label() for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
-      'start_coords': patch_start_coords
+      'start_coords': patch_start_coords,
       }
 
     for i,patch_start_coord in enumerate(patch_start_coords):
         # Patch starting coordinates
         x_0,y_0 = patch_start_coord
-
-        # Patch image
         patch_dict['images'][i] = img_padded[y_0:y_0+patch_size,x_0:x_0+patch_size,:]
-        
-        length = max(len(gt_labels['obboxes']), len(gt_labels['hbboxes']))
 
-        for j in range(0, length):
-            hbb_defined = (gt_labels['hbboxes'] != [None])
-            obb_defined = (gt_labels['obboxes'] != [None])
+        # Patch labels
+        for j, (hbbox, obbox) in enumerate(zip(gt_labels['hbboxes'],gt_labels['obboxes'])):
+            hbb_defined = hbbox != None
+            obb_defined = obbox != None
+
+            class_targets = [gt_labels['coarse-class'][j], gt_labels['fine-class'][j], gt_labels['very-fine-class'][j]]
+            if not any([
+                is_valid_object_class(
+                    ct, include_object_classes, exclude_object_classes
+                ) for ct in class_targets]
+            ):
+                continue
 
             if hbb_defined and obb_defined:
-                obb_corners = gt_labels['obboxes'][j]
-                hbb_corners = gt_labels['hbboxes'][j]
-                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obb_corners, patch_size, consider_additional=True)
+                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, consider_additional=True)
 
             elif hbb_defined:
-                hbb_corners = gt_labels['hbboxes'][j]
-                shift_bboxes(patch_dict, gt_labels, j, i , 'hbboxes', patch_start_coord, hbb_corners, patch_size)
+                shift_bboxes(patch_dict, gt_labels, j, i , 'hbboxes', patch_start_coord, hbbox, patch_size)
 
             elif obb_defined:
-                obb_corners = gt_labels['obboxes'][j]
-                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obb_corners, patch_size)
+                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size)
                 
             else:
                 logger.error('Error reading bounding boxes! No bounding boxes found')
                 exit(1)
+            
     return patch_dict
     
 def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, consider_additional=False, additional='hbboxes'):
@@ -100,10 +113,42 @@ def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_co
         # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
         bbox_corners_shifted = np.array(patch_dict['labels'][i][bboxes][-1]) - [x_0, y_0]
         patch_dict['labels'][i][bboxes][-1] = bbox_corners_shifted.tolist()
+        if patch_dict["labels"][i]["masks"][-1] is not None:
+            mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2,1)
+            patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
         if consider_additional:
             patch_dict['labels'][i] = set_image_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
             bbox_corners_shifted = np.array(patch_dict['labels'][i][additional][-1]) - [x_0, y_0]
             patch_dict['labels'][i][additional][-1] = bbox_corners_shifted.tolist()
+
+def is_valid_object_class(object_class_name, include_object_classes, exclude_object_classes):
+    """
+    Checks whether the given object class name is valid w.r.t. 
+    the given include_object_classes and exclude_object_classes lists.
+    If include_object_classes is not None, this function will return whether the object_class_name
+    is included in that list.
+    If exclude_object_classes is not None and include_object_classes is None, this function will
+    return whether the given object_class_name is not in the exclude list.
+    Parameters
+    ----------
+    object_class_name : str
+        The name of the object class.
+    include_object_classes: list[str]
+        A list of object class names that shall be included as ground truth for the patches. 
+        Takes precedence over exclude_object_classes, i.e. if both are provided, 
+        only include_object_classes will be considered.
+    exclude_object_classes: list[str]
+        A list of object class names that shall be excluded as ground truth for the patches.
+        include_object_classes takes precedence and overrides the behaviour of this parameter.
+    """
+    if object_class_name is None:
+        return False
+    elif include_object_classes is not None:
+        return object_class_name in include_object_classes
+    elif exclude_object_classes is not None:
+        return object_class_name not in exclude_object_classes
+    else:
+        return True
 
 def get_pad_size(coord_max, patch_size, patch_overlap):
     """
