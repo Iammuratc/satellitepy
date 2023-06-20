@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import json
 # import copy
 
-from src.data.cutout import geometry
-# LEave some margin for the cutoutes, because some airplane in DOTA has
+from satellitepy.data.cutout import geometry
+# Leave some margin for the cutouts, because some airplane in DOTA has
 # cutoff parts
 
 class Tools(object):
