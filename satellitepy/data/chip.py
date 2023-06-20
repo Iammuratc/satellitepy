@@ -39,13 +39,15 @@ def get_chips(img, gt_labels, margin_size=100, include_object_classes=None, excl
 
     for i, bbox in enumerate(bboxes):
         is_valid_class = False
-        for k, v in gt_labels['classes'].items():
-            if is_valid_object_class(v[i], include_object_classes, exclude_object_classes):
-                is_valid_class = True
-                break
 
-        if not is_valid_class:
-            continue
+        # Needs to be fixed once merged
+        # for k, v in gt_labels['classes'].items():
+        #     if is_valid_object_class(v[i], include_object_classes, exclude_object_classes):
+        #         is_valid_class = True
+        #         break
+
+        # if not is_valid_class:
+        #     continue
 
         bbox = np.array(bbox).astype(int)
 
