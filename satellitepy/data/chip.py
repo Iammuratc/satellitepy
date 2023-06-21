@@ -2,7 +2,7 @@
 Toolset for creating chips
 '''
 import numpy as np
-from satellitepy.data.cutout.geometry import BBox
+from satellitepy.data.bbox import BBox
 from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
 
 def create_chip(img, hbbox):
@@ -64,7 +64,7 @@ def get_chips(img, gt_labels, margin_size=100, include_object_classes=None, excl
 
         set_image_keys(all_satellitepy_keys, chips_dict['labels'], gt_labels, i)
 
-        chips_dict['labels'][bbox_type][-1] = chip_bbox.tolist()
+        chips_dict['labels'][bbox_type][-1] = [chip_bbox.tolist()]
         chips_dict['images'].append(chip_img)
 
         
