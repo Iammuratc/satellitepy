@@ -7,8 +7,6 @@ import numpy as np
 
 from satellitepy.data.cutout.geometry import BBox
 
-
-
 def read_label(label_path,label_format, mask_path = None):
     if isinstance(label_path,Path):
         label_path = str(label_path)
@@ -613,11 +611,3 @@ def read_isprs_label(label_path):
         fill_none_to_empty_keys(labels, not_available_tasks)
 
     return labels
-
-if __name__ == "__main__":
-    from satellitepy.utils.path_utils import get_project_folder
-
-    label_path = get_project_folder() / "in_folder/isprs/5_Labels_all/top_potsdam_7_13_label.tif"
-    label = read_label(label_path, "isprs")
-
-    print(label)
