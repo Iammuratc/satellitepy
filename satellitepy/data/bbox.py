@@ -1,10 +1,6 @@
 import numpy as np
 import cv2
 
-
-# TODO: 
-#   
-
 class BBox:
     '''
     This class does the followings:

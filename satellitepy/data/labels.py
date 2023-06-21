@@ -61,31 +61,31 @@ def get_all_satellitepy_keys():
                             all_keys.append(f"{key_0}_{key_1}_{key_2}")
     return all_keys
 
-def set_image_keys(all_satellitepy_keys, chip_labels, gt_labels, i):
+def set_image_keys(all_satellitepy_keys, sub_image_labels, gt_labels, i):
     """
     Set object labels for the patch 
     Parameters
     ----------
-    patch_labels : dict of str
-        Dict in satellitepy format 
+    sub_image_labels : dict of str
+        Dict in satellitepy format. sub_image could be patch or chip
     gt_labels : dict of str
         Dict in satellitepy format 
     gt_label_i : int
         Index of object in gt_labels
     Returns
     -------
-    patch_labels : dict of str
-        Dict in satellitepy format. Only the objects within the patch
+    sub_image_labels : dict of str
+        Dict in satellitepy format. Only the objects within the patch and the chip
     """
     for task in all_satellitepy_keys:
         keys = task.split("_")
-
         if len(keys) == 1:
-            chip_labels[keys[0]].append(gt_labels[keys[0]][i])
+            sub_image_labels[keys[0]].append(gt_labels[keys[0]][i])
         elif len(keys) == 2:
-            chip_labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][i])
+            sub_image_labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][i])
         elif len(keys) == 3:
-            chip_labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][i])
+            sub_image_labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][i])
+    return sub_image_labels
 
 def fill_none_to_empty_keys(labels,not_available_tasks):
     """
@@ -196,8 +196,8 @@ def init_satellitepy_label():
         'masks':[],
         'coarse-class':[],
         'fine-class':[],
-        'object-role':[],
         'very-fine-class':[],
+        'role':[],
         'difficulty':[],
         'attributes':{
             'engines':{
@@ -215,6 +215,8 @@ def init_satellitepy_label():
             },
             'tail':{
                 'no-tail-fins':[]
+            }
+        }
     }
     return labels    
 
@@ -331,10 +333,9 @@ def read_rareplanes_real_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_real
-    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
+    available_tasks = ['obboxes', 'coarse-class', 'role', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
                        'attributes_fuselage_canards', 'attributes_fuselage_length', 'attributes_wings_wing-span',
-                       'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins',
-                       'attributes_role_civil', 'attributes_role_military']
+                       'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins']
 
     # ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
@@ -348,8 +349,6 @@ def read_rareplanes_real_label(label_path):
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
 
-        labels['hbboxes'].append(None)
-
         A = (points[0], points[1])
         B = (points[2], points[3])
         C = (points[4], points[5])
@@ -362,7 +361,6 @@ def read_rareplanes_real_label(label_path):
 
         corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(),
                    np.add(B, vecToA).tolist()]
-
         labels['obboxes'].append(corners)
         labels['coarse-class'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
@@ -378,7 +376,7 @@ def read_rareplanes_real_label(label_path):
         labels['attributes']['wings']['wing-position'].append(annotation['wing_position'])
         labels['attributes']['tail']['no-tail-fins'].append(int(annotation['num_tail_fins']))
         role = annotation['role']
-        labels['object-role'].append(role)
+        labels['role'].append(role)
 
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
