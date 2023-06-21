@@ -1,11 +1,9 @@
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from satellitepy.data.utils import get_xview_classes, set_mask
+from satellitepy.data.utils import get_xview_classes, set_mask, parse_potsdam_labels
 import json
-import cv2 
 import numpy as np
-from scipy.ndimage import find_objects, generate_binary_structure, label
 
 from satellitepy.data.cutout.geometry import BBox
 
@@ -36,6 +34,8 @@ def read_label(label_path,label_format, mask_path = None):
         print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
         exit(1)
+    elif label_format == 'isprs':
+        return read_isprs_label(label_path)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -146,11 +146,7 @@ def init_satellitepy_label():
         'hbboxes':[],
         'obboxes': [],
         'masks':[],
-        'classes':{
-            '0':[],
-            '1':[],
-            '2':[]
-        },
+        'coarse-class' : [],
         'difficulty':[],
         'attributes':{
             'engines':{
@@ -606,23 +602,7 @@ def read_isprs_label(label_path):
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
 
-    img = cv2.imread(label_path)
-    
-    # bleaching every color except yellow
-    hsv= cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
-    yellow = np.uint8([[[0, 255, 255]]])
-    hsvYellow = cv2.cvtColor(yellow, cv2.COLOR_BGR2HSV)
-
-    lower=np.array([20,100,100])
-    upper=np.array([40,255,255])
-
-    mask=cv2.inRange(hsv,lower,upper)
-
-    s = generate_binary_structure(2, 2)
-
-    # figuring out the hbboxes for the yellow segements
-    labeled_image, num_features = label(mask, structure=s)
-    objs = find_objects(labeled_image)
+    objs = parse_potsdam_labels(label_path)
 
     for obj in objs:
         points = [[obj[1].start, obj[0].start], [obj[1].stop, obj[0].start], [obj[1].stop, obj[0].stop], [obj[1].start, obj[0].stop]]
@@ -633,3 +613,11 @@ def read_isprs_label(label_path):
         fill_none_to_empty_keys(labels, not_available_tasks)
 
     return labels
+
+if __name__ == "__main__":
+    from satellitepy.utils.path_utils import get_project_folder
+
+    label_path = get_project_folder() / "in_folder/isprs/5_Labels_all/top_potsdam_7_13_label.tif"
+    label = read_label(label_path, "isprs")
+
+    print(label)

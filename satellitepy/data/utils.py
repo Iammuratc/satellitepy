@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from scipy.ndimage import generate_binary_structure, label, find_objects
+
 def set_mask(labels,mask_path,bbox_type):
     """
     Set the masks key in the satellitepy dict by using the bboxes in the dict
@@ -98,3 +100,35 @@ def get_xview_classes():
             }
         }
     return classes
+
+def parse_potsdam_labels(label_path):
+    """
+    Parses the potsdam images to extract the label data
+    Parameters
+    ----------
+    label_path : string
+    Path to the 
+    Returns
+    -------
+    labels : dict
+        Satellitepy dict
+    """
+    img = cv2.imread(label_path)
+    
+    # bleaching every color except yellow
+    hsv= cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
+    yellow = np.uint8([[[0, 255, 255]]])
+    hsvYellow = cv2.cvtColor(yellow, cv2.COLOR_BGR2HSV)
+
+    lower=np.array([20,100,100])
+    upper=np.array([40,255,255])
+
+    mask=cv2.inRange(hsv,lower,upper)
+
+    s = generate_binary_structure(2, 2)
+
+    # figuring out the hbboxes for the yellow segements
+    labeled_image, num_features = label(mask, structure=s)
+    objs = find_objects(labeled_image)
+
+    return objs
