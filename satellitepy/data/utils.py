@@ -110,8 +110,8 @@ def parse_potsdam_labels(label_path):
     Path to the 
     Returns
     -------
-    labels : dict
-        Satellitepy dict
+    objs : list of slices
+        Horizontal bounding boxes of the objects
     """
     img = cv2.imread(label_path)
     
