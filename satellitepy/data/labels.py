@@ -4,7 +4,7 @@ from pathlib import Path
 from satellitepy.data.utils import get_xview_classes, set_mask
 import json
 
-from satellitepy.data.cutout.geometry import BBox
+from satellitepy.data.bbox import BBox
 
 def read_label(label_path,label_format, mask_path = None):
     if isinstance(label_path,Path):
@@ -27,7 +27,7 @@ def read_label(label_path,label_format, mask_path = None):
         return read_ship_net_label(label_path)
     elif label_format == 'ucas':
         return read_ucas_label(label_path)
-    elif label_format == 'xview':   
+    elif label_format == 'xview':
         print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
         exit(1)
