@@ -149,49 +149,6 @@ class MTLDataset(Dataset):
             self.task_data_mapping[task_id] = idx_mappings
             self.task_sample_counts[task_id] = len(idx_mappings)
 
-        self.possible_targets = self.get_all_possible_targets()
-
-    def get_all_possible_targets(self):
-        labels = init_satellitepy_label()
-        seen = []
-        
-        logger.info("computing all possible satpy targets to torchify labels...")
-
-        for global_idx in range(len(self)):
-            for k,v in self.task_data_mapping.items():
-                dataset_id, dataset_idx = v[global_idx % self.task_sample_counts[k]]
-                _, label_path, label_format = self.data[dataset_id][dataset_idx]
-
-                image_key = f"{dataset_id}__MTL_DS__{dataset_idx}"
-
-                if image_key in seen:
-                    continue
-
-                merge_satpy_label_dict(labels, read_label(label_path, label_format))
-
-        possible_targets = {}
-
-        def distinctify_satpy_label_dict(src: dict, trgt: dict):
-            for k, v in src.items():
-                if isinstance(v, dict):
-                    trgt.setdefault(k, {})
-                    distinctify_satpy_label_dict(v, trgt[k])
-                elif (isinstance(v, list) 
-                    and len(v) > 0 
-                    and not np.all(np.array(v) == None)
-                    and len(np.array(v).shape) == 1 
-                    and not isinstance(v[0], float)):
-                    trgt[k] = list(set(v))
-                    sorted(trgt[k], key=lambda x: (x is None, x))
-                    trgt[k] = [val for val in trgt[k] if val is not None]
-                    trgt[k] = {val: idx for idx, val in enumerate(trgt[k])}
-                else:
-                    trgt[k] = None
-
-        distinctify_satpy_label_dict(labels, possible_targets)
-        self.possible_targets = possible_targets
-        return possible_targets
-
     def get_dataset_items(self, image_folder: str, label_folder: str, label_format: str):
         """
         Loads a list of tuples containing (image_path, label_path, label_format) correponding to 
@@ -277,7 +234,7 @@ class MTLDataset(Dataset):
             merge_satpy_label_dict(labels, read_label(label_path, label_format))
             images.append(prepare_image(image_path, self.image_augmentation))
 
-        return torch.stack(images, dim=0), torchify_satpy_label_dict(labels, self.possible_targets)
+        return torch.stack(images, dim=0), torchify_satpy_label_dict(labels)
 
     def __getitem__(self, idx):
         # int <-> access by global_idx return satpy style (with None values)
