@@ -2,8 +2,8 @@
   "train": {
     "datasets": {
       "satellitepy": {
-        "image_folder": "/home/simon/data/satellitepy/rareplane_chips/train/images",
-        "label_folder": "/home/simon/data/satellitepy/rareplane_chips/train/labels",
+        "image_folder": "/home/murat/Projects/satellitepy/data/rareplanes/train/chips/images",
+        "label_folder": "/home/murat/Projects/satellitepy/data/rareplanes/train/chips/labels",
         "label_format": "satellitepy"
       }
     },
@@ -11,15 +11,15 @@
       "attributes_engines_no-engines": ["satellitepy"],
       "attributes_engines_propulsion": ["satellitepy"],
       "attributes_wings_wing-span": ["satellitepy"],
-      "attributes_role": ["satellitepy"]
+      "role": ["satellitepy"]
     },
     "align_len": "min"
   },
   "test": {
     "datasets": {
       "satellitepy": {
-        "image_folder": "/home/simon/data/satellitepy/rareplane_chips/test/images",
-        "label_folder": "/home/simon/data/satellitepy/rareplane_chips/test/labels",
+        "image_folder": "/home/murat/Projects/satellitepy/data/rareplanes/test/chips/images",
+        "label_folder": "/home/murat/Projects/satellitepy/data/rareplanes/test/chips/labels",
         "label_format": "satellitepy"
       }
     },
@@ -27,7 +27,7 @@
       "attributes_engines_no-engines": ["satellitepy"],
       "attributes_engines_propulsion": ["satellitepy"],
       "attributes_wings_wing-span": ["satellitepy"],
-      "attributes_role": ["satellitepy"]
+      "role": ["satellitepy"]
     },
     "align_len": "min"
   }

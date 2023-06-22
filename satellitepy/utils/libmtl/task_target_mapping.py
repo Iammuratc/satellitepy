@@ -68,7 +68,7 @@ TASK_TARGET_MAP = {
         'loss_fn': CELoss(), # BCE?
         'weight': [1]
     },
-    'attributes_role': {
+    'role': {
         'metrics': ['Acc'],
         'metrics_fn': AccMetric(),
         'loss_fn': CELoss(),

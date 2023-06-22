@@ -90,7 +90,7 @@ def main(params):
             nn.Linear(256, 1),
             nn.Flatten(start_dim=0)
         ),
-        "attributes_role": nn.Sequential(
+        "role": nn.Sequential(
             nn.Linear(512, 256),
             nn.ReLU(),
             nn.Linear(256, 7)

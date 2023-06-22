@@ -157,8 +157,8 @@ def init_satellitepy_label():
             coarse grained classes. It has to be one of these three types: airplane,ship,vehicle
         fine-class : list of str 
             fine grained classes (e.g., A220, passenger ship)
-        object-role : list of str 
-            INSERT HERE
+        role : list of str 
+            object roles. For example, Small Civil Transport/Utility, Military Fighter/Interceptor/Attack
         very-fine-class : list of str
             very fine grained classes (e.g., A220-100)
         difficulty : list of int
@@ -213,12 +213,7 @@ def init_satellitepy_label():
             },
             'tail':{
                 'no-tail-fins':[]
-<<<<<<< HEAD
-            },
-            'role': []
-=======
             }
->>>>>>> main
         }
     }
     return labels    
@@ -276,7 +271,7 @@ def read_dota_label(label_path, mask_path=None):
                 labels['coarse-class'].append(category) # plane, ship
                 labels['fine-class'].append(None) #
             else:
-                labels['coarse-class'].append('object') #
+                labels['coarse-class'].append('other') #
                 labels['fine-class'].append(category) #
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
@@ -319,7 +314,7 @@ def read_fair1m_label(label_path):
             labels['coarse-class'].append('ship')
             labels['fine-class'].append(instance_name.text)
         else:
-            labels['coarse-class'].append('object')
+            labels['coarse-class'].append('other')
             labels['fine-class'].append(instance_name.text)
 
     # BBOX CCORDINATES
@@ -359,11 +354,6 @@ def read_rareplanes_real_label(label_path):
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
 
-<<<<<<< HEAD
-        # ??? labels['hbboxes'].append(points)
-
-=======
->>>>>>> main
         A = (points[0], points[1])
         B = (points[2], points[3])
         C = (points[4], points[5])
@@ -377,22 +367,6 @@ def read_rareplanes_real_label(label_path):
         corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(),
                    np.add(B, vecToA).tolist()]
         labels['obboxes'].append(corners)
-<<<<<<< HEAD
-        minx = np.array(corners)[:, 0].min()
-        miny = np.array(corners)[:, 1].min()
-        maxx = np.array(corners)[:, 0].max()
-        maxy = np.array(corners)[:, 1].max()
-        labels["hbboxes"].append([[minx, miny], [maxx, miny], [maxx, maxy], [minx, maxy]])
-        labels['classes']['0'].append('airplane')
-        labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
-        labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
-        match annotation['canards']:
-            # binary classification
-            case 'yes':
-                labels['attributes']['fuselage']['canards'].append(1.0)
-            case 'no':
-                labels['attributes']['fuselage']['canards'].append(0.0)
-=======
         labels['coarse-class'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
         labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
@@ -401,34 +375,13 @@ def read_rareplanes_real_label(label_path):
             labels['attributes']['fuselage']['canards'].append(True)
         elif canards=='no':
             labels['attributes']['fuselage']['canards'].append(False)     
->>>>>>> main
         labels['attributes']['fuselage']['length'].append(float(annotation['length']))
         labels['attributes']['wings']['wing-span'].append(float(annotation['wingspan']))
         labels['attributes']['wings']['wing-shape'].append(annotation['wing_type'])
         labels['attributes']['wings']['wing-position'].append(annotation['wing_position'])
         labels['attributes']['tail']['no-tail-fins'].append(int(annotation['num_tail_fins']))
         role = annotation['role']
-<<<<<<< HEAD
-        match role:
-            case 'Small Civil Transport/Utility':
-                labels['attributes']['role'].append(role)
-            case 'Medium Civil Transport/Utility':
-                labels['attributes']['role'].append(role)
-            case 'Large Civil Transport/Utility':
-                labels['attributes']['role'].append(role)
-            case 'Military Transport/Utility/AWAC':
-                labels['attributes']['role'].append(role)
-            case 'Military Fighter/Interceptor/Attack':
-                labels['attributes']['role'].append(role)
-            case 'Military Trainer':
-                labels['attributes']['role'].append(role)
-            case 'Military Bomber':
-                labels['attributes']['role'].append(role)
-            case _:
-                raise Exception(f'Unexpected role found: {role}')
-=======
         labels['role'].append(role)
->>>>>>> main
 
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
@@ -490,11 +443,11 @@ def read_rareplanes_synthetic_label(label_path):
         role = annotation['category_id']
         
         if role == 1:  # Small Civil Transport/Utility
-            labels['object-role'].append('Small_Civil_Transport/Utility')
+            labels['role'].append('Small_Civil_Transport/Utility')
         elif role ==2:  # Medium Civil Transport/Utility
-            labels['object-role'].append('Medium_Civil_Transport/Utility')
+            labels['role'].append('Medium_Civil_Transport/Utility')
         elif role ==3:  # Large Civil Transport/Utility
-            labels['object-role'].append('Large_Civil_Transport/Utility')
+            labels['role'].append('Large_Civil_Transport/Utility')
             role = 'Large_Civil_Transport/Utility'
         else:
             raise Exception(f'Unexpected role found: {role}')
@@ -541,7 +494,7 @@ def read_VHR_label(label_path):
                     labels['coarse-class'].append('vehicle')
                                    
             else:
-                    labels['coarse-class'].append('object')
+                    labels['coarse-class'].append('other')
                 
             labels['fine-class'].append(lut[typ])
         handler.close()
@@ -568,7 +521,7 @@ def read_dior_label(label_path):
                     labels['coarse-class'].append(typ)
                     labels['fine-class'].append(None)
             else :
-                    labels['coarse-class'].append("object")
+                    labels['coarse-class'].append("other")
                     labels['fine-class'].append(typ)
             bndbox = elem.find("bndbox")
             xmin = int(bndbox.find("xmin").text)
@@ -647,7 +600,7 @@ def read_ucas_label(label_path):
         elif 'PLANE' in str(label_path):
             labels['coarse-class'].append('airplane')
         else:
-            labels['coarse-class'].append(None)
+            labels['coarse-class'].append('other')
 
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
