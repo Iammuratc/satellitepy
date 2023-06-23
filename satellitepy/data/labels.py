@@ -543,52 +543,34 @@ def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes', 'difficulty', 'coarse-class','fine-class','very-fine-class']
+    available_tasks=['obboxes', 'difficulty', 'coarse-class','fine-class','very-fine-class',"roles"]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
     
     
-    lut = {
-	1 : ["other ship","other ship"],
-	2 : ["warship","other warship"],
-	3 : ["warship","submarine"],
-	4 : ["warship","aircraft carrier"],
-	5 : ["warship","cruiser"],
-	6 : ["warship","destroyer"],
-	7 : ["warship","frigate"],
-	8 : ["warship","patrol"],
-	9 : ["warship","landing"],
-	10: ["warship","commander"],
-	11: ["warship","auxiliary ship"],
-	12: ["merchant ship","other merchant"],
-	13: ["merchant ship","container ship"],
-	14: ["merchant ship","roll-on/roll-off"],
-	15: ["merchant ship","cargo"],
-	16: ["merchant ship","barge"],
-	17: ["merchant ship","tugboat"],
-	18: ["merchant ship","ferry"],
-	19: ["merchant ship","yacht"],
-	20: ["merchant ship","sailboat"],
-	21: ["merchant ship","fishing vessel"],
-	22: ["merchant ship","oil tanker"],
-	23: ["merchant ship","hovercraft"],
-	24: ["merchant ship","motorboat"]
-}
+    lut = get_shipnet_classes()
     root = ET.parse(label_path).getroot()
     elems = root.findall("object")
     
     for elem in elems:
         if elem.find("level_0").text=="2": # Dock
             labels['coarse-class'].append("object")
+            labels['roles'].append(None)
             labels['fine-class'].append("dock")
             labels['very-fine-class'].append("dock")
         else : # Ship
-            lvl3class = int(elem.find("level_2").text)
+            lvl4class = int(elem.find("level_4").text)
             labels['coarse-class'].append("ship")
-            labels['fine-class'].append((lut[lvl3class])[0])
-            labels['very-fine-class'].append((lut[lvl3class])[1])
+            if lvl4class == 1:
+                labels['roles'].append(None)
+            else if lvl4class in range (2,37): # Warships have values 2 to 36
+                labels['roles'].append("warship")
+            else if lvl4class in range (37,50): # Merchant Ships have values 37 to 49
+                labels['roles'].append("merchant ship")
+            labels['fine-class'].append((lut[lvl4class])[0])
+            labels['fine-class'].append((lut[lvl4class])[1])
         # BBOX CCORDINATES
         point_space = elem.find("polygon")
         # remove the last coordinate points
