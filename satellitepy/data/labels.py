@@ -561,7 +561,7 @@ def read_ship_net_label(label_path):
             labels['fine-class'].append("dock")
             labels['very-fine-class'].append("dock")
         else : # Ship
-            lvl4class = int(elem.find("level_4").text)
+            lvl4class = int(elem.find("level_3").text)
             labels['coarse-class'].append("ship")
             if lvl4class == 1:
                 labels['roles'].append(None)

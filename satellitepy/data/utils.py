@@ -108,7 +108,7 @@ def get_shipnet_classes():
 		5 : ["Aircraft Carrier","Enterprise"],
 		6 : ["Aircraft Carrier","Nimitz"],
 		7 : ["Aircraft Carrier","Midway"],
-		8 : ["cruiser","Ticonderoga"],
+		8 : ["Cruiser","Ticonderoga"],
 		9 : ["Destroyer","Other Destroyer"],
 		10: ["Destroyer","Atago DD"],
 		11: ["Destroyer","Arleigh Burke DD"],
