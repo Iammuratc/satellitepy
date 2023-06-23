@@ -1,8 +1,10 @@
 import cv2
 import numpy as np
+
+# from satellitepy.data.bbox import BBox
 from satellitepy.data.cutout.geometry import BBox
 
-def set_mask(labels,mask_path,bbox_type):
+def set_mask_new(labels,mask_path,bbox_type):
     """
     Set the masks key in the satellitepy dict by using the bboxes in the dict
     Parameters
@@ -24,6 +26,16 @@ def set_mask(labels,mask_path,bbox_type):
         cv2.fillPoly(mask_0, [np.array(bbox,dtype=int)], 1)
         coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist() # y,x
         labels['masks'].append([coords[1] + h[0],coords[0] + h[2]]) # x,y
+    return labels
+
+def set_mask_old(labels,mask_path,bbox_type):
+    mask = cv2.cvtColor(cv2.imread(str(mask_path)), cv2.COLOR_RGB2GRAY)
+    empty_mask = np.zeros((mask.shape[0],mask.shape[1]))
+    for bbox in labels[bbox_type]:
+        mask_0 = empty_mask.copy()
+        cv2.fillPoly(mask_0, [np.array(bbox,dtype=int)], 1)
+        coords = np.argwhere((mask_0 == 1) & (mask != 0)).T.tolist() # y,x
+        labels['masks'].append([coords[1],coords[0]]) # x,y
     return labels
 
 def get_xview_classes():
