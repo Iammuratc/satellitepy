@@ -157,8 +157,8 @@ def init_satellitepy_label():
             coarse grained classes. It has to be one of these three types: airplane,ship,vehicle
         fine-class : list of str 
             fine grained classes (e.g., A220, passenger ship)
-        object-role : list of str 
-            INSERT HERE
+        role : list of str 
+            object roles. For example, Small Civil Transport/Utility, Military Fighter/Interceptor/Attack
         very-fine-class : list of str
             very fine grained classes (e.g., A220-100)
         difficulty : list of int
@@ -184,11 +184,9 @@ def init_satellitepy_label():
             'tail' : dict of str
                 'no-tail-fins' : list of int
                     1, 2
-            'role' : dict of str
-                'civil' : list of str
-                    large_transport, medium_transport, small_transport
-                'military' : list of str
-                    fighter, bomber, transport, trainer
+            'role' : list of str
+                large_transport, medium_transport, small_transport
+                fighter, bomber, transport, trainer
     """
     labels={
         'hbboxes':[],
@@ -220,6 +218,13 @@ def init_satellitepy_label():
     }
     return labels    
 
+def merge_satpy_label_dict(target_satpy_labels: dict, to_add: dict):
+    for k in target_satpy_labels.keys():
+        if isinstance(target_satpy_labels[k], dict):
+            merge_satpy_label_dict(target_satpy_labels[k], to_add[k])
+        else:
+            # we expect final values to always be lists
+            target_satpy_labels[k] += to_add[k]
 
 def read_dota_label(label_path, mask_path=None):
     labels = init_satellitepy_label()
@@ -266,7 +271,7 @@ def read_dota_label(label_path, mask_path=None):
                 labels['coarse-class'].append(category) # plane, ship
                 labels['fine-class'].append(None) #
             else:
-                labels['coarse-class'].append('object') #
+                labels['coarse-class'].append('other') #
                 labels['fine-class'].append(category) #
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
@@ -309,7 +314,7 @@ def read_fair1m_label(label_path):
             labels['coarse-class'].append('ship')
             labels['fine-class'].append(instance_name.text)
         else:
-            labels['coarse-class'].append('object')
+            labels['coarse-class'].append('other')
             labels['fine-class'].append(instance_name.text)
 
     # BBOX CCORDINATES
@@ -438,11 +443,11 @@ def read_rareplanes_synthetic_label(label_path):
         role = annotation['category_id']
         
         if role == 1:  # Small Civil Transport/Utility
-            labels['object-role'].append('Small_Civil_Transport/Utility')
+            labels['role'].append('Small_Civil_Transport/Utility')
         elif role ==2:  # Medium Civil Transport/Utility
-            labels['object-role'].append('Medium_Civil_Transport/Utility')
+            labels['role'].append('Medium_Civil_Transport/Utility')
         elif role ==3:  # Large Civil Transport/Utility
-            labels['object-role'].append('Large_Civil_Transport/Utility')
+            labels['role'].append('Large_Civil_Transport/Utility')
             role = 'Large_Civil_Transport/Utility'
         else:
             raise Exception(f'Unexpected role found: {role}')
@@ -489,7 +494,7 @@ def read_VHR_label(label_path):
                     labels['coarse-class'].append('vehicle')
                                    
             else:
-                    labels['coarse-class'].append('object')
+                    labels['coarse-class'].append('other')
                 
             labels['fine-class'].append(lut[typ])
         handler.close()
@@ -516,7 +521,7 @@ def read_dior_label(label_path):
                     labels['coarse-class'].append(typ)
                     labels['fine-class'].append(None)
             else :
-                    labels['coarse-class'].append("object")
+                    labels['coarse-class'].append("other")
                     labels['fine-class'].append(typ)
             bndbox = elem.find("bndbox")
             xmin = int(bndbox.find("xmin").text)
@@ -595,7 +600,7 @@ def read_ucas_label(label_path):
         elif 'PLANE' in str(label_path):
             labels['coarse-class'].append('airplane')
         else:
-            labels['coarse-class'].append(None)
+            labels['coarse-class'].append('other')
 
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
