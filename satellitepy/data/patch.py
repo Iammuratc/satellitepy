@@ -4,8 +4,6 @@ import shapely
 from shapely.geometry import Polygon
 
 from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
-# TODO: 
-#   Filter out the truncated objects using the object area. truncated_object_thr is not use at the moment. Edit the is_truncated function.
 
 # Init log
 logger = logging.getLogger(__name__)
