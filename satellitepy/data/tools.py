@@ -224,9 +224,6 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks,ma
         for mask_indices in gt_labels['masks']:
             ax.plot(mask_indices[0],mask_indices[1])
 
-    # if 'obboxes' in tasks:
-    #     for obbox in gt_labels['obboxes']:
-    #         BBox.plot_bbox(corners=, ax=ax, c='b', s=5)
             
     if classes or 'bboxes' in tasks:
         bboxes = 'obboxes'
@@ -236,7 +233,6 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks,ma
 
         for i in range(0, len(gt_labels[bboxes])):
             bbox_corners = gt_labels[bboxes][i]
-            # bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2) 
             if classes:
                 x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
                 ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')

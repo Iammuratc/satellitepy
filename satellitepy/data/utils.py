@@ -115,7 +115,10 @@ def get_satellitepy_table():
             'vehicle':2,
             'helicopter':3,
             'other':4},
-        'fine-class':{},
+        'fine-class':{'small-vehicle',
+        'large-vehicle',
+        'road',
+        None},
         'very-fine-class':{},
         'role':{
             'Small Civil Transport/Utility':0,
@@ -203,3 +206,43 @@ def get_satellitepy_dict_values(satellitepy_dict,task):
         return satellitepy_dict[keys[0]][keys[1]][keys[2]]
     else:
         return 0
+
+def merge_satellitepy_task_values(satellitepy_dict,tasks):
+    '''
+    Merge the satellitepy dict task values. 
+    For example, this function can merge coarse-class and fine-class values into one list, 
+    so the models can train be trained on this list. <tasks> must have the tasks in the order of fine to coarse
+    
+    Parameters
+    ----------
+        satellitepy_dict : dict
+            Satellitepy formatted dict
+        tasks : list of str
+            Task names. E.g. coarse-class, fine-class
+    Returns
+    -------
+        satellitepy_dict : dict
+            This dict includes a key whose values are the merged task values
+    '''
+
+    satellitepy_dict_values = {}
+    merged_task = []
+
+    for task in tasks:
+        satellitepy_dict_values[task] = get_satellitepy_dict_values(satellitepy_dict,task)
+    
+
+    len_tasks = len(tasks)
+    len_values = len(satellitepy_dict_values[tasks[0]])
+
+    for i_value in range(len_values):
+        for i_task in range(len(tasks)):
+            task_value = satellitepy_dict_values[tasks[i_task]][i_value]
+            if task_value != None:
+                merged_task.append(task_value)
+                break
+    
+    merged_task_name = "--".join(tasks)
+    satellitepy_dict[merged_task_name] = merged_task
+    return satellitepy_dict, merged_task_name
+

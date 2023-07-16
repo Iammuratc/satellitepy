@@ -7,63 +7,30 @@ import torch
 
 from satellitepy.dataset.bbavector.utils import Utils
 from satellitepy.data.labels import read_label
-from satellitepy.data.utils import get_satellitepy_dict_values
+from satellitepy.data.utils import get_satellitepy_dict_values, merge_satellitepy_task_values
 from satellitepy.utils.path_utils import zip_matched_files
 
 
 class BBAVectorDataset(Dataset):
-    # def __init__(self, data_dir, phase, input_h=None, input_w=None, down_ratio=None):
+    # def __init__(self, data_dir, input_h=None, input_w=None, down_ratio=None):
     def __init__(self,
         in_image_folder,
         in_label_folder,
         in_label_format,
-        phase,
         task,
         task_dict,
         input_h,
         input_w,
         down_ratio):
         super(BBAVectorDataset, self).__init__()
-        # self.category = ['plane',
-        #                  'baseball-diamond',
-        #                  'bridge',
-        #                  'ground-track-field',
-        #                  'small-vehicle',
-        #                  'large-vehicle',
-        #                  'ship',
-        #                  'tennis-court',
-        #                  'basketball-court',
-        #                  'storage-tank',
-        #                  'soccer-ball-field',
-        #                  'roundabout',
-        #                  'harbor',
-        #                  'swimming-pool',
-        #                  'helicopter'
-        #                  ]
-        # self.color_pans = [(204,78,210),
-        #                    (0,192,255),
-        #                    (0,131,0),
-        #                    (240,176,0),
-        #                    (254,100,38),
-        #                    (0,0,255),
-        #                    (182,117,46),
-        #                    (185,60,129),
-        #                    (204,153,255),
-        #                    (80,208,146),
-        #                    (0,0,204),
-        #                    (17,90,197),
-        #                    (0,255,255),
-        #                    (102,255,102),
-        #                    (255,255,0)]
         self.category = list(task_dict.keys())
 
         self.num_classes = len(self.category)
-        self.utils = Utils(phase, input_h, input_w, down_ratio, self.num_classes)
+        self.utils = Utils(input_h, input_w, down_ratio, self.num_classes)
         # self.cat_ids = {cat:i for i,cat in enumerate(self.category)}
         # self.cat_ids = task_dict
         self.task_dict = task_dict
         self.task = task
-        self.phase = phase
         # self.img_ids = self.load_img_ids()
         # self.image_path = os.path.join(data_dir, 'images')
         # self.label_path = os.path.join(data_dir, 'labelTxt')
@@ -83,6 +50,13 @@ class BBAVectorDataset(Dataset):
         image_h, image_w, c = image.shape
         ### Labels
         labels = read_label(label_path,label_format)
+        
+        if self.task == 'fine-class':
+            labels, merged_task_name = merge_satellitepy_task_values(labels,tasks=['fine-class','coarse-class'])
+            self.task = merged_task_name
+        elif self.task == 'very-fine-class':
+            labels, merged_task_name = merge_satellitepy_task_values(labels,tasks=['very-fine-class','fine-class','coarse-class'])
+            self.task = merged_task_name
 
         annotation = {}
         annotation['pts'] = np.asarray(labels['obboxes']) # np.asarray(valid_pts, np.float32)
@@ -103,6 +77,7 @@ class BBAVectorDataset(Dataset):
         data_dict = self.utils.generate_ground_truth(image, annotation)
         return data_dict
 
+    
     # def load_img_ids(self):
     #     if self.phase == 'train':
     #         image_set_index_file = os.path.join(self.data_dir, 'trainval.txt')
@@ -178,5 +153,38 @@ class BBAVectorDataset(Dataset):
     #     return annotation
 
 
-    def merge_crop_image_results(self, result_path, merge_path):
-        mergebypoly(result_path, merge_path)
+    # def merge_crop_image_results(self, result_path, merge_path):
+    #     mergebypoly(result_path, merge_path)
+
+        # self.category = ['plane',
+        #                  'baseball-diamond',
+        #                  'bridge',
+        #                  'ground-track-field',
+        #                  'small-vehicle',
+        #                  'large-vehicle',
+        #                  'ship',
+        #                  'tennis-court',
+        #                  'basketball-court',
+        #                  'storage-tank',
+        #                  'soccer-ball-field',
+        #                  'roundabout',
+        #                  'harbor',
+        #                  'swimming-pool',
+        #                  'helicopter'
+        #                  ]
+        # self.color_pans = [(204,78,210),
+        #                    (0,192,255),
+        #                    (0,131,0),
+        #                    (240,176,0),
+        #                    (254,100,38),
+        #                    (0,0,255),
+        #                    (182,117,46),
+        #                    (185,60,129),
+        #                    (204,153,255),
+        #                    (80,208,146),
+        #                    (0,0,204),
+        #                    (17,90,197),
+        #                    (0,255,255),
+        #                    (102,255,102),
+        #                    (255,255,0)]
+        

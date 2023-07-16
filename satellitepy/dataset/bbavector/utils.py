@@ -8,8 +8,7 @@ from satellitepy.dataset.bbavector.transforms import random_flip, load_affine_ma
 from satellitepy.dataset.bbavector import data_augment
 
 class Utils:
-    def __init__(self, phase, input_h=None, input_w=None, down_ratio=None, num_classes=None):
-        self.phase = phase
+    def __init__(self, input_h=None, input_w=None, down_ratio=None, num_classes=None):
         self.input_h = input_h
         self.input_w = input_w
         self.down_ratio = down_ratio
