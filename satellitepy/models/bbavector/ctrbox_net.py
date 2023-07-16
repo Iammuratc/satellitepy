@@ -40,7 +40,6 @@ class CTRBOX(nn.Module):
 
             self.__setattr__(head, fc)
 
-
     def fill_fc_weights(self, m):
         if isinstance(m, nn.Conv2d):
             if m.bias is not None:

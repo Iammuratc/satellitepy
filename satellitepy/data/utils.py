@@ -115,10 +115,7 @@ def get_satellitepy_table():
             'vehicle':2,
             'helicopter':3,
             'other':4},
-        'fine-class':{'small-vehicle',
-        'large-vehicle',
-        'road',
-        None},
+        'fine-class':{},
         'very-fine-class':{},
         'role':{
             'Small Civil Transport/Utility':0,
