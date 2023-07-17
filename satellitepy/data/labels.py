@@ -195,6 +195,7 @@ def init_satellitepy_label():
         'coarse-class':[],
         'fine-class':[],
         'very-fine-class':[],
+        'merged-class':[], # This is a concatenated version of all class values
         'role':[],
         'difficulty':[],
         'attributes':{
@@ -230,7 +231,7 @@ def read_dota_label(label_path, mask_path=None):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes','difficulty','coarse-class','fine-class']
+    available_tasks=['obboxes','difficulty','coarse-class','fine-class','merged-class']
     mask_exists = True if mask_path else False
     if mask_exists:
         available_tasks.append('masks')
@@ -273,6 +274,7 @@ def read_dota_label(label_path, mask_path=None):
             else:
                 labels['coarse-class'].append('other') #
                 labels['fine-class'].append(category) #
+            labels['merged-class'].append(category)
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()

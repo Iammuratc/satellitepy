@@ -165,9 +165,9 @@ class TrainModule(object):
         for epoch in range(0, self.num_epoch):
             print('-'*10)
             print('Epoch: {}/{} '.format(epoch, self.num_epoch))
-            # train_loss = self.run_train(
-            #                             data_loader=train_loader,
-            #                             criterion=criterion)
+            train_loss = self.run_train(
+                                        data_loader=train_loader,
+                                        criterion=criterion)
             self.scheduler.step()
 
 

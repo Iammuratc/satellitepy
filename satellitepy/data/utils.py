@@ -115,7 +115,19 @@ def get_satellitepy_table():
             'vehicle':2,
             'helicopter':3,
             'other':4},
-        'fine-class':{},
+        'fine-class':{
+            'small-vehicle':0,
+            'large-vehicle':1,
+            'harbor':2,
+            'tennis-court':3,
+            'soccer-ball-field':4,
+            'baseball-diamond':5,
+            'ground-track-field':6,
+            'swimming-pool':7,
+            'roundabout':8,
+            'basketball-court':9,
+            'storage-tank':10,
+            'bridge':11},
         'very-fine-class':{},
         'role':{
             'Small Civil Transport/Utility':0,
@@ -176,6 +188,16 @@ def get_satellitepy_table():
             }
         }
     } 
+
+    # Add the merged class
+    # For example, this is a solution to be able to train the bbavector on the original dota dataset
+    len_coarse_class = len(satellitepy_table['coarse-class'])
+    len_fine_class = len(satellitepy_table['fine-class'])
+    satellitepy_table['merged-class'] = satellitepy_table['coarse-class'] 
+    for key,value in satellitepy_table['fine-class'].items():
+        satellitepy_table['merged-class'][key] = value+len_coarse_class 
+    for key,value in satellitepy_table['very-fine-class'].items():
+        satellitepy_table['merged-class'][key] = value+len_coarse_class+len_fine_class
     return satellitepy_table
 
 
@@ -204,42 +226,42 @@ def get_satellitepy_dict_values(satellitepy_dict,task):
     else:
         return 0
 
-def merge_satellitepy_task_values(satellitepy_dict,tasks):
-    '''
-    Merge the satellitepy dict task values. 
-    For example, this function can merge coarse-class and fine-class values into one list, 
-    so the models can train be trained on this list. <tasks> must have the tasks in the order of fine to coarse
+# def set_merged_task_values(satellitepy_dict,merged_task_name):
+#     '''
+#     Merge the satellitepy dict task values. 
+#     For example, this function can merge coarse-class and fine-class values into one list, 
+#     so the models can train be trained on this list. <merged_task_name> must have the tasks in the order of fine to coarse
     
-    Parameters
-    ----------
-        satellitepy_dict : dict
-            Satellitepy formatted dict
-        tasks : list of str
-            Task names. E.g. coarse-class, fine-class
-    Returns
-    -------
-        satellitepy_dict : dict
-            This dict includes a key whose values are the merged task values
-    '''
+#     Parameters
+#     ----------
+#         satellitepy_dict : dict
+#             Satellitepy formatted dict
+#         merged_task_name : str
+#             Task names. E.g. fine-class--coarse-class
+#     Returns
+#     -------
+#         satellitepy_dict : dict
+#             This dict includes a key whose values are the merged task values
+#     '''
 
-    satellitepy_dict_values = {}
-    merged_task = []
+#     satellitepy_dict_values = {}
+#     merged_task = []
+#     tasks = merged_task_name.split('--')
 
-    for task in tasks:
-        satellitepy_dict_values[task] = get_satellitepy_dict_values(satellitepy_dict,task)
+#     for task in tasks:
+#         satellitepy_dict_values[task] = get_satellitepy_dict_values(satellitepy_dict,task)
     
 
-    len_tasks = len(tasks)
-    len_values = len(satellitepy_dict_values[tasks[0]])
+#     len_tasks = len(tasks)
+#     len_values = len(satellitepy_dict_values[tasks[0]])
 
-    for i_value in range(len_values):
-        for i_task in range(len(tasks)):
-            task_value = satellitepy_dict_values[tasks[i_task]][i_value]
-            if task_value != None:
-                merged_task.append(task_value)
-                break
+#     for i_value in range(len_values):
+#         for i_task in range(len(tasks)):
+#             task_value = satellitepy_dict_values[tasks[i_task]][i_value]
+#             if task_value != None:
+#                 merged_task.append(task_value)
+#                 break
     
-    merged_task_name = "--".join(tasks)
-    satellitepy_dict[merged_task_name] = merged_task
-    return satellitepy_dict, merged_task_name
+#     satellitepy_dict[merged_task_name] = merged_task
+#     return satellitepy_dict
 

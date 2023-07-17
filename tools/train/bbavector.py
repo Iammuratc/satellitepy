@@ -67,12 +67,11 @@ def train_bbavector(args):
     valid_image_folder = Path(args.valid_image_folder)
     valid_label_folder = Path(args.valid_label_folder)
     valid_label_format = str(args.valid_label_format)
-    task = args.task_name
     input_h = args.input_h
     input_w = args.input_w
     down_ratio = 4
     patience = args.patience
-    
+    task = args.task_name
     # Training input
     num_epoch = args.num_epoch
     batch_size = args.batch_size

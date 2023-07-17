@@ -7,7 +7,7 @@ import torch
 
 from satellitepy.dataset.bbavector.utils import Utils
 from satellitepy.data.labels import read_label
-from satellitepy.data.utils import get_satellitepy_dict_values, merge_satellitepy_task_values
+from satellitepy.data.utils import get_satellitepy_dict_values #, merge_satellitepy_task_values
 from satellitepy.utils.path_utils import zip_matched_files
 
 
@@ -51,12 +51,12 @@ class BBAVectorDataset(Dataset):
         ### Labels
         labels = read_label(label_path,label_format)
         
-        if self.task == 'fine-class':
-            labels, merged_task_name = merge_satellitepy_task_values(labels,tasks=['fine-class','coarse-class'])
-            self.task = merged_task_name
-        elif self.task == 'very-fine-class':
-            labels, merged_task_name = merge_satellitepy_task_values(labels,tasks=['very-fine-class','fine-class','coarse-class'])
-            self.task = merged_task_name
+        # if self.task == 'fine-class':
+        #     labels, merged_task_name = merge_satellitepy_task_values(labels,tasks=['fine-class','coarse-class'])
+        #     self.task = merged_task_name
+        # elif self.task == 'very-fine-class':
+        #     labels, merged_task_name = merge_satellitepy_task_values(labels,tasks=['very-fine-class','fine-class','coarse-class'])
+        #     self.task = merged_task_name
 
         annotation = {}
         annotation['pts'] = np.asarray(labels['obboxes']) # np.asarray(valid_pts, np.float32)
