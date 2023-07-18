@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+EPSILON = 1e-9
 
 class BCELoss(nn.Module):
     def __init__(self):
@@ -80,6 +81,8 @@ class FocalLoss(nn.Module):
   def forward(self, pred, gt):
       pos_inds = gt.eq(1).float()
       neg_inds = gt.lt(1).float()
+      # Simon 18/07/23: prevent log(0)
+      pred = torch.clamp(pred, min=EPSILON, max=1-EPSILON)
 
       neg_weights = torch.pow(1 - gt, 4)
 
@@ -100,7 +103,6 @@ class FocalLoss(nn.Module):
 
 def isnan(x):
     return x != x
-
   
 class LossAll(torch.nn.Module):
     def __init__(self):

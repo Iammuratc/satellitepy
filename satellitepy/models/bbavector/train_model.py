@@ -70,41 +70,18 @@ class TrainModule(object):
             # 'loss': loss
         }, path)
 
-    def load_model(self, model, resume, strict=True):
-        # checkpoint = torch.load(resume, map_location=lambda storage, loc: storage)
+    def load_model(self, model, resume):
         checkpoint = torch.load(resume)
         print('loaded weights from {}, epoch {}'.format(resume, checkpoint['epoch']))
-        state_dict_ = checkpoint['model_state_dict']
-        state_dict = {}
-        for k in state_dict_:
-            if k.startswith('module') and not k.startswith('module_list'):
-                state_dict[k[7:]] = state_dict_[k]
-            else:
-                state_dict[k] = state_dict_[k]
-        model_state_dict = model.state_dict()
-        if not strict:
-            for k in state_dict:
-                if k in model_state_dict:
-                    if state_dict[k].shape != model_state_dict[k].shape:
-                        print('Skip loading parameter {}, required shape{}, ' \
-                              'loaded shape{}.'.format(k, model_state_dict[k].shape, state_dict[k].shape))
-                        state_dict[k] = model_state_dict[k]
-                else:
-                    print('Drop parameter {}.'.format(k))
-            for k in model_state_dict:
-                if not (k in state_dict):
-                    print('No param {}.'.format(k))
-                    state_dict[k] = model_state_dict[k]
-        model.module.load_state_dict(state_dict)
-        # model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer = torch.optim.Adam(model.module.parameters(), lr= self.init_lr)
-        # print(checkpoint['optimizer_state_dict'])
-        # checkpoint['optimizer_state_dict']['param_groups'] = None
-        # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        # for state in optimizer.state.values():
-        #     for k, v in state.items():
-        #         if isinstance(v, torch.Tensor):
-        #             state[k] = v.cuda()
+
+        if isinstance(model, torch.nn.DataParallel):
+            model.module.load_state_dict(checkpoint['model_state_dict'])
+            optimizer = torch.optim.Adam(model.module.parameters(), lr=self.init_lr)
+        else:
+            model.load_state_dict(checkpoint['model_state_dict'])
+            optimizer = torch.optim.Adam(model.parameters(), lr=self.init_lr)
+
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
         valid_loss = checkpoint['loss']
         return model, optimizer, epoch, valid_loss
@@ -121,8 +98,7 @@ class TrainModule(object):
         # add resume part for continuing training when break previously, 10-16-2020
         if self.resume_train:
             self.model, self.optimizer, start_epoch, valid_loss = self.load_model(self.model, 
-                                                                        self.resume_train, 
-                                                                        strict=True)
+                                                                        self.resume_train)
         else:
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr= self.init_lr)
             start_epoch = -1
@@ -174,12 +150,14 @@ class TrainModule(object):
             if self.valid_dataset:
                 print('Validation is starting...')
                 valid_loss = self.run_valid(valid_loader, criterion)
-                early_stopping(valid_loss, self.model, self.scheduler, epoch)
+                early_stopping(valid_loss, self.model, self.optimizer, epoch)
                 if early_stopping.early_stop:
                     # self.logger.info("Early stopping")
                     print("Early stopping")
                     break
+
             else:
+                self.model.eval()
                 self.save_model(os.path.join(save_path, 'model_no_valid_{}.pth'.format(epoch)),
                                 epoch,
                                 self.model,
@@ -220,7 +198,7 @@ class TrainModule(object):
         running_loss = 0.
         for data_dict in tqdm(data_loader):
             for name in data_dict:
-                data_dict[name] = data_dict[name].to(device=self.device)#, non_blocking=True)
+                data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             self.optimizer.zero_grad()
             pr_decs = self.model(data_dict['input'])
             loss = criterion(pr_decs, data_dict)
