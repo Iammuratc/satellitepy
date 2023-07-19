@@ -1,8 +1,7 @@
 import cv2
 import numpy as np
 
-# from satellitepy.data.bbox import BBox
-from satellitepy.data.cutout.geometry import BBox
+from satellitepy.data.bbox import BBox
 
 def set_mask(labels,mask_path,bbox_type):
     """
