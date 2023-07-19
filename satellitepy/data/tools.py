@@ -14,7 +14,7 @@ from satellitepy.data.patch import get_patches
 from satellitepy.data.chip import get_chips
 from satellitepy.data.utils import get_xview_classes
 from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
-from satellitepy.data.cutout.geometry import BBox
+from satellitepy.data.bbox import BBox
 
 def save_patches(
     image_folder,
@@ -124,7 +124,8 @@ def save_chips(
     out_folder,
     margin_size,
     include_object_classes,
-    exclude_object_classes     
+    exclude_object_classes,     
+    mask_folder = None
     ):
     """
     Save chips from the original images
@@ -142,6 +143,8 @@ def save_chips(
         Classes that will be saved,
     exclude_object_classes : list
         Classes that wont be saved
+    mask_folder : Path
+        Input mask folder. Masks in this folder will be used to create chip masks
     Returns
     -------
     """
@@ -151,37 +154,45 @@ def save_chips(
     assert create_folder(out_folder_images)
     assert create_folder(out_folder_labels)
 
-    for img_path, label_path in zip_matched_files(image_folder, label_folder):
-        img = cv2.imread(str(img_path))
-        label = read_label(label_path, label_format)
-        
-        chips = get_chips(
-            img, 
-            label, 
-            margin_size,
-            include_object_classes,
-            exclude_object_classes
-        )
+    image_paths = get_file_paths(image_folder)
+    label_paths = get_file_paths(label_folder)
+    if mask_folder:
+        mask_paths = get_file_paths(mask_folder)
+    else:
+        mask_paths = [None] * len(image_paths)
 
-        count_chips = len(chips['images'])
-        img_name = img_path.stem
+    if (len(image_paths)==len(label_paths)==len(mask_paths)):
+        for img_path, label_path, mask_path in zip(image_paths, label_paths, mask_paths):
+            img = cv2.imread(str(img_path))
+            label = read_label(label_path, label_format, mask_path)
+            
+            chips = get_chips(
+                img, 
+                label, 
+                margin_size,
+                include_object_classes,
+                exclude_object_classes
+            )
+
+            count_chips = len(chips['images'])
+            img_name = img_path.stem
 
 
-        for i in range(count_chips):
+            for i in range(count_chips):
 
-            chip_img_path = out_folder_images / f"{img_name}_{i}.png"
-            chip_img = chips['images'][i]
+                chip_img_path = out_folder_images / f"{img_name}_{i}.png"
+                chip_img = chips['images'][i]
 
-            if not chip_img.size == 0:
-                cv2.imwrite(str(chip_img_path), chip_img)
-            else:
-                continue
+                if not chip_img.size == 0:
+                    cv2.imwrite(str(chip_img_path), chip_img)
+                else:
+                    continue
 
-            chip_label = get_label_by_idx(chips['labels'], i)
-            chip_label_path = out_folder_labels / f"{img_name}_{i}.txt"
+                chip_label = get_label_by_idx(chips['labels'], i)
+                chip_label_path = out_folder_labels / f"{img_name}_{i}.txt"
 
-            with open(str(chip_label_path), 'w') as f:
-                json.dump(chip_label, f, indent=4)
+                with open(str(chip_label_path), 'w') as f:
+                    json.dump(chip_label, f, indent=4)
 
 def get_label_by_idx(satpy_labels: dict, i: int):
     """
@@ -224,7 +235,10 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks,ma
         for mask_indices in gt_labels['masks']:
             ax.plot(mask_indices[0],mask_indices[1])
 
-
+    # if 'obboxes' in tasks:
+    #     for obbox in gt_labels['obboxes']:
+    #         BBox.plot_bbox(corners=, ax=ax, c='b', s=5)
+            
     if classes or 'bboxes' in tasks:
         bboxes = 'obboxes'
         logger.info('Adding bounding boxes/labels to image')
@@ -232,8 +246,8 @@ def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks,ma
             bboxes = 'hbboxes'
 
         for i in range(0, len(gt_labels[bboxes])):
-            bbox = gt_labels[bboxes][i]
-            bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2) 
+            bbox_corners = gt_labels[bboxes][i]
+            # bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2) 
             if classes:
                 x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
                 ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')

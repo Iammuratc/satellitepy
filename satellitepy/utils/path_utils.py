@@ -117,7 +117,7 @@ def zip_matched_files(*folders):
         is_match = is_file_names_match(*file_paths)
         if not is_match:
             logger.error('File names do not match!')
-            exit(1)
+            raise Exception("File names do not match")
         yield file_paths
 
 def unzip_files_in_folder(path):

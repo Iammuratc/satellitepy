@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from satellitepy.data.cutout.geometry import BBox
 
 from satellitepy.data.bbox import BBox
 
@@ -102,3 +103,82 @@ def get_xview_classes():
             }
         }
     return classes
+
+def get_satellitepy_table():
+    """
+    This function returns an indexing/mapping table for the satellitepy dict
+    Returns
+    -------
+    satellitepy_table : dict of dict
+        If values are the instance of string or int, then the index number
+        If values are the instance of float, then max and min values
+    """
+    satellitepy_table = {
+        'coarse-class':{
+            'airplane':0,
+            'ship':1,
+            'vehicle':2,
+            'helicopter':3,
+            'other':4},
+        'fine-class':{},
+        'very-fine-class':{},
+        'role':{
+            'Small Civil Transport/Utility':0,
+            'Medium Civil Transport/Utility':1,
+            'Large Civil Transport/Utility':2,
+            'Military Transport/Utility/AWAC':3,
+            'Military Fighter/Interceptor/Attack':4,
+            'Military Bomber':5,
+            'Military Trainer':6,},
+        'difficulty':{
+            '0':0,
+            '1':1},
+        # calculated from rareplanes train
+        'attributes':{
+            'engines':{
+                'no-engines':{
+                    0:0,
+                    1:1,
+                    2:2,
+                    3:3,
+                    4:4
+                    },
+                'propulsion':{
+                    'propeller':0,
+                    'jet':1,
+                    'unpowered':2
+                    }
+            },
+            'fuselage':{
+                'canards':{
+                    False:0,
+                    True:1},
+                'length':{
+                    'max':82.5,
+                    'min':4.0}
+            },
+            'wings':{
+                'wing-span':{
+                    'max':80.0,
+                    'min':4.0
+                    },
+                'wing-shape':{
+                    'swept':0,
+                    'straight':1,
+                    'variable swept':2,
+                    'delta':3
+                    },
+                'wing-position':{
+                    'mid/low mounted':0,
+                    'high mounted':1
+                    }
+            },
+            'tail':{
+                'no-tail-fins':{
+                    1:0,
+                    2:1
+                    }
+            }
+        }
+    } 
+    return satellitepy_table
