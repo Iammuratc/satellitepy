@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from satellitepy.data.cutout.geometry import BBox
+from satellitepy.data.bbox import BBox
 
 from scipy.ndimage import generate_binary_structure, label, find_objects
 
@@ -19,13 +19,16 @@ def set_mask(labels,mask_path,bbox_type):
         Satellitepy dict
     """
     mask = cv2.cvtColor(cv2.imread(str(mask_path)), cv2.COLOR_RGB2GRAY)
-    empty_mask = np.zeros((mask.shape[0],mask.shape[1]))
+
     for bbox in labels[bbox_type]:
         h = BBox.get_bbox_limits(np.array(bbox))
-        mask_0 = empty_mask.copy()
+        mask_0 = np.zeros((mask.shape[0],mask.shape[1]))
+        
         cv2.fillPoly(mask_0, [np.array(bbox,dtype=int)], 1)
+        
         coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist() # y,x
         labels['masks'].append([coords[1] + h[0],coords[0] + h[2]]) # x,y
+
     return labels
 
 def get_xview_classes():
@@ -104,6 +107,8 @@ def get_xview_classes():
     return classes
 
 def parse_potsdam_labels(label_path):
+    from satellitepy.utils.path_utils import get_project_folder
+
     """
     Parses the potsdam images to extract the label data
     Parameters
@@ -115,23 +120,33 @@ def parse_potsdam_labels(label_path):
     objs : list of slices
         Horizontal bounding boxes of the objects
     """
+    print(str(label_path))
+
     img = cv2.imread(label_path)
     
     # bleaching every color except yellow
-    hsv= cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
-    yellow = np.uint8([[[0, 255, 255]]])
-    hsvYellow = cv2.cvtColor(yellow, cv2.COLOR_BGR2HSV)
+    hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
+    # yellow = np.uint8([[[0, 255, 255]]])
+    # hsvYellow = cv2.cvtColor(yellow, cv2.COLOR_BGR2HSV)
 
     lower=np.array([20,100,100])
     upper=np.array([40,255,255])
 
     mask=cv2.inRange(hsv,lower,upper)
 
+    # cv2.imwrite(str(get_project_folder() / "in_folder/test/test_img_2.png"), hsv)
+    # cv2.imwrite(str(get_project_folder() / "in_folder/test/test_img_2.png"), img)
+    # cv2.imwrite(str(get_project_folder() / "in_folder/test/test_img_1.png"), img)
+
     s = generate_binary_structure(2, 2)
 
     # figuring out the hbboxes for the yellow segements
     labeled_image, num_features = label(mask, structure=s)
     objs = find_objects(labeled_image)
+
+    # for obj in objs:
+    #     points = [[obj[1].start, obj[0].start], [obj[1].stop, obj[0].start], [obj[1].stop, obj[0].stop], [obj[1].start, obj[0].stop]]
+    
 
     return objs
   

@@ -634,3 +634,22 @@ def read_isprs_label(label_path):
         fill_none_to_empty_keys(labels, not_available_tasks)
 
     return labels
+
+
+if __name__ == "__main__":
+    from satellitepy.utils.path_utils import get_file_paths, get_project_folder
+    import time
+    from simplejson import dumps
+    import cv2
+
+    folder_path = Path("/mnt/2tb-0/satellitepy/data/Potsdam/archive/5_labels_for_participants")
+
+    for label_path in folder_path.glob("*.tif"):
+        read_isprs_label(str(label_path))
+        break
+
+
+
+
+
+
