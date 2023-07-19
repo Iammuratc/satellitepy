@@ -5,7 +5,7 @@ from satellitepy.data.utils import get_xview_classes, set_mask, parse_potsdam_la
 import json
 import numpy as np
 
-from satellitepy.data.cutout.geometry import BBox
+from satellitepy.data.bbox import BBox
 
 def read_label(label_path,label_format, mask_path = None):
     if isinstance(label_path,Path):
@@ -19,7 +19,7 @@ def read_label(label_path,label_format, mask_path = None):
     elif label_format=="dior" or label_format=="DIOR":
         return read_dior_label(label_path)
     elif label_format=="vhr" or label_format=="VHR":
-        return read_vhr_label(label_path)
+        return read_VHR_label(label_path)
     elif label_format == 'rareplanes_real' or label_format == 'rarePlanes_real':
         return read_rareplanes_real_label(label_path)
     elif label_format == 'rareplanes_synthetic' or label_format == 'rarePlanes_synthetic':
@@ -28,7 +28,7 @@ def read_label(label_path,label_format, mask_path = None):
         return read_ship_net_label(label_path)
     elif label_format == 'ucas':
         return read_ucas_label(label_path)
-    elif label_format == 'xview':   
+    elif label_format == 'xview':
         print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
         exit(1)
@@ -44,7 +44,7 @@ def get_all_satellitepy_keys():
     Returns
     -------
     all_keys : list of str
-        E.g. ['bboxes','mask-indices','classes_0','attributes_engines_propulsion']
+        E.g. ['bboxes','mask-indices','coarse-class','attributes_engines_propulsion']
     """
 
     labels = init_satellitepy_label()
@@ -64,6 +64,31 @@ def get_all_satellitepy_keys():
                             all_keys.append(f"{key_0}_{key_1}_{key_2}")
     return all_keys
 
+def set_image_keys(all_satellitepy_keys, sub_image_labels, gt_labels, i):
+    """
+    Set object labels for the patch 
+    Parameters
+    ----------
+    sub_image_labels : dict of str
+        Dict in satellitepy format. sub_image could be patch or chip
+    gt_labels : dict of str
+        Dict in satellitepy format 
+    gt_label_i : int
+        Index of object in gt_labels
+    Returns
+    -------
+    sub_image_labels : dict of str
+        Dict in satellitepy format. Only the objects within the patch and the chip
+    """
+    for task in all_satellitepy_keys:
+        keys = task.split("_")
+        if len(keys) == 1:
+            sub_image_labels[keys[0]].append(gt_labels[keys[0]][i])
+        elif len(keys) == 2:
+            sub_image_labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][i])
+        elif len(keys) == 3:
+            sub_image_labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][i])
+    return sub_image_labels
 
 def fill_none_to_empty_keys(labels,not_available_tasks):
     """
@@ -90,6 +115,33 @@ def fill_none_to_empty_keys(labels,not_available_tasks):
             labels[keys[0]][keys[1]][keys[2]].append(None)
     return labels
 
+def satellitepy_labels_empty(labels):
+    """
+    This function checks whether the labels dict in satellitepy format is empty.
+    Returns
+    -------
+    bool: Whether it is empty
+    """
+    # every key in the dict has ultimately a list as value
+    # we recursively go through the dict until the value is a list
+    # we collect booleans telling us whether the found lists are empty or not
+    # the labels dict is empty if every list value is empty
+    def inner(d):
+        # recursion stop
+        if isinstance(d, list):
+            return [len(d) > 0]
+        # recursion
+        elif isinstance(d, dict):
+            checklist = []
+            for v in d.values(): 
+                checklist += inner(v)
+            return checklist
+        # unexpected => raise error
+        else:
+            raise ValueError("expected labels dict in satellitepy format to only contain keys and values of type list")
+        
+    return not any(inner(labels))
+
 def init_satellitepy_label():
     """
     This function creates an empty labels dict in satellitepy format.
@@ -104,13 +156,14 @@ def init_satellitepy_label():
             Oriented bounding box corners for every object
         masks : list
             Mask pixel coordinates with the shape [<number-of-objects>,2]. The order is x,y
-        classes : dict of str
-            '0' : list of str
-                coarse grained classes. It has to be one of these three types: airplane,ship,vehicle
-            '1' : list of str 
-                fine grained classes (e.g., A220, passenger ship)
-            '2' : list of str 
-                very fine grained classes (e.g., A220-100)
+        coarse-class : list of str
+            coarse grained classes. It has to be one of these three types: airplane,ship,vehicle
+        fine-class : list of str 
+            fine grained classes (e.g., A220, passenger ship)
+        role : list of str 
+            object roles. For example, Small Civil Transport/Utility, Military Fighter/Interceptor/Attack
+        very-fine-class : list of str
+            very fine grained classes (e.g., A220-100)
         difficulty : list of int
             Detection difficulty of the object. Only DOTA provides this. 
             For example, clouds make the detection task difficult. 
@@ -134,17 +187,18 @@ def init_satellitepy_label():
             'tail' : dict of str
                 'no-tail-fins' : list of int
                     1, 2
-            'role' : dict of str
-                'civil' : list of str
-                    large_transport, medium_transport, small_transport
-                'military' : list of str
-                    fighter, bomber, transport, trainer
+            'role' : list of str
+                large_transport, medium_transport, small_transport
+                fighter, bomber, transport, trainer
     """
     labels={
         'hbboxes':[],
         'obboxes': [],
         'masks':[],
-        'coarse-class' : [],
+        'coarse-class':[],
+        'fine-class':[],
+        'very-fine-class':[],
+        'role':[],
         'difficulty':[],
         'attributes':{
             'engines':{
@@ -162,21 +216,24 @@ def init_satellitepy_label():
             },
             'tail':{
                 'no-tail-fins':[]
-            },
-            'role':{
-                'civil':[],
-                'military':[]
             }
         }
     }
     return labels    
 
+def merge_satpy_label_dict(target_satpy_labels: dict, to_add: dict):
+    for k in target_satpy_labels.keys():
+        if isinstance(target_satpy_labels[k], dict):
+            merge_satpy_label_dict(target_satpy_labels[k], to_add[k])
+        else:
+            # we expect final values to always be lists
+            target_satpy_labels[k] += to_add[k]
 
 def read_dota_label(label_path, mask_path=None):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes','difficulty','classes_0','classes_1']
+    available_tasks=['obboxes','difficulty','coarse-class','fine-class']
     mask_exists = True if mask_path else False
     if mask_exists:
         available_tasks.append('masks')
@@ -206,19 +263,19 @@ def read_dota_label(label_path, mask_path=None):
             # Classes
             category = bbox_line[category_i].rstrip()
             ## large-vehicle and small-vehicle should be handled individually
-            ### class_0 = vehicle, class_1 = large-vehicle
+            ### class_coarse-class = vehicle, class_fine-class = large-vehicle
             category_words = category.split('-')
             if len(category_words) == 2 and category_words[1]=='vehicle':
-                labels['classes']['0'].append(category_words[1]) # vehicle
-                labels['classes']['1'].append(category) # small-vehicle
+                labels['coarse-class'].append(category_words[1]) # vehicle
+                labels['fine-class'].append(category) # small-vehicle
             elif category=='plane' or category=='ship' or category=='helicopter':
                 # Airplane is the common word
                 category = 'airplane' if category == 'plane' else category
-                labels['classes']['0'].append(category) # plane, ship
-                labels['classes']['1'].append(None) #
+                labels['coarse-class'].append(category) # plane, ship
+                labels['fine-class'].append(None) #
             else:
-                labels['classes']['0'].append('object') #
-                labels['classes']['1'].append(category) #
+                labels['coarse-class'].append('other') #
+                labels['fine-class'].append(category) #
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
@@ -236,7 +293,7 @@ def read_fair1m_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes','classes_0','classes_1']
+    available_tasks=['obboxes','coarse-class','fine-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -251,17 +308,17 @@ def read_fair1m_label(label_path):
         './objects/object/possibleresult/name')
     for instance_name in instance_names:
         if instance_name.text in ['A321','A220','other-airplane','ARJ21','Boeing737','Boeing747','Boeing787','A330','Boeing777','C919','A350']:
-            labels['classes']['0'].append('airplane')
-            labels['classes']['1'].append(instance_name.text)
+            labels['coarse-class'].append('airplane')
+            labels['fine-class'].append(instance_name.text)
         elif instance_name.text in ['Cargo Truck','Small Car','Dump Truck','Van','Excavator','Bus','other-vehicle','Truck Tractor','Tractor','Trailer']:
-            labels['classes']['0'].append('vehicle')
-            labels['classes']['1'].append(instance_name.text)
+            labels['coarse-class'].append('vehicle')
+            labels['fine-class'].append(instance_name.text)
         elif instance_name.text in ['Liquid Cargo Ship','Passenger Ship','Dry Cargo Ship','Motorboat','Engineering Ship','Tugboat','Fishing Boat','other-ship','Warship']:
-            labels['classes']['0'].append('ship')
-            labels['classes']['1'].append(instance_name.text)
+            labels['coarse-class'].append('ship')
+            labels['fine-class'].append(instance_name.text)
         else:
-            labels['classes']['0'].append('object')
-            labels['classes']['1'].append(instance_name.text)
+            labels['coarse-class'].append('other')
+            labels['fine-class'].append(instance_name.text)
 
     # BBOX CCORDINATES
     point_spaces = root.findall('./objects/object/points')
@@ -284,10 +341,9 @@ def read_rareplanes_real_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_real
-    available_tasks = ['hbboxes', 'obboxes', 'classes_0', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
+    available_tasks = ['obboxes', 'coarse-class', 'role', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
                        'attributes_fuselage_canards', 'attributes_fuselage_length', 'attributes_wings_wing-span',
-                       'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins',
-                       'attributes_role_civil', 'attributes_role_military']
+                       'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins']
 
     # ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
@@ -301,8 +357,6 @@ def read_rareplanes_real_label(label_path):
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
 
-        labels['hbboxes'].append(points)
-
         A = (points[0], points[1])
         B = (points[2], points[3])
         C = (points[4], points[5])
@@ -315,9 +369,8 @@ def read_rareplanes_real_label(label_path):
 
         corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(),
                    np.add(B, vecToA).tolist()]
-
         labels['obboxes'].append(corners)
-        labels['classes']['0'].append('airplane')
+        labels['coarse-class'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
         labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
         canards =  annotation['canards']
@@ -331,29 +384,7 @@ def read_rareplanes_real_label(label_path):
         labels['attributes']['wings']['wing-position'].append(annotation['wing_position'])
         labels['attributes']['tail']['no-tail-fins'].append(int(annotation['num_tail_fins']))
         role = annotation['role']
-        if role == 'Small Civil Transport/Utility':
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
-        elif role== 'Medium Civil Transport/Utility':
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
-        elif role== 'Large Civil Transport/Utility':
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
-        elif role=='Military Transport/Utility/AWAC':
-            labels['attributes']['role']['military'].append(role)
-            labels['attributes']['role']['civil'].append(None)
-        elif role=='Military Fighter/Interceptor/Attack':
-            labels['attributes']['role']['military'].append(role)
-            labels['attributes']['role']['civil'].append(None)
-        elif role=='Military Trainer':
-            labels['attributes']['role']['military'].append(role)
-            labels['attributes']['role']['civil'].append(None)
-        elif role=='Military Bomber':
-            labels['attributes']['role']['military'].append(role)
-            labels['attributes']['role']['civil'].append(None)
-        else:
-            raise Exception(f'Unexpected role found: {role}')
+        labels['role'].append(role)
 
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
@@ -364,7 +395,7 @@ def read_rareplanes_synthetic_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_synthetic
-    available_tasks = ['hbboxes'  'obboxes', 'classes_0', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
+    available_tasks = ['hbboxes'  'obboxes', 'coarse-class', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
      'attributes_fuselage_canards', 'attributes_fuselage_length', 'attributes_wings_wing-span',
      'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins',
      'attributes_role_civil', 'attributes_role_military']
@@ -399,7 +430,7 @@ def read_rareplanes_synthetic_label(label_path):
         # masks missing
 
         labels['obboxes'].append(corners)
-        labels['classes']['0'].append('airplane')
+        labels['coarse-class'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
         labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
         canards = annotation['canards']
@@ -413,21 +444,16 @@ def read_rareplanes_synthetic_label(label_path):
         labels['attributes']['wings']['wing-position'].append(annotation['wing_position'])
         labels['attributes']['tail']['no-tail-fins'].append(int(annotation['num_tail_fins']))
         role = annotation['category_id']
+        
         if role == 1:  # Small Civil Transport/Utility
-            role = 'Small_Civil_Transport/Utility'
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
+            labels['role'].append('Small_Civil_Transport/Utility')
         elif role ==2:  # Medium Civil Transport/Utility
-            role = 'Medium_Civil_Transport/Utility'
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
+            labels['role'].append('Medium_Civil_Transport/Utility')
         elif role ==3:  # Large Civil Transport/Utility
+            labels['role'].append('Large_Civil_Transport/Utility')
             role = 'Large_Civil_Transport/Utility'
-            labels['attributes']['role']['civil'].append(role)
-            labels['attributes']['role']['military'].append(None)
         else:
-                raise Exception(f'Unexpected role found: {role}')
-
+            raise Exception(f'Unexpected role found: {role}')
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
  
@@ -435,13 +461,13 @@ def read_VHR_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for VHR
-    available_tasks=['bboxes', 'classes_0', "classes_1"]
+    available_tasks=['bboxes', 'coarse-class', "fine-class"]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
     
-    lut = { # Look-up Table for classes_1
+    lut = { # Look-up Table for fine-class
                 "1": None,
                 "2": None,
                 "3": 'storagetank',
@@ -464,16 +490,16 @@ def read_VHR_label(label_path):
             
             typ = vals[-1].strip()
             if typ == "1":
-                    labels['classes']['0'].append('airplane')
+                    labels['coarse-class'].append('airplane')
             elif typ == "2":
-                    labels['classes']['0'].append('ship')
+                    labels['coarse-class'].append('ship')
             elif typ == "10":
-                    labels['classes']['0'].append('vehicle')
+                    labels['coarse-class'].append('vehicle')
                                    
             else:
-                    labels['classes']['0'].append('object')
+                    labels['coarse-class'].append('other')
                 
-            labels['classes']['1'].append(lut[typ])
+            labels['fine-class'].append(lut[typ])
         handler.close()
             
     fill_none_to_empty_keys(labels,not_available_tasks)
@@ -484,22 +510,22 @@ def read_dior_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for VHR
-    available_tasks=['bboxes', "difficulty", 'classes_0', "classes_1"]
+    available_tasks=['bboxes', "difficulty", 'coarse-class', "fine-class"]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
     
-    handler = open(file, "r")
+    handler = open(label_path, "r")
     root = ( ET.parse(handler) ).getroot()
     for elem in root.findall("object"):
             typ = elem.find("name").text
             if typ == "ship" or typ == "vehicle" or typ == "airplane" : # object of interest
-                    labels['classes']['0'].append(typ)
-                    labels['classes']['1'].append(None)
+                    labels['coarse-class'].append(typ)
+                    labels['fine-class'].append(None)
             else :
-                    labels['classes']['0'].append("object")
-                    labels['classes']['1'].append(typ)
+                    labels['coarse-class'].append("other")
+                    labels['fine-class'].append(typ)
             bndbox = elem.find("bndbox")
             xmin = int(bndbox.find("xmin").text)
             xmax = int(bndbox.find("xmax").text)
@@ -515,8 +541,7 @@ def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes', 'difficulty', 'classes_0','classes_1']
-
+    available_tasks=['obboxes', 'difficulty', 'coarse-class','fine-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -525,8 +550,8 @@ def read_ship_net_label(label_path):
     # Instance names
     instance_names = root.findall('./object/name')
     for instance_name in instance_names:
-        labels['classes']['0'].append('ship')
-        labels['classes']['1'].append(instance_name.text)
+        labels['coarse-class'].append('ship')
+        labels['fine-class'].append(instance_name.text)
     instance_difficulties = root.findall('./object/difficult')
     for instance_difficulty in instance_difficulties:
         labels['difficulty'].append(instance_difficulty.text)
@@ -552,7 +577,7 @@ def read_ucas_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes', 'classes_0']
+    available_tasks=['obboxes', 'coarse-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -574,16 +599,14 @@ def read_ucas_label(label_path):
 
         # Using label path to determine object type
         if 'CAR' in str(label_path):
-            labels['classes']['0'].append('car')
+            labels['coarse-class'].append('car')
         elif 'PLANE' in str(label_path):
-            labels['classes']['0'].append('airplane')
+            labels['coarse-class'].append('airplane')
         else:
-            labels['classes']['0'].append(None)
+            labels['coarse-class'].append('other')
 
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
-
-
 
 def read_satellitepy_label(label_path):
     with open(label_path,'r') as f:

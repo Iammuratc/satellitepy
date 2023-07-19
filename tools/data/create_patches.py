@@ -3,6 +3,7 @@ from pathlib import Path
 from satellitepy.data.tools import save_patches
 from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
 import logging
+import sys
 """
 Create patches from original image and label folders 
 Save patch labels in json files that are in satellitepy format.
@@ -33,6 +34,10 @@ def get_args():
     parser.add_argument('--log-config-path', default=project_folder /
                         Path("configs/log.config"), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, required=False, help='Log path.')
+    parser.add_argument('--include-object-classes', nargs="*", type=str, default=None,
+                        help='A list of object class names that shall be included. Ignores all other object classes if not None. Takes precedence over --exclude-object-classes.')
+    parser.add_argument('--exclude-object-classes', nargs="*", type=str, default=None, 
+                        help='A list of object class names that shall be excluded. Includes all other object classes. Overriden by --include-object-classes if set.')
     args = parser.parse_args()
     return args
 
@@ -43,10 +48,14 @@ def run(args):
     in_label_format = str(args.in_label_format)
     if (args.in_mask_folder != None):
         in_mask_folder = Path(args.in_mask_folder)
+    else:
+        in_mask_folder = None
     out_folder = Path(args.out_folder)
     patch_overlap = int(args.patch_overlap)
     patch_size = int(args.patch_size)
     truncated_object_thr = float(args.truncated_object_thr)
+    include_object_classes = list(args.include_object_classes) if args.include_object_classes is not None else None
+    exclude_object_classes = list(args.exclude_object_classes) if args.exclude_object_classes is not None else None
 
     assert create_folder(out_folder)
 
@@ -68,7 +77,9 @@ def run(args):
         truncated_object_thr=truncated_object_thr,
         patch_size=patch_size,
         patch_overlap=patch_overlap,
-        mask_folder = in_mask_folder,
+        include_object_classes=include_object_classes,
+        exclude_object_classes=exclude_object_classes,
+        mask_folder = in_mask_folder
     )
 if __name__ == '__main__':
     args = get_args()

@@ -3,14 +3,18 @@ import logging
 import os
 import numpy as np
 from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
+import logging
 
 import cv2
 
-from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys
+from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys, satellitepy_labels_empty
 from satellitepy.data.patch import get_patches
+from satellitepy.data.chip import get_chips
 from satellitepy.data.utils import get_xview_classes
 from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
-
+from satellitepy.data.bbox import BBox
 
 def save_patches(
     image_folder,
@@ -20,6 +24,8 @@ def save_patches(
     truncated_object_thr,
     patch_size,
     patch_overlap,
+    include_object_classes,
+    exclude_object_classes,
     mask_folder = None
     ):
     """
@@ -42,6 +48,13 @@ def save_patches(
         Patch size
     patch_overlap : int
         Patch overlap
+    include_object_classes: list[str]
+        A list of object class names that shall be included as ground truth for the patches. 
+        Takes precedence over exclude_object_classes, i.e. if both are provided, 
+        only include_object_classes will be considered.
+    exclude_object_classes: list[str]
+        A list of object class names that shall be excluded as ground truth for the patches.
+        include_object_classes takes precedence and overrides the behaviour of this parameter.
     Returns
     -------
     Save patches in <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
@@ -75,10 +88,15 @@ def save_patches(
             truncated_object_thr,
             patch_size,
             patch_overlap,
+            include_object_classes,
+            exclude_object_classes
             )
 
             count_patches = len(patches['images'])
             for i in range(count_patches):
+                if satellitepy_labels_empty(patches["labels"][i]):
+                    continue
+
                 # Get original image name for naming patch files
                 img_name = img_path.stem
 
@@ -89,12 +107,160 @@ def save_patches(
                 patch_img = patches['images'][i]
                 patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png" 
                 cv2.imwrite(str(patch_image_path),patch_img)
-
+                
                 # Save patch labels
                 patch_label = patches['labels'][i]
                 patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
                 with open(str(patch_label_path),'w') as f:
                     json.dump(patch_label,f,indent=4)
+
+    else: 
+      logger.error("Folder lengths unequal!")
+
+def save_chips(
+    label_format,
+    image_folder,
+    label_folder,
+    out_folder,
+    margin_size,
+    include_object_classes,
+    exclude_object_classes,     
+    mask_folder = None
+    ):
+    """
+    Save chips from the original images
+    Parameters
+    ----------
+    label_format : str,
+        Resembles the label format (e.g. dota, fair1m, etc.)
+    image_folder : Path
+        Input image folder. Images in this folder will be processed.
+    label_folder : Path
+        Input label folder. Labels in this folder will be used to create patch labels.
+    out_folder : Path
+        Output folder. Patches and corresponding labels will be saved into <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
+    include_object_classes : list
+        Classes that will be saved,
+    exclude_object_classes : list
+        Classes that wont be saved
+    mask_folder : Path
+        Input mask folder. Masks in this folder will be used to create chip masks
+    Returns
+    -------
+    """
+    out_folder_images = out_folder / "images"
+    out_folder_labels = out_folder / "labels"
+
+    assert create_folder(out_folder_images)
+    assert create_folder(out_folder_labels)
+
+    image_paths = get_file_paths(image_folder)
+    label_paths = get_file_paths(label_folder)
+    if mask_folder:
+        mask_paths = get_file_paths(mask_folder)
+    else:
+        mask_paths = [None] * len(image_paths)
+
+    if (len(image_paths)==len(label_paths)==len(mask_paths)):
+        for img_path, label_path, mask_path in zip(image_paths, label_paths, mask_paths):
+            img = cv2.imread(str(img_path))
+            label = read_label(label_path, label_format, mask_path)
+            
+            chips = get_chips(
+                img, 
+                label, 
+                margin_size,
+                include_object_classes,
+                exclude_object_classes
+            )
+
+            count_chips = len(chips['images'])
+            img_name = img_path.stem
+
+
+            for i in range(count_chips):
+
+                chip_img_path = out_folder_images / f"{img_name}_{i}.png"
+                chip_img = chips['images'][i]
+
+                if not chip_img.size == 0:
+                    cv2.imwrite(str(chip_img_path), chip_img)
+                else:
+                    continue
+
+                chip_label = get_label_by_idx(chips['labels'], i)
+                chip_label_path = out_folder_labels / f"{img_name}_{i}.txt"
+
+                with open(str(chip_label_path), 'w') as f:
+                    json.dump(chip_label, f, indent=4)
+
+def get_label_by_idx(satpy_labels: dict, i: int):
+    """
+    Creates a copy of the satpy_labels dict by doing the following:
+    Sets each list to a singleton list correponding to the item at position i.
+    """
+    def inner(input_dict, output_dict):
+        for k in input_dict.keys():
+            if isinstance(input_dict[k], dict):
+                output_dict.setdefault(k, {})
+                inner(input_dict[k], output_dict[k])
+            else:
+                value = input_dict[k][i]
+                if isinstance(value, list):
+                    output_dict[k] = value
+                else:
+                    output_dict[k] = [value]
+
+    result = {}
+    inner(satpy_labels, result)
+    return result
+      
+def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks,mask_path):
+    logger = logging.getLogger(__name__)
+    img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
+    
+    gt_labels = read_label(label_path,label_format, mask_path)
+
+    fig = plt.figure(frameon=False)
+    
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    ax.imshow(img)
+    
+    classes = list(filter(lambda x: 'class' in x, tasks))
+
+    if 'masks' in tasks:
+        logger.info('Adding masks to Image')
+        for mask_indices in gt_labels['masks']:
+            ax.plot(mask_indices[0],mask_indices[1])
+
+    # if 'obboxes' in tasks:
+    #     for obbox in gt_labels['obboxes']:
+    #         BBox.plot_bbox(corners=, ax=ax, c='b', s=5)
+            
+    if classes or 'bboxes' in tasks:
+        bboxes = 'obboxes'
+        logger.info('Adding bounding boxes/labels to image')
+        if len(gt_labels['obboxes']) < 1:
+            bboxes = 'hbboxes'
+
+        for i in range(0, len(gt_labels[bboxes])):
+            bbox_corners = gt_labels[bboxes][i]
+            # bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2) 
+            if classes:
+                x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
+                ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+            if 'bboxes' in tasks:
+                BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
+            fig.canvas.draw()
+
+    plt.axis('off')
+    plt.show()
+    plt.savefig(output_folder / Path(img_path.stem + ".png"))
+    logger.info(f'Saved labels on {output_folder / Path(img_path.stem + ".png")}')
+    return fig
+  
 
 def split_rareplanes_labels(
         label_file,
@@ -145,7 +311,6 @@ def split_rareplanes_labels(
 
         json.dump(annotations, file, ensure_ascii=False, indent=4)
         file.close()
-
 
 def split_xview_labels(
         label_file,

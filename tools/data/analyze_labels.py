@@ -5,6 +5,7 @@ from satellitepy.data.labels import read_label, init_satellitepy_label
 import logging
 import os
 import json
+import numpy as np
 
 project_folder = get_project_folder()
 
@@ -62,14 +63,22 @@ def analyse_label_paths(label_paths,label_format,tasks,logger):
 
 def count_satellitepy_values(count_instances,task,values):
     for value in values:
-        if isinstance(value,str):
+        if isinstance(value,str) or isinstance(value,int):
             if value not in count_instances[task].keys():
                 count_instances[task][value] = 0
             count_instances[task][value] += 1
-        elif isinstance(value,list) or isinstance(value,float) or isinstance(value,int):
+        elif isinstance(value,list):
             if 'count' not in count_instances[task].keys():
                 count_instances[task]['count'] = 0
             count_instances[task]['count'] += 1
+        elif isinstance(value,float):
+            if 'max' not in count_instances[task].keys():
+                 count_instances[task]['max'] = 0
+                 count_instances[task]['min'] = np.inf
+            if value>count_instances[task]['max']:
+                count_instances[task]['max'] = value  
+            if value<count_instances[task]['min']:
+                count_instances[task]['min'] = value  
     return count_instances
 
 if __name__ == '__main__':
