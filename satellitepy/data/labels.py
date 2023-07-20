@@ -617,36 +617,22 @@ def read_isprs_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['hbboxes', 'coarse-class']
+    available_tasks=['hbboxes', 'coarse-class', 'masks']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
 
-    objs = parse_potsdam_labels(label_path)
+    hbboxes, masks = parse_potsdam_labels(label_path)
 
-    for obj in objs:
-        points = [[obj[1].start, obj[0].start], [obj[1].stop, obj[0].start], [obj[1].stop, obj[0].stop], [obj[1].start, obj[0].stop]]
-
+    for i in range(len(hbboxes)):
         labels['coarse-class'].append('car')
-        labels['hbboxes'].append(points)
+        labels['hbboxes'].append(hbboxes[i])
+        labels['masks'].append(masks)
 
         fill_none_to_empty_keys(labels, not_available_tasks)
 
     return labels
-
-
-if __name__ == "__main__":
-    from satellitepy.utils.path_utils import get_file_paths, get_project_folder
-    import time
-    from simplejson import dumps
-    import cv2
-
-    folder_path = Path("/mnt/2tb-0/satellitepy/data/Potsdam/archive/5_labels_for_participants")
-
-    for label_path in folder_path.glob("*.tif"):
-        read_isprs_label(str(label_path))
-        break
 
 
 
