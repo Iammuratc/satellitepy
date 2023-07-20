@@ -107,36 +107,26 @@ def get_xview_classes():
     return classes
 
 def parse_potsdam_labels(label_path):
-    from satellitepy.utils.path_utils import get_project_folder
-
     """
     Parses the potsdam images to extract the label data
     Parameters
     ----------
     label_path : string
-    Path to the 
+        Path to the
     Returns
     -------
     objs : list of slices
         Horizontal bounding boxes of the objects
     """
-    print(str(label_path))
-
     img = cv2.imread(label_path)
     
     # bleaching every color except yellow
     hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
-    # yellow = np.uint8([[[0, 255, 255]]])
-    # hsvYellow = cv2.cvtColor(yellow, cv2.COLOR_BGR2HSV)
 
     lower=np.array([20,100,100])
     upper=np.array([40,255,255])
 
     mask=cv2.inRange(hsv,lower,upper)
-
-    # cv2.imwrite(str(get_project_folder() / "in_folder/test/test_img_2.png"), hsv)
-    # cv2.imwrite(str(get_project_folder() / "in_folder/test/test_img_2.png"), img)
-    # cv2.imwrite(str(get_project_folder() / "in_folder/test/test_img_1.png"), img)
 
     s = generate_binary_structure(2, 2)
 
@@ -144,11 +134,19 @@ def parse_potsdam_labels(label_path):
     labeled_image, num_features = label(mask, structure=s)
     objs = find_objects(labeled_image)
 
-    # for obj in objs:
-    #     points = [[obj[1].start, obj[0].start], [obj[1].stop, obj[0].start], [obj[1].stop, obj[0].stop], [obj[1].start, obj[0].stop]]
-    
+    masks = []
+    hbboxes = []
 
-    return objs
+    for obj in objs:
+        hbbox = [[obj[1].start, obj[0].start], [obj[1].stop, obj[0].start], [obj[1].stop, obj[0].stop], [obj[1].start, obj[0].stop]]
+        h = BBox.get_bbox_limits(np.array(hbbox))
+
+        coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist()
+
+        masks.append([coords[0] + h[2], coords[1] + h[0]])
+        hbboxes.append(hbbox)
+
+    return (hbboxes, masks)
   
 def get_satellitepy_table():
     """
