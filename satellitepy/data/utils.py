@@ -226,6 +226,12 @@ def get_satellitepy_dict_values(satellitepy_dict,task):
     else:
         return 0
 
+def get_task_dict(task):
+    satellitepy_table = get_satellitepy_table()
+    task_dict = get_satellitepy_dict_values(satellitepy_table,task)
+    return task_dict
+
+
 # def set_merged_task_values(satellitepy_dict,merged_task_name):
 #     '''
 #     Merge the satellitepy dict task values. 

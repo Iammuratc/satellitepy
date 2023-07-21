@@ -17,48 +17,6 @@ class Utils:
         self.max_objs = 500
         self.image_distort =  data_augment.PhotometricDistort()
 
-    def load_img_ids(self):
-        """
-        Definition: generate self.img_ids
-        Usage: index the image properties (e.g. image name) for training, testing and evaluation
-        Format: self.img_ids = [list]
-        Return: self.img_ids
-        """
-        return None
-
-    def load_image(self, index):
-        """
-        Definition: read images online
-        Input: index, the index of the image in self.img_ids
-        Return: image with H x W x 3 format
-        """
-        return None
-
-    def load_annoFolder(self, img_id):
-        """
-        Return: the path of annotation
-        Note: You may not need this function
-        """
-        return None
-
-    def load_annotation(self, index):
-        """
-        Return: dictionary of {'pts': float np array of [bl, tl, tr, br], 
-                                'cat': int np array of class_index}
-        Explaination:
-                bl: bottom left point of the bounding box, format [x, y]
-                tl: top left point of the bounding box, format [x, y]
-                tr: top right point of the bounding box, format [x, y]
-                br: bottom right point of the bounding box, format [x, y]
-                class_index: the category index in self.category
-                    example: self.category = ['ship]
-                             class_index of ship = 0
-        """
-        return None
-
-    def dec_evaluation(self, result_path):
-        return None
-
     def data_transform(self, image, annotation):
         # only do random_flip augmentation to original images
         crop_size = None
@@ -105,16 +63,16 @@ class Utils:
         out_annotations['cat'] = np.asarray(out_cat, np.uint8)
         return image, out_annotations
 
-    def __len__(self):
-        return len(self.img_ids)
+    # def __len__(self):
+    #     return len(self.img_ids)
 
-    def processing_test(self, image, input_h, input_w):
-        image = cv2.resize(image, (input_w, input_h))
-        out_image = image.astype(np.float32) / 255.
-        out_image = out_image - 0.5
-        out_image = out_image.transpose(2, 0, 1).reshape(1, 3, input_h, input_w)
-        out_image = torch.from_numpy(out_image)
-        return out_image
+    # def processing_test(self, image, input_h, input_w):
+    #     image = cv2.resize(image, (input_w, input_h))
+    #     out_image = image.astype(np.float32) / 255.
+    #     out_image = out_image - 0.5
+    #     out_image = out_image.transpose(2, 0, 1).reshape(1, 3, input_h, input_w)
+    #     out_image = torch.from_numpy(out_image)
+    #     return out_image
 
     def cal_bbox_wh(self, pts_4):
         x1 = np.min(pts_4[:,0])
@@ -239,13 +197,13 @@ class Utils:
         #             exit()
         # #########################################################################################
 
-        ret = {'input': image,
-               'hm': hm,
-               'reg_mask': reg_mask,
-               'ind': ind,
-               'wh': wh,
-               'reg': reg,
-               'cls_theta':cls_theta,
+        ret = {'input': torch.from_numpy(image),
+               'hm': torch.from_numpy(hm),
+               'reg_mask': torch.from_numpy(reg_mask),
+               'ind': torch.from_numpy(ind),
+               'wh': torch.from_numpy(wh),
+               'reg': torch.from_numpy(reg),
+               'cls_theta':torch.from_numpy(cls_theta),
                }
         return ret
 
@@ -266,4 +224,46 @@ class Utils:
     #         data_dict = self.generate_ground_truth(image, annotation)
     #         return data_dict
 
+
+    # def load_img_ids(self):
+    #     """
+    #     Definition: generate self.img_ids
+    #     Usage: index the image properties (e.g. image name) for training, testing and evaluation
+    #     Format: self.img_ids = [list]
+    #     Return: self.img_ids
+    #     """
+    #     return None
+
+    # def load_image(self, index):
+    #     """
+    #     Definition: read images online
+    #     Input: index, the index of the image in self.img_ids
+    #     Return: image with H x W x 3 format
+    #     """
+    #     return None
+
+    # def load_annoFolder(self, img_id):
+    #     """
+    #     Return: the path of annotation
+    #     Note: You may not need this function
+    #     """
+    #     return None
+
+    # def load_annotation(self, index):
+    #     """
+    #     Return: dictionary of {'pts': float np array of [bl, tl, tr, br], 
+    #                             'cat': int np array of class_index}
+    #     Explaination:
+    #             bl: bottom left point of the bounding box, format [x, y]
+    #             tl: top left point of the bounding box, format [x, y]
+    #             tr: top right point of the bounding box, format [x, y]
+    #             br: bottom right point of the bounding box, format [x, y]
+    #             class_index: the category index in self.category
+    #                 example: self.category = ['ship]
+    #                          class_index of ship = 0
+    #     """
+    #     return None
+
+    # def dec_evaluation(self, result_path):
+    #     return None
 

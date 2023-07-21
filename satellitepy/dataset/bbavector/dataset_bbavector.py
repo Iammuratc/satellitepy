@@ -51,30 +51,18 @@ class BBAVectorDataset(Dataset):
         ### Labels
         labels = read_label(label_path,label_format)
         
-        # if self.task == 'fine-class':
-        #     labels, merged_task_name = merge_satellitepy_task_values(labels,tasks=['fine-class','coarse-class'])
-        #     self.task = merged_task_name
-        # elif self.task == 'very-fine-class':
-        #     labels, merged_task_name = merge_satellitepy_task_values(labels,tasks=['very-fine-class','fine-class','coarse-class'])
-        #     self.task = merged_task_name
-
         annotation = {}
         annotation['pts'] = np.asarray(labels['obboxes']) # np.asarray(valid_pts, np.float32)
         annotation['cat'] = np.asarray([self.task_dict[value] for value in get_satellitepy_dict_values(labels,self.task)]) # np.asarray(valid_cat, np.int32)
         annotation['dif'] = np.asarray(labels['difficulty']) # np.asarray(valid_dif, np.int32)
 
-        # if self.phase == 'test':
-        #     img_id = self.img_ids[index]
-        #     image = self.processing_test(image, self.input_h, self.input_w)
-        #     return {'image': image,
-        #             'img_id': img_id,
-        #             'image_w': image_w,
-        #             'image_h': image_h}
-
-        # elif self.phase == 'train':
-        # annotation = self.load_annotation(idx)
         image, annotation = self.utils.data_transform(image, annotation)
         data_dict = self.utils.generate_ground_truth(image, annotation)
+        data_dict['img_path']=str(img_path)
+        data_dict['label_path']=str(label_path)
+        data_dict['img_w']=image_w
+        data_dict['img_h']=image_h
+
         return data_dict
 
     

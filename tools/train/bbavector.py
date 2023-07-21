@@ -6,9 +6,10 @@ import torch
 
 
 from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
-from satellitepy.models.bbavector import ctrbox_net, decoder, train_model
-from satellitepy.data.utils import get_satellitepy_table, get_satellitepy_dict_values
+from satellitepy.models.bbavector import train_model
+from satellitepy.models.bbavector.tools import get_model
 from satellitepy.dataset.bbavector.dataset_bbavector import BBAVectorDataset
+from satellitepy.data.utils import get_task_dict
 
 
 
@@ -80,7 +81,7 @@ def train_bbavector(args):
     conf_thresh = args.conf_thresh
     K = args.K
     ngpus = args.ngpus
-    resume_train = args.resume_train
+    checkpoint_path = args.resume_train
 
     # Data output
     out_folder = Path(args.out_folder)
@@ -95,26 +96,12 @@ def train_bbavector(args):
         f'No log path is given, the default log path will be used: {log_path}')
     logger.info('Initiating the training of the BBAVector model...')
 
-    # Dataset
-    satellitepy_table = get_satellitepy_table()
-    task_dict = get_satellitepy_dict_values(satellitepy_table,task)
-    
+    # Model
+    model = get_model(task,down_ratio,checkpoint_path)
+
+    task_dict = get_task_dict(task)
     num_classes = len(task_dict)
-    heads = {'hm': num_classes,
-             'wh': 10,
-             'reg': 2,
-             'cls_theta': 1
-             }
-    model = ctrbox_net.CTRBOX(heads=heads,
-                              pretrained=True,
-                              down_ratio=down_ratio,
-                              final_kernel=1,
-                              head_conv=256)
-
-    model_decoder = decoder.DecDecoder(K=K,
-                                 conf_thresh=conf_thresh,
-                                 num_classes=num_classes)
-
+    
     train_dataset = BBAVectorDataset(
         train_image_folder,
         train_label_folder,
@@ -143,7 +130,7 @@ def train_bbavector(args):
         train_dataset=train_dataset,
         valid_dataset=valid_dataset,
         model=model,
-        decoder=model_decoder,
+        # decoder=model_decoder,
         down_ratio=down_ratio,
         out_folder=out_folder,
         init_lr=init_lr,
@@ -152,7 +139,7 @@ def train_bbavector(args):
         num_workers=num_workers,
         conf_thresh=conf_thresh,
         ngpus=ngpus,
-        resume_train=resume_train,
+        resume_train=checkpoint_path,
         patience=patience
         )
 

@@ -8,26 +8,14 @@ from tqdm import tqdm
 
 import satellitepy.models.bbavector.loss as loss_utils
 from satellitepy.models.utils import EarlyStopping
-
-
-
-def collater(data):
-    out_data_dict = {}
-    for name in data[0]:
-        out_data_dict[name] = []
-    for sample in data:
-        for name in sample:
-            out_data_dict[name].append(torch.from_numpy(sample[name]))
-    for name in out_data_dict:
-        out_data_dict[name] = torch.stack(out_data_dict[name], dim=0)
-    return out_data_dict
+from satellitepy.models.bbavector.utils import save_model, load_checkpoint#, collater
 
 class TrainModule(object):
     def __init__(self, 
         train_dataset, 
         valid_dataset, 
         model, 
-        decoder, 
+        # decoder, 
         down_ratio,
         out_folder,
         init_lr,
@@ -45,7 +33,7 @@ class TrainModule(object):
         #                       'hrsc': ['train', 'test']}
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = model
-        self.decoder = decoder
+        # self.decoder = decoder
         self.down_ratio = down_ratio
         self.out_folder=out_folder
         self.init_lr=init_lr
@@ -58,34 +46,6 @@ class TrainModule(object):
         self.patience=patience
 
 
-    def save_model(self, path, epoch, model, optimizer):
-        if isinstance(model, torch.nn.DataParallel):
-            state_dict = model.module.state_dict()
-        else:
-            state_dict = model.state_dict()
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': state_dict,
-            'optimizer_state_dict': optimizer.state_dict(),
-            # 'loss': loss
-        }, path)
-
-    def load_model(self, model, resume):
-        checkpoint = torch.load(resume)
-        print('loaded weights from {}, epoch {}'.format(resume, checkpoint['epoch']))
-
-        if isinstance(model, torch.nn.DataParallel):
-            model.module.load_state_dict(checkpoint['model_state_dict'])
-            optimizer = torch.optim.Adam(model.module.parameters(), lr=self.init_lr)
-        else:
-            model.load_state_dict(checkpoint['model_state_dict'])
-            optimizer = torch.optim.Adam(model.parameters(), lr=self.init_lr)
-
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        epoch = checkpoint['epoch']
-        valid_loss = checkpoint['loss']
-        return model, optimizer, epoch, valid_loss
-
     def train_network(self):
 
         save_path = str(self.out_folder)
@@ -97,7 +57,7 @@ class TrainModule(object):
 
         # add resume part for continuing training when break previously, 10-16-2020
         if self.resume_train:
-            self.model, self.optimizer, start_epoch, valid_loss = self.load_model(self.model, 
+            self.model, self.optimizer, start_epoch, valid_loss = load_checkpoint(self.model, 
                                                                         self.resume_train)
         else:
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr= self.init_lr)
@@ -119,16 +79,16 @@ class TrainModule(object):
                                                            shuffle=True,
                                                            num_workers=self.num_workers,
                                                            pin_memory=True,
-                                                           drop_last=True,
-                                                           collate_fn=collater)
+                                                           drop_last=True,)
+                                                        #    collate_fn=collater)
         if self.valid_dataset:
             valid_loader = torch.utils.data.DataLoader(self.valid_dataset,
                                                     batch_size=self.batch_size,
                                                     shuffle=True,
                                                     num_workers=self.num_workers,
                                                     pin_memory=True,
-                                                    drop_last=True,
-                                                    collate_fn=collater)
+                                                    drop_last=True,)
+                                                    # collate_fn=collater)
         early_stopping = EarlyStopping(
             patience=self.patience, 
             verbose=True, 
@@ -157,8 +117,7 @@ class TrainModule(object):
                     break
 
             else:
-                self.model.eval()
-                self.save_model(os.path.join(save_path, 'model_no_valid_{}.pth'.format(epoch)),
+                save_model(os.path.join(save_path, 'model_no_valid_{}.pth'.format(epoch)),
                                 epoch,
                                 self.model,
                                 self.optimizer)
@@ -172,23 +131,23 @@ class TrainModule(object):
             print(msg)
 
     def test_network(self):
-        self.optimizer = torch.optim.Adam(self.model.parameters(), self.init_lr)
+        # self.optimizer = torch.optim.Adam(self.model.parameters(), self.init_lr)
 
-        valid_loader = torch.utils.data.DataLoader(self.valid_dataset,
-                                        batch_size=self.batch_size,
-                                        shuffle=True,
-                                        num_workers=self.num_workers,
-                                        pin_memory=True,
-                                        drop_last=True,
-                                        collate_fn=collater)
-        criterion = loss_utils.LossAll()
+        # valid_loader = torch.utils.data.DataLoader(self.valid_dataset,
+        #                                 batch_size=self.batch_size,
+        #                                 shuffle=True,
+        #                                 num_workers=self.num_workers,
+        #                                 pin_memory=True,
+        #                                 drop_last=True,
+        #                                 collate_fn=collater)
+        # criterion = loss_utils.LossAll()
 
-        self.model, self.optimizer, start_epoch, valid_loss = self.load_model(
-            self.model, 
-            self.optimizer, 
-            self.resume_train, 
-            strict=True)
-        self.model.to(self.device)
+        # self.model, self.optimizer, start_epoch, valid_loss = load_checkpoint(
+        #     self.model, 
+        #     self.optimizer, 
+        #     self.resume_train, 
+        #     strict=True)
+        # self.model.to(self.device)
 
         valid_loss = self.run_valid(valid_loader, criterion)
         print(f'valid_loss: {valid_loss:.5f}')
