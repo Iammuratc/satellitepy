@@ -222,7 +222,9 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
             labels = read_label(label_path, label_format, mask_path)
 
             color = (0, 255, 0)
-            if label_format == 'results': color = (0, 0, 255)
+            if label_format == 'results':
+                print(label_format)
+                color = (0, 0, 255)
 
             # fig = plt.figure(frameon=False)
             #
