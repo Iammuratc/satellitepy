@@ -221,6 +221,9 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
 
             labels = read_label(label_path, label_format, mask_path)
 
+            color = (0, 255, 0)
+            if label_format == 'results': color = (0, 0, 255)
+
             # fig = plt.figure(frameon=False)
             #
             # ax = plt.Axes(fig, [0., 0., 1., 1.])
@@ -250,7 +253,7 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
                         # x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
                         # ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
                     if 'bboxes' in tasks:
-                        cv2.polylines(img, [bbox_corners], True, (0,0,255))
+                        cv2.polylines(img, [bbox_corners], True, color)
                         # BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
                     # fig.canvas.draw()
 
