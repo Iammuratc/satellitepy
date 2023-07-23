@@ -17,12 +17,14 @@ class Utils:
         self.max_objs = 500
         self.image_distort =  data_augment.PhotometricDistort()
 
-    def data_transform(self, image, annotation):
+    def data_transform(self, image, annotation, augmentation):
         # only do random_flip augmentation to original images
         crop_size = None
         crop_center = None
-        crop_size, crop_center = random_crop_info(h=image.shape[0], w=image.shape[1])
-        image, annotation['pts'], crop_center = random_flip(image, annotation['pts'], crop_center)
+
+        if augmentation:
+            crop_size, crop_center = random_crop_info(h=image.shape[0], w=image.shape[1])
+            image, annotation['pts'], crop_center = random_flip(image, annotation['pts'], crop_center)
         if crop_center is None:
             crop_center = np.asarray([float(image.shape[1])/2, float(image.shape[0])/2], dtype=np.float32)
         if crop_size is None:
@@ -31,7 +33,7 @@ class Utils:
                                crop_size=crop_size,
                                dst_size=(self.input_w, self.input_h),
                                inverse=False,
-                               rotation=True)
+                               rotation=augmentation)
         image = cv2.warpAffine(src=image, M=M, dsize=(self.input_w, self.input_h), flags=cv2.INTER_LINEAR)
         if annotation['pts'].shape[0]:
             annotation['pts'] = np.concatenate([annotation['pts'], np.ones((annotation['pts'].shape[0], annotation['pts'].shape[1], 1))], axis=2)

@@ -80,7 +80,8 @@ def save_patch_results(
         task_dict,
         input_h,
         input_w,
-        down_ratio)
+        down_ratio,
+        False)
     # Dataloader
     data_loader = torch.utils.data.DataLoader(dataset,
         batch_size=1,

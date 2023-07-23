@@ -55,7 +55,7 @@ def decode_predictions(predictions, orig_h, orig_w, input_h, input_w, down_ratio
         br = bb + rr - cen_pt
         score = pred[10]
         clse = pred[11]
-        pts = np.asarray([tr, br, bl, tl], np.float32)
+        pts = np.asarray([tl, bl,br, tr,], np.float32)
         pts[:, 0] = pts[:, 0] * down_ratio / input_w * orig_w
         pts[:, 1] = pts[:, 1] * down_ratio / input_h * orig_h
         # pts0[dsets.category[int(clse)]].append(pts)
