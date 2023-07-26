@@ -22,7 +22,7 @@ class BBAVectorDataset(Dataset):
         input_h,
         input_w,
         down_ratio,
-        augmentation = True):
+        augmentation = False):
         super(BBAVectorDataset, self).__init__()
         self.category = list(task_dict.keys())
 
