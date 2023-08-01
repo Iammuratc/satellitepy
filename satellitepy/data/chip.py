@@ -30,10 +30,10 @@ def get_chips(img, gt_labels, margin_size=100, include_object_classes=None, excl
 
     bbox_type = ""
 
-    if not None in gt_labels['obboxes'] and len(gt_labels['obboxes']) != 0:
-        bbox_type = "obboxes"
-    else:
+    if [None] * len(gt_labels['obboxes']) == gt_labels['obboxes']:
         bbox_type = "hbboxes"
+    else:
+        bbox_type = "obboxes"
 
     bboxes = gt_labels[bbox_type]
 

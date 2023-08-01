@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 from satellitepy.data.bbox import BBox
-
 from scipy.ndimage import generate_binary_structure, label, find_objects
 
 def set_mask(labels,mask_path,bbox_type):
