@@ -110,7 +110,8 @@ def train_bbavector(args):
         task_dict,
         input_h,
         input_w,
-        down_ratio)
+        down_ratio,
+        True)
 
     if args.valid_image_folder:
         valid_dataset = BBAVectorDataset(
@@ -121,7 +122,8 @@ def train_bbavector(args):
             task_dict,
             input_h,
             input_w,
-            down_ratio)
+            down_ratio,
+            True)
     else:
         valid_dataset = None
 

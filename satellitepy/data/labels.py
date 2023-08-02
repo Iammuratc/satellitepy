@@ -27,6 +27,8 @@ def read_label(label_path,label_format, mask_path = None):
         return read_ship_net_label(label_path)
     elif label_format == 'ucas':
         return read_ucas_label(label_path)
+    elif label_format == 'results':
+        return read_results(label_path)
     elif label_format == 'xview':
         print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
@@ -611,3 +613,23 @@ def read_satellitepy_label(label_path):
     with open(label_path,'r') as f:
         labels = json.load(f)
     return labels
+
+
+def read_results(result_path):
+    labels = init_satellitepy_label()
+
+    available_tasks = ['obboxes', 'hbboxes']
+
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+
+    with open(result_path, 'r') as f:
+        results = json.load(f)
+
+        labels['obboxes'] = results['det_labels']['obboxes']
+
+        fill_none_to_empty_keys(labels, not_available_tasks)
+
+        return  labels

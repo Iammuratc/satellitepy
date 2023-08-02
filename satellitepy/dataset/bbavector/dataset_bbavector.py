@@ -21,7 +21,8 @@ class BBAVectorDataset(Dataset):
         task_dict,
         input_h,
         input_w,
-        down_ratio):
+        down_ratio,
+        augmentation = False):
         super(BBAVectorDataset, self).__init__()
         self.category = list(task_dict.keys())
 
@@ -38,6 +39,8 @@ class BBAVectorDataset(Dataset):
 
         for img_path, label_path in zip_matched_files(in_image_folder,in_label_folder):
             self.items.append((img_path, label_path, in_label_format))
+
+        self.augmentation = augmentation
     def __len__(self):
         return len(self.items)
 
@@ -56,7 +59,7 @@ class BBAVectorDataset(Dataset):
         annotation['cat'] = np.asarray([self.task_dict[value] for value in get_satellitepy_dict_values(labels,self.task)]) # np.asarray(valid_cat, np.int32)
         annotation['dif'] = np.asarray(labels['difficulty']) # np.asarray(valid_dif, np.int32)
 
-        image, annotation = self.utils.data_transform(image, annotation)
+        image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
         data_dict = self.utils.generate_ground_truth(image, annotation)
         data_dict['img_path']=str(img_path)
         data_dict['label_path']=str(label_path)

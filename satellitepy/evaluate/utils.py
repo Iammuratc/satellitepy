@@ -183,6 +183,9 @@ def get_average_precision(precision,recall):
     len_conf_score_thresholds = precision.shape[1]
     len_instance_names = precision.shape[2]
 
+    precision = np.nan_to_num(precision, True, nan=1.0)
+    recall = np.nan_to_num(recall, True, nan = 0.0)
+
     ap = np.zeros(shape=(precision.shape[0],precision.shape[2]))
 
     for i_iou in range(len_iou_thresholds):
