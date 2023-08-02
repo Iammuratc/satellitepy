@@ -156,7 +156,7 @@ class TrainModule(object):
         self.model.train()
         running_loss = 0.
         for data_dict in tqdm(data_loader):
-            for name in data_dict:
+            for name in ['input', 'hm', 'reg_mask', 'ind', 'wh', 'reg', 'cls_theta']:
                 data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             self.optimizer.zero_grad()
             pr_decs = self.model(data_dict['input'])

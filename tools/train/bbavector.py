@@ -97,7 +97,7 @@ def train_bbavector(args):
     logger.info('Initiating the training of the BBAVector model...')
 
     # Model
-    model = get_model(task,down_ratio,checkpoint_path)
+    model = get_model(task,down_ratio)
 
     task_dict = get_task_dict(task)
     num_classes = len(task_dict)
