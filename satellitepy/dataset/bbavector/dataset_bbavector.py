@@ -22,7 +22,8 @@ class BBAVectorDataset(Dataset):
         input_h,
         input_w,
         down_ratio,
-        augmentation = False):
+        augmentation = False,
+        segmentation = False):
         super(BBAVectorDataset, self).__init__()
         self.category = list(task_dict.keys())
 
@@ -36,6 +37,7 @@ class BBAVectorDataset(Dataset):
         # self.image_path = os.path.join(data_dir, 'images')
         # self.label_path = os.path.join(data_dir, 'labelTxt')
         self.items = []
+        self.segmentation = segmentation
 
         for img_path, label_path in zip_matched_files(in_image_folder,in_label_folder):
             self.items.append((img_path, label_path, in_label_format))
@@ -43,6 +45,34 @@ class BBAVectorDataset(Dataset):
         self.augmentation = augmentation
     def __len__(self):
         return len(self.items)
+
+    def prepare_masks(self, labels, categories, image_width, image_height, image_file = None):
+        channels = len(self.task_dict)
+        masks = np.zeros((image_height, image_width, channels))
+
+        for idx, c in enumerate(categories):
+            m_x, m_y = labels["masks"][idx]
+            m_x = np.array(m_x).clip(0, image_width - 1)
+            m_y = np.array(m_y).clip(0, image_height - 1)
+            masks[ m_y, m_x, c] = 1.0
+
+        return masks
+
+    def visualize_masks(self, image, masks, labels):
+        #debug
+        mask_image = np.array(image)
+        image_h, image_w, _ = image.shape
+        mask = np.zeros((image_h, image_w, 1), dtype=np.uint8)
+        for m in np.moveaxis(masks, -1, 0):
+            test_m = m.astype(np.uint8)[:, :, np.newaxis]
+            mask = cv2.bitwise_or(mask, test_m)
+
+        mask_image = cv2.bitwise_and(mask_image, mask_image, mask=mask)
+        vis_image = np.concatenate((mask_image, image), axis=1)
+        title = ",".join(list(set([value for value in get_satellitepy_dict_values(labels,self.task)])))
+        cv2.imshow(title, vis_image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
 
     def __getitem__(self, idx):
@@ -59,7 +89,12 @@ class BBAVectorDataset(Dataset):
         annotation['cat'] = np.asarray([self.task_dict[value] for value in get_satellitepy_dict_values(labels,self.task)]) # np.asarray(valid_cat, np.int32)
         annotation['dif'] = np.asarray(labels['difficulty']) # np.asarray(valid_dif, np.int32)
 
+        if self.segmentation:
+            annotation['masks'] = self.prepare_masks(labels, annotation['cat'], image_w, image_h, str(img_path))
+
+        #self.visualize_masks(image, annotation['masks'], labels)
         image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
+        #self.visualize_masks(image, annotation['masks'], labels)
         data_dict = self.utils.generate_ground_truth(image, annotation)
         data_dict['img_path']=str(img_path)
         data_dict['label_path']=str(label_path)

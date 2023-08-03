@@ -25,7 +25,8 @@ class TrainModule(object):
         conf_thresh,
         ngpus,
         resume_train,
-        patience):
+        patience,
+        segmentation=False):
         torch.manual_seed(317)
         self.train_dataset = train_dataset
         self.valid_dataset = valid_dataset
@@ -44,6 +45,7 @@ class TrainModule(object):
         self.ngpus=ngpus
         self.resume_train=resume_train
         self.patience=patience
+        self.segmentation = segmentation
 
 
     def train_network(self):
@@ -71,7 +73,7 @@ class TrainModule(object):
         if not os.path.exists(save_path):
             os.mkdir(save_path)
 
-        criterion = loss_utils.LossAll()
+        criterion = loss_utils.LossAll(segmentation_loss=self.segmentation)
         print('Setting up data...')
 
         train_loader = torch.utils.data.DataLoader(self.train_dataset,
@@ -156,7 +158,10 @@ class TrainModule(object):
         self.model.train()
         running_loss = 0.
         for data_dict in tqdm(data_loader):
-            for name in ['input', 'hm', 'reg_mask', 'ind', 'wh', 'reg', 'cls_theta']:
+            name_list = ['input', 'hm', 'reg_mask', 'ind', 'wh', 'reg', 'cls_theta']
+            if self.segmentation:
+                name_list.append('seg_mask')
+            for name in name_list:
                 data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             self.optimizer.zero_grad()
             pr_decs = self.model(data_dict['input'])
@@ -175,7 +180,10 @@ class TrainModule(object):
         running_loss = 0.
 
         for data_dict in tqdm(data_loader):
-            for name in data_dict:
+            name_list = ['input', 'hm', 'reg_mask', 'ind', 'wh', 'reg', 'cls_theta']
+            if self.segmentation:
+                name_list.append('seg_mask')
+            for name in name_list:
                 data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             with torch.no_grad():
                 pr_decs = self.model(data_dict['input'])

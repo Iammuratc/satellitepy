@@ -56,7 +56,7 @@
         "--task-name",
         "coarse-class",
         "--batch-size",
-        "16",
+        "8",
         "--ngpus",
         "1",
         "--num-workers",
@@ -65,8 +65,7 @@
         "150",
         "--init-lr",
         "5e-4",
-        "--resume-train",
-        "/home/simon/unibw/data/satpy/temp/model_best.pth"
+        "--segmentation"
       ]
     }
     // python3 tools/train/bbavector.py --train-image-folder /home/simon/unibw/data/satpy/dota-patches/train/images --train-label-folder /home/simon/unibw/data/satpy/dota-patches/train/labels --train-label-format satellitepy --valid-image-folder /home/simon/unibw/data/satpy/dota-patches/val/images --valid-label-folder /home/simon/unibw/data/satpy/dota-patches/val/labels --valid-label-format satellitepy  --out-folder /home/simon/unibw/data/satpy/temp --task-name coarse-class --batch-size 15 --ngpus 2 --num-workers 8 --num-epoch 150  --init-lr 5e-4 --resume-train exps/bbavector_temp/model_best.pth

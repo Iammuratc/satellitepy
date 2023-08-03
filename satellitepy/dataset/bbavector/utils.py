@@ -21,10 +21,14 @@ class Utils:
         # only do random_flip augmentation to original images
         crop_size = None
         crop_center = None
+        if 'masks' in annotation:
+            mask = annotation['masks']
+        else:
+            mask = None
 
         if augmentation:
             crop_size, crop_center = random_crop_info(h=image.shape[0], w=image.shape[1])
-            image, annotation['pts'], crop_center = random_flip(image, annotation['pts'], crop_center)
+            image, annotation['pts'], crop_center, mask = random_flip(image, annotation['pts'], crop_center, mask)
         if crop_center is None:
             crop_center = np.asarray([float(image.shape[1])/2, float(image.shape[0])/2], dtype=np.float32)
         if crop_size is None:
@@ -35,6 +39,13 @@ class Utils:
                                inverse=False,
                                rotation=augmentation)
         image = cv2.warpAffine(src=image, M=M, dsize=(self.input_w, self.input_h), flags=cv2.INTER_LINEAR)
+        if mask is not None:
+            mask = cv2.warpAffine(
+                src=mask, 
+                M=M, 
+                dsize=(self.input_w, self.input_h), 
+                flags=cv2.INTER_LINEAR
+            )
         if annotation['pts'].shape[0]:
             annotation['pts'] = np.concatenate([annotation['pts'], np.ones((annotation['pts'].shape[0], annotation['pts'].shape[1], 1))], axis=2)
             annotation['pts'] = np.matmul(annotation['pts'], np.transpose(M))
@@ -63,6 +74,8 @@ class Utils:
                 out_cat.append(cat)
         out_annotations['rect'] = np.asarray(out_rects, np.float32)
         out_annotations['cat'] = np.asarray(out_cat, np.uint8)
+        if mask is not None:
+            out_annotations['masks'] = mask
         return image, out_annotations
 
     # def __len__(self):
@@ -113,6 +126,12 @@ class Utils:
         image = self.image_distort(np.asarray(image, np.float32))
         image = np.asarray(np.clip(image, a_min=0., a_max=255.), np.float32)
         image = np.transpose(image / 255. - 0.5, (2, 0, 1))
+
+        if 'masks' in annotation:
+            mask = annotation['masks']
+            mask = np.transpose(mask, (2, 0, 1))
+        else:
+            mask = None
 
         image_h = self.input_h // self.down_ratio
         image_w = self.input_w // self.down_ratio
@@ -207,6 +226,10 @@ class Utils:
                'reg': torch.from_numpy(reg),
                'cls_theta':torch.from_numpy(cls_theta),
                }
+
+        if mask is not None:
+            ret['seg_mask'] = torch.from_numpy(mask)
+
         return ret
 
     # def __getitem__(self, index):

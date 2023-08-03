@@ -49,6 +49,8 @@ def parse_args():
     parser.add_argument('--out-folder',
                         type=Path,
                         help='Save folder of experiments. The trained weights will be saved under this folder.')
+    parser.add_argument('--segmentation', action='store_true')
+    parser.set_defaults(segmentation=False)
 
     # parser.add_argument('--resume', type=str, default='model_50.pth', help='Weights resumed in testing and evaluation')
     # parser.add_argument('--dataset', type=str, default='dota', help='Name of dataset')
@@ -97,7 +99,7 @@ def train_bbavector(args):
     logger.info('Initiating the training of the BBAVector model...')
 
     # Model
-    model = get_model(task,down_ratio)
+    model = get_model(task,down_ratio, args.segmentation)
 
     task_dict = get_task_dict(task)
     num_classes = len(task_dict)
@@ -111,7 +113,8 @@ def train_bbavector(args):
         input_h,
         input_w,
         down_ratio,
-        True)
+        True,
+        args.segmentation)
 
     if args.valid_image_folder:
         valid_dataset = BBAVectorDataset(
@@ -123,7 +126,8 @@ def train_bbavector(args):
             input_h,
             input_w,
             down_ratio,
-            True)
+            True,
+            args.segmentation)
     else:
         valid_dataset = None
 
@@ -142,7 +146,8 @@ def train_bbavector(args):
         conf_thresh=conf_thresh,
         ngpus=ngpus,
         resume_train=checkpoint_path,
-        patience=patience
+        patience=patience,
+        segmentation=args.segmentation
         )
 
     ctrbox_obj.train_network()

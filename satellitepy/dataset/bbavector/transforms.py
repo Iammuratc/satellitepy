@@ -1,23 +1,27 @@
 import numpy as np
 import cv2
 
-def random_flip(image, gt_pts, crop_center=None):
+def random_flip(image, gt_pts, crop_center=None, mask=None):
     # image: h x w x c
     # gt_pts: num_obj x 4 x 2
     h,w,c = image.shape
     if np.random.random()<0.5:
         image = image[:,::-1,:]
+        if mask is not None:
+            mask = mask[:, ::-1,:]
         if gt_pts.shape[0]:
             gt_pts[:,:,0] = w-1 - gt_pts[:,:,0]
         if crop_center is not None:
             crop_center[0] = w-1 - crop_center[0]
     if np.random.random()<0.5:
         image = image[::-1,:,:]
+        if mask is not None:
+            mask = mask[::-1,:,:]
         if gt_pts.shape[0]:
             gt_pts[:,:,1] = h-1 - gt_pts[:,:,1]
         if crop_center is not None:
             crop_center[1] = h-1 - crop_center[1]
-    return image, gt_pts, crop_center
+    return image, gt_pts, crop_center, mask
 
 
 def _get_border(size, border):
