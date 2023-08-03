@@ -3,6 +3,8 @@ import numpy as np
 from satellitepy.data.bbox import BBox
 from scipy.ndimage import generate_binary_structure, label, find_objects
 
+from satellitepy.data.bbox import BBox
+
 def set_mask(labels,mask_path,bbox_type):
     """
     Set the masks key in the satellitepy dict by using the bboxes in the dict
@@ -22,7 +24,7 @@ def set_mask(labels,mask_path,bbox_type):
     for bbox in labels[bbox_type]:
         h = BBox.get_bbox_limits(np.array(bbox))
         mask_0 = np.zeros((mask.shape[0],mask.shape[1]))
-        
+
         cv2.fillPoly(mask_0, [np.array(bbox,dtype=int)], 1)
         
         coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist() # y,x
