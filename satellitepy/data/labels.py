@@ -1,3 +1,5 @@
+from builtins import print
+
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -89,7 +91,7 @@ def set_image_keys(all_satellitepy_keys, sub_image_labels, gt_labels, i):
 
 def fill_none_to_empty_keys(labels,not_available_tasks):
     """
-    Append None to non existing tasks for one object 
+    Append None to non existing tasks for one object; Hbboxes are calculated by obboxes if missing
     Parameters
     ----------
     labels : dict of str
@@ -101,7 +103,6 @@ def fill_none_to_empty_keys(labels,not_available_tasks):
     labels : dict of str
         None appended dict in satellitepy format
     """
-
     for task in not_available_tasks:
         keys = task.split('_')
         if len(keys)==1:
@@ -230,7 +231,7 @@ def read_dota_label(label_path, mask_path=None):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes','difficulty','coarse-class','fine-class']
+    available_tasks=['hbboxes', 'obboxes','difficulty','coarse-class','fine-class']
     mask_exists = True if mask_path else False
     if mask_exists:
         available_tasks.append('masks')
@@ -277,6 +278,7 @@ def read_dota_label(label_path, mask_path=None):
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
             labels['obboxes'].append(bbox_corners)
+            labels['hbboxes'].append(get_HBB_from_OBB(bbox_corners))
             fill_none_to_empty_keys(labels,not_available_tasks)
 
         # Mask
@@ -338,7 +340,7 @@ def read_rareplanes_real_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_real
-    available_tasks = ['obboxes', 'coarse-class', 'role', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
+    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'role', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
                        'attributes_fuselage_canards', 'attributes_fuselage_length', 'attributes_wings_wing-span',
                        'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins']
 
@@ -367,6 +369,7 @@ def read_rareplanes_real_label(label_path):
         corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(),
                    np.add(B, vecToA).tolist()]
         labels['obboxes'].append(corners)
+        labels['hbboxes'].append(get_HBB_from_OBB(corners))
         labels['coarse-class'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
         labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
@@ -426,6 +429,8 @@ def read_rareplanes_synthetic_label(label_path):
 
         # masks missing
 
+        ## remove attributes, add fine-class?
+
         labels['obboxes'].append(corners)
         labels['coarse-class'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
@@ -458,7 +463,7 @@ def read_VHR_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for VHR
-    available_tasks=['bboxes', 'coarse-class', "fine-class"]
+    available_tasks=['hbboxes', 'coarse-class', "fine-class"]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -509,7 +514,7 @@ def read_dior_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for VHR
-    available_tasks=['bboxes', "difficulty", 'coarse-class', "fine-class"]
+    available_tasks=['obboxes', "difficulty", 'coarse-class', "fine-class"]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -540,7 +545,7 @@ def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes', 'difficulty', 'coarse-class','fine-class']
+    available_tasks=['hbboxes', 'obboxes', 'difficulty', 'coarse-class','fine-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -569,6 +574,7 @@ def read_ship_net_label(label_path):
                 corner = []
 
         labels['obboxes'].append(coords)
+        labels['hbboxes'].append(get_HBB_from_OBB(coords))
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
@@ -576,7 +582,7 @@ def read_ucas_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes', 'coarse-class']
+    available_tasks=['hbboxes', 'obboxes', 'coarse-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -595,6 +601,7 @@ def read_ucas_label(label_path):
             coords.append(corner)
             corner = []
         labels['obboxes'].append(coords)
+        labels['hbboxes'].append(get_HBB_from_OBB(coords))
 
         # Using label path to determine object type
         if 'CAR' in str(label_path):
@@ -611,4 +618,18 @@ def read_satellitepy_label(label_path):
     with open(label_path,'r') as f:
         labels = json.load(f)
     return labels
+
+def get_HBB_from_OBB(obb):
+    x_coords = [obb[0][0], obb[1][0], obb[2][0], obb[3][0]]
+    y_coords = [obb[0][1], obb[1][1], obb[2][1], obb[3][1]]
+
+    max_x = max(x_coords)
+    min_x = min(x_coords)
+
+    max_y = max(y_coords)
+    min_y = min(y_coords)
+
+    hbb = [[min_x, max_y], [min_x, min_y], [max_x, min_y], [max_x, max_y]]
+    return hbb
+
 

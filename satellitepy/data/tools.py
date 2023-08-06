@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import shutil
+
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -413,23 +415,23 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
 
         type_class = int(feature['properties']['type_id'])
         if type_class in classes['vehicles']:
-            image_dicts[img_name]['classes']['0'].append('vehicle')
-            image_dicts[img_name]['classes']['1'].append(classes['vehicles'][type_class])
+            image_dicts[img_name]['coarse-class'].append('vehicle')
+            image_dicts[img_name]['fine-class'].append(classes['vehicles'][type_class])
         elif type_class in classes['ships']:
-            image_dicts[img_name]['classes']['0'].append('ship')
-            image_dicts[img_name]['classes']['1'].append(classes['ships'][type_class])
+            image_dicts[img_name]['coarse-class'].append('ship')
+            image_dicts[img_name]['fine-class'].append(classes['ships'][type_class])
         elif type_class in classes['airplanes']:
-            image_dicts[img_name]['classes']['0'].append('airplane')
-            image_dicts[img_name]['classes']['1'].append(classes['airplanes'][type_class])
+            image_dicts[img_name]['coarse-class'].append('airplane')
+            image_dicts[img_name]['fine-class'].append(classes['airplanes'][type_class])
         elif type_class in classes['helicopter']:
-            image_dicts[img_name]['classes']['0'].append('helicopter')
-            image_dicts[img_name]['classes']['1'].append(None)
+            image_dicts[img_name]['coarse-class'].append('helicopter')
+            image_dicts[img_name]['fine-class'].append(None)
         elif type_class in classes['objects']:
-            image_dicts[img_name]['classes']['0'].append('object')
-            image_dicts[img_name]['classes']['1'].append(classes['objects'][type_class])
+            image_dicts[img_name]['coarse-class'].append('object')
+            image_dicts[img_name]['fine-class'].append(classes['objects'][type_class])
         else:
-            image_dicts[img_name]['classes']['0'].append(None)
-            image_dicts[img_name]['classes']['1'].append(None)
+            image_dicts[img_name]['coarse-class'].append('other')
+            image_dicts[img_name]['fine-class'].append(None)
 
 
         fill_none_to_empty_keys(image_dicts[img_name],not_available_tasks)
@@ -440,3 +442,43 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
         label_path = out_folder / label_name
         with open(str(label_path),'w') as f:
             json.dump(satellitepy_dict,f,indent=4)
+
+
+def separate_shipnet_data(out_folder, label_folder, image_folder, dataset_part):
+    """
+    Parameters
+    -------
+    out_folder : Path
+        Output folder. Images and labels will be saved into <out-folder>
+    Returns
+    -------
+    Split the images and labels according to the dataset_part file
+    """
+    # Create outut folder
+    logger = logging.getLogger(__name__)
+    logger.info(f'Initializing separate_shipnet_data')
+
+    dataset_name = dataset_part.stem
+    out_image_folder = os.path.join(out_folder, Path('images'))
+    assert create_folder(Path(out_image_folder))
+
+    if dataset_name != 'test':
+        out_label_folder = os.path.join(out_folder, Path('labels'))
+        assert(create_folder(Path(out_label_folder)))
+
+    with open(dataset_part, 'r') as dataset:
+        for line in dataset.readlines():
+            name = line.split('.')[0]
+
+            image_path = os.path.join(image_folder, Path(name + '.bmp'))
+
+            shutil.copy(image_path, out_image_folder)
+
+            if dataset_name != 'test':
+                padding = max(0, 6 - name.__len__())
+                label_path = os.path.join(label_folder, Path(padding * '0' + name + '.xml'))
+                shutil.copy(label_path, out_label_folder)
+    logger.info(f'Images and labels saved for dataset-part {dataset_name}')
+
+
+
