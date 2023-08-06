@@ -395,10 +395,7 @@ def read_rareplanes_synthetic_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_synthetic
-    available_tasks = ['hbboxes'  'obboxes', 'coarse-class', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
-     'attributes_fuselage_canards', 'attributes_fuselage_length', 'attributes_wings_wing-span',
-     'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins',
-     'attributes_role_civil', 'attributes_role_military']
+    available_tasks = ['hbboxes'  'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'role']
 
     # ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
@@ -411,8 +408,6 @@ def read_rareplanes_synthetic_label(label_path):
 
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
-
-        labels['hbboxes'].append(points)
 
         A = (points[0], points[1])
         B = (points[2], points[3])
@@ -429,22 +424,19 @@ def read_rareplanes_synthetic_label(label_path):
 
         # masks missing
 
-        ## remove attributes, add fine-class?
-
         labels['obboxes'].append(corners)
+        labels['obboxes'].append(get_HBB_from_OBB(corners))
         labels['coarse-class'].append('airplane')
-        labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
-        labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
-        canards = annotation['canards']
-        if canards == 'yes':
-            labels['attributes']['fuselage']['canards'].append(True)
-        elif canards == 'no':
-            labels['attributes']['fuselage']['canards'].append(False)
-        labels['attributes']['fuselage']['length'].append(float(annotation['length']))
-        labels['attributes']['wings']['wing-span'].append(float(annotation['wingspan']))
-        labels['attributes']['wings']['wing-shape'].append(annotation['wing_type'])
-        labels['attributes']['wings']['wing-position'].append(annotation['wing_position'])
-        labels['attributes']['tail']['no-tail-fins'].append(int(annotation['num_tail_fins']))
+
+        name = str(annotation['full'].split('_')[3:-1])
+        fine = name.split('-')[0]
+        labels['fine-class'].append(fine)
+
+        if name.split('-').__len__() > 1:
+            labels['very-fine-class'].append(name)
+        else:
+            labels['very-fine-class'].append(None)
+
         role = annotation['category_id']
         
         if role == 1:  # Small Civil Transport/Utility
@@ -456,6 +448,7 @@ def read_rareplanes_synthetic_label(label_path):
             role = 'Large_Civil_Transport/Utility'
         else:
             raise Exception(f'Unexpected role found: {role}')
+        labels['role'].append(role)
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
  
