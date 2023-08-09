@@ -85,13 +85,13 @@ def save_patches(
             gt_labels = read_label(label_path,label_format,mask_path)
             # Save results with the corresponding ground truth
             patches = get_patches(
-            img,
-            gt_labels,
-            truncated_object_thr,
-            patch_size,
-            patch_overlap,
-            include_object_classes,
-            exclude_object_classes
+                img,
+                gt_labels,
+                truncated_object_thr,
+                patch_size,
+                patch_overlap,
+                include_object_classes,
+                exclude_object_classes
             )
 
             count_patches = len(patches['images'])
@@ -107,9 +107,9 @@ def save_patches(
 
                 # Save patch image
                 patch_img = patches['images'][i]
-                patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png" 
+                patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png"
                 cv2.imwrite(str(patch_image_path),patch_img)
-                
+
                 # Save patch labels
                 patch_label = patches['labels'][i]
                 patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"

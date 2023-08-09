@@ -395,7 +395,7 @@ def read_rareplanes_synthetic_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_synthetic
-    available_tasks = ['hbboxes'  'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'role']
+    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'role']
 
     # ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
@@ -425,10 +425,10 @@ def read_rareplanes_synthetic_label(label_path):
         # masks missing
 
         labels['obboxes'].append(corners)
-        labels['obboxes'].append(get_HBB_from_OBB(corners))
+        labels['hbboxes'].append(get_HBB_from_OBB(corners))
         labels['coarse-class'].append('airplane')
 
-        name = str(annotation['full'].split('_')[3:-1])
+        name = '_'.join(annotation['full'].split('_')[3:])
         fine = name.split('-')[0]
         labels['fine-class'].append(fine)
 
@@ -438,20 +438,18 @@ def read_rareplanes_synthetic_label(label_path):
             labels['very-fine-class'].append(None)
 
         role = annotation['category_id']
-        
+
         if role == 1:  # Small Civil Transport/Utility
             labels['role'].append('Small_Civil_Transport/Utility')
         elif role ==2:  # Medium Civil Transport/Utility
             labels['role'].append('Medium_Civil_Transport/Utility')
         elif role ==3:  # Large Civil Transport/Utility
             labels['role'].append('Large_Civil_Transport/Utility')
-            role = 'Large_Civil_Transport/Utility'
         else:
             raise Exception(f'Unexpected role found: {role}')
-        labels['role'].append(role)
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
- 
+
 def read_VHR_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks

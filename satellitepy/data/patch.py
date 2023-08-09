@@ -67,10 +67,10 @@ def get_patches(
 
     # Init patch dictionary
     patch_dict = {
-      'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],
-      'labels':[init_satellitepy_label() for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
-      'start_coords': patch_start_coords,
-      }
+        'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],
+        'labels':[init_satellitepy_label() for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
+        'start_coords': patch_start_coords,
+    }
 
     for i,patch_start_coord in enumerate(patch_start_coords):
         # Patch starting coordinates
@@ -98,11 +98,9 @@ def get_patches(
 
             elif obb_defined:
                 shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr)
-                
             else:
                 logger.error('Error reading bounding boxes! No bounding boxes found')
                 exit(1)
-            
     return patch_dict
     
 def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, truncated_object_thr, consider_additional=False, additional='hbboxes'):
