@@ -127,106 +127,144 @@ def get_satellitepy_table():
 			'A321' 						: 1,    # Fair1m
 			'A330' 						: 2,    # Fair1m
 			'A350' 						: 3,    # Fair1m
-			'AOE' 						: 4,    # Shit Net
+			'AOE' 						: 4,    # Ship Net
 			'ARJ21'						: 5,    # Fair1m
-			'Arleigh Burke DD'			: 6,    # Shit Net
-			'Asagiri DD'				: 7,    # Shit Net
-			'Atago DD'					: 8,    # Shit Net
-			'Austin LL'					: 9,    # Shit Net
-			'Barge'						: 10,   # Shit Net
-			'Boeing737'					: 11,   # Fair1m
-			'Boeing747'					: 12,   # Fair1m
-			'Boeing777'					: 13,   # Fair1m
+			'Arleigh Burke DD'			: 6,    # Ship Net
+			'Asagiri DD'				: 7,    # Ship Net
+            'AirbusA300'                : 98,   # Rareplanes_synthetic
+            'AirbusA-319'               : 99,    # Rareplanes_synthetic
+            'Airbus_A320'               : 100,
+            'Airbus_A330'               : 101,
+            'Airbus_A'                  : 102,
+            'Airbus_A380'               : 103,
+			'Atago DD'					: 8,    # Ship Net
+			'Austin LL'					: 9,    # Ship Net
+            'ATR_ATR'                   : 104,
+            'BAE_146'                   : 105,
+			'Barge'						: 10,   # Ship Net
+            'Boeing_707'                : 106,
+            'Boeing_717'                : 107,
+            'Boeing_727'                : 108,
+			'Boeing737'					: 11,   # Fair1m, Rareplanes_synthetic
+			'Boeing747'					: 12,   # Fair1m, Rareplanes_synthetic
+            'Boeing_757'                : 109,
+            'Boeing_767'                : 110,
+			'Boeing777'					: 13,   # Fair1m, Rareplanes_synthetic
 			'Boeing787'					: 14,   # Fair1m
+            'Boeing_BBJ'                : 111,
+            'Bombardier_BD'             : 112,
+            'Bombardier_Challenger'     : 113,
+            'Bombardier_CRJ'            : 114,
+            'Bombardier_Learjet'        : 115,
 			'Bus'						: 15,   # Fair1m, Xview
 			'C919'						: 16,   # Fair1m
 			'Cargo Car'					: 17,   # Xview
 			'Cargo Plane'				: 18,   # Xview
 			'Cargo Truck'				: 19,   # Fair1m, Xview
 			'Cement Mixer'				: 20,   # Xview
-			'Commander'					: 21,   # Shit Net
-			'Container Ship'			: 22,   # Shit Net, Xview
+			'Commander'					: 21,   # Ship Net
+			'Container Ship'			: 22,   # Ship Net, Xview
 			'Crane Truck'				: 23,   # Xview
+            'Cessna'                    : 116,
+            'Cessna_170'                : 117,
+            'Cessna_172'                : 118,
+            'Cessna_310'                : 119,
+            'Cessna_Citation'           : 120,
+            'Dassault_Falcon'           : 121,
+            'DeHavillandCanada_DHC'     : 122,
 			'Dry Cargo Ship'			: 24,   # Fair1m
 			'Dump Truck'				: 25,   # Fair1m, Xview
+            'Embraer_ERJ'               : 123,
+            'Embraer_Legacy'            : 124,
 			'Engineering Ship'			: 26,   # Fair1m
 			'Engineering Vessel'		: 27,   # Xview
-			'EPF'						: 28,   # Shit Net
-            'Enterprise'                : 96,   # Shit Net
-			'Ferry'						: 29,   # Shit Net, Xview
+			'EPF'						: 28,   # Ship Net
+            'Enterprise'                : 96,   # Ship Net
+			'Ferry'						: 29,   # Ship Net, Xview
 			'Fishing Boat'				: 30,   # Fair1m
-			'Fishing Vessel'			: 30,   # Shit Net, Xview
+			'Fishing Vessel'			: 30,   # Ship Net, Xview
 			'Fixed-Wing Aircraft'		: 31,   # Xview
 			'Flat Car'					: 32,   # Xview
+            'Fokker_100'                : 125,
 			'Front Loader'				: 33,   # Xview
 			'Ground Grader'				: 34,   # Xview
-			'Hatsuyuki DD'				: 35,   # Shit Net
+            'Gulfstream_G200'           : 126,
+            'Gulfstream_GIII'           : 127,
+			'Hatsuyuki DD'				: 35,   # Ship Net
 			'Haul Truck'				: 36,   # Xview
-			'Hovercraft'				: 37,   # Shit Net
-			'Hyuga DD'					: 38,   # Shit Net
+            'HBC_Hawker'                : 128,
+			'Hovercraft'				: 37,   # Ship Net
+			'Hyuga DD'					: 38,   # Ship Net
 			'large-vehicle'				: 39,   # Dota
-			'LHA LL'					: 40,   # Shit Net
+            'Let_L'                     : 129,
+			'LHA LL'					: 40,   # Ship Net
 			'Liquid Cargo Ship'			: 41,   # Fair1m
+            'LockheedCorp_L'            : 130,
 			'Locomotive'				: 42,   # Xview
-			'LSD 41 LL'					: 43,   # Shit Net
+			'LSD 41 LL'					: 43,   # Ship Net
 			'Maritime Vessel'			: 22,   # Xview
-			'Masyuu AS'					: 44,   # Shit Net
-			'Medical Ship'				: 45,   # Shit Net
-            'Midway'                    : 95,   # Shit Net
+			'Masyuu AS'					: 44,   # Ship Net
+            'McDonnellDouglas_DC'       : 131,
+            'McDonnellDouglas_MD'       : 132,
+			'Medical Ship'				: 45,   # Ship Net
+            'Midway'                    : 95,   # Ship Net
             'Mobile Crane'              : 98,   # Xview
-			'Motorboat'					: 46,   # Shit Net, Fair1m, Xview
-			'Nimitz'					: 47,   # Shit Net
+			'Motorboat'					: 46,   # Ship Net, Fair1m, Xview
+			'Nimitz'					: 47,   # Ship Net
 			'Oil Tanker'				: 48,   # Xview
-			'Osumi LL'					: 49,   # Shit Net
-			'Other Aircraft Carrier'	: 50,   # Shit Net
-			'Other Auxiliary Ship'		: 51,   # Shit Net
-			'Other Destroyer'			: 52,   # Shit Net
-			'Other Frigate'				: 53,   # Shit Net
-			'Other Landing'				: 54,   # Shit Net
-			'Other Merchant'			: 55,   # Shit Net
-			'Other Ship'				: 56,   # Shit Net
-			'Other Warship'				: 57,   # Shit Net
+			'Osumi LL'					: 49,   # Ship Net
+			'Other Aircraft Carrier'	: 50,   # Ship Net
+			'Other Auxiliary Ship'		: 51,   # Ship Net
+			'Other Destroyer'			: 52,   # Ship Net
+			'Other Frigate'				: 53,   # Ship Net
+			'Other Landing'				: 54,   # Ship Net
+			'Other Merchant'			: 55,   # Ship Net
+			'Other Ship'				: 56,   # Ship Net
+			'Other Warship'				: 57,   # Ship Net
 			'other-airplane'			: 58,   # Fair1m
 			'other-ship'				: 56,   # Fair1m
 			'other-vehicle'				: 59,   # Fair1m
 			'Passenger Car'				: 60,   # Xview
 			'Passenger Ship'			: 61,   # Fair1m
 			'Passenger Vehicle'			: 62,   # Xview
-			'Patrol'					: 63,   # Shit Net
-			'Perry FF'					: 64,   # Shit Net
+			'Patrol'					: 63,   # Ship Net
+			'Perry FF'					: 64,   # Ship Net
 			'Pickup Truck'				: 65,	# Xview
+            'PiperAircraft_PA'          : 133,
 			'Railway Vehicle'			: 66,   # Xview
 			'Reach Stacker'				: 67,   # Xview
-			'RoRo'						: 68,   # Shit Net
+			'RoRo'						: 68,   # Ship Net
 			'Sailboat'					: 69,   # Xview
-			'Sanantonio AS'				: 70,   # Shit Net
+			'Sanantonio AS'				: 70,   # Ship Net
 			'Scraper/Tractor'			: 71,   # Xview
 			'Small Aircraft'			: 72,   # Xview
 			'Small Car'					: 73,   # Fair1m, Xview
 			'small-vehicle'				: 73,   # Dota
 			'Straddle Carrier'			: 75,   # Xview
-			'Submarine'					: 76,   # Shit Net
+			'Submarine'					: 76,   # Ship Net
+            'SudAviation_Caravelle'     : 134,
 			'Tank Car'					: 77,   # Xview
-			'Test Ship'					: 78,   # Shit Net
-			'Ticonderoga'				: 79,   # Shit Net
+			'Test Ship'					: 78,   # Ship Net
+			'Ticonderoga'				: 79,   # Ship Net
 			'Tractor'					: 80,   # Fair1m
             'Trailer'                   : 97,   # Fair1m
-			'Training Ship'				: 81,   # Shit Net
+			'Training Ship'				: 81,   # Ship Net
 			'Truck'						: 19,   # Xview
 			'Truck Tractor'				: 82,   # Fair1m, Xview
 			'Truck w/Box'				: 83,   # Xview
 			'Truck w/Flatbed'			: 84,   # Xview
 			'Truck w/Liquid'			: 85,   # Xview
-			'Tugboat'					: 86,   # Shit Net, Fair1m, Xview
+			'Tugboat'					: 86,   # Ship Net, Fair1m, Xview
+            'Tupolev_154'               : 135,
 			'Utility Truck'				: 87,   # Xview
 			'Van'						: 88,   # Fair1m
 			'Warship'					: 57,   # Fair1m
-			'Wasp LL'					: 89,   # Shit Net
-			'Yacht'						: 90,   # Shit Net, Xview
-			'YuDao LL'					: 91,   # Shit Net
-			'YuDeng LL'					: 92,   # Shit Net
-			'YuTing LL'					: 93,   # Shit Net
-			'YuZhao LL'					: 94    # Shit Net
+			'Wasp LL'					: 89,   # Ship Net
+			'Yacht'						: 90,   # Ship Net, Xview
+			'YuDao LL'					: 91,   # Ship Net
+			'YuDeng LL'					: 92,   # Ship Net
+			'YuTing LL'					: 93,   # Ship Net
+			'YuZhao LL'					: 94    # Ship Net
 		 },
         'very-fine-class':{
         },
