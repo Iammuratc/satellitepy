@@ -505,7 +505,7 @@ def read_dior_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for VHR
-    available_tasks=['obboxes', "difficulty", 'coarse-class', "fine-class"]
+    available_tasks=['hbboxes', 'obboxes', "difficulty", 'coarse-class', "fine-class"]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -521,15 +521,25 @@ def read_dior_label(label_path):
             else :
                     labels['coarse-class'].append("other")
                     labels['fine-class'].append(typ)
-            bndbox = elem.find("bndbox")
-            xmin = int(bndbox.find("xmin").text)
-            xmax = int(bndbox.find("xmax").text)
-            ymin = int(bndbox.find("ymin").text)
-            ymax = int(bndbox.find("ymax").text)
-            labels['bboxes'].append([[xmin,ymin],[xmax,ymax]])        
+
+            difficulty = int(elem.find("difficult").text)
+            labels['difficulty'].append(difficulty)
+            bndbox = elem.find("robndbox")
+            x_left_top = int(bndbox.find("x_left_top").text)
+            y_left_top = int(bndbox.find("y_left_top").text)
+            x_left_bottom = int(bndbox.find("x_left_bottom").text)
+            y_left_bottom = int(bndbox.find("y_left_bottom").text)
+            x_right_bottom = int(bndbox.find("x_right_bottom").text)
+            y_right_bottom = int(bndbox.find("y_right_bottom").text)
+            x_right_top = int(bndbox.find("x_right_top").text)
+            y_right_top = int(bndbox.find("y_right_top").text)
+
+            corners = [[x_left_top, y_left_top], [x_left_bottom, y_left_bottom], [x_right_bottom, y_right_bottom], [x_right_top, y_right_top]]
+            labels['obboxes'].append(corners)
+            labels['hbboxes'].append(get_HBB_from_OBB(corners))
+            fill_none_to_empty_keys(labels,not_available_tasks)
     handler.close()
 
-    fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
 def read_ship_net_label(label_path):

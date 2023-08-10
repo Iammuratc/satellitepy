@@ -444,7 +444,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
             json.dump(satellitepy_dict,f,indent=4)
 
 
-def separate_shipnet_data(out_folder, label_folder, image_folder, dataset_part):
+def separate_dataset_parts(out_folder, label_folder, image_folder, dataset_part, dataset):
     """
     Parameters
     -------
@@ -462,20 +462,27 @@ def separate_shipnet_data(out_folder, label_folder, image_folder, dataset_part):
     out_image_folder = os.path.join(out_folder, Path('images'))
     assert create_folder(Path(out_image_folder))
 
-    if dataset_name != 'test':
+    if dataset != 'shipnet' or dataset_name != 'test':
         out_label_folder = os.path.join(out_folder, Path('labels'))
         assert(create_folder(Path(out_label_folder)))
 
     with open(dataset_part, 'r') as dataset:
         for line in dataset.readlines():
-            name = line.split('.')[0]
+            name = line.split('.')[0][:-1]
 
-            image_path = os.path.join(image_folder, Path(name + '.bmp'))
+            if dataset == 'shipnet':
+                extension = '.bmp'
+            else:
+                extension = '.jpg'
+
+            image_path = os.path.join(image_folder, Path(name + extension))
 
             shutil.copy(image_path, out_image_folder)
 
-            if dataset_name != 'test':
+            if dataset != 'shipnet' or dataset_name != 'test':
                 padding = max(0, 6 - name.__len__())
+                if dataset == 'dior':
+                    padding = 0
                 label_path = os.path.join(label_folder, Path(padding * '0' + name + '.xml'))
                 shutil.copy(label_path, out_label_folder)
     logger.info(f'Images and labels saved for dataset-part {dataset_name}')
