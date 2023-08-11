@@ -6,29 +6,36 @@ import math
 from satellitepy.dataset.bbavector.draw_gaussian import draw_umich_gaussian, gaussian_radius
 from satellitepy.dataset.bbavector.transforms import random_flip, load_affine_matrix, random_crop_info, ex_box_jaccard
 from satellitepy.dataset.bbavector import data_augment
+from satellitepy.data.utils import get_satellitepy_dict_values, get_task_dict #, merge_satellitepy_task_values
 
 class Utils:
-    def __init__(self, input_h=None, input_w=None, down_ratio=None, num_classes=None):
+    def __init__(self, tasks, input_h=None, input_w=None, down_ratio=None, K=1000):
         self.input_h = input_h
         self.input_w = input_w
         self.down_ratio = down_ratio
         self.img_ids = None
-        self.num_classes = num_classes
-        self.max_objs = 500
+        self.tasks = tasks
+        self.max_objs = 1000
         self.image_distort =  data_augment.PhotometricDistort()
+        
 
     def data_transform(self, image, annotation, augmentation):
         # only do random_flip augmentation to original images
         crop_size = None
         crop_center = None
-        if 'masks' in annotation:
-            mask = annotation['masks']
-        else:
-            mask = None
+
+        boxes = []
+        masks = []
+        if "masks" in annotation:
+            masks.append(annotation["masks"])
+        if "hbboxes" in annotation:
+            boxes.append(annotation["hbboxes"])
+        if "obboxes" in annotation:
+            boxes.append(annotation["obboxes"])
 
         if augmentation:
             crop_size, crop_center = random_crop_info(h=image.shape[0], w=image.shape[1])
-            image, annotation['pts'], crop_center, mask = random_flip(image, annotation['pts'], crop_center, mask)
+            image, masks, boxes, crop_center = random_flip(image, masks, boxes, crop_center)
         if crop_center is None:
             crop_center = np.asarray([float(image.shape[1])/2, float(image.shape[0])/2], dtype=np.float32)
         if crop_size is None:
@@ -39,44 +46,91 @@ class Utils:
                                inverse=False,
                                rotation=augmentation)
         image = cv2.warpAffine(src=image, M=M, dsize=(self.input_w, self.input_h), flags=cv2.INTER_LINEAR)
-        if mask is not None:
-            mask = cv2.warpAffine(
-                src=mask, 
-                M=M, 
-                dsize=(self.input_w, self.input_h), 
-                flags=cv2.INTER_LINEAR
-            )
-        if annotation['pts'].shape[0]:
-            annotation['pts'] = np.concatenate([annotation['pts'], np.ones((annotation['pts'].shape[0], annotation['pts'].shape[1], 1))], axis=2)
-            annotation['pts'] = np.matmul(annotation['pts'], np.transpose(M))
-            annotation['pts'] = np.asarray(annotation['pts'], np.float32)
+        for idx, m in enumerate(masks):
+            if m is not None:
+                masks[idx] = cv2.warpAffine(
+                    src=m, 
+                    M=M, 
+                    dsize=(self.input_w, self.input_h), 
+                    flags=cv2.INTER_LINEAR
+                )
+        for idx, box in enumerate(boxes):
+            for idx_1, b in enumerate(box):
+                if b is not None:
+                    new_box = np.concatenate([b, np.ones((b.shape[0], 1))], axis=1)
+                    new_box = np.matmul(new_box, np.transpose(M))
+                    boxes[idx][idx_1] = np.asarray(new_box, np.float32)
 
         out_annotations = {}
-        size_thresh = 3
-        out_rects = []
-        out_cat = []
-        for pt_old, cat in zip(annotation['pts'] , annotation['cat']):
-            if (pt_old<0).any() or (pt_old[:,0]>self.input_w-1).any() or (pt_old[:,1]>self.input_h-1).any():
-                pt_new = pt_old.copy()
-                pt_new[:,0] = np.minimum(np.maximum(pt_new[:,0], 0.), self.input_w - 1)
-                pt_new[:,1] = np.minimum(np.maximum(pt_new[:,1], 0.), self.input_h - 1)
-                iou = ex_box_jaccard(pt_old.copy(), pt_new.copy())
-                if iou>0.6:
-                    rect = cv2.minAreaRect(pt_new/self.down_ratio)
-                    if rect[1][0]>size_thresh and rect[1][1]>size_thresh:
-                        out_rects.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
-                        out_cat.append(cat)
+        check_boxes = []
+        if "obboxes" in annotation:
+            check_boxes = boxes[-1]
+        if "hbboxes" in annotation:
+            if len(check_boxes) > 0:
+                for idx, (e_b, b) in enumerate(zip(check_boxes, boxes[0])):
+                    if e_b is None:
+                        check_boxes[idx] = b
             else:
-                rect = cv2.minAreaRect(pt_old/self.down_ratio)
-                if rect[1][0]<size_thresh and rect[1][1]<size_thresh:
-                    continue
-                out_rects.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
-                out_cat.append(cat)
-        out_annotations['rect'] = np.asarray(out_rects, np.float32)
-        out_annotations['cat'] = np.asarray(out_cat, np.uint8)
-        if mask is not None:
-            out_annotations['masks'] = mask
+                check_boxes = boxes[0]
+
+        if len(check_boxes) > 0:
+            size_thresh = 3
+            out_hbb = []
+            out_obb = []
+            for idx, pt_old in enumerate(check_boxes):
+                if (pt_old<0).any() or (pt_old[:,0]>self.input_w-1).any() or (pt_old[:,1]>self.input_h-1).any():
+                    pt_new = np.float32(pt_old).copy()
+                    pt_new[:,0] = np.minimum(np.maximum(pt_new[:,0], 0.), self.input_w - 1)
+                    pt_new[:,1] = np.minimum(np.maximum(pt_new[:,1], 0.), self.input_h - 1)
+                    iou = ex_box_jaccard(pt_old.copy(), pt_new.copy())
+                    if iou>0.6:
+                        rect = cv2.minAreaRect(pt_new/self.down_ratio)
+                        width, height = rect[1][0], rect[1][1]
+                        if width>size_thresh and height>size_thresh:
+                            if "hbboxes" in annotation:
+                                if annotation["hbboxes"][idx] is not None:
+                                    out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
+                                else: 
+                                    out_hbb.append(None)
+                            if "obboxes" in annotation:
+                                if annotation["obboxes"][idx] is not None:
+                                    out_obb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
+                                else:
+                                    out_obb.append(None)
+                            for k in annotation.keys():
+                                if k != "hbboxes" and k != "obboxes":
+                                    out_annotations.setdefault(k, [])
+                                    out_annotations[k].append(annotation[k][idx])
+                else:
+                    rect = cv2.minAreaRect(np.float32(pt_old)/self.down_ratio)
+                    width, height = rect[1][0], rect[1][1]
+                    if width>size_thresh and height>size_thresh:
+                        if "hbboxes" in annotation:
+                            if annotation["hbboxes"][idx] is not None:
+                                out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
+                            else: 
+                                out_hbb.append(None)
+                        if "obboxes" in annotation:
+                            if annotation["obboxes"][idx] is not None:
+                                out_obb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
+                            else:
+                                out_obb.append(None)
+                        for k in annotation.keys():
+                            if k != "hbboxes" and k != "obboxes":
+                                out_annotations.setdefault(k, [])
+                                out_annotations[k].append(annotation[k][idx])
+
+        if "hbboxes" in annotation and len(out_hbb) > 0:
+            out_annotations["hbboxes"] = np.asarray(out_hbb, np.float32)
+        if "obboxes" in annotation and len(out_obb) > 0:
+            out_annotations["obboxes"] = np.asarray(out_obb, np.float32)
+
+        for k in out_annotations.keys():
+            if k != "hbboxes" and k != "obboxes":
+                out_annotations[k] = np.asarray(out_annotations[k])
+
         return image, out_annotations
+
 
     # def __len__(self):
     #     return len(self.img_ids)
@@ -126,109 +180,110 @@ class Utils:
         image = self.image_distort(np.asarray(image, np.float32))
         image = np.asarray(np.clip(image, a_min=0., a_max=255.), np.float32)
         image = np.transpose(image / 255. - 0.5, (2, 0, 1))
-
-        if 'masks' in annotation:
-            mask = annotation['masks']
-            mask = np.transpose(mask, (2, 0, 1))
-        else:
-            mask = None
-
         image_h = self.input_h // self.down_ratio
         image_w = self.input_w // self.down_ratio
 
-        hm = np.zeros((self.num_classes, image_h, image_w), dtype=np.float32)
-        wh = np.zeros((self.max_objs, 10), dtype=np.float32)
-        ## add
-        cls_theta = np.zeros((self.max_objs, 1), dtype=np.float32)
-        ## add end
-        reg = np.zeros((self.max_objs, 2), dtype=np.float32)
-        ind = np.zeros((self.max_objs), dtype=np.int64)
-        reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
-        num_objs = min(annotation['rect'].shape[0], self.max_objs)
-        # ###################################### view Images #######################################
-        # copy_image1 = cv2.resize(image, (image_w, image_h))
-        # copy_image2 = copy_image1.copy()
-        # ##########################################################################################
-        for k in range(num_objs):
-            rect = annotation['rect'][k, :]
-            cen_x, cen_y, bbox_w, bbox_h, theta = rect
-            # print(theta)
-            radius = gaussian_radius((math.ceil(bbox_h), math.ceil(bbox_w)))
-            radius = max(0, int(radius))
-            ct = np.asarray([cen_x, cen_y], dtype=np.float32)
-            ct_int = ct.astype(np.int32)
-            draw_umich_gaussian(hm[annotation['cat'][k]], ct_int, radius)
-            ind[k] = ct_int[1] * image_w + ct_int[0]
-            reg[k] = ct - ct_int
-            reg_mask[k] = 1
-            # generate wh ground_truth
-            pts_4 = cv2.boxPoints(((cen_x, cen_y), (bbox_w, bbox_h), theta))  # 4 x 2
+        ret = {
+            "input": image
+        }
+        for k in annotation.keys():
+            if k == "mask":
+                ret[k] = annotation[k]
+            if k not in ["obboxes", "hbboxes", "masks", "cls_coarse-class"]:
+                # todo: we probably have to define 0 as background class / non-object class
+                ret[k] = np.zeros((self.max_objs), dtype=np.float32)
+                for idx, v in enumerate(annotation[k]):
+                    ret[k][idx] = v
 
-            bl = pts_4[0,:]
-            tl = pts_4[1,:]
-            tr = pts_4[2,:]
-            br = pts_4[3,:]
+        num_classes = len(get_task_dict("coarse-class"))
+        ret["cls_coarse-class"] = np.zeros((num_classes, image_h, image_w), dtype=np.float32)
 
-            tt = (np.asarray(tl,np.float32)+np.asarray(tr,np.float32))/2
-            rr = (np.asarray(tr,np.float32)+np.asarray(br,np.float32))/2
-            bb = (np.asarray(bl,np.float32)+np.asarray(br,np.float32))/2
-            ll = (np.asarray(tl,np.float32)+np.asarray(bl,np.float32))/2
+        if "obboxes" in annotation:
+            wh = np.zeros((self.max_objs, 10), dtype=np.float32)
+            cls_theta = np.zeros((self.max_objs, 1), dtype=np.float32)
+            reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+            ind = np.zeros((self.max_objs), dtype=np.int64)
+            reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
+            num_objs = min(annotation['obboxes'].shape[0], self.max_objs)
+            for k in range(num_objs):
+                if isinstance(annotation["obboxes"][k], np.float32):
+                    continue
+                rect = annotation['obboxes'][k, :]
+                cen_x, cen_y, bbox_w, bbox_h, theta = rect
+                radius = gaussian_radius((math.ceil(bbox_h), math.ceil(bbox_w)))
+                radius = max(0, int(radius))
+                ct = np.asarray([cen_x, cen_y], dtype=np.float32)
+                ct_int = ct.astype(np.int32)
+                draw_umich_gaussian(ret["cls_coarse-class"][annotation['cls_coarse-class'][k]], ct_int, radius)
+                ind[k] = ct_int[1] * image_w + ct_int[0]
+                reg[k] = ct - ct_int
+                reg_mask[k] = 1
+                pts_4 = cv2.boxPoints(((cen_x, cen_y), (bbox_w, bbox_h), theta))  # 4 x 2
 
-            if theta in [-90.0, -0.0, 0.0]:  # (-90, 0]
-                tt,rr,bb,ll = self.reorder_pts(tt,rr,bb,ll)
-            # rotational channel
-            wh[k, 0:2] = tt - ct
-            wh[k, 2:4] = rr - ct
-            wh[k, 4:6] = bb - ct
-            wh[k, 6:8] = ll - ct
-            #####################################################################################
-            # # draw
-            # cv2.line(copy_image1, (cen_x, cen_y), (int(tt[0]), int(tt[1])), (0, 0, 255), 1, 1)
-            # cv2.line(copy_image1, (cen_x, cen_y), (int(rr[0]), int(rr[1])), (255, 0, 255), 1, 1)
-            # cv2.line(copy_image1, (cen_x, cen_y), (int(bb[0]), int(bb[1])), (0, 255, 255), 1, 1)
-            # cv2.line(copy_image1, (cen_x, cen_y), (int(ll[0]), int(ll[1])), (255, 0, 0), 1, 1)
-            #####################################################################################
-            # horizontal channel
-            w_hbbox, h_hbbox = self.cal_bbox_wh(pts_4)
-            wh[k, 8:10] = 1. * w_hbbox, 1. * h_hbbox
-            #####################################################################################
-            # # draw
-            # cv2.line(copy_image2, (cen_x, cen_y), (int(cen_x), int(cen_y-wh[k, 9]/2)), (0, 0, 255), 1, 1)
-            # cv2.line(copy_image2, (cen_x, cen_y), (int(cen_x+wh[k, 8]/2), int(cen_y)), (255, 0, 255), 1, 1)
-            # cv2.line(copy_image2, (cen_x, cen_y), (int(cen_x), int(cen_y+wh[k, 9]/2)), (0, 255, 255), 1, 1)
-            # cv2.line(copy_image2, (cen_x, cen_y), (int(cen_x-wh[k, 8]/2), int(cen_y)), (255, 0, 0), 1, 1)
-            #####################################################################################
-            # v0
-            # if abs(theta)>3 and abs(theta)<90-3:
-            #     cls_theta[k, 0] = 1
-            # v1
-            jaccard_score = ex_box_jaccard(pts_4.copy(), self.cal_bbox_pts(pts_4).copy())
-            if jaccard_score<0.95:
-                cls_theta[k, 0] = 1
-        # ###################################### view Images #####################################
-        # # hm_show = np.uint8(cv2.applyColorMap(np.uint8(hm[0, :, :] * 255), cv2.COLORMAP_JET))
-        # # copy_image = cv2.addWeighted(np.uint8(copy_image), 0.4, hm_show, 0.8, 0)
-        #     if jaccard_score>0.95:
-        #         print(theta, jaccard_score, cls_theta[k, 0])
-        #         cv2.imshow('img1', cv2.resize(np.uint8(copy_image1), (image_w*4, image_h*4)))
-        #         cv2.imshow('img2', cv2.resize(np.uint8(copy_image2), (image_w*4, image_h*4)))
-        #         key = cv2.waitKey(0)&0xFF
-        #         if key==ord('q'):
-        #             cv2.destroyAllWindows()
-        #             exit()
-        # #########################################################################################
+                bl = pts_4[0,:]
+                tl = pts_4[1,:]
+                tr = pts_4[2,:]
+                br = pts_4[3,:]
 
-        ret = {'input': torch.from_numpy(image),
-               'hm': torch.from_numpy(hm),
-               'reg_mask': torch.from_numpy(reg_mask),
-               'ind': torch.from_numpy(ind),
-               'wh': torch.from_numpy(wh),
-               'reg': torch.from_numpy(reg),
-               'cls_theta':torch.from_numpy(cls_theta),
-               }
+                tt = (np.asarray(tl,np.float32)+np.asarray(tr,np.float32))/2
+                rr = (np.asarray(tr,np.float32)+np.asarray(br,np.float32))/2
+                bb = (np.asarray(bl,np.float32)+np.asarray(br,np.float32))/2
+                ll = (np.asarray(tl,np.float32)+np.asarray(bl,np.float32))/2
 
-        if mask is not None:
-            ret['seg_mask'] = torch.from_numpy(mask)
+                if theta in [-90.0, -0.0, 0.0]:  # (-90, 0]
+                    tt,rr,bb,ll = self.reorder_pts(tt,rr,bb,ll)
+                wh[k, 0:2] = tt - ct
+                wh[k, 2:4] = rr - ct
+                wh[k, 4:6] = bb - ct
+                wh[k, 6:8] = ll - ct
+                w_hbbox, h_hbbox = self.cal_bbox_wh(pts_4)
+                wh[k, 8:10] = 1. * w_hbbox, 1. * h_hbbox
+                jaccard_score = ex_box_jaccard(pts_4.copy(), self.cal_bbox_pts(pts_4).copy())
+                if jaccard_score<0.95:
+                    cls_theta[k, 0] = 1
+            ret["obboxes_params"] = wh
+            ret["obboxes_offset"] = reg
+            ret["obboxes_theta"] = cls_theta
+            ret["ind"] = ind
+            ret["reg_mask"] = reg_mask
+
+        if "hbboxes" in annotation:
+            wh = np.zeros((self.max_objs, 2), dtype=np.float32)
+            reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+            ind = np.zeros((self.max_objs), dtype=np.int64)
+            reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
+            num_objs = min(annotation['obboxes'].shape[0], self.max_objs)
+            for k in range(num_objs):
+                if isinstance(annotation["hbboxes"][k], np.float32):
+                    continue
+                rect = annotation['hbboxes'][k, :]
+                cen_x, cen_y, bbox_w, bbox_h = rect
+                radius = gaussian_radius((math.ceil(bbox_h), math.ceil(bbox_w)))
+                radius = max(0, int(radius))
+                ct = np.asarray([cen_x, cen_y], dtype=np.float32)
+                ct_int = ct.astype(np.int32)
+                draw_umich_gaussian(ret["cls_coarse-class"][annotation['cls_coarse-class'][k]], ct_int, radius)
+                ind[k] = ct_int[1] * image_w + ct_int[0]
+                reg[k] = ct - ct_int
+                reg_mask[k] = 1
+                pts_4 = np.array([
+                    [cen_x - bbox_w / 2, cen_y + bbox_h / 2],
+                    [cen_x - bbox_w / 2, cen_y - bbox_h / 2],
+                    [cen_x + bbox_w / 2, cen_y + bbox_h / 2],
+                    [cen_x + bbox_w / 2, cen_y + bbox_h / 2],
+                ])
+                w_hbbox, h_hbbox = self.cal_bbox_wh(pts_4)
+                wh[k] = 1. * w_hbbox, 1. * h_hbbox
+
+            ret["hbboxes_params"] = wh
+            ret["hbboxes_offset"] = reg
+            if "ind" not in ret:
+                ret["ind"] = ind
+            if "reg_mask" not in ret:
+                ret["reg_mask"] = reg_mask
+
+        for k, v in ret.items():
+            ret[k] = torch.from_numpy(v)
 
         return ret
 

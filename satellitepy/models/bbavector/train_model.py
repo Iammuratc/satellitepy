@@ -15,6 +15,7 @@ class TrainModule(object):
         train_dataset, 
         valid_dataset, 
         model, 
+        tasks,
         # decoder, 
         down_ratio,
         out_folder,
@@ -25,8 +26,7 @@ class TrainModule(object):
         conf_thresh,
         ngpus,
         resume_train,
-        patience,
-        segmentation=False):
+        patience):
         torch.manual_seed(317)
         self.train_dataset = train_dataset
         self.valid_dataset = valid_dataset
@@ -45,8 +45,7 @@ class TrainModule(object):
         self.ngpus=ngpus
         self.resume_train=resume_train
         self.patience=patience
-        self.segmentation = segmentation
-
+        self.tasks = tasks
 
     def train_network(self):
 
@@ -73,7 +72,7 @@ class TrainModule(object):
         if not os.path.exists(save_path):
             os.mkdir(save_path)
 
-        criterion = loss_utils.LossAll(segmentation_loss=self.segmentation)
+        criterion = loss_utils.LossAll(self.tasks)
         print('Setting up data...')
 
         train_loader = torch.utils.data.DataLoader(self.train_dataset,
@@ -158,14 +157,16 @@ class TrainModule(object):
         self.model.train()
         running_loss = 0.
         for data_dict in tqdm(data_loader):
-            name_list = ['input', 'hm', 'reg_mask', 'ind', 'wh', 'reg', 'cls_theta']
-            if self.segmentation:
-                name_list.append('seg_mask')
-            for name in name_list:
-                data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
+            for name in data_dict.keys():
+                if name not in ["img_w", "img_h", "img_path", "label_path"]:
+                    data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             self.optimizer.zero_grad()
             pr_decs = self.model(data_dict['input'])
-            loss = criterion(pr_decs, data_dict)
+            try:
+                loss = criterion(pr_decs, data_dict)
+            except:
+                test = 5
+                raise Exception()
             loss.backward()
             self.optimizer.step()
             running_loss += loss.item()
@@ -180,11 +181,9 @@ class TrainModule(object):
         running_loss = 0.
 
         for data_dict in tqdm(data_loader):
-            name_list = ['input', 'hm', 'reg_mask', 'ind', 'wh', 'reg', 'cls_theta']
-            if self.segmentation:
-                name_list.append('seg_mask')
-            for name in name_list:
-                data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
+            for name in data_dict.keys():
+                if name not in ["img_w", "img_h", "img_path", "label_path"]:
+                    data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             with torch.no_grad():
                 pr_decs = self.model(data_dict['input'])
                 loss = criterion(pr_decs, data_dict)

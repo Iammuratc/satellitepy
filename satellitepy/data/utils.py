@@ -127,7 +127,8 @@ def get_satellitepy_table():
             'roundabout':8,
             'basketball-court':9,
             'storage-tank':10,
-            'bridge':11},
+            'bridge':11,
+            'container-crane':12},
         'very-fine-class':{},
         'role':{
             'Small Civil Transport/Utility':0,

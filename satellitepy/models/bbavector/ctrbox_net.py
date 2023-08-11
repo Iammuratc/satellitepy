@@ -22,7 +22,7 @@ class CTRBOX(nn.Module):
         self.dec_c4 = CombinationModule(512, 256, batch_norm=True)
         # for segmentation head, we follow the u-net concept and also have a combination module
         # for the last upconvolution layer
-        if 'seg' in heads:
+        if 'masks' in heads:
             self.dec_seg1 = CombinationModule(64, 64, batch_norm=True)
             self.dec_seq2 = nn.Sequential(
                 nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
@@ -34,12 +34,12 @@ class CTRBOX(nn.Module):
 
         for head in self.heads:
             classes = self.heads[head]
-            if head == 'wh':
+            if head == 'obboxes_params' or head == 'hbboxes_params':
                 fc = nn.Sequential(nn.Conv2d(channels[self.l1], head_conv, kernel_size=3, padding=1, bias=True),
                                 #    nn.BatchNorm2d(head_conv),   # BN not used in the paper, but would help stable training
                                    nn.ReLU(inplace=True),
                                    nn.Conv2d(head_conv, classes, kernel_size=3, padding=1, bias=True))
-            if head == 'seg':
+            elif head == 'masks':
                 fc = nn.Sequential(
                     nn.Conv2d(64, 64, kernel_size=3, padding=1, bias=True),
                     nn.ReLU(inplace=True),
@@ -50,7 +50,7 @@ class CTRBOX(nn.Module):
                                 #    nn.BatchNorm2d(head_conv),   # BN not used in the paper, but would help stable training
                                    nn.ReLU(inplace=True),
                                    nn.Conv2d(head_conv, classes, kernel_size=final_kernel, stride=1, padding=final_kernel // 2, bias=True))
-            if 'hm' in head:
+            if head[:4] == "cls_":
                 fc[-1].bias.data.fill_(-2.19)
             else:
                 self.fill_fc_weights(fc)
@@ -73,7 +73,7 @@ class CTRBOX(nn.Module):
         c4_combine = self.dec_c4(x[-1], x[-2])
         c3_combine = self.dec_c3(c4_combine, x[-3])
         c2_combine = self.dec_c2(c3_combine, x[-4])
-        if 'seg' in self.heads:
+        if 'masks' in self.heads:
             seg_combine = self.dec_seg1(c2_combine, x[-5])
             seg_combine = F.interpolate(
                 seg_combine, x[-6].shape[2:], mode='bilinear', align_corners=False
@@ -82,10 +82,10 @@ class CTRBOX(nn.Module):
 
         dec_dict = {}
         for head in self.heads:
-            if head == 'seg':
+            if head == 'masks':
                 dec_dict[head] = self.__getattr__(head)(seg_combine)
             else:
                 dec_dict[head] = self.__getattr__(head)(c2_combine)
-            if 'hm' in head or 'cls' in head or 'seg' in head:
+            if head[:4] == "cls_" or head == "masks" or head == "obboxes_theta":
                 dec_dict[head] = torch.sigmoid(dec_dict[head])
         return dec_dict

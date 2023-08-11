@@ -3,11 +3,12 @@ import cv2
 import numpy as np
 from torch.utils.data import Dataset
 import torch
-
+from tqdm import tqdm
+import hashlib
 
 from satellitepy.dataset.bbavector.utils import Utils
 from satellitepy.data.labels import read_label
-from satellitepy.data.utils import get_satellitepy_dict_values #, merge_satellitepy_task_values
+from satellitepy.data.utils import get_satellitepy_dict_values, get_task_dict #, merge_satellitepy_task_values
 from satellitepy.utils.path_utils import zip_matched_files
 
 
@@ -17,44 +18,69 @@ class BBAVectorDataset(Dataset):
         in_image_folder,
         in_label_folder,
         in_label_format,
-        task,
-        task_dict,
+        tasks,
         input_h,
         input_w,
         down_ratio,
         augmentation = False,
-        segmentation = False):
+        validate_dataset = True,
+        K = 1000,
+        random_seed=12):
         super(BBAVectorDataset, self).__init__()
-        self.category = list(task_dict.keys())
 
-        self.num_classes = len(self.category)
-        self.utils = Utils(input_h, input_w, down_ratio, self.num_classes)
+        self.utils = Utils(tasks, input_h, input_w, down_ratio, K=K)
         # self.cat_ids = {cat:i for i,cat in enumerate(self.category)}
         # self.cat_ids = task_dict
-        self.task_dict = task_dict
-        self.task = task
+        self.tasks = tasks
         # self.img_ids = self.load_img_ids()
         # self.image_path = os.path.join(data_dir, 'images')
         # self.label_path = os.path.join(data_dir, 'labelTxt')
         self.items = []
-        self.segmentation = segmentation
-
-        for img_path, label_path in zip_matched_files(in_image_folder,in_label_folder):
-            self.items.append((img_path, label_path, in_label_format))
-
         self.augmentation = augmentation
+        self.random_seed = random_seed
+        if validate_dataset:
+            total = len(os.listdir(in_image_folder))
+            removed = 0
+            pbar = tqdm(zip_matched_files(in_image_folder,in_label_folder), total=total, desc="validating data")
+
+            for img_path, label_path in pbar:
+                hash_str = str(img_path) + str(label_path) + str(self.random_seed)
+                hash_bytes = hashlib.sha256(bytes(hash_str, "utf-8")).digest()[:4]
+                np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
+                image = cv2.imread(img_path.absolute().as_posix())
+                labels = read_label(label_path,in_label_format)
+                image_h, image_w, c = image.shape
+                annotation = self.preapare_annotations(labels, image_w, image_h, img_path)
+                image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
+
+                if annotation:
+                    self.items.append((img_path, label_path, in_label_format))
+                else:
+                    removed += 1
+                    pbar.set_description(f"validating data (removed: {removed})")
+        else:
+            for img_path, label_path in zip_matched_files(in_image_folder, in_label_folder):
+                self.items.append((img_path, label_path, in_label_format))
+
     def __len__(self):
         return len(self.items)
 
-    def prepare_masks(self, labels, categories, image_width, image_height, image_file = None):
-        channels = len(self.task_dict)
-        masks = np.zeros((image_height, image_width, channels))
+    def prepare_masks(self, labels, image_width, image_height, image_file = None):
+        masks = np.zeros((image_height, image_width))
 
-        for idx, c in enumerate(categories):
-            m_x, m_y = labels["masks"][idx]
+        for val in labels["masks"]:
+            if val is None:
+                continue
+            else:
+                m_x, m_y = val
+            if len(m_x) == 0 or len(m_y) == 0:
+                continue
             m_x = np.array(m_x).clip(0, image_width - 1)
             m_y = np.array(m_y).clip(0, image_height - 1)
-            masks[ m_y, m_x, c] = 1.0
+            masks[m_y, m_x] = 1.0
+
+        if np.count_nonzero(masks) == 0:
+            return None
 
         return masks
 
@@ -74,6 +100,30 @@ class BBAVectorDataset(Dataset):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
+    def preapare_annotations(self, labels, image_w, image_h, img_path):
+        annotation = {}
+        for t in self.tasks:
+            if t in ["obboxes", "hbboxes"]:
+                annotation[t] = np.asarray(get_satellitepy_dict_values(labels, t))
+            elif t == "masks":
+                annotation[t] = self.prepare_masks(labels , image_w, image_h, str(img_path))
+            else:
+                task_dict = get_task_dict(t)
+
+                if 'min' in task_dict.keys() and 'max' in task_dict.keys():
+                    values = np.asarray(get_satellitepy_dict_values(labels, t))
+                    max, min = task_dict["max"], task_dict["min"]
+                    normalized = [
+                        (val - min) / (max - min) if val is not None else None
+                        for val in values
+                    ]
+                    annotation["reg_" + t] = normalized
+                else:
+                    annotation["cls_" + t] = np.asarray([
+                        task_dict[value] if value is not None else None
+                        for value in get_satellitepy_dict_values(labels,t)
+                    ])
+        return annotation
 
     def __getitem__(self, idx):
         ### Image
@@ -83,18 +133,14 @@ class BBAVectorDataset(Dataset):
         image_h, image_w, c = image.shape
         ### Labels
         labels = read_label(label_path,label_format)
-        
-        annotation = {}
-        annotation['pts'] = np.asarray(labels['obboxes']) # np.asarray(valid_pts, np.float32)
-        annotation['cat'] = np.asarray([self.task_dict[value] for value in get_satellitepy_dict_values(labels,self.task)]) # np.asarray(valid_cat, np.int32)
-        annotation['dif'] = np.asarray(labels['difficulty']) # np.asarray(valid_dif, np.int32)
+        hash_str = str(img_path) + str(label_path) + str(self.random_seed)
+        hash_bytes = hashlib.sha256(bytes(hash_str, "utf-8")).digest()[:4]
+        np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
+        annotation = self.preapare_annotations(labels, image_w, image_h, img_path)
 
-        if self.segmentation:
-            annotation['masks'] = self.prepare_masks(labels, annotation['cat'], image_w, image_h, str(img_path))
-
-        #self.visualize_masks(image, annotation['masks'], labels)
         image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
-        #self.visualize_masks(image, annotation['masks'], labels)
+        if not annotation:
+            test = 5
         data_dict = self.utils.generate_ground_truth(image, annotation)
         data_dict['img_path']=str(img_path)
         data_dict['label_path']=str(label_path)

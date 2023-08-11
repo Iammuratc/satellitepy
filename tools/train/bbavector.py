@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument('--init-lr', type=float, default=1.25e-4, help='Initial learning rate')
     parser.add_argument('--input-h', type=int, default=608, help='Resized image height')
     parser.add_argument('--input-w', type=int, default=608, help='Resized image width')
-    parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
+    parser.add_argument('--K', type=int, default=1000, help='Maximum of objects')
     parser.add_argument('--conf-thresh', type=float, default=0.18, help='Confidence threshold, 0.1 for general evaluation')
     parser.add_argument('--ngpus', type=int, default=1, help='Number of gpus, ngpus>1 for multigpu')
     parser.add_argument('--patience', type=int, default=10, help='Number of Patience epochs. If the valid loss does not improve for <patience> times, the training will stop. ')
@@ -43,14 +43,15 @@ def parse_args():
     parser.add_argument('--log-config-path', default=project_folder /
                         Path("configs/log.config"), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, required=False, help='Log path.')
-    parser.add_argument('--task-name', default='coarse-class', type=str, help='The model will be trained for the given task.' 
+    parser.add_argument('--tasks', default=['coarse-class'], nargs="+", help='The model will be trained for the given tasks.' 
             'Find the other task names at satellitepy.data.utils.get_satellitepy_table.'
             'If it is fine-class or very-fine class, None values in those keys will be filled from one upper level')
     parser.add_argument('--out-folder',
                         type=Path,
                         help='Save folder of experiments. The trained weights will be saved under this folder.')
-    parser.add_argument('--segmentation', action='store_true')
-    parser.set_defaults(segmentation=False)
+    parser.add_argument('--validate-datasets', action='store_true')
+    parser.set_defaults(validate_datasets=False)
+    parser.add_argument("--random-seed", default=12, type=int)
 
     # parser.add_argument('--resume', type=str, default='model_50.pth', help='Weights resumed in testing and evaluation')
     # parser.add_argument('--dataset', type=str, default='dota', help='Name of dataset')
@@ -74,7 +75,9 @@ def train_bbavector(args):
     input_w = args.input_w
     down_ratio = 4
     patience = args.patience
-    task = args.task_name
+    tasks = args.tasks
+    assert "coarse-class" in tasks, "coarse-class must be part of the tasks"
+    validate_datasets = args.validate_datasets
     # Training input
     num_epoch = args.num_epoch
     batch_size = args.batch_size
@@ -82,6 +85,7 @@ def train_bbavector(args):
     init_lr = args.init_lr
     conf_thresh = args.conf_thresh
     K = args.K
+    random_seed = args.random_seed
     ngpus = args.ngpus
     checkpoint_path = args.resume_train
 
@@ -99,35 +103,36 @@ def train_bbavector(args):
     logger.info('Initiating the training of the BBAVector model...')
 
     # Model
-    model = get_model(task,down_ratio, args.segmentation)
-
-    task_dict = get_task_dict(task)
-    num_classes = len(task_dict)
+    model = get_model(tasks,down_ratio)
     
     train_dataset = BBAVectorDataset(
         train_image_folder,
         train_label_folder,
         train_label_format,
-        task,
-        task_dict,
+        tasks,
         input_h,
         input_w,
         down_ratio,
         True,
-        args.segmentation)
+        validate_datasets,
+        K=K,
+        random_seed=random_seed
+    )
 
     if args.valid_image_folder:
         valid_dataset = BBAVectorDataset(
             valid_image_folder,
             valid_label_folder,
             valid_label_format,
-            task,
-            task_dict,
+            tasks,
             input_h,
             input_w,
             down_ratio,
             True,
-            args.segmentation)
+            validate_datasets,
+            K=K,
+            random_seed=random_seed
+        )
     else:
         valid_dataset = None
 
@@ -136,6 +141,7 @@ def train_bbavector(args):
         train_dataset=train_dataset,
         valid_dataset=valid_dataset,
         model=model,
+        tasks=tasks,
         # decoder=model_decoder,
         down_ratio=down_ratio,
         out_folder=out_folder,
@@ -146,8 +152,7 @@ def train_bbavector(args):
         conf_thresh=conf_thresh,
         ngpus=ngpus,
         resume_train=checkpoint_path,
-        patience=patience,
-        segmentation=args.segmentation
+        patience=patience
         )
 
     ctrbox_obj.train_network()

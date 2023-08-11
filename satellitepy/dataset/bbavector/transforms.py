@@ -1,28 +1,33 @@
 import numpy as np
 import cv2
 
-def random_flip(image, gt_pts, crop_center=None, mask=None):
+def random_flip(image, masks=[], boxes=[], crop_center=None):
     # image: h x w x c
     # gt_pts: num_obj x 4 x 2
     h,w,c = image.shape
     if np.random.random()<0.5:
         image = image[:,::-1,:]
-        if mask is not None:
-            mask = mask[:, ::-1,:]
-        if gt_pts.shape[0]:
-            gt_pts[:,:,0] = w-1 - gt_pts[:,:,0]
+        for idx, m in enumerate(masks):
+            if m is not None:
+                masks[idx] = m[:, ::-1]
+        for idx, box in enumerate(boxes):
+            for idx_1, b in enumerate(box):
+                if b is not None and b.shape[0]:
+                    boxes[idx][idx_1][:,0] = w-1 - b[:,0]
         if crop_center is not None:
             crop_center[0] = w-1 - crop_center[0]
     if np.random.random()<0.5:
         image = image[::-1,:,:]
-        if mask is not None:
-            mask = mask[::-1,:,:]
-        if gt_pts.shape[0]:
-            gt_pts[:,:,1] = h-1 - gt_pts[:,:,1]
+        for idx, m in enumerate(masks):
+            if m is not None:
+                masks[idx] = m[::-1,:]
+        for idx, box in enumerate(boxes):
+            for idx_1, b in enumerate(box):
+                if b is not None and b.shape[0]:
+                    boxes[idx][idx_1][:,1] = h-1 - b[:,1]
         if crop_center is not None:
             crop_center[1] = h-1 - crop_center[1]
-    return image, gt_pts, crop_center, mask
-
+    return image, masks, boxes, crop_center
 
 def _get_border(size, border):
     i = 1
