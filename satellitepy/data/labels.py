@@ -481,27 +481,29 @@ def read_VHR_label(label_path):
                "10": None,
                 }
     files = Path(label_path).glob('*.txt')
-    for file in files:
-        handler = open(file, "r")
-        for line in handler.readlines():
-            vals = line.replace('(','').replace(')','').split(',')
-            
-            labels['bboxes'].append([vals[0:2],vals[2:4]])
-            # The first two values are the top-right, the next two the bottom left corner
-            
-            typ = vals[-1].strip()
-            if typ == "1":
-                    labels['coarse-class'].append('airplane')
-            elif typ == "2":
-                    labels['coarse-class'].append('ship')
-            elif typ == "10":
-                    labels['coarse-class'].append('vehicle')
-                                   
-            else:
-                    labels['coarse-class'].append('other')
-                
-            labels['fine-class'].append(lut[typ])
-        handler.close()
+
+    handler = open(label_path, "r")
+    for line in handler.readlines():
+        if line == "\n":
+            continue
+
+        vals = line.replace('(','').replace(')','').replace('\n', '').split(',')
+        vals = [int(x) for x in vals] # x1, y1, x2, y2
+
+        labels['hbboxes'].append([[vals[0], vals[1]], [vals[2], vals[1]], [vals[2], vals[3]], [vals[0], vals[3]]])
+
+        typ = str(vals[-1])
+        if typ == "1":
+                labels['coarse-class'].append('airplane')
+        elif typ == "2":
+                labels['coarse-class'].append('ship')
+        elif typ == "10":
+                labels['coarse-class'].append('vehicle')
+        else:
+                labels['coarse-class'].append('other')
+
+        labels['fine-class'].append(lut[typ])
+    handler.close()
             
     fill_none_to_empty_keys(labels,not_available_tasks)
     return labels

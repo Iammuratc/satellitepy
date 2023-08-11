@@ -26,6 +26,8 @@ def get_args():
                         help='A list of object class names that shall be included. Ignores all other object classes if not None. Takes precedence over --exclude-object-classes.')
     parser.add_argument('--exclude-object-classes', nargs="*", type=str, default=None, 
                         help='A list of object class names that shall be excluded. Includes all other object classes. Overriden by --include-object-classes if set.')
+    parser.add_argument('--in-mask-folder', type=Path, required = False,
+                        help='Folder of original mask images. The mask images in this folder will be used to set mask pixel coordinates in out labels.')
     
     args = parser.parse_args()
     return args
@@ -34,6 +36,11 @@ def run(args):
     in_label_format = args.in_label_format
     in_img_folder = Path(args.in_img_folder)
     in_label_folder = Path(args.in_label_folder)
+
+    if (args.in_mask_folder != None):
+        in_mask_folder = Path(args.in_mask_folder)
+    else:
+        in_mask_folder = None
 
     out_folder = Path(args.out_folder)
 
@@ -59,7 +66,8 @@ def run(args):
         out_folder = out_folder,
         margin_size = margin_size,
         include_object_classes=include_object_classes,
-        exclude_object_classes=exclude_object_classes
+        exclude_object_classes=exclude_object_classes,
+        mask_folder = in_mask_folder
     )
 
 if __name__ == "__main__":
