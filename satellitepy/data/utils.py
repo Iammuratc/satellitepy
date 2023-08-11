@@ -131,31 +131,34 @@ def get_satellitepy_table():
 			'ARJ21'						: 5,    # Fair1m
 			'Arleigh Burke DD'			: 6,    # Ship Net
 			'Asagiri DD'				: 7,    # Ship Net
-            'AirbusA300'                : 98,   # Rareplanes_synthetic
-            'AirbusA-319'               : 99,    # Rareplanes_synthetic
-            'Airbus_A320'               : 100,
-            'Airbus_A330'               : 101,
-            'Airbus_A'                  : 102,
-            'Airbus_A380'               : 103,
+            'Airbus_A300'               : 99,   # Rareplanes_synthetic
+            'Airbus_A-319'              : 98,   # Rareplanes_synthetic
+            'Airbus_A320'               : 0,	# Rareplanes_synthetic
+            'Airbus_A330'               : 2,	# Rareplanes_synthetic
+            'Airbus_A'                  : 100,	# Rareplanes_synthetic
+            'Airbus_A380'               : 101,	# Rareplanes_synthetic
 			'Atago DD'					: 8,    # Ship Net
 			'Austin LL'					: 9,    # Ship Net
-            'ATR_ATR'                   : 104,
-            'BAE_146'                   : 105,
+            'ATR_ATR'                   : 102,	# Rareplanes_synthetic
+            'BAE_146'                   : 103,	# Rareplanes_synthetic
 			'Barge'						: 10,   # Ship Net
-            'Boeing_707'                : 106,
-            'Boeing_717'                : 107,
-            'Boeing_727'                : 108,
-			'Boeing737'					: 11,   # Fair1m, Rareplanes_synthetic
-			'Boeing747'					: 12,   # Fair1m, Rareplanes_synthetic
-            'Boeing_757'                : 109,
-            'Boeing_767'                : 110,
-			'Boeing777'					: 13,   # Fair1m, Rareplanes_synthetic
+            'Boeing_707'                : 104,  # Rareplanes_synthetic
+            'Boeing_717'                : 105,	# Rareplanes_synthetic
+            'Boeing_727'                : 106,	# Rareplanes_synthetic
+			'Boeing_737'				: 11,	# Rareplanes_synthetic
+			'Boeing737'					: 11,   # Fair1m
+			'Boeing_747'				: 12,	# Rareplanes_synthetic
+			'Boeing747'					: 12,   # Fair1m
+            'Boeing_757'                : 107,	# Rareplanes_synthetic
+            'Boeing_767'                : 108,	# Rareplanes_synthetic
+			'Boeing_777'				: 13,	# Rareplanes_synthetic
+			'Boeing777'					: 13,   # Fair1m
 			'Boeing787'					: 14,   # Fair1m
-            'Boeing_BBJ'                : 111,
-            'Bombardier_BD'             : 112,
-            'Bombardier_Challenger'     : 113,
-            'Bombardier_CRJ'            : 114,
-            'Bombardier_Learjet'        : 115,
+            'Boeing_BBJ'                : 109,	# Rareplanes_synthetic
+            'Bombardier_BD'             : 110,	# Rareplanes_synthetic
+            'Bombardier_Challenger'     : 111,	# Rareplanes_synthetic
+            'Bombardier_CRJ'            : 112,	# Rareplanes_synthetic
+            'Bombardier_Learjet'        : 113,	# Rareplanes_synthetic
 			'Bus'						: 15,   # Fair1m, Xview
 			'C919'						: 16,   # Fair1m
 			'Cargo Car'					: 17,   # Xview
@@ -165,17 +168,17 @@ def get_satellitepy_table():
 			'Commander'					: 21,   # Ship Net
 			'Container Ship'			: 22,   # Ship Net, Xview
 			'Crane Truck'				: 23,   # Xview
-            'Cessna'                    : 116,
-            'Cessna_170'                : 117,
-            'Cessna_172'                : 118,
-            'Cessna_310'                : 119,
-            'Cessna_Citation'           : 120,
-            'Dassault_Falcon'           : 121,
-            'DeHavillandCanada_DHC'     : 122,
+            'Cessna'                    : 114,	# Rareplanes_synthetic
+            'Cessna_170'                : 115,	# Rareplanes_synthetic
+            'Cessna_172'                : 116,	# Rareplanes_synthetic
+            'Cessna_310'                : 117,	# Rareplanes_synthetic
+            'Cessna_Citation'           : 118,	# Rareplanes_synthetic
+            'Dassault_Falcon'           : 119,	# Rareplanes_synthetic
+            'DeHavillandCanada_DHC'     : 120,	# Rareplanes_synthetic
 			'Dry Cargo Ship'			: 24,   # Fair1m
 			'Dump Truck'				: 25,   # Fair1m, Xview
-            'Embraer_ERJ'               : 123,
-            'Embraer_Legacy'            : 124,
+            'Embraer_ERJ'               : 121,	# Rareplanes_synthetic
+            'Embraer_Legacy'            : 122,	# Rareplanes_synthetic
 			'Engineering Ship'			: 26,   # Fair1m
 			'Engineering Vessel'		: 27,   # Xview
 			'EPF'						: 28,   # Ship Net
@@ -185,27 +188,27 @@ def get_satellitepy_table():
 			'Fishing Vessel'			: 30,   # Ship Net, Xview
 			'Fixed-Wing Aircraft'		: 31,   # Xview
 			'Flat Car'					: 32,   # Xview
-            'Fokker_100'                : 125,
+            'Fokker_100'                : 123,	# Rareplanes_synthetic
 			'Front Loader'				: 33,   # Xview
 			'Ground Grader'				: 34,   # Xview
-            'Gulfstream_G200'           : 126,
-            'Gulfstream_GIII'           : 127,
+            'Gulfstream_G200'           : 124,	# Rareplanes_synthetic
+            'Gulfstream_GIII'           : 125,	# Rareplanes_synthetic
 			'Hatsuyuki DD'				: 35,   # Ship Net
 			'Haul Truck'				: 36,   # Xview
-            'HBC_Hawker'                : 128,
+            'HBC_Hawker'                : 126,	# Rareplanes_synthetic
 			'Hovercraft'				: 37,   # Ship Net
 			'Hyuga DD'					: 38,   # Ship Net
 			'large-vehicle'				: 39,   # Dota
-            'Let_L'                     : 129,
+            'Let_L'                     : 127,	# Rareplanes_synthetic
 			'LHA LL'					: 40,   # Ship Net
 			'Liquid Cargo Ship'			: 41,   # Fair1m
-            'LockheedCorp_L'            : 130,
+            'LockheedCorp_L'            : 128,	# Rareplanes_synthetic
 			'Locomotive'				: 42,   # Xview
 			'LSD 41 LL'					: 43,   # Ship Net
 			'Maritime Vessel'			: 22,   # Xview
 			'Masyuu AS'					: 44,   # Ship Net
-            'McDonnellDouglas_DC'       : 131,
-            'McDonnellDouglas_MD'       : 132,
+            'McDonnellDouglas_DC'       : 129,	# Rareplanes_synthetic
+            'McDonnellDouglas_MD'       : 130,	# Rareplanes_synthetic
 			'Medical Ship'				: 45,   # Ship Net
             'Midway'                    : 95,   # Ship Net
             'Mobile Crane'              : 98,   # Xview
@@ -230,7 +233,7 @@ def get_satellitepy_table():
 			'Patrol'					: 63,   # Ship Net
 			'Perry FF'					: 64,   # Ship Net
 			'Pickup Truck'				: 65,	# Xview
-            'PiperAircraft_PA'          : 133,
+            'PiperAircraft_PA'          : 131,	# Rareplanes_synthetic
 			'Railway Vehicle'			: 66,   # Xview
 			'Reach Stacker'				: 67,   # Xview
 			'RoRo'						: 68,   # Ship Net
@@ -242,7 +245,7 @@ def get_satellitepy_table():
 			'small-vehicle'				: 73,   # Dota
 			'Straddle Carrier'			: 75,   # Xview
 			'Submarine'					: 76,   # Ship Net
-            'SudAviation_Caravelle'     : 134,
+            'SudAviation_Caravelle'     : 132,	# Rareplanes_synthetic
 			'Tank Car'					: 77,   # Xview
 			'Test Ship'					: 78,   # Ship Net
 			'Ticonderoga'				: 79,   # Ship Net
@@ -255,7 +258,7 @@ def get_satellitepy_table():
 			'Truck w/Flatbed'			: 84,   # Xview
 			'Truck w/Liquid'			: 85,   # Xview
 			'Tugboat'					: 86,   # Ship Net, Fair1m, Xview
-            'Tupolev_154'               : 135,
+            'Tupolev_154'               : 133,	# Rareplanes_synthetic
 			'Utility Truck'				: 87,   # Xview
 			'Van'						: 88,   # Fair1m
 			'Warship'					: 57,   # Fair1m
@@ -267,6 +270,40 @@ def get_satellitepy_table():
 			'YuZhao LL'					: 94    # Ship Net
 		 },
         'very-fine-class':{
+			'Airbus_A330-300'					: 0,	# Rareplanes_synthetic
+			'Airbus_A-340'						: 1,	# Rareplanes_synthetic
+			'Airbus_A380-800'					: 2,	# Rareplanes_synthetic
+			'ATR_ATR-72'						: 3,	# Rareplanes_synthetic
+			'BAE_146-100'						: 4,	# Rareplanes_synthetic
+			'BAE_146-300'						: 5,	# Rareplanes_synthetic
+			'Boeing_717-200'					: 6,	# Rareplanes_synthetic
+			'Boeing_727-100'					: 7,	# Rareplanes_synthetic
+			'Boeing_737-200'					: 8,	# Rareplanes_synthetic
+			'Boeing_737-300'					: 9,	# Rareplanes_synthetic
+			'Boeing_747-200'					: 10,	# Rareplanes_synthetic
+			'Boeing_747-400'					: 11,	# Rareplanes_synthetic
+			'Boeing_757-300'					: 12,	# Rareplanes_synthetic
+			'Boeing_767-200'					: 13,	# Rareplanes_synthetic
+			'Boeing_767-400'					: 14,	# Rareplanes_synthetic
+			'Boeing_777-300'					: 15,	# Rareplanes_synthetic
+			'Boeing_BBJ-2'						: 16,	# Rareplanes_synthetic
+			'Bombardier_BD-700-GlobalExpress'	: 17,	# Rareplanes_synthetic
+			'Bombardier_Challenger-300'			: 18,	# Rareplanes_synthetic
+			'Bombardier_Challenger-604'			: 19,	# Rareplanes_synthetic
+			'Bombardier_CRJ-705'				: 20,	# Rareplanes_synthetic
+			'Cessna_Citation-CJ4'				: 21,	# Rareplanes_synthetic
+			'Dassault_Falcon-100'				: 22,	# Rareplanes_synthetic
+			'Dassault_Falcon-2000'				: 23,	# Rareplanes_synthetic
+			'Dassault_Falcon-900'				: 24,	# Rareplanes_synthetic
+			'DeHavillandCanada_DHC-2-Beaver'	: 25,	# Rareplanes_synthetic
+			'DeHavillandCanada_DHC-3-Otter'		: 26,	# Rareplanes_synthetic
+			'Embraer_ERJ-135'					: 27,	# Rareplanes_synthetic
+			'HBC_Hawker-4000'					: 28,	# Rareplanes_synthetic
+			'LockheedCorp_L-1011-TriStar'		: 29,	# Rareplanes_synthetic
+			'Let_L-200Morova'					: 30,	# Rareplanes_synthetic
+			'McDonnellDouglas_DC-9-30 '			: 31,	# Rareplanes_synthetic
+			'McDonnellDouglas_MD-11'			: 32,	# Rareplanes_synthetic
+			'PiperAircraft_PA-28'				: 33	# Rareplanes_synthetic
         },
         'role':{
             'Small Civil Transport/Utility': 0,
@@ -328,7 +365,7 @@ def get_satellitepy_table():
                     }
             }
         }
-    } 
+    }
 
     # Add the merged class
     # For example, this is a solution to be able to train the bbavector on the original dota dataset
@@ -340,6 +377,7 @@ def get_satellitepy_table():
     for key,value in satellitepy_table['very-fine-class'].items():
         satellitepy_table['merged-class'][key] = value+len_coarse_class+len_fine_class
     return satellitepy_table
+
 
 
 def get_satellitepy_dict_values(satellitepy_dict,task):
