@@ -1,3 +1,5 @@
+from builtins import print
+
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -91,7 +93,7 @@ def set_image_keys(all_satellitepy_keys, sub_image_labels, gt_labels, i):
 
 def fill_none_to_empty_keys(labels,not_available_tasks):
     """
-    Append None to non existing tasks for one object 
+    Append None to non existing tasks for one object; Hbboxes are calculated by obboxes if missing
     Parameters
     ----------
     labels : dict of str
@@ -233,7 +235,7 @@ def read_dota_label(label_path, mask_path=None):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes','difficulty','coarse-class','fine-class','merged-class']
+    available_tasks=['hbboxes', 'obboxes','difficulty','coarse-class','fine-class','merged-class']
     mask_exists = True if mask_path else False
     if mask_exists:
         available_tasks.append('masks')
@@ -281,6 +283,7 @@ def read_dota_label(label_path, mask_path=None):
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
             labels['obboxes'].append(bbox_corners)
+            labels['hbboxes'].append(get_HBB_from_OBB(bbox_corners))
             fill_none_to_empty_keys(labels,not_available_tasks)
 
         # Mask
@@ -342,7 +345,7 @@ def read_rareplanes_real_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_real
-    available_tasks = ['obboxes', 'coarse-class', 'role', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
+    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'role', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
                        'attributes_fuselage_canards', 'attributes_fuselage_length', 'attributes_wings_wing-span',
                        'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins']
 
@@ -371,6 +374,7 @@ def read_rareplanes_real_label(label_path):
         corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(),
                    np.add(B, vecToA).tolist()]
         labels['obboxes'].append(corners)
+        labels['hbboxes'].append(get_HBB_from_OBB(corners))
         labels['coarse-class'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
         labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
@@ -396,10 +400,7 @@ def read_rareplanes_synthetic_label(label_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_synthetic
-    available_tasks = ['hbboxes'  'obboxes', 'coarse-class', 'attributes_engines_no-engines', 'attributes_engines_propulsion',
-     'attributes_fuselage_canards', 'attributes_fuselage_length', 'attributes_wings_wing-span',
-     'attributes_wings_wing-shape', 'attributes_wings_wing-position', 'attributes_tail_no-tail-fins',
-     'attributes_role_civil', 'attributes_role_military']
+    available_tasks = ['hbboxes'  'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'role']
 
     # ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
@@ -412,8 +413,6 @@ def read_rareplanes_synthetic_label(label_path):
 
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
-
-        labels['hbboxes'].append(points)
 
         A = (points[0], points[1])
         B = (points[2], points[3])
@@ -431,19 +430,18 @@ def read_rareplanes_synthetic_label(label_path):
         # masks missing
 
         labels['obboxes'].append(corners)
+        labels['hbboxes'].append(get_HBB_from_OBB(corners))
         labels['coarse-class'].append('airplane')
-        labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
-        labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
-        canards = annotation['canards']
-        if canards == 'yes':
-            labels['attributes']['fuselage']['canards'].append(True)
-        elif canards == 'no':
-            labels['attributes']['fuselage']['canards'].append(False)
-        labels['attributes']['fuselage']['length'].append(float(annotation['length']))
-        labels['attributes']['wings']['wing-span'].append(float(annotation['wingspan']))
-        labels['attributes']['wings']['wing-shape'].append(annotation['wing_type'])
-        labels['attributes']['wings']['wing-position'].append(annotation['wing_position'])
-        labels['attributes']['tail']['no-tail-fins'].append(int(annotation['num_tail_fins']))
+
+        name = str(annotation['full'].split('_')[3:-1])
+        fine = name.split('-')[0]
+        labels['fine-class'].append(fine)
+
+        if name.split('-').__len__() > 1:
+            labels['very-fine-class'].append(name)
+        else:
+            labels['very-fine-class'].append(None)
+
         role = annotation['category_id']
         
         if role == 1:  # Small Civil Transport/Utility
@@ -455,6 +453,7 @@ def read_rareplanes_synthetic_label(label_path):
             role = 'Large_Civil_Transport/Utility'
         else:
             raise Exception(f'Unexpected role found: {role}')
+        labels['role'].append(role)
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
  
@@ -462,7 +461,7 @@ def read_VHR_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for VHR
-    available_tasks=['bboxes', 'coarse-class', "fine-class"]
+    available_tasks=['hbboxes', 'coarse-class', "fine-class"]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -513,7 +512,7 @@ def read_dior_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for VHR
-    available_tasks=['bboxes', "difficulty", 'coarse-class', "fine-class"]
+    available_tasks=['obboxes', "difficulty", 'coarse-class', "fine-class"]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -544,7 +543,7 @@ def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes', 'difficulty', 'coarse-class','fine-class']
+    available_tasks=['hbboxes', 'obboxes', 'difficulty', 'coarse-class','fine-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -573,6 +572,7 @@ def read_ship_net_label(label_path):
                 corner = []
 
         labels['obboxes'].append(coords)
+        labels['hbboxes'].append(get_HBB_from_OBB(coords))
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
@@ -580,7 +580,7 @@ def read_ucas_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes', 'coarse-class']
+    available_tasks=['hbboxes', 'obboxes', 'coarse-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -599,6 +599,7 @@ def read_ucas_label(label_path):
             coords.append(corner)
             corner = []
         labels['obboxes'].append(coords)
+        labels['hbboxes'].append(get_HBB_from_OBB(coords))
 
         # Using label path to determine object type
         if 'CAR' in str(label_path):
@@ -615,6 +616,20 @@ def read_satellitepy_label(label_path):
     with open(label_path,'r') as f:
         labels = json.load(f)
     return labels
+
+def get_HBB_from_OBB(obb):
+    x_coords = [obb[0][0], obb[1][0], obb[2][0], obb[3][0]]
+    y_coords = [obb[0][1], obb[1][1], obb[2][1], obb[3][1]]
+
+    max_x = max(x_coords)
+    min_x = min(x_coords)
+
+    max_y = max(y_coords)
+    min_y = min(y_coords)
+
+    hbb = [[min_x, max_y], [min_x, min_y], [max_x, min_y], [max_x, max_y]]
+    return hbb
+
 
 
 def read_results(result_path):
