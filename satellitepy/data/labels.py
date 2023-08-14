@@ -1,8 +1,9 @@
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from satellitepy.data.utils import get_xview_classes, set_mask
+from satellitepy.data.utils import get_xview_classes, set_mask, parse_potsdam_labels
 import json
+import numpy as np
 
 from satellitepy.data.bbox import BBox
 
@@ -31,6 +32,8 @@ def read_label(label_path,label_format, mask_path = None):
         print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
         exit(1)
+    elif label_format == 'isprs':
+        return read_isprs_label(label_path)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -612,3 +615,25 @@ def read_satellitepy_label(label_path):
         labels = json.load(f)
     return labels
 
+def read_isprs_label(label_path):
+    labels = init_satellitepy_label()
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for dota
+    available_tasks=['hbboxes', 'coarse-class', 'masks']
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+
+    hbboxes, masks = parse_potsdam_labels(label_path)
+
+    labels['masks'] = masks
+
+    for i in range(len(hbboxes)):
+        labels['coarse-class'].append('car')
+        labels['hbboxes'].append(hbboxes[i])
+        
+
+        fill_none_to_empty_keys(labels, not_available_tasks)
+
+    return labels

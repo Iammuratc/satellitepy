@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from satellitepy.data.bbox import BBox
+from scipy.ndimage import generate_binary_structure, label, find_objects
 
 from satellitepy.data.bbox import BBox
 
@@ -23,7 +24,9 @@ def set_mask(labels,mask_path,bbox_type):
     for bbox in labels[bbox_type]:
         h = BBox.get_bbox_limits(np.array(bbox))
         mask_0 = np.zeros((mask.shape[0],mask.shape[1]))
+
         cv2.fillPoly(mask_0, [np.array(bbox,dtype=int)], 1)
+        
         coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist() # y,x
         labels['masks'].append([coords[1] + h[0],coords[0] + h[2]]) # x,y
 
@@ -104,6 +107,48 @@ def get_xview_classes():
         }
     return classes
 
+def parse_potsdam_labels(label_path):
+    """
+    Parses the potsdam images to extract the label data
+    Parameters
+    ----------
+    label_path : string
+        Path to the
+    Returns
+    -------
+    objs : list of slices
+        Horizontal bounding boxes of the objects
+    """
+    img = cv2.imread(label_path)
+    
+    # bleaching every color except yellow
+    hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
+
+    lower=np.array([20,100,100])
+    upper=np.array([40,255,255])
+
+    mask=cv2.inRange(hsv,lower,upper)
+
+    s = generate_binary_structure(2, 2)
+
+    # figuring out the hbboxes for the yellow segements
+    labeled_image, num_features = label(mask, structure=s)
+    objs = find_objects(labeled_image)
+
+    masks = []
+    hbboxes = []
+
+    for obj in objs:
+        hbbox = [[obj[1].start, obj[0].start], [obj[1].stop, obj[0].start], [obj[1].stop, obj[0].stop], [obj[1].start, obj[0].stop]]
+        h = BBox.get_bbox_limits(np.array(hbbox))
+
+        coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist()
+
+        masks.append([(coords[0] + h[2]).tolist(), (coords[1] + h[0]).tolist()])
+        hbboxes.append(hbbox)
+
+    return (hbboxes, masks)
+  
 def get_satellitepy_table():
     """
     This function returns an indexing/mapping table for the satellitepy dict
