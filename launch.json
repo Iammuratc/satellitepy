@@ -26,7 +26,63 @@
         "--test_bs",
         "256"
       ]
-    }
+    },
     // python -m tools.test.libmtl.train_satpy --weighting EW --arch HPS --satpy_config_path /home/simon/unibw/satellitepy/tools/test/libmtl/config.json --gpu_id 0 --scheulder step
+    {
+      "name": "Python: BBAVector",
+      "type": "python",
+      "request": "launch",
+      "env": {
+        "CUDA_LAUNCH_BLOCKING": "1"
+      },
+      "module": "tools.train.bbavector",
+      "console": "externalTerminal",
+      "justMyCode": false,
+      "args": [
+        "--train-image-folder",
+        "/home/simon/unibw/data/satpy/dota-patches/train/images",
+        "--train-label-folder",
+        "/home/simon/unibw/data/satpy/dota-patches/train/labels",
+        "--train-label-format",
+        "satellitepy",
+        "--valid-image-folder",
+        "/home/simon/unibw/data/satpy/dota-patches/val/images",
+        "--valid-label-folder",
+        "/home/simon/unibw/data/satpy/dota-patches/val/labels",
+        "--valid-label-format",
+        "satellitepy",
+        "--out-folder",
+        "/home/simon/unibw/data/satpy/temp",
+        "--tasks",
+        // "masks", "very-fine-class",
+        "hbboxes",
+        "obboxes",
+        "coarse-class",
+        "fine-class",
+        "merged-class",
+        "role",
+        "difficulty",
+        "attributes_engines_no-engines",
+        "attributes_engines_propulsion",
+        "attributes_fuselage_canards",
+        "attributes_fuselage_length",
+        "attributes_wings_wing-span",
+        "attributes_wings_wing-shape",
+        "attributes_wings_wing-position",
+        "attributes_tail_no-tail-fins",
+        "--batch-size",
+        "2",
+        "--ngpus",
+        "0",
+        "--num-workers",
+        "0",
+        "--num-epoch",
+        "150",
+        "--init-lr",
+        "5e-4",
+        "--validate-datasets"
+      ]
+    }
+    // python3 tools/train/bbavector.py --train-image-folder /home/simon/unibw/data/satpy/dota-patches/train/images --train-label-folder /home/simon/unibw/data/satpy/dota-patches/train/labels --train-label-format satellitepy --valid-image-folder /home/simon/unibw/data/satpy/dota-patches/val/images --valid-label-folder /home/simon/unibw/data/satpy/dota-patches/val/labels --valid-label-format satellitepy  --out-folder /home/simon/unibw/data/satpy/temp  --batch-size 8 --ngpus 1 --num-workers 8 --num-epoch 150  --init-lr 5e-4 --tasks hbboxes obboxes coarse-class fine-class merged-class role difficulty attributes_engines_no-engines attributes_engines_propulsion attributes_fuselage_canards attributes_fuselage_length attributes_wings_wing-span attributes_wings_wing-shape attributes_wings_wing-position attributes_tail_no-tail-fins --validate-datasets
   ]
 }

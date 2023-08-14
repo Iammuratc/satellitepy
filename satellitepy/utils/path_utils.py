@@ -31,7 +31,6 @@ def init_logger(config_path, log_path):
     """
     logging.config.fileConfig(config_path, defaults={'logfilename': log_path})
 
-
 def create_folder(folder):
     """
     Create the given folder
@@ -112,7 +111,7 @@ def zip_matched_files(*folders):
     all_file_paths_zipped = zip(*all_file_paths)
     for file_paths in all_file_paths_zipped:
         file_name = file_paths[0].stem
-        logger.info(f'{file_name} will be processed...')
+        # logger.info(f'{file_name} will be processed...')
         # Check if file names match
         is_match = is_file_names_match(*file_paths)
         if not is_match:

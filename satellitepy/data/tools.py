@@ -116,7 +116,7 @@ def save_patches(
                 with open(str(patch_label_path),'w') as f:
                     json.dump(patch_label,f,indent=4)
 
-    else: 
+    else:
       logger.error("Folder lengths unequal!")
 
 def save_chips(
@@ -126,7 +126,7 @@ def save_chips(
     out_folder,
     margin_size,
     include_object_classes,
-    exclude_object_classes,     
+    exclude_object_classes,
     mask_folder = None
     ):
     """
@@ -167,10 +167,10 @@ def save_chips(
         for img_path, label_path, mask_path in zip(image_paths, label_paths, mask_paths):
             img = cv2.imread(str(img_path))
             label = read_label(label_path, label_format, mask_path)
-            
+
             chips = get_chips(
-                img, 
-                label, 
+                img,
+                label,
                 margin_size,
                 include_object_classes,
                 exclude_object_classes
@@ -217,51 +217,68 @@ def get_label_by_idx(satpy_labels: dict, i: int):
     inner(satpy_labels, result)
     return result
       
-def show_labels_on_image(img_path,label_path,label_format,output_folder,tasks,mask_path):
+def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tasks, mask_folder):
     logger = logging.getLogger(__name__)
-    img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
-    
-    gt_labels = read_label(label_path,label_format, mask_path)
 
-    fig = plt.figure(frameon=False)
-    
-    ax = plt.Axes(fig, [0., 0., 1., 1.])
-    ax.set_axis_off()
-    fig.add_axes(ax)
-    ax.imshow(img)
-    
-    classes = list(filter(lambda x: 'class' in x, tasks))
+    img_paths = get_file_paths(img_folder)
+    label_paths = get_file_paths(label_folder)
+    if mask_folder:
+        mask_paths = get_file_paths(mask_folder)
+    else:
+        mask_paths = [None] * len(img_paths)
 
-    if 'masks' in tasks:
-        logger.info('Adding masks to Image')
-        for mask_indices in gt_labels['masks']:
-            ax.plot(mask_indices[0],mask_indices[1])
+    if (len(img_paths) == len(label_paths) == len(mask_paths)):
+        for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
 
-    # if 'obboxes' in tasks:
-    #     for obbox in gt_labels['obboxes']:
-    #         BBox.plot_bbox(corners=, ax=ax, c='b', s=5)
-            
-    if classes or 'bboxes' in tasks:
-        bboxes = 'obboxes'
-        logger.info('Adding bounding boxes/labels to image')
-        if len(gt_labels['obboxes']) < 1:
-            bboxes = 'hbboxes'
+            img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
 
-        for i in range(0, len(gt_labels[bboxes])):
-            bbox_corners = gt_labels[bboxes][i]
-            # bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2) 
-            if classes:
-                x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
-                ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=gt_labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
-            if 'bboxes' in tasks:
-                BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
-            fig.canvas.draw()
+            labels = read_label(label_path, label_format, mask_path)
 
-    plt.axis('off')
-    plt.show()
-    plt.savefig(output_folder / Path(img_path.stem + ".png"))
-    logger.info(f'Saved labels on {output_folder / Path(img_path.stem + ".png")}')
-    return fig
+            color = (0, 255, 0)
+            if label_format == 'results':
+                print(label_format)
+                color = (0, 0, 255)
+
+            # fig = plt.figure(frameon=False)
+            #
+            # ax = plt.Axes(fig, [0., 0., 1., 1.])
+            # ax.set_axis_off()
+            # fig.add_axes(ax)
+            # ax.imshow(img)
+
+            classes = list(filter(lambda x: 'class' in x, tasks))
+
+            # if 'masks' in tasks:
+            #     logger.info('Adding masks to Image')
+            #     for mask_indices in labels['masks']:
+            #         ax.plot(mask_indices[0],mask_indices[1])
+
+            if classes or 'bboxes' in tasks:
+                bboxes = 'obboxes'
+                logger.info('Adding bounding boxes/labels to image')
+                if len(labels['obboxes']) < 1:
+                    bboxes = 'hbboxes'
+
+                for i in range(0, len(labels[bboxes])):
+                    bbox_corners = labels[bboxes][i]
+                    bbox_corners = np.array(bbox_corners, np.int32)
+                    bbox_corners = bbox_corners.reshape((-1, 1, 2))
+                    # bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)
+                    # if classes:
+                        # x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
+                        # ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+                    if 'bboxes' in tasks:
+                        cv2.polylines(img, [bbox_corners], True, color)
+                        # BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
+                    # fig.canvas.draw()
+
+            print(Path(out_folder) / f"{img_path.stem}.png")
+            cv2.imwrite(str(Path(out_folder) / f"{img_path.stem}.png"), img)
+
+            # plt.axis('off')
+            # plt.show()
+            # plt.savefig(out_folder / Path(img_folder.stem + ".png"))
+            # logger.info(f'Saved labels on {out_folder / Path(img_folder.stem + ".png")}')
   
 
 def split_rareplanes_labels(
@@ -392,7 +409,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
     image_dicts = {img_name:init_satellitepy_label() for img_name in set(all_image_names)}
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['hbboxes', 'classes_0', 'classes_1']
+    available_tasks=['hbboxes', 'coarse-class', 'fine-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -411,7 +428,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
         ymin = int(coords[1])
         xmax = int(coords[2])
         ymax = int(coords[3])
-        image_dicts[img_name]['hbboxes'].append([[xmin, ymin], [xmax, ymin], [xmin, ymax], [xmax, ymax]])
+        image_dicts[img_name]['hbboxes'].append([[xmin, ymax], [xmin, ymin], [xmax, ymin], [xmax, ymax]])
 
         type_class = int(feature['properties']['type_id'])
         if type_class in classes['vehicles']:
@@ -427,7 +444,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
             image_dicts[img_name]['coarse-class'].append('helicopter')
             image_dicts[img_name]['fine-class'].append(None)
         elif type_class in classes['objects']:
-            image_dicts[img_name]['coarse-class'].append('object')
+            image_dicts[img_name]['coarse-class'].append('other')
             image_dicts[img_name]['fine-class'].append(classes['objects'][type_class])
         else:
             image_dicts[img_name]['coarse-class'].append('other')

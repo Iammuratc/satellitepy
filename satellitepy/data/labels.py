@@ -29,6 +29,8 @@ def read_label(label_path,label_format, mask_path = None):
         return read_ship_net_label(label_path)
     elif label_format == 'ucas':
         return read_ucas_label(label_path)
+    elif label_format == 'results':
+        return read_results(label_path)
     elif label_format == 'xview':
         print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
@@ -103,6 +105,7 @@ def fill_none_to_empty_keys(labels,not_available_tasks):
     labels : dict of str
         None appended dict in satellitepy format
     """
+
     for task in not_available_tasks:
         keys = task.split('_')
         if len(keys)==1:
@@ -196,6 +199,7 @@ def init_satellitepy_label():
         'coarse-class':[],
         'fine-class':[],
         'very-fine-class':[],
+        'merged-class':[], # This is a concatenated version of all class values
         'role':[],
         'difficulty':[],
         'attributes':{
@@ -231,7 +235,7 @@ def read_dota_label(label_path, mask_path=None):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['hbboxes', 'obboxes','difficulty','coarse-class','fine-class']
+    available_tasks=['hbboxes', 'obboxes','difficulty','coarse-class','fine-class','merged-class']
     mask_exists = True if mask_path else False
     if mask_exists:
         available_tasks.append('masks')
@@ -274,6 +278,7 @@ def read_dota_label(label_path, mask_path=None):
             else:
                 labels['coarse-class'].append('other') #
                 labels['fine-class'].append(category) #
+            labels['merged-class'].append(category)
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
@@ -478,22 +483,22 @@ def read_VHR_label(label_path):
     for line in handler.readlines():
         if line == "\n":
             continue
-        
+
         vals = line.replace('(','').replace(')','').replace('\n', '').split(',')
         vals = [int(x) for x in vals] # x1, y1, x2, y2
-        
+
         labels['hbboxes'].append([[vals[0], vals[1]], [vals[2], vals[1]], [vals[2], vals[3]], [vals[0], vals[3]]])
-        
+
         typ = str(vals[-1])
         if typ == "1":
                 labels['coarse-class'].append('airplane')
         elif typ == "2":
                 labels['coarse-class'].append('ship')
         elif typ == "10":
-                labels['coarse-class'].append('vehicle')             
+                labels['coarse-class'].append('vehicle')
         else:
                 labels['coarse-class'].append('other')
-            
+
         labels['fine-class'].append(lut[typ])
     handler.close()
             
@@ -634,3 +639,22 @@ def get_HBB_from_OBB(obb):
     return hbb
 
 
+
+def read_results(result_path):
+    labels = init_satellitepy_label()
+
+    available_tasks = ['obboxes', 'hbboxes']
+
+    ## All possible tasks
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+
+    with open(result_path, 'r') as f:
+        results = json.load(f)
+
+        labels['obboxes'] = results['det_labels']['obboxes']
+
+        fill_none_to_empty_keys(labels, not_available_tasks)
+
+        return  labels

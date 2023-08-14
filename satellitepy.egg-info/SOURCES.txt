@@ -9,5 +9,3 @@ satellitepy/data/labels.py
 satellitepy/data/patch.py
 satellitepy/data/tools.py
 satellitepy/data/utils.py
-satellitepy/data/dataset/__init__.py
-satellitepy/data/dataset/mtl_dataset.py

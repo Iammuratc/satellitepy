@@ -4,8 +4,6 @@ import shapely
 from shapely.geometry import Polygon
 
 from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
-# TODO: 
-#   Filter out the truncated objects using the object area. truncated_object_thr is not use at the moment. Edit the is_truncated function.
 
 # Init log
 logger = logging.getLogger(__name__)
@@ -83,7 +81,7 @@ def get_patches(
             obb_defined = obbox != None
 
             class_targets = [gt_labels['coarse-class'][j], gt_labels['fine-class'][j], gt_labels['very-fine-class'][j]]
-            if not any([
+            if not all([
                 is_valid_object_class(
                     ct, include_object_classes, exclude_object_classes
                 ) for ct in class_targets]
@@ -141,7 +139,7 @@ def is_valid_object_class(object_class_name, include_object_classes, exclude_obj
         include_object_classes takes precedence and overrides the behaviour of this parameter.
     """
     if object_class_name is None:
-        return False
+        return True
     elif include_object_classes is not None:
         return object_class_name in include_object_classes
     elif exclude_object_classes is not None:
