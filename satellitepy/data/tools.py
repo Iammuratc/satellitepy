@@ -116,7 +116,7 @@ def save_patches(
                 with open(str(patch_label_path),'w') as f:
                     json.dump(patch_label,f,indent=4)
 
-    else: 
+    else:
       logger.error("Folder lengths unequal!")
 
 def save_chips(
@@ -409,7 +409,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
     image_dicts = {img_name:init_satellitepy_label() for img_name in set(all_image_names)}
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['hbboxes', 'classes_0', 'classes_1']
+    available_tasks=['hbboxes', 'coarse-class', 'fine-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -428,7 +428,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
         ymin = int(coords[1])
         xmax = int(coords[2])
         ymax = int(coords[3])
-        image_dicts[img_name]['hbboxes'].append([[xmin, ymin], [xmax, ymin], [xmin, ymax], [xmax, ymax]])
+        image_dicts[img_name]['hbboxes'].append([[xmin, ymax], [xmin, ymin], [xmax, ymin], [xmax, ymax]])
 
         type_class = int(feature['properties']['type_id'])
         if type_class in classes['vehicles']:
@@ -444,7 +444,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
             image_dicts[img_name]['coarse-class'].append('helicopter')
             image_dicts[img_name]['fine-class'].append(None)
         elif type_class in classes['objects']:
-            image_dicts[img_name]['coarse-class'].append('object')
+            image_dicts[img_name]['coarse-class'].append('other')
             image_dicts[img_name]['fine-class'].append(classes['objects'][type_class])
         else:
             image_dicts[img_name]['coarse-class'].append('other')
