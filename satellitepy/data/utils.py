@@ -192,6 +192,7 @@ def get_satellitepy_table():
 			'Ground Grader'				: 34,   # Xview
             'Gulfstream_G200'           : 124,	# Rareplanes_synthetic
             'Gulfstream_GIII'           : 125,	# Rareplanes_synthetic
+            'Harbor'                    : 134,  # Dota
 			'Hatsuyuki DD'				: 35,   # Ship Net
 			'Haul Truck'				: 36,   # Xview
             'HBC_Hawker'                : 126,	# Rareplanes_synthetic
