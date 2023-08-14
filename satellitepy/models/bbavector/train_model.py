@@ -111,7 +111,8 @@ class TrainModule(object):
             if self.valid_dataset:
                 print('Validation is starting...')
                 valid_loss = self.run_valid(valid_loader, criterion)
-                early_stopping(valid_loss, self.model, self.optimizer, epoch)
+                total_val_loss = sum([l for l in valid_loss.values()])
+                early_stopping(total_val_loss, self.model, self.optimizer, epoch)
                 if early_stopping.early_stop:
                     # self.logger.info("Early stopping")
                     print("Early stopping")
@@ -123,9 +124,22 @@ class TrainModule(object):
                                 self.model,
                                 self.optimizer)
 
-            msg = (f'[{epoch}/{self.num_epoch}] ' +
-                    f'train_loss: {train_loss:.5f} ' +
-                    f'valid_loss: {valid_loss:.5f} ') # +
+            train_loss_msg = ""
+            for k, v in train_loss.items():
+                train_loss_msg += f"{k}: {v:.5f}\n"
+            val_loss_msg = ""
+            for k, v in valid_loss.items():
+                val_loss_msg += f"{k}: {v:.5f}\n"
+
+            msg = (f'[{epoch}/{self.num_epoch}]\n' +
+                    f'training_losses\n' +
+                    '----------------------------\n' +
+                    train_loss_msg +
+                    '----------------------------\n' +
+                    "valid_losses\n" +
+                    '----------------------------\n' +
+                    val_loss_msg +
+                    '----------------------------')
                     # f'valid_acc: {valid_acc:.2f}')
 
             # self.logger.info(msg)
@@ -155,22 +169,24 @@ class TrainModule(object):
 
     def run_train(self,data_loader, criterion):
         self.model.train()
-        running_loss = 0.
+        running_loss = {}
         for data_dict in tqdm(data_loader):
             for name in data_dict.keys():
                 if name not in ["img_w", "img_h", "img_path", "label_path"]:
                     data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             self.optimizer.zero_grad()
             pr_decs = self.model(data_dict['input'])
-            try:
-                loss = criterion(pr_decs, data_dict)
-            except:
-                test = 5
-                raise Exception()
-            loss.backward()
+            loss_dict = criterion(pr_decs, data_dict)
+            total_loss = sum([l for l in loss_dict.values()])
+            total_loss.backward()
             self.optimizer.step()
-            running_loss += loss.item()
-        epoch_loss = running_loss / len(data_loader)
+            for k, v in loss_dict.items():
+                running_loss.setdefault(k, 0.)
+                if isinstance(v, torch.Tensor):
+                    running_loss[k] += v.item()
+                else:
+                    running_loss[k] += v
+        epoch_loss = {k: v / len(data_loader) for k, v in running_loss.items()}
         # print('{} loss: {}'.format(epoch_loss))
         return epoch_loss
 
@@ -178,7 +194,7 @@ class TrainModule(object):
         # VALIDATE MODEL
         self.model.eval()
         acc_sums = 0
-        running_loss = 0.
+        running_loss = {}
 
         for data_dict in tqdm(data_loader):
             for name in data_dict.keys():
@@ -186,9 +202,14 @@ class TrainModule(object):
                     data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             with torch.no_grad():
                 pr_decs = self.model(data_dict['input'])
-                loss = criterion(pr_decs, data_dict)
-                running_loss += loss.item()
-        epoch_loss = running_loss / len(data_loader)
+                loss_dict = criterion(pr_decs, data_dict)
+                for k, v in loss_dict.items():
+                    running_loss.setdefault(k, 0.)
+                    if isinstance(v, torch.Tensor):
+                        running_loss[k] += v.item()
+                    else:
+                        running_loss[k] += v
+        epoch_loss = {k: v / len(data_loader) for k, v in running_loss.items()}
         return epoch_loss
             
             # if 'test' in self.dataset_phase[args.dataset] and epoch%5==0:
