@@ -627,10 +627,12 @@ def read_isprs_label(label_path):
 
     hbboxes, masks = parse_potsdam_labels(label_path)
 
+    labels['masks'] = masks
+
     for i in range(len(hbboxes)):
         labels['coarse-class'].append('car')
         labels['hbboxes'].append(hbboxes[i])
-        labels['masks'].append(masks)
+        
 
         fill_none_to_empty_keys(labels, not_available_tasks)
 

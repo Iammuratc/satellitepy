@@ -144,7 +144,7 @@ def parse_potsdam_labels(label_path):
 
         coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist()
 
-        masks.append([coords[0] + h[2], coords[1] + h[0]])
+        masks.append([(coords[0] + h[2]).tolist(), (coords[1] + h[0]).tolist()])
         hbboxes.append(hbbox)
 
     return (hbboxes, masks)
