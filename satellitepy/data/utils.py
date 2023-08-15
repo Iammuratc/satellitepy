@@ -354,19 +354,12 @@ def get_satellitepy_table():
         },
         'role':{
             'Small Civil Transport/Utility': 0,
-            'Small_Civil_Transport/Utility': 0,
             'Medium Civil Transport/Utility': 1,
-            'Medium_Civil_Transport/Utility': 1,
             'Large Civil Transport/Utility': 2,
-            'Large_Civil_Transport/Utility': 2,
             'Military Transport/Utility/AWAC': 3,
-            'Military_Transport/Utility/AWAC': 3,
             'Military Fighter/Interceptor/Attack': 4,
-            'Military_Fighter/Interceptor/Attack': 4,
             'Military Bomber': 5,
-            'Military_Bomber': 5,
             'Military Trainer': 6,
-            'Military_Trainer': 6,
         },
         'difficulty':{
             '0': 0,
@@ -449,7 +442,12 @@ def get_satellitepy_dict_values(satellitepy_dict,task):
             The values of the corresponding task
     '''
 
+    print('get_satellitepy_dict_values task:')
+    print(task)
+
     keys = task.split('_')
+    print(keys)
+    print(20*'-')
     if len(keys)==1:
         return satellitepy_dict[keys[0]]
     elif len(keys)==2:
