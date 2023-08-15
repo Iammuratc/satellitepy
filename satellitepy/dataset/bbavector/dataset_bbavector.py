@@ -50,7 +50,7 @@ class BBAVectorDataset(Dataset):
                 image = cv2.imread(img_path.absolute().as_posix())
                 labels = read_label(label_path,in_label_format)
                 image_h, image_w, c = image.shape
-                annotation = self.preapare_annotations(labels, image_w, image_h, img_path)
+                annotation = self.preapare_annotations(labels, image_w, image_h)#, img_path)
                 image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
 
                 if annotation:
@@ -65,7 +65,31 @@ class BBAVectorDataset(Dataset):
     def __len__(self):
         return len(self.items)
 
-    def prepare_masks(self, labels, image_width, image_height, image_file = None):
+    def __getitem__(self, idx):
+        ### Image
+        img_path, label_path, label_format = self.items[idx]
+        image = cv2.imread(img_path.absolute().as_posix())
+        # image = torch.from_numpy(cv2_image).permute((2, 0, 1))
+        image_h, image_w, c = image.shape
+        ### Labels
+        labels = read_label(label_path,label_format)
+        hash_str = str(img_path) + str(label_path) + str(self.random_seed)
+        hash_bytes = hashlib.sha256(bytes(hash_str, "utf-8")).digest()[:4]
+        np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
+        annotation = self.preapare_annotations(labels, image_w, image_h)#, img_path)
+        image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
+        # if not annotation:
+        #     test = 5
+        data_dict = self.utils.generate_ground_truth(image, annotation)
+        data_dict['img_path']=str(img_path)
+        data_dict['label_path']=str(label_path)
+        data_dict['img_w']=image_w
+        data_dict['img_h']=image_h
+
+        return data_dict
+
+
+    def prepare_masks(self, labels, image_width, image_height):#, image_file = None):
         masks = np.zeros((image_height, image_width))
 
         for val in labels["masks"]:
@@ -79,9 +103,10 @@ class BBAVectorDataset(Dataset):
             m_y = np.array(m_y).clip(0, image_height - 1)
             masks[m_y, m_x] = 1.0
 
-        if np.count_nonzero(masks) == 0:
-            return None
+        # if np.count_nonzero(masks) == 0:
+        #     return None
 
+        # print(masks)
         return masks
 
     def visualize_masks(self, image, masks, labels):
@@ -100,13 +125,13 @@ class BBAVectorDataset(Dataset):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def preapare_annotations(self, labels, image_w, image_h, img_path):
+    def preapare_annotations(self, labels, image_w, image_h):#, img_path):
         annotation = {}
         for t in self.tasks:
             if t in ["obboxes", "hbboxes"]:
                 annotation[t] = np.asarray(get_satellitepy_dict_values(labels, t))
             elif t == "masks":
-                annotation[t] = self.prepare_masks(labels , image_w, image_h, str(img_path))
+                annotation[t] = self.prepare_masks(labels , image_w, image_h)#, str(img_path))
             else:
                 task_dict = get_task_dict(t)
 
@@ -125,29 +150,6 @@ class BBAVectorDataset(Dataset):
                     ])
         return annotation
 
-    def __getitem__(self, idx):
-        ### Image
-        img_path, label_path, label_format = self.items[idx]
-        image = cv2.imread(img_path.absolute().as_posix())
-        # image = torch.from_numpy(cv2_image).permute((2, 0, 1))
-        image_h, image_w, c = image.shape
-        ### Labels
-        labels = read_label(label_path,label_format)
-        hash_str = str(img_path) + str(label_path) + str(self.random_seed)
-        hash_bytes = hashlib.sha256(bytes(hash_str, "utf-8")).digest()[:4]
-        np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
-        annotation = self.preapare_annotations(labels, image_w, image_h, img_path)
-
-        image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
-        if not annotation:
-            test = 5
-        data_dict = self.utils.generate_ground_truth(image, annotation)
-        data_dict['img_path']=str(img_path)
-        data_dict['label_path']=str(label_path)
-        data_dict['img_w']=image_w
-        data_dict['img_h']=image_h
-
-        return data_dict
 
     
     # def load_img_ids(self):
