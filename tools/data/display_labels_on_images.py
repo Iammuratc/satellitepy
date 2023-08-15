@@ -32,8 +32,8 @@ def get_args():
 
 
 def run(args):
-    image_path = Path(args.in_image_folder)
-    label_path = Path(args.in_label_folder)
+    in_image_folder = Path(args.in_image_folder)
+    in_label_folder = Path(args.in_label_folder)
     label_format = str(args.label_format)
     output_folder = Path(args.out_folder)
     
@@ -51,13 +51,13 @@ def run(args):
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
     
-    if 'masks' in tasks and mask_path == None:
-        logger.error('No mask path given!')
-        exit(1)
+    # if 'masks' in tasks and mask_path == None:
+    #     logger.error('No mask path given!')
+    #     exit(1)
 
-    logger.info(f'Displaying labels on {image_path.name}')
+    # logger.info(f'Displaying labels on {image_path.name}')
 
-    show_labels_on_image(image_path,label_path,label_format,output_folder,tasks, mask_path)
+    show_labels_on_image(in_image_folder,in_label_folder,label_format,output_folder,tasks)#, mask_path)
     
 if __name__ == '__main__':
     args = get_args()

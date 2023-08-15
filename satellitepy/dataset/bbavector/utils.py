@@ -124,6 +124,8 @@ class Utils:
             out_annotations["hbboxes"] = np.asarray(out_hbb, np.float32)
         if "obboxes" in annotation and len(out_obb) > 0:
             out_annotations["obboxes"] = np.asarray(out_obb, np.float32)
+        if 'masks' in annotation:
+            out_annotations['masks'] = np.asarray(masks, np.float32)
 
         for k in out_annotations.keys():
             if k != "hbboxes" and k != "obboxes":

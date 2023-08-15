@@ -77,7 +77,10 @@ class BBAVectorDataset(Dataset):
         hash_bytes = hashlib.sha256(bytes(hash_str, "utf-8")).digest()[:4]
         np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
         annotation = self.preapare_annotations(labels, image_w, image_h)#, img_path)
+        # print(annotation['masks'].shape)
+
         image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
+        # print(annotation['masks'].shape)
         # if not annotation:
         #     test = 5
         data_dict = self.utils.generate_ground_truth(image, annotation)
@@ -106,7 +109,6 @@ class BBAVectorDataset(Dataset):
         # if np.count_nonzero(masks) == 0:
         #     return None
 
-        # print(masks)
         return masks
 
     def visualize_masks(self, image, masks, labels):

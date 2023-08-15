@@ -75,49 +75,48 @@ def save_patches(
         mask_paths = get_file_paths(mask_folder)
     else:
         mask_paths = [None] * len(img_paths)
-    if (len(img_paths)==len(label_paths)==len(mask_paths)):
-        for img_path, label_path, mask_path in zip(img_paths,label_paths,mask_paths):
-            mask_name = mask_path.name if mask_path != None else None
-            logger.info(f"{img_path.name}, {label_path.name}, {mask_name}")
-            # Image
-            img = cv2.imread(str(img_path))
-            # Labels
-            gt_labels = read_label(label_path,label_format,mask_path)
-            # Save results with the corresponding ground truth
-            patches = get_patches(
-                img,
-                gt_labels,
-                truncated_object_thr,
-                patch_size,
-                patch_overlap,
-                include_object_classes,
-                exclude_object_classes
-            )
 
-            count_patches = len(patches['images'])
-            for i in range(count_patches):
-                if satellitepy_labels_empty(patches["labels"][i]):
-                    continue
+    assert len(img_paths)==len(label_paths)==len(mask_paths)
+    for img_path, label_path, mask_path in zip(img_paths,label_paths,mask_paths):
+        mask_name = mask_path.name if mask_path != None else None
+        logger.info(f"{img_path.name}, {label_path.name}, {mask_name}")
+        # Image
+        img = cv2.imread(str(img_path))
+        # Labels
+        gt_labels = read_label(label_path,label_format,mask_path)
+        # Save results with the corresponding ground truth
+        patches = get_patches(
+            img,
+            gt_labels,
+            truncated_object_thr,
+            patch_size,
+            patch_overlap,
+            include_object_classes,
+            exclude_object_classes
+        )
 
-                # Get original image name for naming patch files
-                img_name = img_path.stem
+        count_patches = len(patches['images'])
+        logger.info(f'Number of patches: {count_patches}')
+        for i in range(count_patches):
+            # if satellitepy_labels_empty(patches["labels"][i]):
+            #     continue
 
-                # Patch starting coordinates
-                patch_x0, patch_y0 = patches['start_coords'][i]
+            # Get original image name for naming patch files
+            img_name = img_path.stem
 
-                # Save patch image
-                patch_img = patches['images'][i]
-                patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png"
-                cv2.imwrite(str(patch_image_path),patch_img)
+            # Patch starting coordinates
+            patch_x0, patch_y0 = patches['start_coords'][i]
 
-                # Save patch labels
-                patch_label = patches['labels'][i]
-                patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
-                with open(str(patch_label_path),'w') as f:
-                    json.dump(patch_label,f,indent=4)
+            # Save patch image
+            patch_img = patches['images'][i]
+            patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png"
+            cv2.imwrite(str(patch_image_path),patch_img)
 
-    else:
-      logger.error("Folder lengths unequal!")
+            # Save patch labels
+            patch_label = patches['labels'][i]
+            patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
+            with open(str(patch_label_path),'w') as f:
+                json.dump(patch_label,f,indent=4)
 
 def save_chips(
     label_format,
@@ -217,63 +216,51 @@ def get_label_by_idx(satpy_labels: dict, i: int):
     inner(satpy_labels, result)
     return result
       
-def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tasks, mask_folder):
+def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tasks):#, mask_folder):
     logger = logging.getLogger(__name__)
-
+    print(tasks)
     img_paths = get_file_paths(img_folder)
     label_paths = get_file_paths(label_folder)
-    if mask_folder:
-        mask_paths = get_file_paths(mask_folder)
-    else:
-        mask_paths = [None] * len(img_paths)
+    # if mask_folder:
+    #     mask_paths = get_file_paths(mask_folder)
+    # else:
+    #     mask_paths = [None] * len(img_paths)
+    assert len(img_paths) == len(label_paths)#
+        # for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
+    for img_path, label_path in zip(img_paths, label_paths):
 
-    if (len(img_paths) == len(label_paths) == len(mask_paths)):
-        for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
+        img = cv2.imread(str(img_path))
+        # img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
+        logger.info(img_path)
+        labels = read_label(label_path, label_format)
 
-            img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
+        bboxes = 'obboxes'
+        logger.info('Adding bounding boxes/labels to image')
+        if labels['obboxes'][0] == None:
+            bboxes = 'hbboxes'
 
-            labels = read_label(label_path, label_format, mask_path)
+        for bbox_corners in labels[bboxes]:
+            # bbox_corners = labels[bboxes][i]
 
-            color = (0, 255, 0)
-            if label_format == 'results':
-                print(label_format)
-                color = (0, 0, 255)
+            bbox_corners = np.array(bbox_corners, np.int32)
+            bbox_corners = bbox_corners.reshape((-1, 1, 2))
+            # bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)
+            # if classes:
+                # x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
+                # ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+            cv2.polylines(img, [bbox_corners], True, color=(0,0,255))
+                # BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
+            # fig.canvas.draw()
+    
+        if 'masks' in tasks:
+            for mask in labels['masks']:
+                if mask is not None:
+                    x, y = mask
+                    img[y,x,:] = 1
 
-            # fig = plt.figure(frameon=False)
-            #
-            # ax = plt.Axes(fig, [0., 0., 1., 1.])
-            # ax.set_axis_off()
-            # fig.add_axes(ax)
-            # ax.imshow(img)
 
-            classes = list(filter(lambda x: 'class' in x, tasks))
-
-            # if 'masks' in tasks:
-            #     logger.info('Adding masks to Image')
-            #     for mask_indices in labels['masks']:
-            #         ax.plot(mask_indices[0],mask_indices[1])
-
-            if classes or 'bboxes' in tasks:
-                bboxes = 'obboxes'
-                logger.info('Adding bounding boxes/labels to image')
-                if len(labels['obboxes']) < 1:
-                    bboxes = 'hbboxes'
-
-                for i in range(0, len(labels[bboxes])):
-                    bbox_corners = labels[bboxes][i]
-                    bbox_corners = np.array(bbox_corners, np.int32)
-                    bbox_corners = bbox_corners.reshape((-1, 1, 2))
-                    # bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)
-                    # if classes:
-                        # x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
-                        # ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
-                    if 'bboxes' in tasks:
-                        cv2.polylines(img, [bbox_corners], True, color)
-                        # BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
-                    # fig.canvas.draw()
-
-            print(Path(out_folder) / f"{img_path.stem}.png")
-            cv2.imwrite(str(Path(out_folder) / f"{img_path.stem}.png"), img)
+        print(Path(out_folder) / f"{img_path.stem}.png")
+        cv2.imwrite(str(Path(out_folder) / f"{img_path.stem}.png"), img)
 
             # plt.axis('off')
             # plt.show()

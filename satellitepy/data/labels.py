@@ -286,7 +286,7 @@ def read_dota_label(label_path, mask_path=None):
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
             labels['obboxes'].append(bbox_corners)
-            labels['hbboxes'].append(get_HBB_from_OBB(bbox_corners))
+            # labels['hbboxes'].append(get_HBB_from_OBB(bbox_corners))
             fill_none_to_empty_keys(labels,not_available_tasks)
 
         # Mask
