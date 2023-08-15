@@ -4,8 +4,6 @@ import shapely
 from shapely.geometry import Polygon
 
 from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
-# TODO: 
-#   Filter out the truncated objects using the object area. truncated_object_thr is not use at the moment. Edit the is_truncated function.
 
 # Init log
 logger = logging.getLogger(__name__)
@@ -67,10 +65,10 @@ def get_patches(
 
     # Init patch dictionary
     patch_dict = {
-      'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],
-      'labels':[init_satellitepy_label() for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
-      'start_coords': patch_start_coords,
-      }
+        'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],
+        'labels':[init_satellitepy_label() for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
+        'start_coords': patch_start_coords,
+    }
 
     for i,patch_start_coord in enumerate(patch_start_coords):
         # Patch starting coordinates
@@ -83,7 +81,7 @@ def get_patches(
             obb_defined = obbox != None
 
             class_targets = [gt_labels['coarse-class'][j], gt_labels['fine-class'][j], gt_labels['very-fine-class'][j]]
-            if not any([
+            if not all([
                 is_valid_object_class(
                     ct, include_object_classes, exclude_object_classes
                 ) for ct in class_targets]
@@ -98,11 +96,9 @@ def get_patches(
 
             elif obb_defined:
                 shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr)
-                
             else:
                 logger.error('Error reading bounding boxes! No bounding boxes found')
                 exit(1)
-            
     return patch_dict
     
 def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, truncated_object_thr, consider_additional=False, additional='hbboxes'):
@@ -119,7 +115,6 @@ def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_co
             mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2,1)
             patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
         if consider_additional:
-            patch_dict['labels'][i] = set_image_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
             bbox_corners_shifted = np.array(patch_dict['labels'][i][additional][-1]) - [x_0, y_0]
             patch_dict['labels'][i][additional][-1] = bbox_corners_shifted.tolist()
 
@@ -144,7 +139,7 @@ def is_valid_object_class(object_class_name, include_object_classes, exclude_obj
         include_object_classes takes precedence and overrides the behaviour of this parameter.
     """
     if object_class_name is None:
-        return False
+        return True
     elif include_object_classes is not None:
         return object_class_name in include_object_classes
     elif exclude_object_classes is not None:

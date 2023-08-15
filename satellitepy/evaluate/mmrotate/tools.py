@@ -1,9 +1,8 @@
 import mmcv
+from mmdet.apis.inference import init_detector, inference_detector
 # import os
 from pathlib import Path
-import pathlib
 import json
-from mmdet.apis.inference import init_detector, inference_detector
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,6 +13,8 @@ from satellitepy.data.patch import get_patches, merge_patch_results
 
 # TODO:
 #   set_conf_mat_from_result reads the gt instance names from class_1, implement a way to read different class levels
+
+
 
 def save_mmrotate_patch_results(
     out_folder,
@@ -205,51 +206,3 @@ def save_mmrotate_original_results(
         with open(Path(original_result_folder) / f"{img_name}.json",'w') as f:
             json.dump(result, f, indent=4)
 
-
-def calculate_map(
-    in_result_folder,
-    instance_names,
-    conf_score_thresholds,
-    iou_thresholds,
-    out_folder,
-    plot_pr):
-
-    # Get logger
-    logger = logging.getLogger(__name__)
-
-    # Add background to instance_names
-    instance_names = instance_names + ['Background']
-
-    # Init confusion matrix
-    conf_mat = np.zeros(shape=(len(iou_thresholds),len(conf_score_thresholds),len(instance_names),len(instance_names)))
-
-    # Result paths
-    result_paths = get_file_paths(in_result_folder)
-
-    for result_path in result_paths:
-        logger.info(f'The following result file will be evaluated: {result_path}')
-        # Result json file
-        with open(result_path,'r') as result_file:
-            result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches' 
-        
-        conf_mat = set_conf_mat_from_result(
-            conf_mat,
-            result,
-            instance_names,
-            conf_score_thresholds,
-            iou_thresholds)
-
-    precision, recall = get_precision_recall(conf_mat,sort_values=True)
-    print('Precision at all confidence score thresholds and iuo threshold = 0.5')
-    print(precision[0,:])
-    print('Recall at all confidence score thresholds and iou threshold = 0.5 ')
-    print(recall[0,:])
-    print('AP')
-    ap = get_average_precision(precision,recall)
-    print(ap)
-    if plot_pr:
-        fig, ax = plt.subplots()
-        ax.plot(recall[0,:],precision[0,:])
-        ax.set_ylabel('Precision')
-        ax.set_xlabel('Recall')
-        plt.show()

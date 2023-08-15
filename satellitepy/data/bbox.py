@@ -192,7 +192,8 @@ class BBox:
 
     @staticmethod
     def get_bbox_limits(corners):
-        # print(bbox)
+        if not isinstance(corners, np.ndarray):
+            corners = np.array(corners)
         x_min = np.amin(corners[:, 0])
         x_max = np.amax(corners[:, 0])
         y_min = np.amin(corners[:, 1])
