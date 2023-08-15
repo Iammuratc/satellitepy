@@ -445,11 +445,11 @@ def read_rareplanes_synthetic_label(label_path):
         role = annotation['category_id']
 
         if role == 1:  # Small Civil Transport/Utility
-            labels['role'].append('Small_Civil_Transport/Utility')
+            labels['role'].append('Small Civil Transport/Utility')
         elif role ==2:  # Medium Civil Transport/Utility
-            labels['role'].append('Medium_Civil_Transport/Utility')
+            labels['role'].append('Medium Civil Transport/Utility')
         elif role ==3:  # Large Civil Transport/Utility
-            labels['role'].append('Large_Civil_Transport/Utility')
+            labels['role'].append('Large Civil Transport/Utility')
         else:
             raise Exception(f'Unexpected role found: {role}')
         fill_none_to_empty_keys(labels, not_available_tasks)
@@ -527,7 +527,7 @@ def read_dior_label(label_path):
                     labels['coarse-class'].append("other")
                     labels['fine-class'].append(typ)
 
-            difficulty = int(elem.find("difficult").text)
+            difficulty = str((elem.find("difficult").text))
             labels['difficulty'].append(difficulty)
             bndbox = elem.find("robndbox")
             x_left_top = int(bndbox.find("x_left_top").text)
@@ -560,7 +560,10 @@ def read_ship_net_label(label_path):
     # Instance names
     instance_names = root.findall('./object/name')
     for instance_name in instance_names:
-        labels['coarse-class'].append('ship')
+        if instance_name.text == 'Dock':
+            labels['coarse-class'].append('other')
+        else:
+            labels['coarse-class'].append('ship')
         labels['fine-class'].append(instance_name.text)
     instance_difficulties = root.findall('./object/difficult')
     for instance_difficulty in instance_difficulties:
@@ -611,7 +614,7 @@ def read_ucas_label(label_path):
 
         # Using label path to determine object type
         if 'CAR' in str(label_path):
-            labels['coarse-class'].append('car')
+            labels['coarse-class'].append('vehicle')
         elif 'PLANE' in str(label_path):
             labels['coarse-class'].append('airplane')
         else:

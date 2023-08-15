@@ -44,8 +44,6 @@ def get_xview_classes():
                 26: 'Truck Tractor',
                 28: 'Truck w/Flatbed', 
                 29: 'Truck w/Liquid',
-                54: 'Tower Crane',
-                55: 'Container Crane',
                 56: 'Reach Stacker',
                 57: 'Straddle Carrier',
                 59: 'Mobile Crane',
@@ -99,7 +97,9 @@ def get_xview_classes():
                 85: 'Storage Tank',
                 83: 'Vehicle Lot',
                 79: 'Construction Site',
-                94: 'Tower Structure'
+                94: 'Tower Structure',
+                54: 'Tower Crane',
+                55: 'Container Crane'
             }
         }
     return classes
@@ -160,6 +160,7 @@ def get_satellitepy_table():
             'Bombardier_Learjet'        : 113,	# Rareplanes_synthetic
 			'Bus'						: 15,   # Fair1m, Xview
 			'C919'						: 16,   # Fair1m
+            'Cargo'                     : 135,  # Ship Net
 			'Cargo Car'					: 17,   # Xview
 			'Cargo Plane'				: 18,   # Xview
 			'Cargo Truck'				: 19,   # Fair1m, Xview
@@ -182,6 +183,7 @@ def get_satellitepy_table():
 			'Engineering Vessel'		: 27,   # Xview
 			'EPF'						: 28,   # Ship Net
             'Enterprise'                : 96,   # Ship Net
+            'Excavator'                 : 136,  # Xview
 			'Ferry'						: 29,   # Ship Net, Xview
 			'Fishing Boat'				: 30,   # Fair1m
 			'Fishing Vessel'			: 30,   # Ship Net, Xview
@@ -192,7 +194,7 @@ def get_satellitepy_table():
 			'Ground Grader'				: 34,   # Xview
             'Gulfstream_G200'           : 124,	# Rareplanes_synthetic
             'Gulfstream_GIII'           : 125,	# Rareplanes_synthetic
-            'Harbor'                    : 134,  # Dota
+            'harbor'                    : 134,  # Dota
 			'Hatsuyuki DD'				: 35,   # Ship Net
 			'Haul Truck'				: 36,   # Xview
             'HBC_Hawker'                : 126,	# Rareplanes_synthetic
@@ -307,12 +309,19 @@ def get_satellitepy_table():
         },
         'role':{
             'Small Civil Transport/Utility': 0,
+            'Small_Civil_Transport/Utility': 0,
             'Medium Civil Transport/Utility': 1,
+            'Medium_Civil_Transport/Utility': 1,
             'Large Civil Transport/Utility': 2,
+            'Large_Civil_Transport/Utility': 2,
             'Military Transport/Utility/AWAC': 3,
+            'Military_Transport/Utility/AWAC': 3,
             'Military Fighter/Interceptor/Attack': 4,
+            'Military_Fighter/Interceptor/Attack': 4,
             'Military Bomber': 5,
+            'Military_Bomber': 5,
             'Military Trainer': 6,
+            'Military_Trainer': 6,
         },
         'difficulty':{
             '0': 0,
