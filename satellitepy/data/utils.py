@@ -442,12 +442,7 @@ def get_satellitepy_dict_values(satellitepy_dict,task):
             The values of the corresponding task
     '''
 
-    print('get_satellitepy_dict_values task:')
-    print(task)
-
     keys = task.split('_')
-    print(keys)
-    print(20*'-')
     if len(keys)==1:
         return satellitepy_dict[keys[0]]
     elif len(keys)==2:
