@@ -124,6 +124,8 @@ class Utils:
             out_annotations["hbboxes"] = np.asarray(out_hbb, np.float32)
         if "obboxes" in annotation and len(out_obb) > 0:
             out_annotations["obboxes"] = np.asarray(out_obb, np.float32)
+        if 'masks' in annotation:
+            out_annotations['masks'] = np.asarray(masks, np.float32)
 
         for k in out_annotations.keys():
             if k != "hbboxes" and k != "obboxes":
@@ -187,7 +189,7 @@ class Utils:
             "input": image
         }
         for k in annotation.keys():
-            if k == "mask":
+            if k == "masks":
                 ret[k] = annotation[k]
             if k not in ["obboxes", "hbboxes", "masks", "cls_coarse-class"]:
                 # todo: we probably have to define 0 as background class / non-object class
@@ -198,7 +200,7 @@ class Utils:
         num_classes = len(get_task_dict("coarse-class"))
         ret["cls_coarse-class"] = np.zeros((num_classes, image_h, image_w), dtype=np.float32)
 
-        if "obboxes" in annotation:
+        if "obboxes" in annotation.keys():
             wh = np.zeros((self.max_objs, 10), dtype=np.float32)
             cls_theta = np.zeros((self.max_objs, 1), dtype=np.float32)
             reg = np.zeros((self.max_objs, 2), dtype=np.float32)
@@ -247,7 +249,7 @@ class Utils:
             ret["ind"] = ind
             ret["reg_mask"] = reg_mask
 
-        if "hbboxes" in annotation:
+        if "hbboxes" in annotation.keys():
             wh = np.zeros((self.max_objs, 2), dtype=np.float32)
             reg = np.zeros((self.max_objs, 2), dtype=np.float32)
             ind = np.zeros((self.max_objs), dtype=np.int64)

@@ -200,5 +200,4 @@ class LossAll(torch.nn.Module):
                     gt_batch[task]
                 )
 
-        loss = sum([v for v in loss_dict.values()])
-        return loss
+        return loss_dict

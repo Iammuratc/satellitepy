@@ -3,8 +3,9 @@ from builtins import print
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from satellitepy.data.utils import get_xview_classes, set_mask
+from satellitepy.data.utils import get_xview_classes, set_mask, parse_potsdam_labels
 import json
+import numpy as np
 
 from satellitepy.data.bbox import BBox
 
@@ -35,6 +36,8 @@ def read_label(label_path,label_format, mask_path = None):
         print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
         exit(1)
+    elif label_format == 'isprs':
+        return read_isprs_label(label_path)
     else:
         print('---Label format is not defined---')
         exit(1)
@@ -283,7 +286,7 @@ def read_dota_label(label_path, mask_path=None):
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
             labels['obboxes'].append(bbox_corners)
-            labels['hbboxes'].append(get_HBB_from_OBB(bbox_corners))
+            # labels['hbboxes'].append(get_HBB_from_OBB(bbox_corners))
             fill_none_to_empty_keys(labels,not_available_tasks)
 
         # Mask
@@ -628,36 +631,25 @@ def read_satellitepy_label(label_path):
         labels = json.load(f)
     return labels
 
-def get_HBB_from_OBB(obb):
-    x_coords = [obb[0][0], obb[1][0], obb[2][0], obb[3][0]]
-    y_coords = [obb[0][1], obb[1][1], obb[2][1], obb[3][1]]
-
-    max_x = max(x_coords)
-    min_x = min(x_coords)
-
-    max_y = max(y_coords)
-    min_y = min(y_coords)
-
-    hbb = [[min_x, max_y], [min_x, min_y], [max_x, min_y], [max_x, max_y]]
-    return hbb
-
-
-
-def read_results(result_path):
+def read_isprs_label(label_path):
     labels = init_satellitepy_label()
-
-    available_tasks = ['obboxes', 'hbboxes']
-
+    # Get all not available tasks so we can append None to those tasks
+    ## Default available tasks for dota
+    available_tasks=['hbboxes', 'coarse-class', 'masks']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
 
-    with open(result_path, 'r') as f:
-        results = json.load(f)
+    hbboxes, masks = parse_potsdam_labels(label_path)
 
-        labels['obboxes'] = results['det_labels']['obboxes']
+    labels['masks'] = masks
+
+    for i in range(len(hbboxes)):
+        labels['coarse-class'].append('car')
+        labels['hbboxes'].append(hbboxes[i])
+        
 
         fill_none_to_empty_keys(labels, not_available_tasks)
 
-        return  labels
+    return labels
