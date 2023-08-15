@@ -73,10 +73,10 @@ class Utils:
             else:
                 check_boxes = boxes[0]
 
+        out_hbb = []
+        out_obb = []
         if len(check_boxes) > 0:
             size_thresh = 3
-            out_hbb = []
-            out_obb = []
             for idx, pt_old in enumerate(check_boxes):
                 if (pt_old<0).any() or (pt_old[:,0]>self.input_w-1).any() or (pt_old[:,1]>self.input_h-1).any():
                     pt_new = np.float32(pt_old).copy()
