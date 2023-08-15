@@ -34,7 +34,6 @@ def get_xview_classes():
             'vehicles':{
                 17: 'Passenger Vehicle',
                 23: 'Truck',
-                53: 'Engineering Vessel',
                 18: 'Small Car',
                 19: 'Bus',
                 20: 'Pickup Truck',
@@ -75,7 +74,8 @@ def get_xview_classes():
                 49: 'Ferry',
                 50: 'Yacht',
                 51: 'Container Ship',
-                52: 'Oil Tanker'
+                52: 'Oil Tanker',
+                53: 'Engineering Vessel',
             },
             'airplanes':{
                 11: 'Fixed-Wing Aircraft',

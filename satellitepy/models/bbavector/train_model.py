@@ -132,23 +132,6 @@ class TrainModule(object):
             print(msg)
 
     def test_network(self):
-        # self.optimizer = torch.optim.Adam(self.model.parameters(), self.init_lr)
-
-        # valid_loader = torch.utils.data.DataLoader(self.valid_dataset,
-        #                                 batch_size=self.batch_size,
-        #                                 shuffle=True,
-        #                                 num_workers=self.num_workers,
-        #                                 pin_memory=True,
-        #                                 drop_last=True,
-        #                                 collate_fn=collater)
-        # criterion = loss_utils.LossAll()
-
-        # self.model, self.optimizer, start_epoch, valid_loss = load_checkpoint(
-        #     self.model, 
-        #     self.optimizer, 
-        #     self.resume_train, 
-        #     strict=True)
-        # self.model.to(self.device)
 
         valid_loss = self.run_valid(valid_loader, criterion)
         print(f'valid_loss: {valid_loss:.5f}')
@@ -242,3 +225,23 @@ class TrainModule(object):
     #                              result_path)
     #     ap = dsets.dec_evaluation(result_path)
     #     return ap
+
+
+
+        # self.optimizer = torch.optim.Adam(self.model.parameters(), self.init_lr)
+
+        # valid_loader = torch.utils.data.DataLoader(self.valid_dataset,
+        #                                 batch_size=self.batch_size,
+        #                                 shuffle=True,
+        #                                 num_workers=self.num_workers,
+        #                                 pin_memory=True,
+        #                                 drop_last=True,
+        #                                 collate_fn=collater)
+        # criterion = loss_utils.LossAll()
+
+        # self.model, self.optimizer, start_epoch, valid_loss = load_checkpoint(
+        #     self.model, 
+        #     self.optimizer, 
+        #     self.resume_train, 
+        #     strict=True)
+        # self.model.to(self.device)
