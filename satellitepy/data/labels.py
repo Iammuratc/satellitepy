@@ -30,8 +30,6 @@ def read_label(label_path,label_format, mask_path = None):
         return read_ship_net_label(label_path)
     elif label_format == 'ucas':
         return read_ucas_label(label_path)
-    elif label_format == 'results':
-        return read_results(label_path)
     elif label_format == 'xview':
         print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
@@ -377,7 +375,7 @@ def read_rareplanes_real_label(label_path):
         corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(),
                    np.add(B, vecToA).tolist()]
         labels['obboxes'].append(corners)
-        labels['hbboxes'].append(get_HBB_from_OBB(corners))
+        labels['hbboxes'].append(BBox.get_hbb_from_obb(corners))
         labels['coarse-class'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
         labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
@@ -433,7 +431,7 @@ def read_rareplanes_synthetic_label(label_path):
         # masks missing
 
         labels['obboxes'].append(corners)
-        labels['hbboxes'].append(get_HBB_from_OBB(corners))
+        labels['hbboxes'].append(BBox.get_hbb_from_obb(corners))
         labels['coarse-class'].append('airplane')
 
         name = '_'.join(annotation['full'].split('_')[3:])
@@ -544,7 +542,7 @@ def read_dior_label(label_path):
 
             corners = [[x_left_top, y_left_top], [x_left_bottom, y_left_bottom], [x_right_bottom, y_right_bottom], [x_right_top, y_right_top]]
             labels['obboxes'].append(corners)
-            labels['hbboxes'].append(get_HBB_from_OBB(corners))
+            labels['hbboxes'].append(BBox.get_hbb_from_obb(corners))
             fill_none_to_empty_keys(labels,not_available_tasks)
     handler.close()
 
@@ -586,7 +584,7 @@ def read_ship_net_label(label_path):
                 corner = []
 
         labels['obboxes'].append(coords)
-        labels['hbboxes'].append(get_HBB_from_OBB(coords))
+        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
         fill_none_to_empty_keys(labels,not_available_tasks)
     return labels
 
@@ -613,7 +611,7 @@ def read_ucas_label(label_path):
             coords.append(corner)
             corner = []
         labels['obboxes'].append(coords)
-        labels['hbboxes'].append(get_HBB_from_OBB(coords))
+        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
 
         # Using label path to determine object type
         if 'CAR' in str(label_path):

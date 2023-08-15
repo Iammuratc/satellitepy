@@ -200,6 +200,20 @@ class BBox:
         y_max = np.amax(corners[:, 1])
         return np.array([x_min, x_max, y_min, y_max]).astype(int)
 
+    @staticmethod
+    def get_hbb_from_obb(obb):
+        x_coords = [obb[0][0], obb[1][0], obb[2][0], obb[3][0]]
+        y_coords = [obb[0][1], obb[1][1], obb[2][1], obb[3][1]]
+
+        max_x = max(x_coords)
+        min_x = min(x_coords)
+
+        max_y = max(y_coords)
+        min_y = min(y_coords)
+
+        hbb = [[min_x, max_y], [min_x, min_y], [max_x, min_y], [max_x, max_y]]
+        return hbb
+
 
 if __name__ == "__main__":
     import numpy as np
