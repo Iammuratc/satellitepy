@@ -1,3 +1,5 @@
+import logging
+
 import torch
 import torch.nn as nn
 import os
@@ -48,11 +50,12 @@ class TrainModule(object):
         self.tasks = tasks
 
     def train_network(self):
+        logger = logging.getLogger(__name__)
 
         save_path = str(self.out_folder)
         if self.ngpus>1:
             if torch.cuda.device_count() > 1:
-                print("Let's use", torch.cuda.device_count(), "GPUs!")
+                logger.info("Let's use", torch.cuda.device_count(), "GPUs!")
                 self.model = nn.DataParallel(self.model)
         self.model.to(self.device)
 
@@ -73,7 +76,7 @@ class TrainModule(object):
             os.mkdir(save_path)
 
         criterion = loss_utils.LossAll(self.tasks)
-        print('Setting up data...')
+        logger.info('Setting up data...')
 
         train_loader = torch.utils.data.DataLoader(self.train_dataset,
                                                            batch_size=self.batch_size,
@@ -96,12 +99,12 @@ class TrainModule(object):
             path=os.path.join(save_path, 'model_best.pth'), 
             val_loss_min=valid_loss,
             trace_func=print)
-        print('Starting training...')
+        logger.info('Starting training...')
         # train_loss = []
         # ap_list = []
         for epoch in range(0, self.num_epoch):
-            print('-'*10)
-            print('Epoch: {}/{} '.format(epoch, self.num_epoch))
+            logger.info('-'*10)
+            logger.info('Epoch: {}/{} '.format(epoch, self.num_epoch))
             train_loss = self.run_train(
                                         data_loader=train_loader,
                                         criterion=criterion)
@@ -109,13 +112,13 @@ class TrainModule(object):
 
 
             if self.valid_dataset:
-                print('Validation is starting...')
+                logger.info('Validation is starting...')
                 valid_loss = self.run_valid(valid_loader, criterion)
                 total_val_loss = sum([l for l in valid_loss.values()])
                 early_stopping(total_val_loss, self.model, self.optimizer, epoch)
                 if early_stopping.early_stop:
                     # self.logger.info("Early stopping")
-                    print("Early stopping")
+                    logger.info("Early stopping")
                     break
 
             else:
@@ -143,12 +146,14 @@ class TrainModule(object):
                     # f'valid_acc: {valid_acc:.2f}')
 
             # self.logger.info(msg)
-            print(msg)
+            logger.info(msg)
 
     def test_network(self):
 
+        logger = logging.getLogger(__name__)
+
         valid_loss = self.run_valid(valid_loader, criterion)
-        print(f'valid_loss: {valid_loss:.5f}')
+        logger.info(f'valid_loss: {valid_loss:.5f}')
 
     def run_train(self,data_loader, criterion):
         self.model.train()

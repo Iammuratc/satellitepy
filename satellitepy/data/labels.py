@@ -1,3 +1,4 @@
+import logging
 from builtins import print
 
 import numpy as np
@@ -10,6 +11,8 @@ import numpy as np
 from satellitepy.data.bbox import BBox
 
 def read_label(label_path,label_format, mask_path = None):
+    logger = logging.getLogger(__name__)
+
     if isinstance(label_path,Path):
         label_path = str(label_path)
     if label_format=='dota' or label_format=='DOTA':
@@ -31,13 +34,13 @@ def read_label(label_path,label_format, mask_path = None):
     elif label_format == 'ucas':
         return read_ucas_label(label_path)
     elif label_format == 'xview':
-        print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
+        logger.info('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
         exit(1)
     elif label_format == 'isprs':
         return read_isprs_label(label_path)
     else:
-        print('---Label format is not defined---')
+        logger.info('---Label format is not defined---')
         exit(1)
 
 def get_all_satellitepy_keys():
@@ -397,7 +400,6 @@ def read_rareplanes_real_label(label_path):
 
 
 def read_rareplanes_synthetic_label(label_path):
-    print('read_synthetic_rareplanes')
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_synthetic

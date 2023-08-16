@@ -59,7 +59,7 @@ def analyse_label_paths(label_paths,label_format,tasks,logger):
     logger.info('The results from the analyzed labels:')
     for task in count_instances.keys():
         for key, value in count_instances[task].items():
-            print(f"{key}:{value}")
+            logger.info(f"{key}:{value}")
 
 def count_satellitepy_values(count_instances,task,values):
     for value in values:

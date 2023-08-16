@@ -22,18 +22,18 @@ def get_args():
 def main(args):
     parent_folder = Path(args.in_folder)
     assert create_folder(parent_folder)
-
-    print("#########################################################################\n",
-        "It is currently not possible to download the Fair1m dataset automated.\n",
-        "To download the dataset go to https://www.gaofen-challenge.com/benchmark\n",
-        "You have to log in to download the dataset\n",
-        "#########################################################################")
-
     # Init logger
     log_path = Path(
         parent_folder) / 'download_fair1m.log' if args.log_path == None else args.log_path
     init_logger(config_path=args.log_config_path, log_path=log_path)
     logger = logging.getLogger(__name__)
+
+    logger.info("#########################################################################\n",
+        "It is currently not possible to download the Fair1m dataset automated.\n",
+        "To download the dataset go to https://www.gaofen-challenge.com/benchmark\n",
+        "You have to log in to download the dataset\n",
+        "#########################################################################")
+
     if args.log_path == None:
         logger.info(
                 f'No log path is given, the default log path will be used: {log_path}')
