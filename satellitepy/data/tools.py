@@ -236,6 +236,10 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
 
         bboxes = 'obboxes'
         logger.info('Adding bounding boxes/labels to image')
+
+        if satellitepy_labels_empty(labels):
+            continue
+
         if labels['obboxes'][0] == None:
             bboxes = 'hbboxes'
 
