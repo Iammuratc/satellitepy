@@ -218,7 +218,7 @@ def get_label_by_idx(satpy_labels: dict, i: int):
       
 def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tasks):#, mask_folder):
     logger = logging.getLogger(__name__)
-    print(tasks)
+    logger.info(tasks)
     img_paths = get_file_paths(img_folder)
     label_paths = get_file_paths(label_folder)
     # if mask_folder:
@@ -259,7 +259,7 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
                     img[y,x,:] = 1
 
 
-        print(Path(out_folder) / f"{img_path.stem}.png")
+        logger.info(Path(out_folder) / f"{img_path.stem}.png")
         cv2.imwrite(str(Path(out_folder) / f"{img_path.stem}.png"), img)
 
             # plt.axis('off')

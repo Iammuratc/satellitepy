@@ -47,13 +47,13 @@ def calculate_map(
 
     pr_threshold_ind = 0
     precision, recall = get_precision_recall(conf_mat,sort_values=True)
-    print(f'Precision at all confidence score thresholds and iuo threshold = {iou_thresholds[pr_threshold_ind]}')
-    print(precision[pr_threshold_ind,:])
-    print(f'Recall at all confidence score thresholds and iou threshold = {iou_thresholds[pr_threshold_ind]} ')
-    print(recall[pr_threshold_ind,:])
-    print('AP')
+    logger.info(f'Precision at all confidence score thresholds and iuo threshold = {iou_thresholds[pr_threshold_ind]}')
+    logger.info(precision[pr_threshold_ind,:])
+    logger.info(f'Recall at all confidence score thresholds and iou threshold = {iou_thresholds[pr_threshold_ind]} ')
+    logger.info(recall[pr_threshold_ind,:])
+    logger.ifno('AP')
     ap = get_average_precision(precision,recall)
-    print(ap)
+    logger.info(ap)
     if plot_pr:
         fig, ax = plt.subplots()
         ax.plot(recall[pr_threshold_ind,:],precision[pr_threshold_ind,:])
