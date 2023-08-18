@@ -98,6 +98,7 @@ def save_patch_results(
         with torch.no_grad():
             pred = model(data_dict['input'].to(device))
         
+        # todo: crux of changing decoder!
         predictions = model_decoder.ctdet_decode(pred)
         bboxes, scores, classes = decode_predictions(
             predictions = predictions, 
@@ -135,16 +136,15 @@ def save_patch_results(
                 'confidence_scores':scores
             }
 
-
-        gt_labels = read_label(data_dict['label_path'][0],in_label_format)
-
-        matches = match_gt_and_det_bboxes(gt_labels,det_labels)
-
         result = {
-            'gt_labels':gt_labels,
-            'det_labels':det_labels,
-            'matches':matches
-                    }
+            'det_labels': det_labels
+        }
+
+        if in_label_folder:
+            gt_labels = read_label(data_dict['label_path'][0],in_label_format)
+            matches = match_gt_and_det_bboxes(gt_labels,det_labels)
+            result["gt_labels"] = gt_labels
+            result["matches"] = matches
 
         # Save results with the corresponding ground truth
         # # Save labels to json file

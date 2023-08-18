@@ -25,8 +25,8 @@ def get_args():
             'If it is fine-class or very-fine class, None values in those keys will be filled from one upper level')
     parser.add_argument('--log-config-path', default=Path("./configs/log.config") ,type=Path, help='Log config file.')
     parser.add_argument('--in-image-folder', required=True, help='Test image folder. The images in this folder will be tested.')
-    parser.add_argument('--in-label-folder', required=True, help='Test label folder. The labels in this folder will be used for evaluation purposes.')
-    parser.add_argument('--in-label-format', required=True, help='Test label file format. e.g., dota, fair1m.')
+    parser.add_argument('--in-label-folder', required=False, help='Test label folder. The labels in this folder will be used for evaluation purposes.')
+    parser.add_argument('--in-label-format', default="satellitepy", help='Test label file format. e.g., dota, fair1m.')
     parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
     parser.add_argument('--conf-thresh', type=float, default=0.18, help='Confidence threshold, 0.1 for general evaluation')
 
@@ -46,7 +46,10 @@ def main(args):
     device = args.device
     out_folder = Path(args.out_folder)
     in_image_folder = Path(args.in_image_folder)
-    in_label_folder = Path(args.in_label_folder)
+    if args.in_label_folder:
+        in_label_folder = Path(args.in_label_folder)
+    else:
+        in_label_folder = None
     in_label_format = args.in_label_format
     tasks = args.tasks
     conf_thresh = args.conf_thresh
