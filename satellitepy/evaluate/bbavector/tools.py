@@ -7,6 +7,7 @@ import satellitepy.models.bbavector.loss as loss_utils
 from satellitepy.utils.path_utils import create_folder
 from satellitepy.evaluate.utils import match_gt_and_det_bboxes #, nms_rotated
 from satellitepy.data.bbox import BBox
+from torch.utils.data import DataLoader
 
 from tqdm import tqdm
 import torch
@@ -24,7 +25,7 @@ def save_patch_results(
     in_label_format,
     checkpoint_path,
     device,
-    task,
+    tasks,
     num_workers,
     input_h,
     input_w,
@@ -57,33 +58,27 @@ def save_patch_results(
     """
     logger = logging.getLogger(__name__)
     # Model
-    model = get_model(task,down_ratio)
+    model = get_model(tasks,down_ratio)
     model, optimizer, epoch, valid_loss = load_checkpoint(model, checkpoint_path)
     model.to(device)
     model.eval()
 
-    model_decoder = get_model_decoder(task,
+    model_decoder = get_model_decoder(tasks,
     K,
     conf_thresh)
-
-
-    # Task dict
-    task_dict = get_task_dict(task)
-    num_classes = len(task_dict)
 
     # Dataset
     dataset = BBAVectorDataset(
         in_image_folder,
         in_label_folder,
         in_label_format,
-        task,
-        task_dict,
+        tasks,
         input_h,
         input_w,
         down_ratio,
         False)
     # Dataloader
-    data_loader = torch.utils.data.DataLoader(dataset,
+    data_loader = DataLoader(dataset,
         batch_size=1,
         shuffle=False,
         num_workers=num_workers,

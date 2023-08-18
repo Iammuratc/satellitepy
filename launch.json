@@ -80,7 +80,52 @@
         "5e-4",
         "--validate-datasets"
       ]
-    }
+    },
     // python3 tools/train/bbavector.py --train-image-folder /home/simon/unibw/data/satpy/dota-patches/train/images --train-label-folder /home/simon/unibw/data/satpy/dota-patches/train/labels --train-label-format satellitepy --valid-image-folder /home/simon/unibw/data/satpy/dota-patches/val/images --valid-label-folder /home/simon/unibw/data/satpy/dota-patches/val/labels --valid-label-format satellitepy  --out-folder /home/simon/unibw/data/satpy/temp  --batch-size 8 --ngpus 1 --num-workers 8 --num-epoch 150  --init-lr 5e-4 --tasks hbboxes obboxes coarse-class fine-class merged-class role difficulty attributes_engines_no-engines attributes_engines_propulsion attributes_fuselage_canards attributes_fuselage_length attributes_wings_wing-span attributes_wings_wing-shape attributes_wings_wing-position attributes_tail_no-tail-fins --validate-datasets
+    {
+      "name": "Python: BBAVector Testing",
+      "type": "python",
+      "request": "launch",
+      "env": {
+        "CUDA_LAUNCH_BLOCKING": "1"
+      },
+      "module": "tools.test.bbavector.test_patch",
+      "console": "externalTerminal",
+      "justMyCode": false,
+      "args": [
+        "--weights-path",
+        "",
+        "--num-workers",
+        "0",
+        "--input-h",
+        "600",
+        "--input-w",
+        "600",
+        "--device",
+        "cuda:0",
+        "--in-image-folder",
+        "/home/simon/unibw/data/satpy/dota-patches/val/images",
+        "--K",
+        "1000",
+        "--out-folder",
+        "/home/simon/unibw/data/satpy/bbavector-test",
+        "--tasks",
+        "masks",
+        "very-fine-class",
+        "hbboxes",
+        "obboxes",
+        "coarse-class",
+        "role",
+        "difficulty",
+        "attributes_engines_no-engines",
+        "attributes_engines_propulsion",
+        "attributes_fuselage_canards",
+        "attributes_fuselage_length",
+        "attributes_wings_wing-span",
+        "attributes_wings_wing-shape",
+        "attributes_wings_wing-position",
+        "attributes_tail_no-tail-fins"
+      ]
+    }
   ]
 }
