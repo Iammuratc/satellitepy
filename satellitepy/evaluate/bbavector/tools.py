@@ -96,7 +96,7 @@ def save_patch_results(
     for data_dict in tqdm(data_loader):
         img_name = Path(data_dict['img_path'][0]).stem
         with torch.no_grad():
-            pred = model(data_dict['input'].to(device))
+            pred = model(data_dict['input'].to(device).float())
         
         # todo: crux of changing decoder!
         predictions = model_decoder.ctdet_decode(pred)

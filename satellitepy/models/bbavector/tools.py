@@ -32,14 +32,8 @@ def get_model(tasks,down_ratio):
                               head_conv=256)
     return model
 
-def get_model_decoder(task,
-    K,
-    conf_thresh):
-
-    task_dict = get_task_dict(task)
-    num_classes = len(task_dict)
-
+def get_model_decoder(tasks, K, conf_thresh):
     model_decoder = decoder.DecDecoder(K=K,
         conf_thresh=conf_thresh,
-        num_classes=num_classes)
+        tasks=tasks)
     return model_decoder

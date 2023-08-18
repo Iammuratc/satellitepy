@@ -9,7 +9,7 @@ import hashlib
 from satellitepy.dataset.bbavector.utils import Utils
 from satellitepy.data.labels import read_label
 from satellitepy.data.utils import get_satellitepy_dict_values, get_task_dict #, merge_satellitepy_task_values
-from satellitepy.utils.path_utils import zip_matched_files
+from satellitepy.utils.path_utils import get_file_paths, zip_matched_files
 
 
 class BBAVectorDataset(Dataset):
@@ -41,7 +41,7 @@ class BBAVectorDataset(Dataset):
         self.testing = not in_label_folder
 
         if not in_label_folder:
-            for img_path in zip_matched_files(in_image_folder):
+            for img_path in get_file_paths(in_image_folder):
                 self.items.append((img_path, None, None))
         else:
             if validate_dataset:
