@@ -360,6 +360,10 @@ def get_satellitepy_table():
             'Military Fighter/Interceptor/Attack': 4,
             'Military Bomber': 5,
             'Military Trainer': 6,
+            'Small Vehicle' : 7,
+            'Large Vehicle': 8,
+            'Warship': 9,
+            'Merchant Ship': 10,
         },
         'difficulty':{
             '0': 0,
