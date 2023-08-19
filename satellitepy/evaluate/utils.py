@@ -31,7 +31,10 @@ def match_gt_and_det_bboxes(gt_labels,det_labels):
     ## Old IOU calculation (keep it for now 12.05)
     # ious = rbbox_overlaps(torch.FloatTensor(det_label_params), torch.FloatTensor(gt_label_params))
     ## New IOU calculation
-    ious = get_ious(det_labels['obboxes'], gt_labels['obboxes'])
+    if "obboxes" in det_labels:
+        ious = get_ious(det_labels['obboxes'], gt_labels['obboxes'])
+    else:
+        ious = get_ious(det_labels['hbboxes'], gt_labels['hbboxes'])
     for i,iou in enumerate(ious):
         # ROW: detected obboxes
         # COL: gt obboxes
