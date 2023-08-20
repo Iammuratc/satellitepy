@@ -400,7 +400,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
     image_dicts = {img_name:init_satellitepy_label() for img_name in set(all_image_names)}
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['hbboxes', 'coarse-class', 'fine-class']
+    available_tasks=['hbboxes', 'coarse-class', 'fine-class', 'role']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -425,12 +425,22 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
         if type_class in classes['vehicles']:
             image_dicts[img_name]['coarse-class'].append('vehicle')
             image_dicts[img_name]['fine-class'].append(classes['vehicles'][type_class])
+            if type_class in [17, 23, 53, 19, 24, 25, 26, 28, 29, 54, 55, 56, 
+                              57, 59, 60, 61, 62, 63, 64, 65, 66, 32]:
+                image_dicts[img_name]['role'].append('Large Vehicle')
+            elif type_class in [18, 20, 21]:
+                image_dicts[img_name]['role'].append('Small Vehicle')
         elif type_class in classes['ships']:
             image_dicts[img_name]['coarse-class'].append('ship')
             image_dicts[img_name]['fine-class'].append(classes['ships'][type_class])
+            image_dicts[img_name]['role'].append['Merchant Ship']
         elif type_class in classes['airplanes']:
             image_dicts[img_name]['coarse-class'].append('airplane')
             image_dicts[img_name]['fine-class'].append(classes['airplanes'][type_class])
+            if type_class in [11, 12]:
+                image_dicts[img_name]['role'].append('Small Civil Transport/Utility')
+            elif type_class in [13]:
+                image_dicts[img_name]['role'].append('Large Civil Transport/Utility')      
         elif type_class in classes['helicopter']:
             image_dicts[img_name]['coarse-class'].append('helicopter')
             image_dicts[img_name]['fine-class'].append(None)
