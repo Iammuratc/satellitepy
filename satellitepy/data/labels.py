@@ -4,7 +4,7 @@ from builtins import print
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from satellitepy.data.utils import get_xview_classes, set_mask, parse_potsdam_labels
+from satellitepy.data.utils import get_xview_classes, set_mask, parse_potsdam_labels, set_satellitepy_dict_values
 from satellitepy.data.bbox import BBox
 import json
 import numpy as np
@@ -40,6 +40,8 @@ def read_label(label_path,label_format, mask_path = None):
         exit(1)
     elif label_format == 'isprs':
         return read_isprs_label(label_path)
+    elif label_format == "results":
+        return read_result_label(label_path)
     else:
         logger.info('---Label format is not defined---')
         exit(1)
@@ -630,6 +632,37 @@ def read_ucas_label(label_path):
 def read_satellitepy_label(label_path):
     with open(label_path,'r') as f:
         labels = json.load(f)
+    return labels
+
+def read_result_label(label_path):
+    with open(label_path,'r') as f:
+        intermediate_labels = json.load(f)
+    num_obj = len(intermediate_labels["coarse-class"])
+    labels = init_satellitepy_label()
+    for key, val in intermediate_labels.items():
+        labels = set_satellitepy_dict_values(labels, key, val)
+
+    if satellitepy_labels_empty(labels):
+        return labels
+
+    def inner(keys = None):
+        if keys is None:
+            for k, v in labels.items():
+                if isinstance(v, dict):
+                    inner([k])
+                elif not v or len(v) == 0:
+                    labels[k] = [None] * num_obj
+        else:
+            inner_dict = labels[keys[0]]
+            for k in keys[1:]:
+                inner_dict = inner_dict[k]
+            for k, v in inner_dict.items():
+                if isinstance(v, dict):
+                    inner(keys + [k])
+                elif not v or len(v) == 0:
+                    labels[k] = [None] * num_obj
+
+    inner()
     return labels
 
 def read_isprs_label(label_path):

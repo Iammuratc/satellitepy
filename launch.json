@@ -93,7 +93,7 @@
       "justMyCode": false,
       "args": [
         "--weights-path",
-        "/home/simon/unibw/data/satpy/temp/model_best.pth",
+        "/home/simon/unibw/data/res34_all_20/model_best.pth",
         "--num-workers",
         "0",
         "--input-h",
@@ -107,11 +107,49 @@
         "--K",
         "1000",
         "--out-folder",
-        "/home/simon/unibw/data/satpy/bbavector-test",
+        "/home/simon/unibw/data/res34_all_20/results",
         "--tasks",
         "hbboxes",
         "obboxes",
         "coarse-class",
+        "fine-class",
+        "merged-class",
+        "role",
+        "difficulty",
+        "attributes_engines_no-engines",
+        "attributes_engines_propulsion",
+        "attributes_fuselage_canards",
+        "attributes_fuselage_length",
+        "attributes_wings_wing-span",
+        "attributes_wings_wing-shape",
+        "attributes_wings_wing-position",
+        "attributes_tail_no-tail-fins"
+      ]
+    },
+    // python3 tools/test/bbavector/test_patch.py --weights-path /home/simon/unibw/data/res34_all_20/model_best.pth --num-workers 0 --input-h 600 --input-w 600 --device cuda:0 --in-image-folder /home/simon/unibw/data/satpy/dota-patches/test/images --K 1000 --out-folder /home/simon/unibw/data/res34_all_20/results  --tasks hbboxes obboxes coarse-class fine-class merged-class role difficulty attributes_engines_no-engines attributes_engines_propulsion attributes_fuselage_canards attributes_fuselage_length attributes_wings_wing-span attributes_wings_wing-shape attributes_wings_wing-position attributes_tail_no-tail-fins
+    {
+      "name": "Python: BBAVector Visualize",
+      "type": "python",
+      "request": "launch",
+      "env": {
+        "CUDA_LAUNCH_BLOCKING": "1"
+      },
+      "module": "tools.data.display_results_on_images",
+      "console": "externalTerminal",
+      "justMyCode": false,
+      "args": [
+        "--in-image-folder",
+        "/home/simon/unibw/data/satpy/dota-patches/test/images",
+        "--in-result-folder",
+        "/home/simon/unibw/data/res34_all_20/results/results/patch_labels",
+        "--out-folder",
+        "/home/simon/unibw/data/res34_all_20/vis_results",
+        "--tasks",
+        "hbboxes",
+        "obboxes",
+        "coarse-class",
+        "fine-class",
+        "merged-class",
         "role",
         "difficulty",
         "attributes_engines_no-engines",
@@ -124,5 +162,6 @@
         "attributes_tail_no-tail-fins"
       ]
     }
+    // python3 tools/data/display_results_on_images.py --in-image-folder /home/simon/unibw/data/satpy/dota-patches/test/images  --in-result-folder /home/simon/unibw/data/res34_all_20/results/results/patch_labels --out-folder  /home/simon/unibw/data/res34_all_20/vis_results --tasks hbboxes obboxes coarse-class fine-class merged-class role difficulty attributes_engines_no-engines attributes_engines_propulsion attributes_fuselage_canards attributes_fuselage_length attributes_wings_wing-span attributes_wings_wing-shape attributes_wings_wing-position attributes_tail_no-tail-fins
   ]
 }

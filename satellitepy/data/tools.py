@@ -238,7 +238,6 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
     assert len(img_paths) == len(label_paths)#
         # for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
     for img_path, label_path in zip(img_paths, label_paths):
-
         img = cv2.imread(str(img_path))
         # img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
         logger.info(img_path)

@@ -111,15 +111,12 @@ def save_patch_results(
         save_dict = dict()
 
         if "obboxes" in dec_pred:
-            try:
-                bboxes_nms, keep_ind = nms_rotated(
-                     dets=torch.Tensor([BBox(corners=corners).params for corners in dec_pred["obboxes"]]),
-                     scores=torch.Tensor(dec_pred["confidence-scores"]),
-                     iou_threshold= 0.5,
-                     labels=torch.Tensor(dec_pred["coarse-class"])
-                )
-            except Exception as inst:
-                test = 5
+            bboxes_nms, keep_ind = nms_rotated(
+                 dets=torch.Tensor([BBox(corners=corners).params for corners in dec_pred["obboxes"]]),
+                 scores=torch.Tensor(dec_pred["confidence-scores"]),
+                 iou_threshold= 0.5,
+                 labels=torch.Tensor(dec_pred["coarse-class"])
+            )
             if keep_ind is not None:
                 save_dict["obboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
                 for k, v in dec_pred.items():

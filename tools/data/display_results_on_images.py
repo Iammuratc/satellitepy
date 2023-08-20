@@ -57,7 +57,7 @@ def run(args):
 
     logger.info(f'Displaying labels on {image_path.name}')
 
-    show_labels_on_image(image_path, result_path, label_format, output_folder, tasks, mask_path)
+    show_labels_on_image(image_path, result_path, label_format, output_folder, tasks)
 
 
 if __name__ == '__main__':

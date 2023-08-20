@@ -452,6 +452,31 @@ def get_satellitepy_dict_values(satellitepy_dict,task):
     else:
         return 0
 
+def set_satellitepy_dict_values(satellitepy_dict,task, value):
+    '''
+    Get the satellitepy dict values by parsing task.
+    Parameters
+    ----------
+        satellitepy_dict : dict
+            Satellitepy formatted dict
+        task : str
+            Task name. E.g. attributes_tail_no-tail-fins
+    Returns
+    -------
+        values : list or dict
+            The values of the corresponding task
+    '''
+
+    keys = task.split('_')
+    if len(keys)==1:
+        satellitepy_dict[keys[0]] = value
+    elif len(keys)==2:
+        satellitepy_dict[keys[0]][keys[1]] = value
+    elif len(keys)==3:
+        satellitepy_dict[keys[0]][keys[1]][keys[2]] = value
+
+    return satellitepy_dict
+
 def get_task_dict(task):
     satellitepy_table = get_satellitepy_table()
     task_dict = get_satellitepy_dict_values(satellitepy_table,task)
