@@ -34,7 +34,7 @@ class CELoss(nn.Module):
         pred = self._tranpose_and_gather_feat(output, ind)  # torch.Size([1, 500, 1])
         if mask.sum():
             nan_mask = torch.isnan(target) == False
-            _mask = mask & nan_mask
+            _mask = (mask & nan_mask) > 0
             loss = F.cross_entropy(pred[_mask],
                                           target[_mask].long(),
                                           reduction='mean')
@@ -71,7 +71,7 @@ class BCELoss(nn.Module):
         pred = self._tranpose_and_gather_feat(output, ind)  # torch.Size([1, 500, 1])
         if mask.sum():
             nan_mask = torch.isnan(target) == False
-            _mask = mask & nan_mask.squeeze(-1)
+            _mask = (mask & nan_mask.squeeze(-1)) > 0
             loss = F.binary_cross_entropy(pred[_mask],
                                           target[_mask],
                                           reduction='mean')
@@ -107,13 +107,16 @@ class OffSmoothL1Loss(nn.Module):
         # torch.Size([1, 500])
         # torch.Size([1, 500, 2])
         pred = self._tranpose_and_gather_feat(output, ind)  # torch.Size([1, 500, 2])
+        if len(target.shape) == 2:
+            # we are missing a dimension, if the regression target is 1-d
+            target = target.unsqueeze(-1)
         if mask.sum():
             nan_mask = torch.isnan(target) == False
             if len(nan_mask.shape) > 2:
                 # if gt is none, than all regression targets will be None
                 nan_mask = nan_mask[:,:,0]
     
-            _mask = mask & nan_mask
+            _mask = (mask & nan_mask) > 0
             loss = F.smooth_l1_loss(pred[_mask],
                                     target[_mask],
                                     reduction='mean')

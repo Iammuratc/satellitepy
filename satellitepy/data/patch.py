@@ -16,6 +16,7 @@ def get_patches(
     patch_overlap,
     include_object_classes,
     exclude_object_classes,
+    label_file_exist = True
     ):
     """
     Produce patches from the original image using the labels. 
@@ -66,7 +67,7 @@ def get_patches(
     # Init patch dictionary
     patch_dict = {
         'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],
-        'labels':[init_satellitepy_label() for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
+        'labels':[init_satellitepy_label() if label_file_exist else None for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
         'start_coords': patch_start_coords,
     }
 
@@ -76,29 +77,30 @@ def get_patches(
         patch_dict['images'][i] = img_padded[y_0:y_0+patch_size,x_0:x_0+patch_size,:]
 
         # Patch labels
-        for j, (hbbox, obbox) in enumerate(zip(gt_labels['hbboxes'],gt_labels['obboxes'])):
-            hbb_defined = hbbox != None
-            obb_defined = obbox != None
+        if label_file_exist:
+            for j, (hbbox, obbox) in enumerate(zip(gt_labels['hbboxes'],gt_labels['obboxes'])):
+                hbb_defined = hbbox != None
+                obb_defined = obbox != None
 
-            class_targets = [gt_labels['coarse-class'][j], gt_labels['fine-class'][j], gt_labels['very-fine-class'][j]]
-            if not all([
-                is_valid_object_class(
-                    ct, include_object_classes, exclude_object_classes
-                ) for ct in class_targets]
-            ):
-                continue
+                class_targets = [gt_labels['coarse-class'][j], gt_labels['fine-class'][j], gt_labels['very-fine-class'][j]]
+                if not all([
+                    is_valid_object_class(
+                        ct, include_object_classes, exclude_object_classes
+                    ) for ct in class_targets]
+                ):
+                    continue
 
-            if hbb_defined and obb_defined:
-                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr, consider_additional=True)
+                if hbb_defined and obb_defined:
+                    shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr, consider_additional=True)
 
-            elif hbb_defined:
-                shift_bboxes(patch_dict, gt_labels, j, i , 'hbboxes', patch_start_coord, hbbox, patch_size, truncated_object_thr)
+                elif hbb_defined:
+                    shift_bboxes(patch_dict, gt_labels, j, i , 'hbboxes', patch_start_coord, hbbox, patch_size, truncated_object_thr)
 
-            elif obb_defined:
-                shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr)
-            else:
-                logger.error('Error reading bounding boxes! No bounding boxes found')
-                exit(1)
+                elif obb_defined:
+                    shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr)
+                else:
+                    logger.error('Error reading bounding boxes! No bounding boxes found')
+                    exit(1)
     return patch_dict
     
 def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, truncated_object_thr, consider_additional=False, additional='hbboxes'):

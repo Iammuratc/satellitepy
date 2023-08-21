@@ -9,7 +9,7 @@ import hashlib
 from satellitepy.dataset.bbavector.utils import Utils
 from satellitepy.data.labels import read_label
 from satellitepy.data.utils import get_satellitepy_dict_values, get_task_dict #, merge_satellitepy_task_values
-from satellitepy.utils.path_utils import zip_matched_files
+from satellitepy.utils.path_utils import get_file_paths, zip_matched_files
 
 
 class BBAVectorDataset(Dataset):
@@ -38,29 +38,35 @@ class BBAVectorDataset(Dataset):
         self.items = []
         self.augmentation = augmentation
         self.random_seed = random_seed
-        if validate_dataset:
-            total = len(os.listdir(in_image_folder))
-            removed = 0
-            pbar = tqdm(zip_matched_files(in_image_folder,in_label_folder), total=total, desc="validating data")
+        self.testing = not in_label_folder
 
-            for img_path, label_path in pbar:
-                hash_str = str(img_path) + str(label_path) + str(self.random_seed)
-                hash_bytes = hashlib.sha256(bytes(hash_str, "utf-8")).digest()[:4]
-                np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
-                image = cv2.imread(img_path.absolute().as_posix())
-                labels = read_label(label_path,in_label_format)
-                image_h, image_w, c = image.shape
-                annotation = self.preapare_annotations(labels, image_w, image_h)#, img_path)
-                image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
-
-                if annotation:
-                    self.items.append((img_path, label_path, in_label_format))
-                else:
-                    removed += 1
-                    pbar.set_description(f"validating data (removed: {removed})")
+        if not in_label_folder:
+            for img_path in get_file_paths(in_image_folder):
+                self.items.append((img_path, None, None))
         else:
-            for img_path, label_path in zip_matched_files(in_image_folder, in_label_folder):
-                self.items.append((img_path, label_path, in_label_format))
+            if validate_dataset:
+                total = len(os.listdir(in_image_folder))
+                removed = 0
+                pbar = tqdm(zip_matched_files(in_image_folder,in_label_folder), total=total, desc="validating data")
+
+                for img_path, label_path in pbar:
+                    hash_str = str(img_path) + str(label_path) + str(self.random_seed)
+                    hash_bytes = hashlib.sha256(bytes(hash_str, "utf-8")).digest()[:4]
+                    np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
+                    image = cv2.imread(img_path.absolute().as_posix())
+                    labels = read_label(label_path,in_label_format)
+                    image_h, image_w, c = image.shape
+                    annotation = self.preapare_annotations(labels, image_w, image_h)#, img_path)
+                    image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
+
+                    if annotation:
+                        self.items.append((img_path, label_path, in_label_format))
+                    else:
+                        removed += 1
+                        pbar.set_description(f"validating data (removed: {removed})")
+            else:
+                for img_path, label_path in zip_matched_files(in_image_folder, in_label_folder):
+                    self.items.append((img_path, label_path, in_label_format))
 
     def __len__(self):
         return len(self.items)
@@ -69,8 +75,16 @@ class BBAVectorDataset(Dataset):
         ### Image
         img_path, label_path, label_format = self.items[idx]
         image = cv2.imread(img_path.absolute().as_posix())
-        # image = torch.from_numpy(cv2_image).permute((2, 0, 1))
         image_h, image_w, c = image.shape
+
+        if self.testing:
+            return {
+                "input": torch.from_numpy(image / 255).permute((2, 0, 1)),
+                "img_path": str(img_path),
+                "img_w": image_w,
+                "img_h": image_h
+            }
+
         ### Labels
         labels = read_label(label_path,label_format)
         hash_str = str(img_path) + str(label_path) + str(self.random_seed)
@@ -81,8 +95,6 @@ class BBAVectorDataset(Dataset):
 
         image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
         # print(annotation['masks'].shape)
-        # if not annotation:
-        #     test = 5
         data_dict = self.utils.generate_ground_truth(image, annotation)
         data_dict['img_path']=str(img_path)
         data_dict['label_path']=str(label_path)
@@ -90,7 +102,6 @@ class BBAVectorDataset(Dataset):
         data_dict['img_h']=image_h
 
         return data_dict
-
 
     def prepare_masks(self, labels, image_width, image_height):#, image_file = None):
         masks = np.zeros((image_height, image_width))

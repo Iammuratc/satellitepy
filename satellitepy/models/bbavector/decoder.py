@@ -2,10 +2,11 @@ import torch.nn.functional as F
 import torch
 
 class DecDecoder(object):
-    def __init__(self, K, conf_thresh, num_classes):
+    def __init__(self, K, conf_thresh, tasks):
         self.K = K
         self.conf_thresh = conf_thresh
-        self.num_classes = num_classes
+        assert "obboxes" in tasks or "hbboxes" in tasks, "tasks must contain obboxes and/or hbboxes"
+        self.tasks = tasks
 
     def _topk(self, scores):
         batch, cat, height, width = scores.size()
@@ -46,26 +47,19 @@ class DecDecoder(object):
         feat = self._gather_feat(feat, ind)
         return feat
 
-    def ctdet_decode(self, pr_decs):
-        heat = pr_decs['hm']
-        wh = pr_decs['wh']
-        reg = pr_decs['reg']
-        cls_theta = pr_decs['cls_theta']
-
-        batch, c, height, width = heat.size()
-        heat = self._nms(heat)
+    def decode_obboxes(self, box_params, box_offsets, box_theta_cls, heatmap):
+        batch, c, height, width = heatmap.size()
+        heat = self._nms(heatmap)
 
         scores, inds, clses, ys, xs = self._topk(heat)
-        reg = self._tranpose_and_gather_feat(reg, inds)
+        reg = self._tranpose_and_gather_feat(box_offsets, inds)
         reg = reg.view(batch, self.K, 2)
         xs = xs.view(batch, self.K, 1) + reg[:, :, 0:1]
         ys = ys.view(batch, self.K, 1) + reg[:, :, 1:2]
-        clses = clses.view(batch, self.K, 1).float()
-        scores = scores.view(batch, self.K, 1)
-        wh = self._tranpose_and_gather_feat(wh, inds)
+        wh = self._tranpose_and_gather_feat(box_params, inds)
         wh = wh.view(batch, self.K, 10)
         # add
-        cls_theta = self._tranpose_and_gather_feat(cls_theta, inds)
+        cls_theta = self._tranpose_and_gather_feat(box_theta_cls, inds)
         cls_theta = cls_theta.view(batch, self.K, 1)
         mask = (cls_theta>0.8).float().view(batch, self.K, 1)
         #
@@ -77,21 +71,74 @@ class DecDecoder(object):
         bb_y = (ys+wh[..., 5:6])*mask + (ys+wh[..., 9:10]/2)*(1.-mask)
         ll_x = (xs+wh[..., 6:7])*mask + (xs-wh[..., 8:9]/2)*(1.-mask)
         ll_y = (ys+wh[..., 7:8])*mask + (ys)*(1.-mask)
-        #
-        detections = torch.cat([xs,                      # cen_x
-                                ys,                      # cen_y
-                                tt_x,
-                                tt_y,
-                                rr_x,
-                                rr_y,
-                                bb_x,
-                                bb_y,
-                                ll_x,
-                                ll_y,
-                                scores,
-                                clses],
-                               dim=2)
+        return torch.cat([xs,                        # cen_x
+                            ys,                      # cen_y
+                            tt_x,
+                            tt_y,
+                            rr_x,
+                            rr_y,
+                            bb_x,
+                            bb_y,
+                            ll_x,
+                            ll_y],
+                           dim=2)
 
-        index = (scores>self.conf_thresh).squeeze(0).squeeze(1)
-        detections = detections[:,index,:]
-        return detections.data.cpu().numpy()
+    def decode_hbboxes(self, box_params, box_offsets, heatmap):
+        batch, c, height, width = heatmap.size()
+        heat = self._nms(heatmap)
+
+        scores, inds, clses, ys, xs = self._topk(heat)
+        reg = self._tranpose_and_gather_feat(box_offsets, inds)
+        reg = reg.view(batch, self.K, 2)
+        xs = xs.view(batch, self.K, 1) + reg[:, :, 0:1]
+        ys = ys.view(batch, self.K, 1) + reg[:, :, 1:2]
+        wh = self._tranpose_and_gather_feat(box_params, inds)
+        wh = wh.view(batch, self.K, 2)
+        return torch.cat([
+            xs,                        # cen_x
+            ys,                      # cen_y
+            wh # widht, height
+        ], dim=2)
+
+    def ctdet_decode(self, pr_decs):
+        heat = pr_decs['cls_coarse-class']
+        scores, idx_2d, cls_coarse_classes, _, _ = self._topk(heat)
+        idx_1d = (scores>self.conf_thresh).squeeze(0)
+        result = {
+            "coarse-class": cls_coarse_classes[:, idx_1d].squeeze(0).cpu().numpy(),
+            "confidence-scores": scores[:, idx_1d].squeeze(0).cpu().numpy()
+        }
+
+        if "obboxes" in self.tasks:
+            obb_detections = self.decode_obboxes(
+                pr_decs["obboxes_params"],
+                pr_decs["obboxes_offset"],
+                pr_decs["obboxes_theta"],
+                heat
+            )
+            result["obboxes"] = obb_detections[:, idx_1d, :].squeeze(0).cpu().numpy()
+        if "hbboxes" in self.tasks:
+            hbb_detections = self.decode_hbboxes(
+                pr_decs["hbboxes_params"],
+                pr_decs["hbboxes_offset"],
+                heat
+            )
+            result["hbboxes"] = hbb_detections[:, idx_1d, :].squeeze(0).cpu().numpy()
+        
+        for k, v in pr_decs.items():
+            # ignore bounding boxes and coarse class (heatmap)
+            if (
+                k == "cls_coarse-class" or
+                (k[:3] != "cls" and k[:3] != "reg")
+            ):
+                continue
+
+            arr_val = self._tranpose_and_gather_feat(v, idx_2d)
+            # classification -> we take class with highest prob
+            if k[:3] == "cls":
+                result[k[4:]] = torch.argmax(arr_val[:, idx_1d, :], dim=2).squeeze(0).cpu().numpy()
+            # regression -> there is only one value, we squeeze
+            else:
+                result[k[4:]] = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy()
+
+        return result
