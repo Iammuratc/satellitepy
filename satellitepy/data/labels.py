@@ -327,10 +327,11 @@ def read_fair1m_label(label_path):
         elif instance_name.text in ['other-airplane']:
             labels['coarse-class'].append('airplane')
             labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
         elif instance_name.text in ['Cargo Truck','Dump Truck','Excavator','Bus','Truck Tractor','Tractor','Trailer']:
             labels['coarse-class'].append('vehicle')
             labels['fine-class'].append(instance_name.text)
-            labels['role'].apennd('Large Vehicle')
+            labels['role'].append('Large Vehicle')
         elif instance_name.text in ['Small Car','Van']:
             labels['coarse-class'].append('vehicle')
             labels['fine-class'].append(instance_name.text)
@@ -338,6 +339,7 @@ def read_fair1m_label(label_path):
         elif instance_name.text in ['other-vehicle']:
             labels['coarse-class'].append('vehicle')
             labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
         elif instance_name.text in ['Liquid Cargo Ship','Passenger Ship','Dry Cargo Ship','Motorboat',
                                     'Engineering Ship','Tugboat','Fishing Boat']:
             labels['coarse-class'].append('ship')
@@ -350,9 +352,11 @@ def read_fair1m_label(label_path):
         elif instance_name.text in ['other-ship']:
             labels['coarse-class'].append('ship')
             labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
         else:
             labels['coarse-class'].append('other')
             labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
 
     # BBOX CCORDINATES
     point_spaces = root.findall('./objects/object/points')
@@ -594,12 +598,15 @@ def read_ship_net_label(label_path):
         else:
             labels['coarse-class'].append('ship')
         labels['fine-class'].append(instance_name.text)
+        print(instance_name.text)
         if instance_name.text in ['Aircraft Carrier', 'Cruiser', 'Destroyer', 'Frigate', 'Patrol', 'Landing',
                                    'Commander', 'Auxiliary Ship', 'Submarine', 'Other Warship']:
             labels['role'].append('Warship')
-        elif instance_name.text in ['Other Merchant', 'Container Ship', 'RoRo', ' Cargo', 'Barge', 'Tugboat', 'Ferry', 
+        elif instance_name.text in ['Other Merchant', 'Container Ship', 'RoRo', 'Cargo', 'Barge', 'Tugboat', 'Ferry', 
                                     'Yacht', 'Sailboat', 'Fishing Vessel', 'Oil Tanker', 'Hovercraft', 'Motorboat']:
             labels['role'].append('Merchant Ship')
+        else:
+            labels['role'].append(None)
     instance_difficulties = root.findall('./object/difficult')
     for instance_difficulty in instance_difficulties:
         labels['difficulty'].append(instance_difficulty.text)

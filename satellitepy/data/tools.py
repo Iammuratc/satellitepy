@@ -433,7 +433,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
         elif type_class in classes['ships']:
             image_dicts[img_name]['coarse-class'].append('ship')
             image_dicts[img_name]['fine-class'].append(classes['ships'][type_class])
-            image_dicts[img_name]['role'].append['Merchant Ship']
+            image_dicts[img_name]['role'].append('Merchant Ship')
         elif type_class in classes['airplanes']:
             image_dicts[img_name]['coarse-class'].append('airplane')
             image_dicts[img_name]['fine-class'].append(classes['airplanes'][type_class])
@@ -444,13 +444,15 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
         elif type_class in classes['helicopter']:
             image_dicts[img_name]['coarse-class'].append('helicopter')
             image_dicts[img_name]['fine-class'].append(None)
+            image_dicts[img_name]['role'].append(None)
         elif type_class in classes['objects']:
             image_dicts[img_name]['coarse-class'].append('other')
             image_dicts[img_name]['fine-class'].append(classes['objects'][type_class])
+            image_dicts[img_name]['role'].append(None)
         else:
             image_dicts[img_name]['coarse-class'].append('other')
             image_dicts[img_name]['fine-class'].append(None)
-
+            image_dicts[img_name]['role'].append(None)
 
         fill_none_to_empty_keys(image_dicts[img_name],not_available_tasks)
 
