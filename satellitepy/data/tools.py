@@ -430,6 +430,8 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
                 image_dicts[img_name]['role'].append('Large Vehicle')
             elif type_class in [18, 20, 21]:
                 image_dicts[img_name]['role'].append('Small Vehicle')
+            else:
+                image_dicts[img_name]['role'].append(None)
         elif type_class in classes['ships']:
             image_dicts[img_name]['coarse-class'].append('ship')
             image_dicts[img_name]['fine-class'].append(classes['ships'][type_class])
@@ -440,7 +442,9 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
             if type_class in [11, 12]:
                 image_dicts[img_name]['role'].append('Small Civil Transport/Utility')
             elif type_class in [13]:
-                image_dicts[img_name]['role'].append('Large Civil Transport/Utility')      
+                image_dicts[img_name]['role'].append('Large Civil Transport/Utility') 
+            else:
+                image_dicts[img_name]['role'].append(None)
         elif type_class in classes['helicopter']:
             image_dicts[img_name]['coarse-class'].append('helicopter')
             image_dicts[img_name]['fine-class'].append(None)
