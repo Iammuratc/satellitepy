@@ -1,15 +1,19 @@
+import logging
 from builtins import print
 
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from satellitepy.data.utils import get_xview_classes, set_mask, parse_potsdam_labels
+from satellitepy.data.bbox import BBox
 import json
 import numpy as np
 
 from satellitepy.data.bbox import BBox
 
 def read_label(label_path,label_format, mask_path = None):
+    logger = logging.getLogger(__name__)
+
     if isinstance(label_path,Path):
         label_path = str(label_path)
     if label_format=='dota' or label_format=='DOTA':
@@ -31,13 +35,13 @@ def read_label(label_path,label_format, mask_path = None):
     elif label_format == 'ucas':
         return read_ucas_label(label_path)
     elif label_format == 'xview':
-        print('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
+        logger.info('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
         exit(1)
     elif label_format == 'isprs':
         return read_isprs_label(label_path)
     else:
-        print('---Label format is not defined---')
+        logger.info('---Label format is not defined---')
         exit(1)
 
 def get_all_satellitepy_keys():
@@ -284,7 +288,7 @@ def read_dota_label(label_path, mask_path=None):
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
             labels['obboxes'].append(bbox_corners)
-            # labels['hbboxes'].append(get_HBB_from_OBB(bbox_corners))
+            labels['hbboxes'].append(BBox.get_hbb_from_obb(bbox_corners))
             fill_none_to_empty_keys(labels,not_available_tasks)
 
         # Mask
@@ -323,10 +327,11 @@ def read_fair1m_label(label_path):
         elif instance_name.text in ['other-airplane']:
             labels['coarse-class'].append('airplane')
             labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
         elif instance_name.text in ['Cargo Truck','Dump Truck','Excavator','Bus','Truck Tractor','Tractor','Trailer']:
             labels['coarse-class'].append('vehicle')
             labels['fine-class'].append(instance_name.text)
-            labels['role'].apennd('Large Vehicle')
+            labels['role'].append('Large Vehicle')
         elif instance_name.text in ['Small Car','Van']:
             labels['coarse-class'].append('vehicle')
             labels['fine-class'].append(instance_name.text)
@@ -334,6 +339,7 @@ def read_fair1m_label(label_path):
         elif instance_name.text in ['other-vehicle']:
             labels['coarse-class'].append('vehicle')
             labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
         elif instance_name.text in ['Liquid Cargo Ship','Passenger Ship','Dry Cargo Ship','Motorboat',
                                     'Engineering Ship','Tugboat','Fishing Boat']:
             labels['coarse-class'].append('ship')
@@ -346,9 +352,11 @@ def read_fair1m_label(label_path):
         elif instance_name.text in ['other-ship']:
             labels['coarse-class'].append('ship')
             labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
         else:
             labels['coarse-class'].append('other')
             labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
 
     # BBOX CCORDINATES
     point_spaces = root.findall('./objects/object/points')
@@ -422,7 +430,6 @@ def read_rareplanes_real_label(label_path):
 
 
 def read_rareplanes_synthetic_label(label_path):
-    print('read_synthetic_rareplanes')
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_synthetic
@@ -591,12 +598,15 @@ def read_ship_net_label(label_path):
         else:
             labels['coarse-class'].append('ship')
         labels['fine-class'].append(instance_name.text)
+        print(instance_name.text)
         if instance_name.text in ['Aircraft Carrier', 'Cruiser', 'Destroyer', 'Frigate', 'Patrol', 'Landing',
                                    'Commander', 'Auxiliary Ship', 'Submarine', 'Other Warship']:
             labels['role'].append('Warship')
-        elif instance_name.text in ['Other Merchant', 'Container Ship', 'RoRo', ' Cargo', 'Barge', 'Tugboat', 'Ferry', 
+        elif instance_name.text in ['Other Merchant', 'Container Ship', 'RoRo', 'Cargo', 'Barge', 'Tugboat', 'Ferry', 
                                     'Yacht', 'Sailboat', 'Fishing Vessel', 'Oil Tanker', 'Hovercraft', 'Motorboat']:
             labels['role'].append('Merchant Ship')
+        else:
+            labels['role'].append(None)
     instance_difficulties = root.findall('./object/difficult')
     for instance_difficulty in instance_difficulties:
         labels['difficulty'].append(instance_difficulty.text)

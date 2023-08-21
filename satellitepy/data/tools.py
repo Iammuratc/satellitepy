@@ -218,7 +218,7 @@ def get_label_by_idx(satpy_labels: dict, i: int):
       
 def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tasks):#, mask_folder):
     logger = logging.getLogger(__name__)
-    print(tasks)
+    logger.info(tasks)
     img_paths = get_file_paths(img_folder)
     label_paths = get_file_paths(label_folder)
     # if mask_folder:
@@ -236,6 +236,10 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
 
         bboxes = 'obboxes'
         logger.info('Adding bounding boxes/labels to image')
+
+        if satellitepy_labels_empty(labels):
+            continue
+
         if labels['obboxes'][0] == None:
             bboxes = 'hbboxes'
 
@@ -259,7 +263,7 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
                     img[y,x,:] = 1
 
 
-        print(Path(out_folder) / f"{img_path.stem}.png")
+        logger.info(Path(out_folder) / f"{img_path.stem}.png")
         cv2.imwrite(str(Path(out_folder) / f"{img_path.stem}.png"), img)
 
             # plt.axis('off')
@@ -429,7 +433,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
         elif type_class in classes['ships']:
             image_dicts[img_name]['coarse-class'].append('ship')
             image_dicts[img_name]['fine-class'].append(classes['ships'][type_class])
-            image_dicts[img_name]['role'].append['Merchant Ship']
+            image_dicts[img_name]['role'].append('Merchant Ship')
         elif type_class in classes['airplanes']:
             image_dicts[img_name]['coarse-class'].append('airplane')
             image_dicts[img_name]['fine-class'].append(classes['airplanes'][type_class])
@@ -440,13 +444,15 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
         elif type_class in classes['helicopter']:
             image_dicts[img_name]['coarse-class'].append('helicopter')
             image_dicts[img_name]['fine-class'].append(None)
+            image_dicts[img_name]['role'].append(None)
         elif type_class in classes['objects']:
             image_dicts[img_name]['coarse-class'].append('other')
             image_dicts[img_name]['fine-class'].append(classes['objects'][type_class])
+            image_dicts[img_name]['role'].append(None)
         else:
             image_dicts[img_name]['coarse-class'].append('other')
             image_dicts[img_name]['fine-class'].append(None)
-
+            image_dicts[img_name]['role'].append(None)
 
         fill_none_to_empty_keys(image_dicts[img_name],not_available_tasks)
 
