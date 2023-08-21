@@ -18,11 +18,11 @@ def get_args():
                         help='Patch size. Patches with patch-size will be created from the original images.')
     parser.add_argument('--in-image-folder', type=Path,
                         help='Folder of original images. The images in this folder will be processed.')
-    parser.add_argument('--in-label-folder', type=Path,
+    parser.add_argument('--in-label-folder', type=Path, required=False,
                         help='Folder of original labels. The labels in this folder will be used to create patches.')
     parser.add_argument('--in-mask-folder', type=Path, required = False,
                         help='Folder of original mask images. The mask images in this folder will be used to set mask pixel coordinates in out labels.')
-    parser.add_argument('--in-label-format', type=Path,
+    parser.add_argument('--in-label-format', type=Path, default="satellitepy",
                         help='Label file format. e.g., dota, fair1m.')
     parser.add_argument('--out-folder',
                         type=Path,
@@ -44,7 +44,10 @@ def get_args():
 
 def run(args):
     in_image_folder = Path(args.in_image_folder)
-    in_label_folder = Path(args.in_label_folder)
+    if args.in_label_folder:
+        in_label_folder = Path(args.in_label_folder)
+    else:
+        in_label_folder = None
     in_label_format = str(args.in_label_format)
     if (args.in_mask_folder != None):
         in_mask_folder = Path(args.in_mask_folder)
@@ -67,6 +70,9 @@ def run(args):
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
     logger.info('Saving patches from original images...')
+
+    if not in_label_folder :
+        logger.warn("in_label_folder is not set, this is correct, if patches for the test set shall be created")
 
     # Save patches
     save_patches(
