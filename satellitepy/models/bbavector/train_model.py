@@ -169,12 +169,14 @@ class TrainModule(object):
             total_loss.backward()
             self.optimizer.step()
             for k, v in loss_dict.items():
-                running_loss.setdefault(k, 0.)
+                running_loss.setdefault(k, [0., 0])
                 if isinstance(v, torch.Tensor):
-                    running_loss[k] += v.item()
+                    running_loss[k][0] += v.item()
+                    running_loss[k][1] += 1
                 else:
-                    running_loss[k] += v
-        epoch_loss = {k: v / len(data_loader) for k, v in running_loss.items()}
+                    running_loss[k][0] += v
+                    running_loss[k][1] += 1
+        epoch_loss = {k: v[0] / v[1] for k, v in running_loss.items()}
         # print('{} loss: {}'.format(epoch_loss))
         return epoch_loss
 
@@ -192,12 +194,14 @@ class TrainModule(object):
                 pr_decs = self.model(data_dict['input'])
                 loss_dict = criterion(pr_decs, data_dict)
                 for k, v in loss_dict.items():
-                    running_loss.setdefault(k, 0.)
+                    running_loss.setdefault(k, [0., 0])
                     if isinstance(v, torch.Tensor):
-                        running_loss[k] += v.item()
+                        running_loss[k][0] += v.item()
+                        running_loss[k][1] += 1
                     else:
-                        running_loss[k] += v
-        epoch_loss = {k: v / len(data_loader) for k, v in running_loss.items()}
+                        running_loss[k][0] += v
+                        running_loss[k][1] += 1
+        epoch_loss = {k: v[0] / v[1] for k, v in running_loss.items()}
         return epoch_loss
             
             # if 'test' in self.dataset_phase[args.dataset] and epoch%5==0:
