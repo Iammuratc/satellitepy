@@ -3,3 +3,5 @@ wget
 patool
 opencv-python
 tqdm
+scipy
+shapely

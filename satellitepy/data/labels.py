@@ -4,7 +4,7 @@ from builtins import print
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from satellitepy.data.utils import get_xview_classes, set_mask, parse_potsdam_labels, set_satellitepy_dict_values
+from satellitepy.data.utils import set_mask, parse_potsdam_labels, set_satellitepy_dict_values, get_satellitepy_table, get_shipnet_classes
 from satellitepy.data.bbox import BBox
 import json
 import numpy as np
@@ -584,28 +584,38 @@ def read_dior_label(label_path):
 
 def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
+    classes = get_shipnet_classes()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['hbboxes', 'obboxes', 'difficulty', 'coarse-class','fine-class','role']
+    available_tasks=['hbboxes', 'obboxes', 'difficulty', 'coarse-class','fine-class','very-fine-class','role',]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
     
-    
-    lut = get_shipnet_classes()
     root = ET.parse(label_path).getroot()
     # Instance names
     instance_names = root.findall('./object/name')
     for instance_name in instance_names:
         if instance_name.text == 'Dock':
             labels['coarse-class'].append('other')
+            labels['role'].append(None)
         else:
             labels['coarse-class'].append('ship')
-        labels['fine-class'].append(instance_name.text)
-        print(instance_name.text)
+            
+        found = False
+        for index in classes:
+            if instance_name.text in classes[index][1]:
+                labels['fine-class'].append(classes[index][0])
+                labels['very-fine-class'].append(classes[index][1])
+                found = True
+                
+        if not found:
+            labels['fine-class'].append(instance_name.text)
+            labels['very-fine-class'].append(None)
+            
         if instance_name.text in ['Aircraft Carrier', 'Cruiser', 'Destroyer', 'Frigate', 'Patrol', 'Landing',
-                                   'Commander', 'Auxiliary Ship', 'Submarine', 'Other Warship']:
+                                'Commander', 'Auxiliary Ship', 'Submarine', 'Other Warship']:
             labels['role'].append('Warship')
         elif instance_name.text in ['Other Merchant', 'Container Ship', 'RoRo', 'Cargo', 'Barge', 'Tugboat', 'Ferry', 
                                     'Yacht', 'Sailboat', 'Fishing Vessel', 'Oil Tanker', 'Hovercraft', 'Motorboat']:
