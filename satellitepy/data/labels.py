@@ -276,7 +276,12 @@ def read_dota_label(label_path, mask_path=None):
             category_words = category.split('-')
             if len(category_words) == 2 and category_words[1]=='vehicle':
                 labels['coarse-class'].append(category_words[1]) # vehicle
-                labels['role'].append(category) # small-vehicle
+                if category_words[0]=='small':
+                    labels['role'].append('Small Vehicle') 
+                elif category_words[0]=='large':
+                    labels['role'].append('Large Vehicle')
+                else:
+                    labels['role'].append(None)
             elif category=='plane' or category=='ship' or category=='helicopter':
                 # Airplane is the common word
                 category = 'airplane' if category == 'plane' else category
@@ -284,7 +289,7 @@ def read_dota_label(label_path, mask_path=None):
                 labels['role'].append(None) #
             else:
                 labels['coarse-class'].append('other') #
-                labels['role'].append(category) #
+                labels['role'].append(None) #
             labels['merged-class'].append(category)
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
