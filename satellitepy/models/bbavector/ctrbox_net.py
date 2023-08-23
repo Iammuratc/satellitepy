@@ -6,30 +6,39 @@ from .model_parts import CombinationModule
 from . import resnet
 
 class CTRBOX(nn.Module):
-    def __init__(self, heads, pretrained, down_ratio, final_kernel, head_conv):
+    def __init__(self, heads, pretrained, down_ratio, final_kernel, head_conv, resnet_type = "34"):
         super(CTRBOX, self).__init__()
-        # channels = [3, 64, 256, 512, 1024, 2048]
-        channels = [3, 16, 64, 128, 512, 1024]
         assert down_ratio in [2, 4, 8, 16]
-        self.l1 = int(np.log2(down_ratio))
-        # self.base_network = resnet.resnet101(pretrained=pretrained)
-        # self.dec_c2 = CombinationModule(512, 256, batch_norm=True)
-        # self.dec_c3 = CombinationModule(1024, 512, batch_norm=True)
-        # self.dec_c4 = CombinationModule(2048, 1024, batch_norm=True)
-        self.base_network = resnet.resnet34(pretrained=pretrained)
-        self.dec_c2 = CombinationModule(128, 64, batch_norm=True)
-        self.dec_c3 = CombinationModule(256, 128, batch_norm=True)
-        self.dec_c4 = CombinationModule(512, 256, batch_norm=True)
-        # for segmentation head, we follow the u-net concept and also have a combination module
-        # for the last upconvolution layer
-        if 'masks' in heads:
-            self.dec_seg1 = CombinationModule(64, 64, batch_norm=True)
-            self.dec_seq2 = nn.Sequential(
-                nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
-                nn.BatchNorm2d(64),
-                nn.ReLU(inplace=True)
-            )
+        if resnet_type == "34":
+            channels = [3, 16, 64, 128, 512, 1024]
+            self.base_network = resnet.resnet34(pretrained=pretrained)
+            self.dec_c2 = CombinationModule(128, 64, batch_norm=True)
+            self.dec_c3 = CombinationModule(256, 128, batch_norm=True)
+            self.dec_c4 = CombinationModule(512, 256, batch_norm=True)
+            # for segmentation head, we follow the u-net concept and also have a combination module
+            # for the last upconvolution layer
+            if 'masks' in heads:
+                self.dec_seg1 = CombinationModule(64, 64, batch_norm=True)
+                self.dec_seq2 = nn.Sequential(
+                    nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
+                    nn.BatchNorm2d(64),
+                    nn.ReLU(inplace=True)
+                )
+        else:
+            channels = [3, 64, 256, 512, 1024, 2048]
+            self.base_network = resnet.resnet101(pretrained=pretrained)
+            self.dec_c2 = CombinationModule(512, 256, batch_norm=True)
+            self.dec_c3 = CombinationModule(1024, 512, batch_norm=True)
+            self.dec_c4 = CombinationModule(2048, 1024, batch_norm=True)
+            if 'masks' in heads:
+                self.dec_seg1 = CombinationModule(256, 64, batch_norm=True)
+                self.dec_seq2 = nn.Sequential(
+                    nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
+                    nn.BatchNorm2d(64),
+                    nn.ReLU(inplace=True)
+                )
 
+        self.l1 = int(np.log2(down_ratio))
         self.heads = heads
 
         for head in self.heads:
@@ -88,4 +97,5 @@ class CTRBOX(nn.Module):
                 dec_dict[head] = self.__getattr__(head)(c2_combine)
             if head[:4] == "cls_" or head == "masks" or head == "obboxes_theta":
                 dec_dict[head] = torch.sigmoid(dec_dict[head])
+
         return dec_dict
