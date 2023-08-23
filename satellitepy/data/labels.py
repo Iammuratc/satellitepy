@@ -4,7 +4,7 @@ from builtins import print
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from satellitepy.data.utils import get_xview_classes, set_mask, parse_potsdam_labels, set_satellitepy_dict_values
+from satellitepy.data.utils import set_mask, parse_potsdam_labels, set_satellitepy_dict_values, get_satellitepy_table, get_shipnet_classes
 from satellitepy.data.bbox import BBox
 import json
 import numpy as np
@@ -242,7 +242,7 @@ def read_dota_label(label_path, mask_path=None):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['hbboxes', 'obboxes','difficulty','coarse-class','fine-class','merged-class']
+    available_tasks=['hbboxes', 'obboxes','difficulty','coarse-class','role','merged-class']
     mask_exists = True if mask_path else False
     if mask_exists:
         available_tasks.append('masks')
@@ -276,15 +276,20 @@ def read_dota_label(label_path, mask_path=None):
             category_words = category.split('-')
             if len(category_words) == 2 and category_words[1]=='vehicle':
                 labels['coarse-class'].append(category_words[1]) # vehicle
-                labels['fine-class'].append(category) # small-vehicle
+                if category_words[0]=='small':
+                    labels['role'].append('Small Vehicle') 
+                elif category_words[0]=='large':
+                    labels['role'].append('Large Vehicle')
+                else:
+                    labels['role'].append(None)
             elif category=='plane' or category=='ship' or category=='helicopter':
                 # Airplane is the common word
                 category = 'airplane' if category == 'plane' else category
                 labels['coarse-class'].append(category) # plane, ship
-                labels['fine-class'].append(None) #
+                labels['role'].append(None) #
             else:
                 labels['coarse-class'].append('other') #
-                labels['fine-class'].append(category) #
+                labels['role'].append(None) #
             labels['merged-class'].append(category)
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
@@ -304,7 +309,7 @@ def read_fair1m_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes','coarse-class','fine-class']
+    available_tasks=['obboxes','coarse-class','fine-class','role']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -318,18 +323,47 @@ def read_fair1m_label(label_path):
     instance_names = root.findall(
         './objects/object/possibleresult/name')
     for instance_name in instance_names:
-        if instance_name.text in ['A321','A220','other-airplane','ARJ21','Boeing737','Boeing747','Boeing787','A330','Boeing777','C919','A350']:
+        if instance_name.text in ['Boeing747','Boeing787','A330','Boeing777','A350']:
             labels['coarse-class'].append('airplane')
             labels['fine-class'].append(instance_name.text)
-        elif instance_name.text in ['Cargo Truck','Small Car','Dump Truck','Van','Excavator','Bus','other-vehicle','Truck Tractor','Tractor','Trailer']:
+            labels['role'].append('Large Civil Transport/Utility')
+        elif instance_name.text in ['A321', 'A220', 'ARJ21', 'Boeing737','C919']:
+            labels['coarse-class'].append('airplane')
+            labels['fine-class'].append(instance_name.text)
+            labels['role'].append('Medium Civil Transport/Utility')  
+        elif instance_name.text in ['other-airplane']:
+            labels['coarse-class'].append('airplane')
+            labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
+        elif instance_name.text in ['Cargo Truck','Dump Truck','Excavator','Bus','Truck Tractor','Tractor','Trailer']:
             labels['coarse-class'].append('vehicle')
             labels['fine-class'].append(instance_name.text)
-        elif instance_name.text in ['Liquid Cargo Ship','Passenger Ship','Dry Cargo Ship','Motorboat','Engineering Ship','Tugboat','Fishing Boat','other-ship','Warship']:
+            labels['role'].append('Large Vehicle')
+        elif instance_name.text in ['Small Car','Van']:
+            labels['coarse-class'].append('vehicle')
+            labels['fine-class'].append(instance_name.text)
+            labels['role'].append('Small Vehicle')
+        elif instance_name.text in ['other-vehicle']:
+            labels['coarse-class'].append('vehicle')
+            labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
+        elif instance_name.text in ['Liquid Cargo Ship','Passenger Ship','Dry Cargo Ship','Motorboat',
+                                    'Engineering Ship','Tugboat','Fishing Boat']:
             labels['coarse-class'].append('ship')
             labels['fine-class'].append(instance_name.text)
+            labels['role'].append('Merchant Ship')
+        elif instance_name.text in ['Warship']:
+            labels['coarse-class'].append('ship')
+            labels['fine-class'].append(instance_name.text)
+            labels['role'].append('Warship')
+        elif instance_name.text in ['other-ship']:
+            labels['coarse-class'].append('ship')
+            labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
         else:
             labels['coarse-class'].append('other')
             labels['fine-class'].append(instance_name.text)
+            labels['role'].append(None)
 
     # BBOX CCORDINATES
     point_spaces = root.findall('./objects/object/points')
@@ -555,22 +589,44 @@ def read_dior_label(label_path):
 
 def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
+    classes = get_shipnet_classes()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['hbboxes', 'obboxes', 'difficulty', 'coarse-class','fine-class']
+    available_tasks=['hbboxes', 'obboxes', 'difficulty', 'coarse-class','fine-class','very-fine-class','role',]
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+    
     root = ET.parse(label_path).getroot()
     # Instance names
     instance_names = root.findall('./object/name')
     for instance_name in instance_names:
         if instance_name.text == 'Dock':
             labels['coarse-class'].append('other')
+            labels['role'].append(None)
         else:
             labels['coarse-class'].append('ship')
-        labels['fine-class'].append(instance_name.text)
+            
+        found = False
+        for index in classes:
+            if instance_name.text in classes[index][1]:
+                labels['fine-class'].append(classes[index][0])
+                labels['very-fine-class'].append(classes[index][1])
+                found = True
+                
+        if not found:
+            labels['fine-class'].append(instance_name.text)
+            labels['very-fine-class'].append(None)
+            
+        if instance_name.text in ['Aircraft Carrier', 'Cruiser', 'Destroyer', 'Frigate', 'Patrol', 'Landing',
+                                'Commander', 'Auxiliary Ship', 'Submarine', 'Other Warship']:
+            labels['role'].append('Warship')
+        elif instance_name.text in ['Other Merchant', 'Container Ship', 'RoRo', 'Cargo', 'Barge', 'Tugboat', 'Ferry', 
+                                    'Yacht', 'Sailboat', 'Fishing Vessel', 'Oil Tanker', 'Hovercraft', 'Motorboat']:
+            labels['role'].append('Merchant Ship')
+        else:
+            labels['role'].append(None)
     instance_difficulties = root.findall('./object/difficult')
     for instance_difficulty in instance_difficulties:
         labels['difficulty'].append(instance_difficulty.text)
@@ -587,7 +643,6 @@ def read_ship_net_label(label_path):
             if 'y' in my_point.tag:
                 coords.append(corner)
                 corner = []
-
         labels['obboxes'].append(coords)
         labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
         fill_none_to_empty_keys(labels,not_available_tasks)

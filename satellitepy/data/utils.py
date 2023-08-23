@@ -107,6 +107,61 @@ def get_xview_classes():
         }
     return classes
 
+def get_shipnet_classes():
+	classes = {
+		1 : ["Other Ship","Other Ship"],
+		2 : ["Other Warship","Other Warship"],
+		3 : ["Submarine","Submarine"],
+		4 : ["Aircraft Carrier","Other Aircraft Carrier"],
+		5 : ["Aircraft Carrier","Enterprise"],
+		6 : ["Aircraft Carrier","Nimitz"],
+		7 : ["Aircraft Carrier","Midway"],
+		8 : ["Cruiser","Ticonderoga"],
+		9 : ["Destroyer","Other Destroyer"],
+		10: ["Destroyer","Atago DD"],
+		11: ["Destroyer","Arleigh Burke DD"],
+		12: ["Destroyer","Hatsuyuki DD"],
+		13: ["Destroyer","Hyuga DD"],
+		14: ["Destroyer","Asagiri DD"],
+		15: ["Frigate","Other Frigate"],
+		16: ["Frigate","Perry FF"],
+		17: ["Patrol","Patrol"],
+		18: ["Landing","Other Landing"],
+		19: ["Landing","YuTing LL"],
+		20: ["Landing","YuDeng LL"],
+		21: ["Landing","YuDao LL"],
+		22: ["Landing","Yuzhao LL"],
+		23: ["Landing","Austin LL"],
+		24: ["Landing","Asumi LL"],
+		25: ["Landing","Wasp LL"],
+		26: ["Landing","LSD 41 LL"],
+		27: ["Landing","LHA LL"],
+		28: ["Commander","Commander"],
+		29: ["Auxiliary Ship","Other Auxiliary Ship"],
+		30: ["Auxiliary Ship","Medical Ship"],
+		31: ["Auxiliary Ship","Test Ship"],
+		32: ["Auxiliary Ship","Training Ship"],
+		33: ["Auxiliary Ship","AOE"],
+		34: ["Auxiliary Ship","Masyuu AS"],
+		35: ["Auxiliary Ship","Sanantonio AS"],
+		36: ["Auxiliary Ship","EPF"],
+		37: ["Other Merchant","Other Merchant"],
+		38: ["Container Ship","Container SHip"],
+		39: ["RoRo","RoRo"],
+		40: ["Cargo","Cargo"],
+		41: ["Barge","Barge"],
+		42: ["Tugboat","Tugboat"],
+		43: ["Ferry","Ferry"],
+		44: ["Yacht","Yacht"],
+		45: ["Sailboat","Sailboat"],
+		46: ["Fishing Vessel","Fishing Vessel"],
+		47: ["Oil Tanker","Oil Tanker"],
+		48: ["Hovercraft","Hovercraft"],
+		49: ["Motorboat","Motorboat"]
+	}
+	return classes
+
+
 def parse_potsdam_labels(label_path):
     """
     Parses the potsdam images to extract the label data
@@ -360,6 +415,10 @@ def get_satellitepy_table():
             'Military Fighter/Interceptor/Attack': 4,
             'Military Bomber': 5,
             'Military Trainer': 6,
+            'Small Vehicle' : 7,
+            'Large Vehicle': 8,
+            'Warship': 9,
+            'Merchant Ship': 10,
         },
         'difficulty':{
             '0': 0,
