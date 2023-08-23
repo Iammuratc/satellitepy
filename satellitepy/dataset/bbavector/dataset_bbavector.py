@@ -7,7 +7,7 @@ from tqdm import tqdm
 import hashlib
 
 from satellitepy.dataset.bbavector.utils import Utils
-from satellitepy.data.labels import read_label
+from satellitepy.data.labels import read_label, satellitepy_labels_empty
 from satellitepy.data.utils import get_satellitepy_dict_values, get_task_dict #, merge_satellitepy_task_values
 from satellitepy.utils.path_utils import get_file_paths, zip_matched_files
 
@@ -40,6 +40,17 @@ class BBAVectorDataset(Dataset):
         self.random_seed = random_seed
         self.testing = not in_label_folder
 
+        self.grouped_tasks = []
+        for t in self.tasks:
+            if t not in ["obboxes", "hbboxes", "masks"]:
+                task_dict = get_task_dict(t)
+                if 'min' in task_dict.keys() and 'max' in task_dict.keys():
+                    self.grouped_tasks.append("reg_" + t)
+                else:
+                    self.grouped_tasks.append("cls_" + t)
+            else:
+                self.grouped_tasks.append(t)
+
         if not in_label_folder:
             for img_path in get_file_paths(in_image_folder):
                 self.items.append((img_path, None, None))
@@ -59,7 +70,7 @@ class BBAVectorDataset(Dataset):
                     annotation = self.preapare_annotations(labels, image_w, image_h)#, img_path)
                     image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
 
-                    if annotation:
+                    if self.all_tasks_available(annotation):
                         self.items.append((img_path, label_path, in_label_format))
                     else:
                         removed += 1
@@ -70,6 +81,13 @@ class BBAVectorDataset(Dataset):
 
     def __len__(self):
         return len(self.items)
+
+    def all_tasks_available(self, annotation: dict):
+        # basically checks, if labels had a bad format, or annotations are missing after random crop
+        existing = list(annotation.keys())
+        for k in self.grouped_tasks:
+            if k not in existing: return False
+        return True
 
     def __getitem__(self, idx):
         ### Image
@@ -117,8 +135,8 @@ class BBAVectorDataset(Dataset):
             m_y = np.array(m_y).clip(0, image_height - 1)
             masks[m_y, m_x] = 1.0
 
-        # if np.count_nonzero(masks) == 0:
-        #     return None
+        if np.count_nonzero(masks) == 0:
+            return None
 
         return masks
 

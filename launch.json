@@ -54,6 +54,7 @@
         "--out-folder",
         "/home/simon/unibw/data/satpy/temp",
         "--tasks",
+        "masks",
         "hbboxes",
         "obboxes",
         "coarse-class",
