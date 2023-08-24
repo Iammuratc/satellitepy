@@ -25,9 +25,10 @@ class Utils:
         crop_center = None
 
         boxes = []
-        masks = []
         if "masks" in annotation:
-            masks.append(annotation["masks"])
+            mask = annotation["masks"]
+        else:
+            mask = None
         if "hbboxes" in annotation:
             boxes.append(annotation["hbboxes"])
         if "obboxes" in annotation:
@@ -35,7 +36,7 @@ class Utils:
 
         if augmentation:
             crop_size, crop_center = random_crop_info(h=image.shape[0], w=image.shape[1])
-            image, masks, boxes, crop_center = random_flip(image, masks, boxes, crop_center)
+            image, masks, boxes, crop_center = random_flip(image, mask, boxes, crop_center)
         if crop_center is None:
             crop_center = np.asarray([float(image.shape[1])/2, float(image.shape[0])/2], dtype=np.float32)
         if crop_size is None:
@@ -46,14 +47,13 @@ class Utils:
                                inverse=False,
                                rotation=augmentation)
         image = cv2.warpAffine(src=image, M=M, dsize=(self.input_w, self.input_h), flags=cv2.INTER_LINEAR)
-        for idx, m in enumerate(masks):
-            if m is not None:
-                masks[idx] = cv2.warpAffine(
-                    src=m, 
-                    M=M, 
-                    dsize=(self.input_w, self.input_h), 
-                    flags=cv2.INTER_LINEAR
-                )
+        if mask is not None:
+            mask = cv2.warpAffine(
+                src=mask, 
+                M=M, 
+                dsize=(self.input_w, self.input_h), 
+                flags=cv2.INTER_LINEAR
+            )
         for idx, box in enumerate(boxes):
             for idx_1, b in enumerate(box):
                 if b is not None:
@@ -124,8 +124,8 @@ class Utils:
             out_annotations["hbboxes"] = np.asarray(out_hbb, np.float32)
         if "obboxes" in annotation and len(out_obb) > 0:
             out_annotations["obboxes"] = np.asarray(out_obb, np.float32)
-        if 'masks' in annotation and not np.isnan(np.asarray(masks, np.float32)).all():
-            out_annotations['masks'] = np.asarray(masks, np.float32)
+        if 'masks' in annotation:
+            out_annotations['masks'] = np.asarray(mask, np.float32)
 
         for k in out_annotations.keys():
             if k != "hbboxes" and k != "obboxes":

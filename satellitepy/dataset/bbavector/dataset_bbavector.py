@@ -59,6 +59,8 @@ class BBAVectorDataset(Dataset):
                 total = len(os.listdir(in_image_folder))
                 removed = 0
                 pbar = tqdm(zip_matched_files(in_image_folder,in_label_folder), total=total, desc="validating data")
+                max = 100
+                count = 0
 
                 for img_path, label_path in pbar:
                     hash_str = str(img_path) + str(label_path) + str(self.random_seed)
@@ -66,6 +68,7 @@ class BBAVectorDataset(Dataset):
                     np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
                     image = cv2.imread(img_path.absolute().as_posix())
                     labels = read_label(label_path,in_label_format)
+                    del labels["masks"]
                     image_h, image_w, c = image.shape
                     annotation = self.preapare_annotations(labels, image_w, image_h)#, img_path)
                     image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
@@ -75,6 +78,8 @@ class BBAVectorDataset(Dataset):
                     else:
                         removed += 1
                         pbar.set_description(f"validating data (removed: {removed})")
+                    if count > max:
+                        break
             else:
                 for img_path, label_path in zip_matched_files(in_image_folder, in_label_folder):
                     self.items.append((img_path, label_path, in_label_format))
@@ -122,6 +127,8 @@ class BBAVectorDataset(Dataset):
         return data_dict
 
     def prepare_masks(self, labels, image_width, image_height):#, image_file = None):
+        if "masks" not in labels:
+            return None
         masks = np.zeros((image_height, image_width))
 
         for val in labels["masks"]:
