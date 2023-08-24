@@ -66,7 +66,6 @@ class BBAVectorDataset(Dataset):
                     np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
                     image = cv2.imread(img_path.absolute().as_posix())
                     labels = read_label(label_path,in_label_format)
-                    del labels["masks"]
                     image_h, image_w, c = image.shape
                     annotation = self.preapare_annotations(labels, image_w, image_h)#, img_path)
                     image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
