@@ -59,8 +59,6 @@ class BBAVectorDataset(Dataset):
                 total = len(os.listdir(in_image_folder))
                 removed = 0
                 pbar = tqdm(zip_matched_files(in_image_folder,in_label_folder), total=total, desc="validating data")
-                max = 100
-                count = 0
 
                 for img_path, label_path in pbar:
                     hash_str = str(img_path) + str(label_path) + str(self.random_seed)
@@ -78,8 +76,6 @@ class BBAVectorDataset(Dataset):
                     else:
                         removed += 1
                         pbar.set_description(f"validating data (removed: {removed})")
-                    if count > max:
-                        break
             else:
                 for img_path, label_path in zip_matched_files(in_image_folder, in_label_folder):
                     self.items.append((img_path, label_path, in_label_format))

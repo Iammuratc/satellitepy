@@ -125,7 +125,11 @@ class Utils:
         if "obboxes" in annotation and len(out_obb) > 0:
             out_annotations["obboxes"] = np.asarray(out_obb, np.float32)
         if 'masks' in annotation:
-            out_annotations['masks'] = np.asarray(mask, np.float32)
+            if mask is None:
+                out_annotations["masks"] = np.asarray([np.full(image.shape[:2], np.nan, dtype=np.float32)])
+            else:
+                # list for 1 channel size
+                out_annotations['masks'] = np.asarray([mask], np.float32)
 
         for k in out_annotations.keys():
             if k != "hbboxes" and k != "obboxes":
