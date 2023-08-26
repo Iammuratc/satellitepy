@@ -477,7 +477,9 @@ def get_satellitepy_table():
     # For example, this is a solution to be able to train the bbavector on the original dota dataset
     len_coarse_class = len(satellitepy_table['coarse-class'])
     len_fine_class = len(satellitepy_table['fine-class'])
-    satellitepy_table['merged-class'] = satellitepy_table['coarse-class']
+    satellitepy_table.setdefault("merged-class", {})
+    for key,value in satellitepy_table['coarse-class'].items():
+        satellitepy_table['merged-class'][key] = value
     for key,value in satellitepy_table['fine-class'].items():
         satellitepy_table['merged-class'][key] = value+len_coarse_class
     for key,value in satellitepy_table['very-fine-class'].items():
