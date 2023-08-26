@@ -23,6 +23,11 @@ def load_checkpoint(model, checkpoint_path, init_lr=1e-3):
         model.module.load_state_dict(checkpoint['model_state_dict'])
         optimizer = torch.optim.Adam(model.module.parameters(), lr=init_lr)
     else:
+        # we crop the weight sizes in first dimension if necessary
+        for k, v in model.state_dict().items():
+            saved_weights = checkpoint["model_state_dict"][k]
+            if v.shape != saved_weights.shape:
+                checkpoint["model_state_dict"][k] = saved_weights[:v.shape[0], ...]
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer = torch.optim.Adam(model.parameters(), lr=init_lr)
 
