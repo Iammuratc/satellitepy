@@ -23,7 +23,7 @@ def get_model(tasks,down_ratio):
             if 'max' and 'min' in td.keys():
                 heads["reg_" + task] = 1
             else:
-                heads["cls_" + task] = len(td)
+                heads["cls_" + task] = len(set(td.values()))
 
     model = ctrbox_net.CTRBOX(heads=heads,
                               pretrained=True,
