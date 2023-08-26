@@ -176,9 +176,7 @@
         "--task",
         "coarse-class",
         "--instance-names",
-        "airplane,ship,vehicle,helicopter,other",
-        "--plot-pr",
-        "True"
+        "airplane,ship,vehicle,helicopter,other"
       ]
     }
   ]
