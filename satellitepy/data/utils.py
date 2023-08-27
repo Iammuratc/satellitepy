@@ -32,6 +32,53 @@ def set_mask(labels,mask_path,bbox_type):
 
     return labels
 
+def get_shipnet_categories():
+    # Categories rely on the original shipnet categories. Check out the paper
+    categories = {
+        #'Other Ship'
+        # 1: {
+        #     1: {
+        1:'Other Ship',
+            # },
+            # # Warship
+            # 2: {
+        2:'Other Warship',
+        3:'Submarine',
+        4:'Aircraft Carrier',
+        5:'Cruiser',
+        6:'Destroyer',
+        7:'Frigate',
+        8:'Patrol',
+        9:'Landing',
+        10:'Commander',
+        11:'Auxiliary Ship',
+            # },
+            # # Merchant
+            # 3: {
+        12:'Other Merchant',
+        13:'Container Ship',
+        14:'RoRo',
+        15:'Cargo',
+        16:'Barge',
+        17:'Tugboat',
+        18:'Ferry',
+        19:'Yacht',
+        20:'Sailboat',
+        21:'Fishing Vessel',
+        22:'Oil Tanker',
+        23:'Hovercraft',
+        24:'Motorboat',
+        #     }
+        # },
+        # Dock
+        # 2: {
+        #     4: {
+        25:'Dock'
+        #     }
+        # }
+    }
+    return categories
+
 def get_xview_classes():
     classes={
             'vehicles':{
@@ -79,9 +126,9 @@ def get_xview_classes():
                 53: 'Engineering Vessel',
             },
             'airplanes':{
-                11: 'Fixed-Wing Aircraft',
-                12: 'Small Aircraft',
-                13: 'Cargo Plane'
+                11: 'Fixed-Wing Aircraft', # role small aircraft
+                12: 'Small Aircraft', # role medium aircraft
+                13: 'Cargo Plane' # role large aircraft
             },
             'helicopter': {
                 15: 'Helicopter'
@@ -107,59 +154,6 @@ def get_xview_classes():
         }
     return classes
 
-def get_shipnet_classes():
-	classes = {
-		1 : ["Other Ship","Other Ship"],
-		2 : ["Other Warship","Other Warship"],
-		3 : ["Submarine","Submarine"],
-		4 : ["Aircraft Carrier","Other Aircraft Carrier"],
-		5 : ["Aircraft Carrier","Enterprise"],
-		6 : ["Aircraft Carrier","Nimitz"],
-		7 : ["Aircraft Carrier","Midway"],
-		8 : ["Cruiser","Ticonderoga"],
-		9 : ["Destroyer","Other Destroyer"],
-		10: ["Destroyer","Atago DD"],
-		11: ["Destroyer","Arleigh Burke DD"],
-		12: ["Destroyer","Hatsuyuki DD"],
-		13: ["Destroyer","Hyuga DD"],
-		14: ["Destroyer","Asagiri DD"],
-		15: ["Frigate","Other Frigate"],
-		16: ["Frigate","Perry FF"],
-		17: ["Patrol","Patrol"],
-		18: ["Landing","Other Landing"],
-		19: ["Landing","YuTing LL"],
-		20: ["Landing","YuDeng LL"],
-		21: ["Landing","YuDao LL"],
-		22: ["Landing","Yuzhao LL"],
-		23: ["Landing","Austin LL"],
-		24: ["Landing","Asumi LL"],
-		25: ["Landing","Wasp LL"],
-		26: ["Landing","LSD 41 LL"],
-		27: ["Landing","LHA LL"],
-		28: ["Commander","Commander"],
-		29: ["Auxiliary Ship","Other Auxiliary Ship"],
-		30: ["Auxiliary Ship","Medical Ship"],
-		31: ["Auxiliary Ship","Test Ship"],
-		32: ["Auxiliary Ship","Training Ship"],
-		33: ["Auxiliary Ship","AOE"],
-		34: ["Auxiliary Ship","Masyuu AS"],
-		35: ["Auxiliary Ship","Sanantonio AS"],
-		36: ["Auxiliary Ship","EPF"],
-		37: ["Other Merchant","Other Merchant"],
-		38: ["Container Ship","Container SHip"],
-		39: ["RoRo","RoRo"],
-		40: ["Cargo","Cargo"],
-		41: ["Barge","Barge"],
-		42: ["Tugboat","Tugboat"],
-		43: ["Ferry","Ferry"],
-		44: ["Yacht","Yacht"],
-		45: ["Sailboat","Sailboat"],
-		46: ["Fishing Vessel","Fishing Vessel"],
-		47: ["Oil Tanker","Oil Tanker"],
-		48: ["Hovercraft","Hovercraft"],
-		49: ["Motorboat","Motorboat"]
-	}
-	return classes
 
 
 def parse_potsdam_labels(label_path):
@@ -226,21 +220,36 @@ def get_satellitepy_table():
 			'A321' 						: 1,    # Fair1m
 			'A330' 						: 2,    # Fair1m
 			'A350' 						: 3,    # Fair1m
-			'AOE' 						: 4,    # Ship Net
 			'ARJ21'						: 5,    # Fair1m
-			'Arleigh Burke DD'			: 6,    # Ship Net
-			'Asagiri DD'				: 7,    # Ship Net
+            'Motorboat'                 : 6,    # ShipNet
+            'Hovercraft'                : 7,    # ShipNet
+            'Patrol'                    : 8,    # ShipNet
+            'Destroyer'                 : 9,    # ShipNet
+            'Commander'                 : 10,   # ShipNet
+            'Ferry'                     : 134,  # ShipNet, Xview
+            'Submarine'                 : 135,  # ShipNet
+            'Landing'                   : 21,   # ShipNet
+            'Cruiser'                   : 28,   # ShipNet
+            'Frigate'                   : 29,   # ShipNet
+            'Auxiliary Ship'            : 31,   # ShipNet
+            'Barge'                     : 35,   # ShipNet
+            'Aircraft Carrier'          : 37,   # ShipNet
+            'Yacht'                     : 38,   # ShipNet, Xview
+            'Tugboat'                   : 39,   # ShipNet, Fair1m, Xview
+            'Cargo'                     : 40,   # ShipNet
+            'Container Ship'            : 43,   # ShipNet, Xview
+            'Oil Tanker'                : 44,   # ShipNet
+            'RoRo'                      : 45,   # ShipNet
+            'Sailboat'                  : 46,   # ShipNet
+            'Fishing Vessel'            : 30,   # ShipNet, Xview
             'Airbus_A300'               : 99,   # Rareplanes_synthetic
             'Airbus_A-319'              : 98,   # Rareplanes_synthetic
-            'Airbus_A320'               : 0,	# Rareplanes_synthetic
+            'Airbus_A320'               : 4,	# Rareplanes_synthetic
             'Airbus_A330'               : 2,	# Rareplanes_synthetic
             'Airbus_A'                  : 100,	# Rareplanes_synthetic
             'Airbus_A380'               : 101,	# Rareplanes_synthetic
-			'Atago DD'					: 8,    # Ship Net
-			'Austin LL'					: 9,    # Ship Net
             'ATR_ATR'                   : 102,	# Rareplanes_synthetic
             'BAE_146'                   : 103,	# Rareplanes_synthetic
-			'Barge'						: 10,   # Ship Net
             'Boeing_707'                : 104,  # Rareplanes_synthetic
             'Boeing_717'                : 105,	# Rareplanes_synthetic
             'Boeing_727'                : 106,	# Rareplanes_synthetic
@@ -260,13 +269,11 @@ def get_satellitepy_table():
             'Bombardier_Learjet'        : 113,	# Rareplanes_synthetic
 			'Bus'						: 15,   # Fair1m, Xview
 			'C919'						: 16,   # Fair1m
-            'Cargo'                     : 135,  # Ship Net
 			'Cargo Car'					: 17,   # Xview
 			'Cargo Plane'				: 18,   # Xview
-			'Cargo Truck'				: 19,   # Fair1m, Xview
+			'Cargo Truck'				: 46,   # Fair1m, Xview
 			'Cement Mixer'				: 20,   # Xview
-			'Commander'					: 21,   # Ship Net
-			'Container Ship'			: 22,   # Ship Net, Xview
+			'Fishing Boat'				: 30,   # Fair1m
 			'Crane Truck'				: 23,   # Xview
             'Cessna'                    : 114,	# Rareplanes_synthetic
             'Cessna_170'                : 115,	# Rareplanes_synthetic
@@ -280,96 +287,48 @@ def get_satellitepy_table():
             'Embraer_ERJ'               : 121,	# Rareplanes_synthetic
             'Embraer_Legacy'            : 122,	# Rareplanes_synthetic
 			'Engineering Ship'			: 26,   # Fair1m
-			'Engineering Vessel'		: 27,   # Xview
-			'EPF'						: 28,   # Ship Net
-            'Enterprise'                : 96,   # Ship Net
+			'Engineering Vessel'		: 26,   # Xview
             'Excavator'                 : 136,  # Xview
-			'Ferry'						: 29,   # Ship Net, Xview
-			'Fishing Boat'				: 30,   # Fair1m
-			'Fishing Vessel'			: 30,   # Ship Net, Xview
-			'Fixed-Wing Aircraft'		: 31,   # Xview
 			'Flat Car'					: 32,   # Xview
             'Fokker_100'                : 123,	# Rareplanes_synthetic
 			'Front Loader'				: 33,   # Xview
 			'Ground Grader'				: 34,   # Xview
             'Gulfstream_G200'           : 124,	# Rareplanes_synthetic
             'Gulfstream_GIII'           : 125,	# Rareplanes_synthetic
-            'harbor'                    : 134,  # Dota
-			'Hatsuyuki DD'				: 35,   # Ship Net
 			'Haul Truck'				: 36,   # Xview
             'HBC_Hawker'                : 126,	# Rareplanes_synthetic
-			'Hovercraft'				: 37,   # Ship Net
-			'Hyuga DD'					: 38,   # Ship Net
-			'large-vehicle'				: 39,   # Dota
             'Let_L'                     : 127,	# Rareplanes_synthetic
-			'LHA LL'					: 40,   # Ship Net
 			'Liquid Cargo Ship'			: 41,   # Fair1m
             'LockheedCorp_L'            : 128,	# Rareplanes_synthetic
 			'Locomotive'				: 42,   # Xview
-			'LSD 41 LL'					: 43,   # Ship Net
 			'Maritime Vessel'			: 22,   # Xview
-			'Masyuu AS'					: 44,   # Ship Net
             'McDonnellDouglas_DC'       : 129,	# Rareplanes_synthetic
             'McDonnellDouglas_MD'       : 130,	# Rareplanes_synthetic
-			'Medical Ship'				: 45,   # Ship Net
-            'Midway'                    : 95,   # Ship Net
-            'Mobile Crane'              : 98,   # Xview
-			'Motorboat'					: 46,   # Ship Net, Fair1m, Xview
-			'Nimitz'					: 47,   # Ship Net
+            'Mobile Crane'              : 44,   # Xview
 			'Oil Tanker'				: 48,   # Xview
-			'Osumi LL'					: 49,   # Ship Net
-			'Other Aircraft Carrier'	: 50,   # Ship Net
-			'Other Auxiliary Ship'		: 51,   # Ship Net
-			'Other Destroyer'			: 52,   # Ship Net
-			'Other Frigate'				: 53,   # Ship Net
-			'Other Landing'				: 54,   # Ship Net
-			'Other Merchant'			: 55,   # Ship Net
-			'Other Ship'				: 56,   # Ship Net
-			'Other Warship'				: 57,   # Ship Net
-			'other-airplane'			: 58,   # Fair1m
-			'other-ship'				: 56,   # Fair1m
-			'other-vehicle'				: 59,   # Fair1m
 			'Passenger Car'				: 60,   # Xview
 			'Passenger Ship'			: 61,   # Fair1m
 			'Passenger Vehicle'			: 62,   # Xview
-			'Patrol'					: 63,   # Ship Net
-			'Perry FF'					: 64,   # Ship Net
 			'Pickup Truck'				: 65,	# Xview
             'PiperAircraft_PA'          : 131,	# Rareplanes_synthetic
 			'Railway Vehicle'			: 66,   # Xview
 			'Reach Stacker'				: 67,   # Xview
-			'RoRo'						: 68,   # Ship Net
 			'Sailboat'					: 69,   # Xview
-			'Sanantonio AS'				: 70,   # Ship Net
 			'Scraper/Tractor'			: 71,   # Xview
-			'Small Aircraft'			: 72,   # Xview
-			'Small Car'					: 73,   # Fair1m, Xview
-			'small-vehicle'				: 73,   # Dota
+			'Small Car'					: 60,   # Fair1m, Xview
 			'Straddle Carrier'			: 75,   # Xview
-			'Submarine'					: 76,   # Ship Net
             'SudAviation_Caravelle'     : 132,	# Rareplanes_synthetic
 			'Tank Car'					: 77,   # Xview
-			'Test Ship'					: 78,   # Ship Net
-			'Ticonderoga'				: 79,   # Ship Net
 			'Tractor'					: 80,   # Fair1m
             'Trailer'                   : 97,   # Fair1m
-			'Training Ship'				: 81,   # Ship Net
 			'Truck'						: 19,   # Xview
 			'Truck Tractor'				: 82,   # Fair1m, Xview
 			'Truck w/Box'				: 83,   # Xview
 			'Truck w/Flatbed'			: 84,   # Xview
 			'Truck w/Liquid'			: 85,   # Xview
-			'Tugboat'					: 86,   # Ship Net, Fair1m, Xview
             'Tupolev_154'               : 133,	# Rareplanes_synthetic
 			'Utility Truck'				: 87,   # Xview
 			'Van'						: 88,   # Fair1m
-			'Warship'					: 57,   # Fair1m
-			'Wasp LL'					: 89,   # Ship Net
-			'Yacht'						: 90,   # Ship Net, Xview
-			'YuDao LL'					: 91,   # Ship Net
-			'YuDeng LL'					: 92,   # Ship Net
-			'YuTing LL'					: 93,   # Ship Net
-			'YuZhao LL'					: 94    # Ship Net
 		 },
         'very-fine-class':{
 			'Airbus_A330-300'					: 0,	# Rareplanes_synthetic
@@ -405,7 +364,39 @@ def get_satellitepy_table():
 			'Let_L-200Morova'					: 30,	# Rareplanes_synthetic
 			'McDonnellDouglas_DC-9-30 '			: 31,	# Rareplanes_synthetic
 			'McDonnellDouglas_MD-11'			: 32,	# Rareplanes_synthetic
-			'PiperAircraft_PA-28'				: 33	# Rareplanes_synthetic
+			'PiperAircraft_PA-28'				: 33,	# Rareplanes_synthetic
+            'Other Destroyer'                   : 34,   # ShipNet
+            'Atago DD'                          : 35,   # ShipNet
+            'Arleigh Burke DD'                  : 36,   # ShipNet
+            'LSD 41 LL'                         : 37,   # ShipNet
+            'Ticonderoga'                       : 38,   # ShipNet
+            'Hatsuyuki DD'                      : 39,   # ShipNet
+            'Asagiri DD'                        : 40,   # ShipNet
+            'Hyuga DD'                          : 41,   # ShipNet
+            'Perry FF'                          : 42,   # ShipNet
+            'AOE'                               : 43,   # ShipNet
+            'Austin LL'                         : 44,   # ShipNet
+            'Other Frigate'                     : 45,   # ShipNet
+            'Enterprise'                        : 46,   # ShipNet
+            'Other Landing'                     : 47,   # ShipNet
+            'Other Auxiliary Ship'              : 48,   # ShipNet
+            'Osumi LL'                          : 49,   # ShipNet
+            'Nimitz'                            : 50,   # ShipNet
+            'Sanantonio AS'                     : 51,   # ShipNet
+            'Other Aircraft Carrier'            : 52,   # ShipNet
+            'EPF'                               : 53,   # ShipNet
+            'Masyuu AS'                         : 54,   # ShipNet
+            'Wasp LL'                           : 55,   # ShipNet
+            'LHA LL'                            : 56,   # ShipNet
+            'Test Ship'                         : 57,   # ShipNet
+            'Training Ship'                     : 58,   # ShipNet
+            'YuTing LL'                         : 59,   # ShipNet
+            'Medical Ship'                      : 60,   # ShipNet
+            'YuDeng LL'                         : 61,   # ShipNet
+            'YuDao LL'                          : 62,   # ShipNet
+            'YuZhao LL'                         : 63,   # ShipNet
+            'Midway'                            : 64,   # ShipNet
+
         },
         'role':{
             'Small Civil Transport/Utility': 0,
@@ -475,18 +466,29 @@ def get_satellitepy_table():
 
     # Add the merged class
     # For example, this is a solution to be able to train the bbavector on the original dota dataset
-    len_coarse_class = len(satellitepy_table['coarse-class'])
-    len_fine_class = len(satellitepy_table['fine-class'])
-    satellitepy_table.setdefault("merged-class", {})
-    for key,value in satellitepy_table['coarse-class'].items():
-        satellitepy_table['merged-class'][key] = value
-    for key,value in satellitepy_table['fine-class'].items():
-        satellitepy_table['merged-class'][key] = value+len_coarse_class
-    for key,value in satellitepy_table['very-fine-class'].items():
-        satellitepy_table['merged-class'][key] = value+len_coarse_class+len_fine_class
+    # len_coarse_class = len(satellitepy_table['coarse-class'])
+    # len_fine_class = len(satellitepy_table['fine-class'])
+    # satellitepy_table['merged-class'] = satellitepy_table['coarse-class'].copy()
+    # for key,value in satellitepy_table['fine-class'].items():
+    #     satellitepy_table['merged-class'][key] = value+len_coarse_class
+    # for key,value in satellitepy_table['very-fine-class'].items():
+    #     satellitepy_table['merged-class'][key] = value+len_coarse_class+len_fine_class
     return satellitepy_table
 
+def analyze_satellitepy_table():
+    satellitepy_table = get_satellitepy_table()
+    unique_indices = set(list(satellitepy_table['fine-class'].values()))
+    max_indices = range(max(satellitepy_table['fine-class'].values())+1)
+    empty_indices = set(max_indices) - unique_indices
+    print('Empty indices are:', empty_indices)
 
+    group_by_index = {ind:[] for ind in max_indices}
+    for key, value in sorted(satellitepy_table['fine-class'].items()):
+        group_by_index[value].append(key)
+
+    print('Indices:Values in satellitepy table')
+    for key, value in group_by_index.items():
+        print(key, value)
 
 def get_satellitepy_dict_values(satellitepy_dict,task):
     '''
@@ -583,3 +585,56 @@ def get_task_dict(task):
 #     satellitepy_dict[merged_task_name] = merged_task
 #     return satellitepy_dict
 
+# def get_shipnet_classes():
+# 	classes = {
+# 		1 : ["Other Ship","Other Ship"],
+# 		2 : ["Other Warship","Other Warship"],
+# 		3 : ["Submarine","Submarine"],
+# 		4 : ["Aircraft Carrier","Other Aircraft Carrier"],
+# 		5 : ["Aircraft Carrier","Enterprise"],
+# 		6 : ["Aircraft Carrier","Nimitz"],
+# 		7 : ["Aircraft Carrier","Midway"],
+# 		8 : ["Cruiser","Ticonderoga"],
+# 		9 : ["Destroyer","Other Destroyer"],
+# 		10: ["Destroyer","Atago DD"],
+# 		11: ["Destroyer","Arleigh Burke DD"],
+# 		12: ["Destroyer","Hatsuyuki DD"],
+# 		13: ["Destroyer","Hyuga DD"],
+# 		14: ["Destroyer","Asagiri DD"],
+# 		15: ["Frigate","Other Frigate"],
+# 		16: ["Frigate","Perry FF"],
+# 		17: ["Patrol","Patrol"],
+# 		18: ["Landing","Other Landing"],
+# 		19: ["Landing","YuTing LL"],
+# 		20: ["Landing","YuDeng LL"],
+# 		21: ["Landing","YuDao LL"],
+# 		22: ["Landing","Yuzhao LL"],
+# 		23: ["Landing","Austin LL"],
+# 		24: ["Landing","Asumi LL"],
+# 		25: ["Landing","Wasp LL"],
+# 		26: ["Landing","LSD 41 LL"],
+# 		27: ["Landing","LHA LL"],
+# 		28: ["Commander","Commander"],
+# 		29: ["Auxiliary Ship","Other Auxiliary Ship"],
+# 		30: ["Auxiliary Ship","Medical Ship"],
+# 		31: ["Auxiliary Ship","Test Ship"],
+# 		32: ["Auxiliary Ship","Training Ship"],
+# 		33: ["Auxiliary Ship","AOE"],
+# 		34: ["Auxiliary Ship","Masyuu AS"],
+# 		35: ["Auxiliary Ship","Sanantonio AS"],
+# 		36: ["Auxiliary Ship","EPF"],
+# 		37: ["Other Merchant","Other Merchant"],
+# 		38: ["Container Ship","Container SHip"],
+# 		39: ["RoRo","RoRo"],
+# 		40: ["Cargo","Cargo"],
+# 		41: ["Barge","Barge"],
+# 		42: ["Tugboat","Tugboat"],
+# 		43: ["Ferry","Ferry"],
+# 		44: ["Yacht","Yacht"],
+# 		45: ["Sailboat","Sailboat"],
+# 		46: ["Fishing Vessel","Fishing Vessel"],
+# 		47: ["Oil Tanker","Oil Tanker"],
+# 		48: ["Hovercraft","Hovercraft"],
+# 		49: ["Motorboat","Motorboat"]
+# 	}
+# 	return classes

@@ -4,7 +4,7 @@ from builtins import print
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from satellitepy.data.utils import set_mask, parse_potsdam_labels, set_satellitepy_dict_values, get_satellitepy_table, get_shipnet_classes
+from satellitepy.data.utils import get_xview_classes, set_mask, parse_potsdam_labels, set_satellitepy_dict_values, get_shipnet_categories
 from satellitepy.data.bbox import BBox
 import json
 import numpy as np
@@ -204,10 +204,10 @@ def init_satellitepy_label():
         'obboxes': [],
         'masks':[],
         'coarse-class':[],
+        'role':[],
         'fine-class':[],
         'very-fine-class':[],
-        'merged-class':[], # This is a concatenated version of all class values
-        'role':[],
+        # 'merged-class':[], # This is a concatenated version of all class values
         'difficulty':[],
         'attributes':{
             'engines':{
@@ -290,7 +290,7 @@ def read_dota_label(label_path, mask_path=None):
             else:
                 labels['coarse-class'].append('other') #
                 labels['role'].append(None) #
-            labels['merged-class'].append(category)
+            # labels['merged-class'].append(category)
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
@@ -354,11 +354,11 @@ def read_fair1m_label(label_path):
             labels['role'].append('Merchant Ship')
         elif instance_name.text in ['Warship']:
             labels['coarse-class'].append('ship')
-            labels['fine-class'].append(instance_name.text)
+            labels['fine-class'].append(None)
             labels['role'].append('Warship')
         elif instance_name.text in ['other-ship']:
             labels['coarse-class'].append('ship')
-            labels['fine-class'].append(instance_name.text)
+            labels['fine-class'].append(None)
             labels['role'].append(None)
         else:
             labels['coarse-class'].append('other')
@@ -531,13 +531,13 @@ def read_VHR_label(label_path):
 
         typ = str(vals[-1])
         if typ == "1":
-                labels['coarse-class'].append('airplane')
+            labels['coarse-class'].append('airplane')
         elif typ == "2":
-                labels['coarse-class'].append('ship')
+            labels['coarse-class'].append('ship')
         elif typ == "10":
-                labels['coarse-class'].append('vehicle')
+            labels['coarse-class'].append('vehicle')
         else:
-                labels['coarse-class'].append('other')
+            labels['coarse-class'].append('other')
 
         labels['fine-class'].append(lut[typ])
     handler.close()
@@ -589,7 +589,7 @@ def read_dior_label(label_path):
 
 def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
-    classes = get_shipnet_classes()
+    # classes = get_shipnet_classes()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
     available_tasks=['hbboxes', 'obboxes', 'difficulty', 'coarse-class','fine-class','very-fine-class','role',]
@@ -600,36 +600,50 @@ def read_ship_net_label(label_path):
     
     root = ET.parse(label_path).getroot()
     # Instance names
-    instance_names = root.findall('./object/name')
-    for instance_name in instance_names:
-        if instance_name.text == 'Dock':
-            labels['coarse-class'].append('other')
+    objects = root.findall('./object')
+    coarse_classes = {1:'ship',2:'other'} # 2 is dock, and other in our framework
+    roles = {1:'Other Ship',2:'Warship',3:'Merchant',4:'Dock'}
+    fine_classes = get_shipnet_categories()
+    for ship_object in objects:
+        # print(ship_object.)
+        # Difficulty
+        labels['difficulty'].append(ship_object.find('difficult').text)
+
+        # Coarse class
+        coarse_class_ind = int(ship_object.find('level_0').text)
+        coarse_class = coarse_classes[coarse_class_ind]
+        labels['coarse-class'].append(coarse_class)
+        if coarse_class == 'other':
             labels['role'].append(None)
-        else:
-            labels['coarse-class'].append('ship')
-            
-        found = False
-        for index in classes:
-            if instance_name.text in classes[index][1]:
-                labels['fine-class'].append(classes[index][0])
-                labels['very-fine-class'].append(classes[index][1])
-                found = True
-                
-        if not found:
-            labels['fine-class'].append(instance_name.text)
+            labels['fine-class'].append(None)
             labels['very-fine-class'].append(None)
-            
-        if instance_name.text in ['Aircraft Carrier', 'Cruiser', 'Destroyer', 'Frigate', 'Patrol', 'Landing',
-                                'Commander', 'Auxiliary Ship', 'Submarine', 'Other Warship']:
-            labels['role'].append('Warship')
-        elif instance_name.text in ['Other Merchant', 'Container Ship', 'RoRo', 'Cargo', 'Barge', 'Tugboat', 'Ferry', 
-                                    'Yacht', 'Sailboat', 'Fishing Vessel', 'Oil Tanker', 'Hovercraft', 'Motorboat']:
-            labels['role'].append('Merchant Ship')
-        else:
+            continue
+
+        # Roles
+        role_ind = int(ship_object.find('level_1').text)
+        role = roles[role_ind]
+        if role == 'Other Ship':
             labels['role'].append(None)
-    instance_difficulties = root.findall('./object/difficult')
-    for instance_difficulty in instance_difficulties:
-        labels['difficulty'].append(instance_difficulty.text)
+            labels['fine-class'].append(None)
+            labels['very-fine-class'].append(None)
+            continue
+
+        labels['role'].append(role)
+        # Fine-grained class
+        fine_class_ind = int(ship_object.find('level_2').text)
+        fine_class = fine_classes[fine_class_ind]
+        if fine_class in ['Other Merchant', 'Other Warship']:
+            labels['fine-class'].append(None)
+            labels['very-fine-class'].append(None)
+            continue
+        labels['fine-class'].append(fine_class)
+
+        # Very fine classes
+        very_fine_class = ship_object.find('name').text
+        if very_fine_class == fine_class:
+            labels['very-fine-class'].append(None)
+            continue
+        labels['very-fine-class'].append(very_fine_class)
 
     # BBOX CCORDINATES
     point_spaces = root.findall('./object/polygon')

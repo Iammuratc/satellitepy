@@ -238,22 +238,21 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
         # for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
     for img_path, label_path in zip(img_paths, label_paths):
         img = cv2.imread(str(img_path))
-        # img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
         logger.info(img_path)
         labels = read_label(label_path, label_format)
 
-        bboxes = 'hbboxes'
-        logger.info('Adding bounding boxes/labels to image')
+        # logger.info('Adding bounding boxes/labels to image')
 
         if satellitepy_labels_empty(labels):
             continue
 
         if labels['obboxes'][0] == None:
             bboxes = 'hbboxes'
+        else:
+            bboxes = 'obboxes'
 
         for bbox_corners in labels[bboxes]:
-            # bbox_corners = labels[bboxes][i]
-
+            print(bbox_corners)
             bbox_corners = np.array(bbox_corners, np.int32)
             bbox_corners = bbox_corners.reshape((-1, 1, 2))
             # bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)
@@ -280,108 +279,108 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
             # logger.info(f'Saved labels on {out_folder / Path(img_folder.stem + ".png")}')
   
 
-def split_rareplanes_labels(
-        label_file,
-        out_folder
-    ):
-    """
-        Save patches from the original images
-        Parameters
-        ----------
-        label_file : Path
-            Input label file. This single label file will be split up.
-        out_folder : Path
-            Output folder. New labels will be saved into <out-folder>/labels
-        Returns
-        -------
-        Save labels in <out-folder>/labels
-        """
+# def split_rareplanes_labels(
+#         label_file,
+#         out_folder
+#     ):
+#     """
+#         Save patches from the original images
+#         Parameters
+#         ----------
+#         label_file : Path
+#             Input label file. This single label file will be split up.
+#         out_folder : Path
+#             Output folder. New labels will be saved into <out-folder>/labels
+#         Returns
+#         -------
+#         Save labels in <out-folder>/labels
+#         """
 
-    logger = logging.getLogger(__name__)
+#     logger = logging.getLogger(__name__)
 
-    # Create output folder
-    out_label_folder = Path(out_folder)
-    assert create_folder(out_label_folder)
+#     # Create output folder
+#     out_label_folder = Path(out_folder)
+#     assert create_folder(out_label_folder)
 
-    label_path = Path(label_file)
+#     label_path = Path(label_file)
 
-    file = json.load(open(label_path, 'r'))
+#     file = json.load(open(label_path, 'r'))
 
-    id_to_img = {}
-    for image in file['images']:
-        id_to_img[image['id']] = image['file_name']
-        label_file_path = os.path.join(out_label_folder, image['file_name'][:-3] + 'json')
-        label_file = open(label_file_path, 'w')
-        logger.info(f'Initializing annotations for {label_file_path}')
-        annotations = {'annotations': []}
-        json.dump(annotations, label_file, indent=4)
-        label_file.close()
+#     id_to_img = {}
+#     for image in file['images']:
+#         id_to_img[image['id']] = image['file_name']
+#         label_file_path = os.path.join(out_label_folder, image['file_name'][:-3] + 'json')
+#         label_file = open(label_file_path, 'w')
+#         logger.info(f'Initializing annotations for {label_file_path}')
+#         annotations = {'annotations': []}
+#         json.dump(annotations, label_file, indent=4)
+#         label_file.close()
 
-    for new_annotation in file['annotations']:
-        img_name = id_to_img[new_annotation['image_id']]
-        label_file_path = os.path.join(out_label_folder, img_name[:-3] + 'json')
-        label_file = open(label_file_path, 'r', encoding="utf-8")
-        logger.info(f'Saving annotation for {label_file_path}')
-        annotations = json.load(label_file)
-        label_file.close()
-        annotations['annotations'].append(new_annotation)
-        file = open(label_file_path, 'w', encoding="utf-8")
+#     for new_annotation in file['annotations']:
+#         img_name = id_to_img[new_annotation['image_id']]
+#         label_file_path = os.path.join(out_label_folder, img_name[:-3] + 'json')
+#         label_file = open(label_file_path, 'r', encoding="utf-8")
+#         logger.info(f'Saving annotation for {label_file_path}')
+#         annotations = json.load(label_file)
+#         label_file.close()
+#         annotations['annotations'].append(new_annotation)
+#         file = open(label_file_path, 'w', encoding="utf-8")
 
-        json.dump(annotations, file, ensure_ascii=False, indent=4)
-        file.close()
+#         json.dump(annotations, file, ensure_ascii=False, indent=4)
+#         file.close()
 
-def split_xview_labels(
-        label_file,
-        out_folder
-    ):
-    """
-        Save patches from the original images
-        Parameters
-        ----------
-        label_file : Path
-            Input label file. This single label file will be split up.
-        out_folder : Path
-            Output folder. New labels will be saved into <out-folder>/labels
-        Returns
-        -------
-        Save labels in <out-folder>/labels
-        """
+# def split_xview_labels(
+#         label_file,
+#         out_folder
+#     ):
+#     """
+#         Save patches from the original images
+#         Parameters
+#         ----------
+#         label_file : Path
+#             Input label file. This single label file will be split up.
+#         out_folder : Path
+#             Output folder. New labels will be saved into <out-folder>/labels
+#         Returns
+#         -------
+#         Save labels in <out-folder>/labels
+#         """
 
-    logger = logging.getLogger(__name__)
+#     logger = logging.getLogger(__name__)
 
-    # Create output folder
-    out_label_folder = Path(out_folder)
-    assert create_folder(out_label_folder)
+#     # Create output folder
+#     out_label_folder = Path(out_folder)
+#     assert create_folder(out_label_folder)
 
-    label_path = Path(label_file)
+#     label_path = Path(label_file)
 
-    file = json.load(open(label_path, 'r'))
+#     file = json.load(open(label_path, 'r'))
 
-    id_to_img = {}
-    for image in file['features']:
-        id_to_img[image['properties']["image_id"]] = image['properties']['image_id']
-        label_file_path = os.path.join(out_label_folder, image['properties']["image_id"][:-3] + 'geojson')
-        label_file = open(label_file_path, 'w')
-        logger.info(f'Initializing annotations for {label_file_path}')
-        annotations = {'annotations': [image]}
-        json.dump(annotations, label_file, indent=4)
-        label_file.close()
+#     id_to_img = {}
+#     for image in file['features']:
+#         id_to_img[image['properties']["image_id"]] = image['properties']['image_id']
+#         label_file_path = os.path.join(out_label_folder, image['properties']["image_id"][:-3] + 'geojson')
+#         label_file = open(label_file_path, 'w')
+#         logger.info(f'Initializing annotations for {label_file_path}')
+#         annotations = {'annotations': [image]}
+#         json.dump(annotations, label_file, indent=4)
+#         label_file.close()
 
-    for new_annotation in file['features']:
-        img_name = id_to_img[new_annotation["properties"]['image_id']]
-        label_file_path = out_label_folder / f"{img_name[:-3]}geojson"
-        if label_file_path.exists():
-            continue
-        label_file = open(label_file_path, 'r', encoding="utf-8")
-        logger.info(f'Saving annotation for {label_file_path}')
-        annotations = json.load(label_file)
-        label_file.close()
-        annotations['annotations'].append(new_annotation)
+#     for new_annotation in file['features']:
+#         img_name = id_to_img[new_annotation["properties"]['image_id']]
+#         label_file_path = out_label_folder / f"{img_name[:-3]}geojson"
+#         if label_file_path.exists():
+#             continue
+#         label_file = open(label_file_path, 'r', encoding="utf-8")
+#         logger.info(f'Saving annotation for {label_file_path}')
+#         annotations = json.load(label_file)
+#         label_file.close()
+#         annotations['annotations'].append(new_annotation)
 
-        file = open(label_file_path, 'w', encoding="utf-8")
+#         file = open(label_file_path, 'w', encoding="utf-8")
 
-        json.dump(annotations, file, ensure_ascii=False, indent=4)
-        file.close()
+#         json.dump(annotations, file, ensure_ascii=False, indent=4)
+#         file.close()
 
 def save_xview_in_satellitepy_format(out_folder,label_path):
     """
@@ -395,7 +394,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
     -------
     Save a label file for each image
     """
-    # Create outut folder
+    # Create output folder
     logger = logging.getLogger(__name__)
     logger.info(f'Initializing save_xview_in_satellitepy_format')
 
@@ -446,10 +445,12 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
             image_dicts[img_name]['role'].append('Merchant Ship')
         elif type_class in classes['airplanes']:
             image_dicts[img_name]['coarse-class'].append('airplane')
-            image_dicts[img_name]['fine-class'].append(classes['airplanes'][type_class])
-            if type_class in [11, 12]:
+            image_dicts[img_name]['fine-class'].append(None)
+            if type_class == 11:
                 image_dicts[img_name]['role'].append('Small Civil Transport/Utility')
-            elif type_class in [13]:
+            elif type_class == 12:
+                image_dicts[img_name]['role'].append('Medium Civil Transport/Utility')
+            elif type_class == 13:
                 image_dicts[img_name]['role'].append('Large Civil Transport/Utility') 
             else:
                 image_dicts[img_name]['role'].append(None)
