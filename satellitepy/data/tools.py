@@ -238,12 +238,10 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
         # for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
     for img_path, label_path in zip(img_paths, label_paths):
         img = cv2.imread(str(img_path))
-        # img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
         logger.info(img_path)
         labels = read_label(label_path, label_format)
-        print(labels)
 
-        logger.info('Adding bounding boxes/labels to image')
+        # logger.info('Adding bounding boxes/labels to image')
 
         if satellitepy_labels_empty(labels):
             continue
@@ -396,7 +394,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
     -------
     Save a label file for each image
     """
-    # Create outut folder
+    # Create output folder
     logger = logging.getLogger(__name__)
     logger.info(f'Initializing save_xview_in_satellitepy_format')
 
