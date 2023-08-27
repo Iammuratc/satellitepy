@@ -589,7 +589,7 @@ def read_dior_label(label_path):
 
 def read_ship_net_label(label_path):
     labels = init_satellitepy_label()
-    classes = get_shipnet_classes()
+    # classes = get_shipnet_classes()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
     available_tasks=['hbboxes', 'obboxes', 'difficulty', 'coarse-class','fine-class','very-fine-class','role',]
@@ -605,46 +605,41 @@ def read_ship_net_label(label_path):
     roles = {1:'Other Ship',2:'Warship',3:'Merchant',4:'Dock'}
     fine_classes = get_shipnet_categories()
     for ship_object in objects:
+        print(ship_object.name.text)
         # Coarse class
         coarse_class_ind = ship_object.level_0
         coarse_class = coarse_classes[coarse_class_ind]
         labels['coarse-class'].append(coarse_class)
-        if coarse_class == 'other':
-            labels['role'].append(None)
-            labels['fine-class'].append(None)
-            labels['very-fine-class'].append(None)
-            continue
         # Roles
         role_ind = ship_object.level_1
         role = roles[role_ind]
         labels['role'].append(role)
-        if role == 'Other Ship' continue
         # Fine-grained class
         fine_class_ind = ship_object.level_2
         fine_class = fine_classes[fine_class_ind]
-        if fine_class == 'Other Merchant' or fine_class == 'Other Warship' continue
         labels['fine-class'].append(fine_class)
 
         # Very fine classes
         very_fine_class = ship_object.name
+        labels['very-fine-class'].append(very_fine_class)
 
-
-        if coarse_class == 'dock':
-        else:
-            labels['coarse-class'].append()
-        labels['fine-class'].append(instance_name.text)
-        print(instance_name.text)
-        if instance_name.text in ['Aircraft Carrier', 'Cruiser', 'Destroyer', 'Frigate', 'Patrol', 'Landing',
-                                'Commander', 'Auxiliary Ship', 'Submarine', 'Other Warship']:
-            labels['role'].append('Warship')
-        elif instance_name.text in ['Other Merchant', 'Container Ship', 'RoRo', 'Cargo', 'Barge', 'Tugboat', 'Ferry', 
-                                    'Yacht', 'Sailboat', 'Fishing Vessel', 'Oil Tanker', 'Hovercraft', 'Motorboat']:
-            labels['role'].append('Merchant Ship')
-        else:
-            labels['role'].append(None)
-    instance_difficulties = root.findall('./object/difficult')
-    for instance_difficulty in instance_difficulties:
-        labels['difficulty'].append(instance_difficulty.text)
+        # Difficulty
+        labels['difficulty'].append(ship_object.difficult)
+        # if coarse_class == 'dock':
+        # else:
+        #     labels['coarse-class'].append()
+        # labels['fine-class'].append(instance_name.text)
+        # print(instance_name.text)
+        # if instance_name.text in ['Aircraft Carrier', 'Cruiser', 'Destroyer', 'Frigate', 'Patrol', 'Landing',
+        #                         'Commander', 'Auxiliary Ship', 'Submarine', 'Other Warship']:
+        #     labels['role'].append('Warship')
+        # elif instance_name.text in ['Other Merchant', 'Container Ship', 'RoRo', 'Cargo', 'Barge', 'Tugboat', 'Ferry', 
+        #                             'Yacht', 'Sailboat', 'Fishing Vessel', 'Oil Tanker', 'Hovercraft', 'Motorboat']:
+        #     labels['role'].append('Merchant Ship')
+        # else:
+        #     labels['role'].append(None)
+    # instance_difficulties = root.findall('./object/difficult')
+    # for instance_difficulty in instance_difficulties:
 
     # BBOX CCORDINATES
     point_spaces = root.findall('./object/polygon')
