@@ -154,59 +154,6 @@ def get_xview_classes():
         }
     return classes
 
-# def get_shipnet_classes():
-# 	classes = {
-# 		1 : ["Other Ship","Other Ship"],
-# 		2 : ["Other Warship","Other Warship"],
-# 		3 : ["Submarine","Submarine"],
-# 		4 : ["Aircraft Carrier","Other Aircraft Carrier"],
-# 		5 : ["Aircraft Carrier","Enterprise"],
-# 		6 : ["Aircraft Carrier","Nimitz"],
-# 		7 : ["Aircraft Carrier","Midway"],
-# 		8 : ["Cruiser","Ticonderoga"],
-# 		9 : ["Destroyer","Other Destroyer"],
-# 		10: ["Destroyer","Atago DD"],
-# 		11: ["Destroyer","Arleigh Burke DD"],
-# 		12: ["Destroyer","Hatsuyuki DD"],
-# 		13: ["Destroyer","Hyuga DD"],
-# 		14: ["Destroyer","Asagiri DD"],
-# 		15: ["Frigate","Other Frigate"],
-# 		16: ["Frigate","Perry FF"],
-# 		17: ["Patrol","Patrol"],
-# 		18: ["Landing","Other Landing"],
-# 		19: ["Landing","YuTing LL"],
-# 		20: ["Landing","YuDeng LL"],
-# 		21: ["Landing","YuDao LL"],
-# 		22: ["Landing","Yuzhao LL"],
-# 		23: ["Landing","Austin LL"],
-# 		24: ["Landing","Asumi LL"],
-# 		25: ["Landing","Wasp LL"],
-# 		26: ["Landing","LSD 41 LL"],
-# 		27: ["Landing","LHA LL"],
-# 		28: ["Commander","Commander"],
-# 		29: ["Auxiliary Ship","Other Auxiliary Ship"],
-# 		30: ["Auxiliary Ship","Medical Ship"],
-# 		31: ["Auxiliary Ship","Test Ship"],
-# 		32: ["Auxiliary Ship","Training Ship"],
-# 		33: ["Auxiliary Ship","AOE"],
-# 		34: ["Auxiliary Ship","Masyuu AS"],
-# 		35: ["Auxiliary Ship","Sanantonio AS"],
-# 		36: ["Auxiliary Ship","EPF"],
-# 		37: ["Other Merchant","Other Merchant"],
-# 		38: ["Container Ship","Container SHip"],
-# 		39: ["RoRo","RoRo"],
-# 		40: ["Cargo","Cargo"],
-# 		41: ["Barge","Barge"],
-# 		42: ["Tugboat","Tugboat"],
-# 		43: ["Ferry","Ferry"],
-# 		44: ["Yacht","Yacht"],
-# 		45: ["Sailboat","Sailboat"],
-# 		46: ["Fishing Vessel","Fishing Vessel"],
-# 		47: ["Oil Tanker","Oil Tanker"],
-# 		48: ["Hovercraft","Hovercraft"],
-# 		49: ["Motorboat","Motorboat"]
-# 	}
-# 	return classes
 
 
 def parse_potsdam_labels(label_path):
@@ -342,17 +289,14 @@ def get_satellitepy_table():
 			'Engineering Ship'			: 26,   # Fair1m
 			'Engineering Vessel'		: 26,   # Xview
             'Excavator'                 : 136,  # Xview
-			# 'Fixed-Wing Aircraft'		: 31,   # Xview
 			'Flat Car'					: 32,   # Xview
             'Fokker_100'                : 123,	# Rareplanes_synthetic
 			'Front Loader'				: 33,   # Xview
 			'Ground Grader'				: 34,   # Xview
             'Gulfstream_G200'           : 124,	# Rareplanes_synthetic
             'Gulfstream_GIII'           : 125,	# Rareplanes_synthetic
-            # 'harbor'                    : 134,  # Dota
 			'Haul Truck'				: 36,   # Xview
             'HBC_Hawker'                : 126,	# Rareplanes_synthetic
-			# 'large-vehicle'				: 39,   # Dota
             'Let_L'                     : 127,	# Rareplanes_synthetic
 			'Liquid Cargo Ship'			: 41,   # Fair1m
             'LockheedCorp_L'            : 128,	# Rareplanes_synthetic
@@ -362,9 +306,6 @@ def get_satellitepy_table():
             'McDonnellDouglas_MD'       : 130,	# Rareplanes_synthetic
             'Mobile Crane'              : 44,   # Xview
 			'Oil Tanker'				: 48,   # Xview
-			# 'other-airplane'			: 58,   # Fair1m
-			# 'other-ship'				: 56,   # Fair1m
-			# 'other-vehicle'			: 59,   # Fair1m
 			'Passenger Car'				: 60,   # Xview
 			'Passenger Ship'			: 61,   # Fair1m
 			'Passenger Vehicle'			: 62,   # Xview
@@ -374,9 +315,7 @@ def get_satellitepy_table():
 			'Reach Stacker'				: 67,   # Xview
 			'Sailboat'					: 69,   # Xview
 			'Scraper/Tractor'			: 71,   # Xview
-			# 'Small Aircraft'			: 72,   # Xview
 			'Small Car'					: 60,   # Fair1m, Xview
-			# 'small-vehicle'				: 74,   # Dota
 			'Straddle Carrier'			: 75,   # Xview
             'SudAviation_Caravelle'     : 132,	# Rareplanes_synthetic
 			'Tank Car'					: 77,   # Xview
@@ -390,7 +329,6 @@ def get_satellitepy_table():
             'Tupolev_154'               : 133,	# Rareplanes_synthetic
 			'Utility Truck'				: 87,   # Xview
 			'Van'						: 88,   # Fair1m
-			# 'Warship'					: 57,   # Fair1m
 		 },
         'very-fine-class':{
 			'Airbus_A330-300'					: 0,	# Rareplanes_synthetic
@@ -647,3 +585,56 @@ def get_task_dict(task):
 #     satellitepy_dict[merged_task_name] = merged_task
 #     return satellitepy_dict
 
+# def get_shipnet_classes():
+# 	classes = {
+# 		1 : ["Other Ship","Other Ship"],
+# 		2 : ["Other Warship","Other Warship"],
+# 		3 : ["Submarine","Submarine"],
+# 		4 : ["Aircraft Carrier","Other Aircraft Carrier"],
+# 		5 : ["Aircraft Carrier","Enterprise"],
+# 		6 : ["Aircraft Carrier","Nimitz"],
+# 		7 : ["Aircraft Carrier","Midway"],
+# 		8 : ["Cruiser","Ticonderoga"],
+# 		9 : ["Destroyer","Other Destroyer"],
+# 		10: ["Destroyer","Atago DD"],
+# 		11: ["Destroyer","Arleigh Burke DD"],
+# 		12: ["Destroyer","Hatsuyuki DD"],
+# 		13: ["Destroyer","Hyuga DD"],
+# 		14: ["Destroyer","Asagiri DD"],
+# 		15: ["Frigate","Other Frigate"],
+# 		16: ["Frigate","Perry FF"],
+# 		17: ["Patrol","Patrol"],
+# 		18: ["Landing","Other Landing"],
+# 		19: ["Landing","YuTing LL"],
+# 		20: ["Landing","YuDeng LL"],
+# 		21: ["Landing","YuDao LL"],
+# 		22: ["Landing","Yuzhao LL"],
+# 		23: ["Landing","Austin LL"],
+# 		24: ["Landing","Asumi LL"],
+# 		25: ["Landing","Wasp LL"],
+# 		26: ["Landing","LSD 41 LL"],
+# 		27: ["Landing","LHA LL"],
+# 		28: ["Commander","Commander"],
+# 		29: ["Auxiliary Ship","Other Auxiliary Ship"],
+# 		30: ["Auxiliary Ship","Medical Ship"],
+# 		31: ["Auxiliary Ship","Test Ship"],
+# 		32: ["Auxiliary Ship","Training Ship"],
+# 		33: ["Auxiliary Ship","AOE"],
+# 		34: ["Auxiliary Ship","Masyuu AS"],
+# 		35: ["Auxiliary Ship","Sanantonio AS"],
+# 		36: ["Auxiliary Ship","EPF"],
+# 		37: ["Other Merchant","Other Merchant"],
+# 		38: ["Container Ship","Container SHip"],
+# 		39: ["RoRo","RoRo"],
+# 		40: ["Cargo","Cargo"],
+# 		41: ["Barge","Barge"],
+# 		42: ["Tugboat","Tugboat"],
+# 		43: ["Ferry","Ferry"],
+# 		44: ["Yacht","Yacht"],
+# 		45: ["Sailboat","Sailboat"],
+# 		46: ["Fishing Vessel","Fishing Vessel"],
+# 		47: ["Oil Tanker","Oil Tanker"],
+# 		48: ["Hovercraft","Hovercraft"],
+# 		49: ["Motorboat","Motorboat"]
+# 	}
+# 	return classes

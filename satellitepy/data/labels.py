@@ -204,10 +204,10 @@ def init_satellitepy_label():
         'obboxes': [],
         'masks':[],
         'coarse-class':[],
+        'role':[],
         'fine-class':[],
         'very-fine-class':[],
         # 'merged-class':[], # This is a concatenated version of all class values
-        'role':[],
         'difficulty':[],
         'attributes':{
             'engines':{
