@@ -32,6 +32,53 @@ def set_mask(labels,mask_path,bbox_type):
 
     return labels
 
+def get_shipnet_categories():
+    # Categories rely on the original shipnet categories. Check out the paper
+    categories = {
+        #'Other Ship'
+        # 1: {
+        #     1: {
+        1:'Other Ship',
+            # },
+            # # Warship
+            # 2: {
+        2:'Other Warship',
+        3:'Submarine',
+        4:'Auxiliary Ship',
+        5:'Commander',
+        6:'Landing',
+        7:'Patrol',
+        8:'Frigate',
+        9:'Cruiser',
+        10:'Destroyer',
+        11:'Aircraft Carrier',
+            # },
+            # # Merchant
+            # 3: {
+        12:'Other Merchant',
+        13:'Container Ship',
+        14:'Cargo',
+        15:'Tugboat',
+        16:'Yacht',
+        17:'Fishing Vessel',
+        18:'RoRo',
+        19:'Barge',
+        20:'Ferry',
+        21:'Sailboat',
+        22:'Oil Tanker',
+        23:'Hovercraft',
+        24:'Motorboat',
+        #     }
+        # },
+        # Dock
+        # 2: {
+        #     4: {
+        #         25:'Dock'
+        #     }
+        # }
+    }
+    return categories
+
 def get_xview_classes():
     classes={
             'vehicles':{
@@ -79,9 +126,9 @@ def get_xview_classes():
                 53: 'Engineering Vessel',
             },
             'airplanes':{
-                11: 'Fixed-Wing Aircraft',
-                12: 'Small Aircraft',
-                13: 'Cargo Plane'
+                11: 'Fixed-Wing Aircraft', # role small aircraft
+                12: 'Small Aircraft', # role medium aircraft
+                13: 'Cargo Plane' # role large aircraft
             },
             'helicopter': {
                 15: 'Helicopter'
@@ -294,13 +341,13 @@ def get_satellitepy_table():
 			'Ground Grader'				: 34,   # Xview
             'Gulfstream_G200'           : 124,	# Rareplanes_synthetic
             'Gulfstream_GIII'           : 125,	# Rareplanes_synthetic
-            'harbor'                    : 134,  # Dota
+            # 'harbor'                    : 134,  # Dota
 			'Hatsuyuki DD'				: 35,   # Ship Net
 			'Haul Truck'				: 36,   # Xview
             'HBC_Hawker'                : 126,	# Rareplanes_synthetic
 			'Hovercraft'				: 37,   # Ship Net
 			'Hyuga DD'					: 38,   # Ship Net
-			'large-vehicle'				: 39,   # Dota
+			# 'large-vehicle'				: 39,   # Dota
             'Let_L'                     : 127,	# Rareplanes_synthetic
 			'LHA LL'					: 40,   # Ship Net
 			'Liquid Cargo Ship'			: 41,   # Fair1m
@@ -323,12 +370,12 @@ def get_satellitepy_table():
 			'Other Destroyer'			: 52,   # Ship Net
 			'Other Frigate'				: 53,   # Ship Net
 			'Other Landing'				: 54,   # Ship Net
-			'Other Merchant'			: 55,   # Ship Net
-			'Other Ship'				: 56,   # Ship Net
-			'Other Warship'				: 57,   # Ship Net
-			'other-airplane'			: 58,   # Fair1m
-			'other-ship'				: 56,   # Fair1m
-			'other-vehicle'				: 59,   # Fair1m
+			# 'Other Merchant'			: 55,   # Ship Net
+			# 'Other Ship'				: 56,   # Ship Net
+			# 'Other Warship'			: 57,   # Ship Net
+			# 'other-airplane'			: 58,   # Fair1m
+			# 'other-ship'				: 56,   # Fair1m
+			# 'other-vehicle'			: 59,   # Fair1m
 			'Passenger Car'				: 60,   # Xview
 			'Passenger Ship'			: 61,   # Fair1m
 			'Passenger Vehicle'			: 62,   # Xview
@@ -342,9 +389,9 @@ def get_satellitepy_table():
 			'Sailboat'					: 69,   # Xview
 			'Sanantonio AS'				: 70,   # Ship Net
 			'Scraper/Tractor'			: 71,   # Xview
-			'Small Aircraft'			: 72,   # Xview
-			'Small Car'					: 73,   # Fair1m, Xview
-			'small-vehicle'				: 73,   # Dota
+			# 'Small Aircraft'			: 72,   # Xview
+			'Small Car'					: 60,   # Fair1m, Xview
+			# 'small-vehicle'				: 74,   # Dota
 			'Straddle Carrier'			: 75,   # Xview
 			'Submarine'					: 76,   # Ship Net
             'SudAviation_Caravelle'     : 132,	# Rareplanes_synthetic
@@ -363,7 +410,7 @@ def get_satellitepy_table():
             'Tupolev_154'               : 133,	# Rareplanes_synthetic
 			'Utility Truck'				: 87,   # Xview
 			'Van'						: 88,   # Fair1m
-			'Warship'					: 57,   # Fair1m
+			# 'Warship'					: 57,   # Fair1m
 			'Wasp LL'					: 89,   # Ship Net
 			'Yacht'						: 90,   # Ship Net, Xview
 			'YuDao LL'					: 91,   # Ship Net
@@ -475,15 +522,13 @@ def get_satellitepy_table():
 
     # Add the merged class
     # For example, this is a solution to be able to train the bbavector on the original dota dataset
-    len_coarse_class = len(satellitepy_table['coarse-class'])
-    len_fine_class = len(satellitepy_table['fine-class'])
-    satellitepy_table.setdefault("merged-class", {})
-    for key,value in satellitepy_table['coarse-class'].items():
-        satellitepy_table['merged-class'][key] = value
-    for key,value in satellitepy_table['fine-class'].items():
-        satellitepy_table['merged-class'][key] = value+len_coarse_class
-    for key,value in satellitepy_table['very-fine-class'].items():
-        satellitepy_table['merged-class'][key] = value+len_coarse_class+len_fine_class
+    # len_coarse_class = len(satellitepy_table['coarse-class'])
+    # len_fine_class = len(satellitepy_table['fine-class'])
+    # satellitepy_table['merged-class'] = satellitepy_table['coarse-class'].copy()
+    # for key,value in satellitepy_table['fine-class'].items():
+    #     satellitepy_table['merged-class'][key] = value+len_coarse_class
+    # for key,value in satellitepy_table['very-fine-class'].items():
+    #     satellitepy_table['merged-class'][key] = value+len_coarse_class+len_fine_class
     return satellitepy_table
 
 
