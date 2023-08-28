@@ -75,8 +75,6 @@ class BBAVectorDataset(Dataset):
             else:
                 for img_path, label_path in zip_matched_files(in_image_folder, in_label_folder):
                     labels = read_label(label_path,in_label_format)
-                    if len(labels['coarse-class']) == 0:
-                        continue
                     self.items.append((img_path, label_path, in_label_format))
 
     def __len__(self):
