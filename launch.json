@@ -58,6 +58,8 @@
         "hbboxes",
         "obboxes",
         "coarse-class",
+        "role",
+        "difficulty",
         "attributes_engines_no-engines",
         "attributes_engines_propulsion",
         "attributes_fuselage_canards",
@@ -75,7 +77,9 @@
         "--num-epoch",
         "150",
         "--init-lr",
-        "5e-4"
+        "5e-4",
+        "--validate-datasets",
+        "--augmentation"
       ]
     },
     // python3 tools/train/bbavector.py --train-image-folder /home/simon/unibw/data/satpy/dota-patches/train/images --train-label-folder /home/simon/unibw/data/satpy/dota-patches/train/labels --train-label-format satellitepy --valid-image-folder /home/simon/unibw/data/satpy/dota-patches/val/images --valid-label-folder /home/simon/unibw/data/satpy/dota-patches/val/labels --valid-label-format satellitepy  --out-folder /home/simon/unibw/data/satpy/temp  --batch-size 8 --ngpus 1 --num-workers 8 --num-epoch 150  --init-lr 5e-4 --tasks hbboxes obboxes coarse-class fine-class merged-class role difficulty attributes_engines_no-engines attributes_engines_propulsion attributes_fuselage_canards attributes_fuselage_length attributes_wings_wing-span attributes_wings_wing-shape attributes_wings_wing-position attributes_tail_no-tail-fins --validate-datasets
