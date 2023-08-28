@@ -333,7 +333,7 @@ def read_fair1m_label(label_path):
             labels['role'].append('Medium Civil Transport/Utility')  
         elif instance_name.text in ['other-airplane']:
             labels['coarse-class'].append('airplane')
-            labels['fine-class'].append(instance_name.text)
+            labels['fine-class'].append(None)
             labels['role'].append(None)
         elif instance_name.text in ['Cargo Truck','Dump Truck','Excavator','Bus','Truck Tractor','Tractor','Trailer']:
             labels['coarse-class'].append('vehicle')
@@ -345,7 +345,7 @@ def read_fair1m_label(label_path):
             labels['role'].append('Small Vehicle')
         elif instance_name.text in ['other-vehicle']:
             labels['coarse-class'].append('vehicle')
-            labels['fine-class'].append(instance_name.text)
+            labels['fine-class'].append(None)
             labels['role'].append(None)
         elif instance_name.text in ['Liquid Cargo Ship','Passenger Ship','Dry Cargo Ship','Motorboat',
                                     'Engineering Ship','Tugboat','Fishing Boat']:
@@ -602,7 +602,7 @@ def read_ship_net_label(label_path):
     # Instance names
     objects = root.findall('./object')
     coarse_classes = {1:'ship',2:'other'} # 2 is dock, and other in our framework
-    roles = {1:'Other Ship',2:'Warship',3:'Merchant',4:'Dock'}
+    roles = {1:'Other Ship',2:'Warship',3:'Merchant Ship',4:'Dock'}
     fine_classes = get_shipnet_categories()
     for ship_object in objects:
         # print(ship_object.)

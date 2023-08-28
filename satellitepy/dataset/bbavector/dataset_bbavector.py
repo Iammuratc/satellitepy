@@ -29,12 +29,7 @@ class BBAVectorDataset(Dataset):
         super(BBAVectorDataset, self).__init__()
 
         self.utils = Utils(tasks, input_h, input_w, down_ratio, K=K)
-        # self.cat_ids = {cat:i for i,cat in enumerate(self.category)}
-        # self.cat_ids = task_dict
         self.tasks = tasks
-        # self.img_ids = self.load_img_ids()
-        # self.image_path = os.path.join(data_dir, 'images')
-        # self.label_path = os.path.join(data_dir, 'labelTxt')
         self.items = []
         self.augmentation = augmentation
         self.random_seed = random_seed
@@ -75,6 +70,8 @@ class BBAVectorDataset(Dataset):
                     else:
                         removed += 1
                         pbar.set_description(f"validating data (removed: {removed})")
+                for item in self.items:
+                    print(item[0], item[1])
             else:
                 for img_path, label_path in zip_matched_files(in_image_folder, in_label_folder):
                     self.items.append((img_path, label_path, in_label_format))
