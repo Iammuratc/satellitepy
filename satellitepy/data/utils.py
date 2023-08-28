@@ -79,6 +79,23 @@ def get_shipnet_categories():
     }
     return categories
 
+def get_vedai_classes():
+    classes={
+        1:"car",
+        2:"truck",
+        3:"tractor", 
+        4:"camping car", 
+        5:"motorcycle", 
+        6:"bus", 
+        9:"van", 
+        10:"other", 
+        11:"pickup", 
+        12:"large",
+        23:"boat", 
+        31:"plane"
+    }
+    return classes
+
 def get_xview_classes():
     classes={
             'vehicles':{
