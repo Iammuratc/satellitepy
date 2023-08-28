@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from satellitepy.utils.path_utils import get_file_paths
+from satellitepy.utils.path_utils import get_file_paths, create_folder
 
 
 def create_symbolic_paths(add_dataset_name=True):
@@ -57,13 +57,20 @@ def create_symbolic_paths(add_dataset_name=True):
     val_image_paths = get_file_paths_recursively(val_image_folders)
     val_label_paths = get_file_paths_recursively(val_label_folders)
 
-    save_symbolic_links(train_image_paths,out_folder='/mnt/2tb-0/satellitepy/new-patches-murat/all/train/images')  
-    save_symbolic_links(train_label_paths,out_folder='/mnt/2tb-0/satellitepy/new-patches-murat/all/train/labels')  
-    save_symbolic_links(val_image_paths,out_folder='/mnt/2tb-0/satellitepy/new-patches-murat/all/val/images')  
-    save_symbolic_links(val_image_paths,out_folder='/mnt/2tb-0/satellitepy/new-patches-murat/all/val/labels')  
-    # for image_folder, label_folder in zip(train_image_folders,train_label_folders):
-    #     for image_path, label_path in zip(os.listdir(image_folder), os.listdir(label_folder)):
+    train_image_out_folder = Path('/mnt/2tb-0/satellitepy/new-patches-murat/all/train/images')
+    train_label_out_folder = Path('/mnt/2tb-0/satellitepy/new-patches-murat/all/train/labels')
+    val_image_out_folder = Path('/mnt/2tb-0/satellitepy/new-patches-murat/all/val/images')
+    val_label_out_folder = Path('/mnt/2tb-0/satellitepy/new-patches-murat/all/val/labels')
 
+    assert create_folder(train_image_out_folder)
+    assert create_folder(train_label_out_folder)
+    assert create_folder(val_image_out_folder)
+    assert create_folder(val_label_out_folder)
+
+    save_symbolic_links(train_image_paths,out_folder=train_image_out_folder)  
+    save_symbolic_links(train_label_paths,out_folder=train_label_out_folder)  
+    save_symbolic_links(val_image_paths,out_folder=val_image_out_folder)
+    save_symbolic_links(val_label_paths,out_folder=val_label_out_folder)  
 
 if __name__ == '__main__':
     create_symbolic_paths()

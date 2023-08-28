@@ -214,6 +214,19 @@ def get_satellitepy_table():
             'vehicle':2,
             'helicopter':3,
             'other':4},
+        'role':{
+            'Small Civil Transport/Utility': 0,
+            'Medium Civil Transport/Utility': 1,
+            'Large Civil Transport/Utility': 2,
+            'Military Transport/Utility/AWAC': 3,
+            'Military Fighter/Interceptor/Attack': 4,
+            'Military Bomber': 5,
+            'Military Trainer': 6,
+            'Small Vehicle' : 7,
+            'Large Vehicle': 8,
+            'Warship': 9,
+            'Merchant Ship': 10,
+        },
         'fine-class':
         {
 			'A220' 						: 0,    # Fair1m
@@ -397,19 +410,6 @@ def get_satellitepy_table():
             'YuZhao LL'                         : 63,   # ShipNet
             'Midway'                            : 64,   # ShipNet
 
-        },
-        'role':{
-            'Small Civil Transport/Utility': 0,
-            'Medium Civil Transport/Utility': 1,
-            'Large Civil Transport/Utility': 2,
-            'Military Transport/Utility/AWAC': 3,
-            'Military Fighter/Interceptor/Attack': 4,
-            'Military Bomber': 5,
-            'Military Trainer': 6,
-            'Small Vehicle' : 7,
-            'Large Vehicle': 8,
-            'Warship': 9,
-            'Merchant Ship': 10,
         },
         'difficulty':{
             '0': 0,
