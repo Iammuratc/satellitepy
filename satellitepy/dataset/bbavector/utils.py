@@ -37,6 +37,10 @@ class Utils:
         if augmentation:
             crop_size, crop_center = random_crop_info(h=image.shape[0], w=image.shape[1])
             image, masks, boxes, crop_center = random_flip(image, mask, boxes, crop_center)
+            if crop_center is None:
+                crop_center = np.asarray([float(image.shape[1])/2, float(image.shape[0])/2], dtype=np.float32)
+            if crop_size is None:
+                crop_size = [max(image.shape[1], image.shape[0]), max(image.shape[1], image.shape[0])]  # init
             M = load_affine_matrix(crop_center=crop_center,
                                    crop_size=crop_size,
                                    dst_size=(self.input_w, self.input_h),
