@@ -685,7 +685,7 @@ def read_isprs_label(label_path):
     labels['masks'] = masks
 
     for i in range(len(hbboxes)):
-        labels['coarse-class'].append('car')
+        labels['coarse-class'].append('vehicle')
         labels['hbboxes'].append(hbboxes[i])
         
 
