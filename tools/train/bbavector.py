@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument('--init-lr', type=float, default=1.25e-4, help='Initial learning rate')
     parser.add_argument('--input-h', type=int, default=600, help='Resized image height')
     parser.add_argument('--input-w', type=int, default=600, help='Resized image width')
-    parser.add_argument('--K', type=int, default=1000, help='Maximum of objects')
+    parser.add_argument('--K', type=int, default=1500, help='Maximum of objects')
     parser.add_argument('--conf-thresh', type=float, default=0.18, help='Confidence threshold, 0.1 for general evaluation')
     parser.add_argument('--ngpus', type=int, default=1, help='Number of gpus, ngpus>1 for multigpu')
     parser.add_argument('--patience', type=int, default=10, help='Number of Patience epochs. If the valid loss does not improve for <patience> times, the training will stop. ')

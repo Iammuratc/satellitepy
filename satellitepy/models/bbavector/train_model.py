@@ -57,6 +57,8 @@ class TrainModule(object):
             if torch.cuda.device_count() > 1:
                 logger.info("Let's use", torch.cuda.device_count(), "GPUs!")
                 self.model = nn.DataParallel(self.model)
+        elif self.ngpus==0:
+            self.device = 'cpu'
         self.model.to(self.device)
 
         # add resume part for continuing training when break previously, 10-16-2020
@@ -177,7 +179,6 @@ class TrainModule(object):
                     running_loss[k][0] += v
                     running_loss[k][1] += 1
         epoch_loss = {k: v[0] / v[1] for k, v in running_loss.items()}
-        # print('{} loss: {}'.format(epoch_loss))
         return epoch_loss
 
     def run_valid(self,data_loader,criterion):

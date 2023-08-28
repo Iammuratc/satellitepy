@@ -15,7 +15,7 @@ class Utils:
         self.down_ratio = down_ratio
         self.img_ids = None
         self.tasks = tasks
-        self.max_objs = 1000
+        self.max_objs = K
         self.image_distort =  data_augment.PhotometricDistort()
         
 
