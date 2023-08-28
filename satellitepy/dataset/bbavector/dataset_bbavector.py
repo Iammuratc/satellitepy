@@ -68,12 +68,8 @@ class BBAVectorDataset(Dataset):
                     if self.all_tasks_available(annotation):
                         self.items.append((img_path, label_path, in_label_format))
                     else:
-                        annotation = self.preapare_annotations(labels, image_w, image_h)#, img_path)
-                        image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
                         removed += 1
                         pbar.set_description(f"validating data (removed: {removed})")
-                for item in self.items:
-                    print(item[0], item[1])
             else:
                 for img_path, label_path in zip_matched_files(in_image_folder, in_label_folder):
                     self.items.append((img_path, label_path, in_label_format))
