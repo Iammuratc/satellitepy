@@ -229,120 +229,119 @@ def get_satellitepy_table():
         },
         'fine-class':
         {
-			'A220' 						: 0,    # Fair1m
-			'A321' 						: 1,    # Fair1m
-			'A330' 						: 2,    # Fair1m
-			'A350' 						: 3,    # Fair1m
-			'ARJ21'						: 5,    # Fair1m
-            'Motorboat'                 : 6,    # ShipNet
-            'Hovercraft'                : 7,    # ShipNet
-            'Patrol'                    : 8,    # ShipNet
-            'Destroyer'                 : 9,    # ShipNet
-            'Commander'                 : 10,   # ShipNet
-            'Ferry'                     : 134,  # ShipNet, Xview
-            'Submarine'                 : 135,  # ShipNet
-            'Landing'                   : 21,   # ShipNet
-            'Cruiser'                   : 28,   # ShipNet
-            'Frigate'                   : 29,   # ShipNet
-            'Auxiliary Ship'            : 31,   # ShipNet
-            'Barge'                     : 35,   # ShipNet
-            'Aircraft Carrier'          : 37,   # ShipNet
-            'Yacht'                     : 38,   # ShipNet, Xview
-            'Tugboat'                   : 39,   # ShipNet, Fair1m, Xview
-            'Cargo'                     : 40,   # ShipNet
-            'Container Ship'            : 43,   # ShipNet, Xview
-            'Oil Tanker'                : 44,   # ShipNet
-            'RoRo'                      : 45,   # ShipNet
-            'Sailboat'                  : 46,   # ShipNet
-            'Fishing Vessel'            : 30,   # ShipNet, Xview
-            'Airbus_A300'               : 99,   # Rareplanes_synthetic
-            'Airbus_A-319'              : 98,   # Rareplanes_synthetic
-            'Airbus_A320'               : 4,	# Rareplanes_synthetic
-            'Airbus_A330'               : 2,	# Rareplanes_synthetic
-            'Airbus_A'                  : 100,	# Rareplanes_synthetic
-            'Airbus_A380'               : 101,	# Rareplanes_synthetic
-            'ATR_ATR'                   : 102,	# Rareplanes_synthetic
-            'BAE_146'                   : 103,	# Rareplanes_synthetic
-            'Boeing_707'                : 104,  # Rareplanes_synthetic
-            'Boeing_717'                : 105,	# Rareplanes_synthetic
-            'Boeing_727'                : 106,	# Rareplanes_synthetic
-			'Boeing_737'				: 11,	# Rareplanes_synthetic
-			'Boeing737'					: 11,   # Fair1m
-			'Boeing_747'				: 12,	# Rareplanes_synthetic
-			'Boeing747'					: 12,   # Fair1m
-            'Boeing_757'                : 107,	# Rareplanes_synthetic
-            'Boeing_767'                : 108,	# Rareplanes_synthetic
-			'Boeing_777'				: 13,	# Rareplanes_synthetic
-			'Boeing777'					: 13,   # Fair1m
-			'Boeing787'					: 14,   # Fair1m
-            'Boeing_BBJ'                : 109,	# Rareplanes_synthetic
-            'Bombardier_BD'             : 110,	# Rareplanes_synthetic
-            'Bombardier_Challenger'     : 111,	# Rareplanes_synthetic
-            'Bombardier_CRJ'            : 112,	# Rareplanes_synthetic
-            'Bombardier_Learjet'        : 113,	# Rareplanes_synthetic
-			'Bus'						: 15,   # Fair1m, Xview
-			'C919'						: 16,   # Fair1m
-			'Cargo Car'					: 17,   # Xview
-			'Cargo Plane'				: 18,   # Xview
-			'Cargo Truck'				: 46,   # Fair1m, Xview
-			'Cement Mixer'				: 20,   # Xview
-			'Fishing Boat'				: 30,   # Fair1m
-			'Crane Truck'				: 23,   # Xview
-            'Cessna'                    : 114,	# Rareplanes_synthetic
-            'Cessna_170'                : 115,	# Rareplanes_synthetic
-            'Cessna_172'                : 116,	# Rareplanes_synthetic
-            'Cessna_310'                : 117,	# Rareplanes_synthetic
-            'Cessna_Citation'           : 118,	# Rareplanes_synthetic
-            'Dassault_Falcon'           : 119,	# Rareplanes_synthetic
-            'DeHavillandCanada_DHC'     : 120,	# Rareplanes_synthetic
-			'Dry Cargo Ship'			: 24,   # Fair1m
-			'Dump Truck'				: 25,   # Fair1m, Xview
-            'Embraer_ERJ'               : 121,	# Rareplanes_synthetic
-            'Embraer_Legacy'            : 122,	# Rareplanes_synthetic
-			'Engineering Ship'			: 26,   # Fair1m
-			'Engineering Vessel'		: 26,   # Xview
-            'Excavator'                 : 136,  # Xview
-			'Flat Car'					: 32,   # Xview
-            'Fokker_100'                : 123,	# Rareplanes_synthetic
-			'Front Loader'				: 33,   # Xview
-			'Ground Grader'				: 34,   # Xview
-            'Gulfstream_G200'           : 124,	# Rareplanes_synthetic
-            'Gulfstream_GIII'           : 125,	# Rareplanes_synthetic
-			'Haul Truck'				: 36,   # Xview
-            'HBC_Hawker'                : 126,	# Rareplanes_synthetic
-            'Let_L'                     : 127,	# Rareplanes_synthetic
-			'Liquid Cargo Ship'			: 41,   # Fair1m
-            'LockheedCorp_L'            : 128,	# Rareplanes_synthetic
-			'Locomotive'				: 42,   # Xview
-			'Maritime Vessel'			: 22,   # Xview
-            'McDonnellDouglas_DC'       : 129,	# Rareplanes_synthetic
-            'McDonnellDouglas_MD'       : 130,	# Rareplanes_synthetic
-            'Mobile Crane'              : 44,   # Xview
-			'Oil Tanker'				: 48,   # Xview
-			'Passenger Car'				: 60,   # Xview
-			'Passenger Ship'			: 61,   # Fair1m
-			'Passenger Vehicle'			: 62,   # Xview
-			'Pickup Truck'				: 65,	# Xview
-            'PiperAircraft_PA'          : 131,	# Rareplanes_synthetic
-			'Railway Vehicle'			: 66,   # Xview
-			'Reach Stacker'				: 67,   # Xview
-			'Sailboat'					: 69,   # Xview
-			'Scraper/Tractor'			: 71,   # Xview
-			'Small Car'					: 60,   # Fair1m, Xview
-			'Straddle Carrier'			: 75,   # Xview
-            'SudAviation_Caravelle'     : 132,	# Rareplanes_synthetic
-			'Tank Car'					: 77,   # Xview
-			'Tractor'					: 80,   # Fair1m
-            'Trailer'                   : 97,   # Fair1m
-			'Truck'						: 19,   # Xview
-			'Truck Tractor'				: 82,   # Fair1m, Xview
-			'Truck w/Box'				: 83,   # Xview
-			'Truck w/Flatbed'			: 84,   # Xview
-			'Truck w/Liquid'			: 85,   # Xview
-            'Tupolev_154'               : 133,	# Rareplanes_synthetic
-			'Utility Truck'				: 87,   # Xview
-			'Van'						: 88,   # Fair1m
-		 },
+            'A220'       	:	0	,	    # Fair1m		
+            'A321'       	:	1	,	    # Fair1m		
+            'A330'       	:	2	,	    # Fair1m		
+            'Airbus_A330'               	:	2	,	 # Rareplanes_synthetic		
+            'A350'       	:	3	,	    # Fair1m		
+            'Airbus_A320'               	:	4	,	 # Rareplanes_synthetic		
+            'ARJ21'      	:	5	,	    # Fair1m		
+            'Motorboat'                 	:	6	,	    # ShipNet		
+            'Hovercraft'                	:	7	,	    # ShipNet		
+            'Patrol'                    	:	8	,	    # ShipNet		
+            'Destroyer'                 	:	9	,	    # ShipNet		
+            'Commander'                 	:	10	,	   # ShipNet		
+            'Boeing_737'    	:	11	,	 # Rareplanes_synthetic		
+            'Boeing737'     	:	11	,	   # Fair1m		
+            'Boeing_747'    	:	12	,	 # Rareplanes_synthetic		
+            'Boeing747'     	:	12	,	   # Fair1m		
+            'Boeing_777'    	:	13	,	 # Rareplanes_synthetic		
+            'Boeing777'     	:	13	,	   # Fair1m		
+            'Boeing787'     	:	14	,	   # Fair1m		
+            'Bus'      	:	15	,	   # Fair1m	 Xview	
+            'C919'      	:	16	,	   # Fair1m		
+            'Cargo Car'     	:	17	,	   # Xview		
+            'Cargo Plane'    	:	18	,	   # Xview		
+            'Truck'      	:	19	,	   # Xview		
+            'Cement Mixer'    	:	20	,	   # Xview		
+            'Landing'                   	:	21	,	   # ShipNet		
+            'Maritime Vessel'   	:	22	,	   # Xview		
+            'Crane Truck'    	:	23	,	   # Xview		
+            'Dry Cargo Ship'   	:	24	,	   # Fair1m		
+            'Dump Truck'    	:	25	,	   # Fair1m	 Xview	
+            'Engineering Ship'   	:	26	,	   # Fair1m		
+            'Engineering Vessel'  	:	26	,	   # Xview		
+            'Cruiser'                   	:	27	,	   # ShipNet		
+            'Frigate'                   	:	28	,	   # ShipNet		
+            'Fishing Vessel'            	:	29	,	   # ShipNet	 Xview	
+            'Fishing Boat'    	:	29	,	   # Fair1m		
+            'Auxiliary Ship'            	:	30	,	   # ShipNet		
+            'Flat Car'     	:	31	,	   # Xview		
+            'Front Loader'    	:	32	,	   # Xview		
+            'Ground Grader'    	:	33	,	   # Xview		
+            'Barge'                     	:	34	,	   # ShipNet		
+            'Haul Truck'    	:	35	,	   # Xview		
+            'Aircraft Carrier'          	:	36	,	   # ShipNet		
+            'Yacht'                     	:	37	,	   # ShipNet	 Xview	
+            'Tugboat'                   	:	38	,	   # ShipNet	 Fair1m	 Xview
+            'Cargo'                     	:	39	,	   # ShipNet		
+            'Liquid Cargo Ship'   	:	40	,	   # Fair1m		
+            'Locomotive'    	:	41	,	   # Xview		
+            'Container Ship'            	:	42	,	   # ShipNet	 Xview	
+            'Oil Tanker'                	:	43	,	   # ShipNet	 Xview	
+            'Mobile Crane'              	:	44	,	   # Xview		
+            'RoRo'                      	:	45	,	   # ShipNet		
+            'Sailboat'                  	:	46	,	   # ShipNet	Xview	
+            'Cargo Truck'    	:	47	,	   # Fair1m	 Xview	
+            'Passenger Car'    	:	48	,	   # Xview		
+            'Small Car'     	:	49	,	   # Fair1m	 Xview	
+            'Passenger Ship'   	:	50	,	   # Fair1m		
+            'Passenger Vehicle'   	:	51	,	   # Xview		
+            'Pickup Truck'    	:	52	,	 # Xview		
+            'Railway Vehicle'   	:	53	,	   # Xview		
+            'Reach Stacker'    	:	54	,	   # Xview		
+            'Scraper/Tractor'   	:	55	,	   # Xview		
+            'Straddle Carrier'   	:	56	,	   # Xview		
+            'Tank Car'     	:	57	,	   # Xview		
+            'Tractor'     	:	58	,	   # Fair1m		
+            'Truck Tractor'    	:	59	,	   # Fair1m	 Xview	
+            'Truck w/Box'    	:	60	,	   # Xview		
+            'Truck w/Flatbed'   	:	61	,	   # Xview		
+            'Truck w/Liquid'   	:	62	,	   # Xview		
+            'Utility Truck'    	:	63	,	   # Xview		
+            'Van'      	:	64	,	   # Fair1m		
+            'Trailer'                   	:	65	,	   # Fair1m		
+            'Airbus_A-319'              	:	66	,	   # Rareplanes_synthetic		
+            'Airbus_A300'               	:	67	,	   # Rareplanes_synthetic		
+            'Airbus_A'                  	:	68	,	 # Rareplanes_synthetic		
+            'Airbus_A380'               	:	69	,	 # Rareplanes_synthetic		
+            'ATR_ATR'                   	:	70	,	 # Rareplanes_synthetic		
+            'BAE_146'                   	:	71	,	 # Rareplanes_synthetic		
+            'Boeing_707'                	:	72	,	  # Rareplanes_synthetic		
+            'Boeing_717'                	:	73	,	 # Rareplanes_synthetic		
+            'Boeing_727'                	:	74	,	 # Rareplanes_synthetic		
+            'Boeing_757'                	:	75	,	 # Rareplanes_synthetic		
+            'Boeing_767'                	:	76	,	 # Rareplanes_synthetic		
+            'Boeing_BBJ'                	:	77	,	 # Rareplanes_synthetic		
+            'Bombardier_BD'             	:	78	,	 # Rareplanes_synthetic		
+            'Bombardier_Challenger'     	:	79	,	 # Rareplanes_synthetic		
+            'Bombardier_CRJ'            	:	80	,	 # Rareplanes_synthetic		
+            'Bombardier_Learjet'        	:	81	,	 # Rareplanes_synthetic		
+            'Cessna'                    	:	82	,	 # Rareplanes_synthetic		
+            'Cessna_170'                	:	83	,	 # Rareplanes_synthetic		
+            'Cessna_172'                	:	84	,	 # Rareplanes_synthetic		
+            'Cessna_310'                	:	85	,	 # Rareplanes_synthetic		
+            'Cessna_Citation'           	:	86	,	 # Rareplanes_synthetic		
+            'Dassault_Falcon'           	:	87	,	 # Rareplanes_synthetic		
+            'DeHavillandCanada_DHC'     	:	88	,	 # Rareplanes_synthetic		
+            'Embraer_ERJ'               	:	89	,	 # Rareplanes_synthetic		
+            'Embraer_Legacy'            	:	90	,	 # Rareplanes_synthetic		
+            'Fokker_100'                	:	91	,	 # Rareplanes_synthetic		
+            'Gulfstream_G200'           	:	92	,	 # Rareplanes_synthetic		
+            'Gulfstream_GIII'           	:	93	,	 # Rareplanes_synthetic		
+            'HBC_Hawker'                	:	94	,	 # Rareplanes_synthetic		
+            'Let_L'                     	:	95	,	 # Rareplanes_synthetic		
+            'LockheedCorp_L'            	:	96	,	 # Rareplanes_synthetic		
+            'McDonnellDouglas_DC'       	:	97	,	 # Rareplanes_synthetic		
+            'McDonnellDouglas_MD'       	:	98	,	 # Rareplanes_synthetic		
+            'PiperAircraft_PA'          	:	99	,	 # Rareplanes_synthetic		
+            'SudAviation_Caravelle'     	:	100	,	 # Rareplanes_synthetic		
+            'Tupolev_154'               	:	101	,	 # Rareplanes_synthetic		
+            'Ferry'                     	:	102	,	  # ShipNet	 Xview	
+            'Submarine'                 	:	103	,	  # ShipNet		
+            'Excavator'                 	:	104	,	  # Xview		
+
+        },
         'very-fine-class':{
 			'Airbus_A330-300'					: 0,	# Rareplanes_synthetic
 			'Airbus_A-340'						: 1,	# Rareplanes_synthetic

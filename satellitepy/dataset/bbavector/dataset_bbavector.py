@@ -109,6 +109,8 @@ class BBAVectorDataset(Dataset):
         image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
         # print(annotation['masks'].shape)
         data_dict = self.utils.generate_ground_truth(image, annotation)
+        print(data_dict['hbboxes_params'])
+        print(data_dict['obboxes_params'])
         data_dict['img_path']=str(img_path)
         data_dict['label_path']=str(label_path)
         data_dict['img_w']=image_w
