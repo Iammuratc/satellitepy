@@ -178,7 +178,7 @@ class TrainModule(object):
                 else:
                     running_loss[k][0] += v
                     running_loss[k][1] += 1
-            epoch_loss = {k: v[0] / v[1] for k, v in running_loss.items()}
+        epoch_loss = {k: v[0] / v[1] for k, v in running_loss.items()}
         return epoch_loss
 
     def run_valid(self,data_loader,criterion):
