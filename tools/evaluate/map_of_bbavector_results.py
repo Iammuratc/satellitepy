@@ -17,11 +17,11 @@ def get_args():
     project_folder = get_project_folder()
 
     parser = configargparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--in-result-folder', type=Path,
+    parser.add_argument('--in-result-folder', type=str,
                         help='Folder of results. The results in this folder will be processed.')
     parser.add_argument('--task', required=True, type=str, help='Task name. This task will be evaluated.')
     parser.add_argument('--out-folder',
-                        type=Path,
+                        type=str,
                         help='Save folder of result evaluations. It will be asked to create if not exists.')
     parser.add_argument('--instance-names', type=str, help='Instance names. The instance name --Background-- will be added automatically.'
         'All other instance names (e.g., bridge), that are not defined here but in the result files, will be treated as Background.')

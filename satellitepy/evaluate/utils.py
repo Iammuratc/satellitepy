@@ -5,6 +5,8 @@ import numpy as np
 # from typing import Optional, Tuple
 import torch
 
+from satellitepy.data.utils import get_task_dict
+
 
 def match_gt_and_det_bboxes(gt_labels,det_labels):
     """
@@ -31,7 +33,10 @@ def match_gt_and_det_bboxes(gt_labels,det_labels):
     ## Old IOU calculation (keep it for now 12.05)
     # ious = rbbox_overlaps(torch.FloatTensor(det_label_params), torch.FloatTensor(gt_label_params))
     ## New IOU calculation
-    ious = get_ious(det_labels['obboxes'], gt_labels['obboxes'])
+    if "obboxes" in det_labels:
+        ious = get_ious(det_labels['obboxes'], gt_labels['obboxes'])
+    else:
+        ious = get_ious(det_labels['hbboxes'], gt_labels['hbboxes'])
     for i,iou in enumerate(ious):
         # ROW: detected obboxes
         # COL: gt obboxes
@@ -54,6 +59,8 @@ def set_conf_mat_from_result(
     conf_score_thresholds,
     iou_thresholds):
 
+    task_dict = get_task_dict(task)
+    idx2name = {v: k for k, v in task_dict.items()}
     for i_iou_th, iou_th in enumerate(iou_thresholds):
         for i_conf_score_th, conf_score_th in enumerate(conf_score_thresholds):
             # (Surely) Detected gt label indices
@@ -61,7 +68,7 @@ def set_conf_mat_from_result(
             det_gt_bbox_indices = []
 
             # Iterate over the confidence scores of the detected bounding boxes
-            for i_conf_score, conf_score in enumerate(result['det_labels']['confidence_scores']):
+            for i_conf_score, conf_score in enumerate(result['confidence-scores']):
                 ## If the confidence score is lower than threshold, skip the object
                 if conf_score<conf_score_th:
                     continue
@@ -77,7 +84,7 @@ def set_conf_mat_from_result(
                 det_gt_instance_name = 'Background' if det_gt_instance_name not in instance_names else det_gt_instance_name 
                 det_gt_index = instance_names.index(det_gt_instance_name)
                 ## Det index
-                det_index = instance_names.index(result['det_labels'][task][i_conf_score])
+                det_index = instance_names.index(idx2name[result[task][i_conf_score]])
                 conf_mat[i_iou_th,i_conf_score_th,det_gt_index,det_index] += 1
 
             # If a ground truth label is undetected, add it as a detected Background label

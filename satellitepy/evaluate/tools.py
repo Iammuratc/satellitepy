@@ -1,4 +1,5 @@
 import cv2
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -34,6 +35,8 @@ def calculate_map(
     for result_path in tqdm(result_paths):
         # logger.info(f'The following result file will be evaluated: {result_path}')
         # Result json file
+        if result_path.suffix != ".json":
+            continue
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches' 
         
@@ -51,7 +54,7 @@ def calculate_map(
     logger.info(precision[pr_threshold_ind,:])
     logger.info(f'Recall at all confidence score thresholds and iou threshold = {iou_thresholds[pr_threshold_ind]} ')
     logger.info(recall[pr_threshold_ind,:])
-    logger.ifno('AP')
+    logger.info('AP')
     ap = get_average_precision(precision,recall)
     logger.info(ap)
     if plot_pr:

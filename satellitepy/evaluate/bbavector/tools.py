@@ -7,12 +7,13 @@ import satellitepy.models.bbavector.loss as loss_utils
 from satellitepy.utils.path_utils import create_folder
 from satellitepy.evaluate.utils import match_gt_and_det_bboxes #, nms_rotated
 from satellitepy.data.bbox import BBox
+from torch.utils.data import DataLoader
 
 from tqdm import tqdm
 import torch
 import logging
 from pathlib import Path
-from mmcv.ops import nms_rotated
+from mmcv.ops import nms_rotated, nms
 import json 
 import numpy as np
 
@@ -24,7 +25,7 @@ def save_patch_results(
     in_label_format,
     checkpoint_path,
     device,
-    task,
+    tasks,
     num_workers,
     input_h,
     input_w,
@@ -57,33 +58,27 @@ def save_patch_results(
     """
     logger = logging.getLogger(__name__)
     # Model
-    model = get_model(task,down_ratio)
+    model = get_model(tasks,down_ratio)
     model, optimizer, epoch, valid_loss = load_checkpoint(model, checkpoint_path)
     model.to(device)
     model.eval()
 
-    model_decoder = get_model_decoder(task,
+    model_decoder = get_model_decoder(tasks,
     K,
     conf_thresh)
-
-
-    # Task dict
-    task_dict = get_task_dict(task)
-    num_classes = len(task_dict)
 
     # Dataset
     dataset = BBAVectorDataset(
         in_image_folder,
         in_label_folder,
         in_label_format,
-        task,
-        task_dict,
+        tasks,
         input_h,
         input_w,
         down_ratio,
         False)
     # Dataloader
-    data_loader = torch.utils.data.DataLoader(dataset,
+    data_loader = DataLoader(dataset,
         batch_size=1,
         shuffle=False,
         num_workers=num_workers,
@@ -101,57 +96,69 @@ def save_patch_results(
     for data_dict in tqdm(data_loader):
         img_name = Path(data_dict['img_path'][0]).stem
         with torch.no_grad():
-            pred = model(data_dict['input'].to(device))
+            pred = model(data_dict['input'].to(device).float())
         
         predictions = model_decoder.ctdet_decode(pred)
-        bboxes, scores, classes = decode_predictions(
+        dec_pred = decode_predictions(
             predictions = predictions, 
             orig_h = data_dict['img_h'].numpy(), 
             orig_w = data_dict['img_w'].numpy(),
             input_h = input_h, 
             input_w = input_w, 
-            down_ratio = down_ratio)
+            down_ratio = down_ratio
+        )
 
+        save_dict = dict()
 
-        bboxes_nms, keep_ind = nms_rotated(
-            # dets=torch.from_numpy(result_squeezed[:,:5]),
-            # scores=torch.from_numpy(result_squeezed[:,-1]),
-            # iou_threshold= nms_iou_thr,
-            # labels=torch.from_numpy(labels_squeezed))
-            dets=torch.Tensor([BBox(corners=corners).params for corners in bboxes]),
-            scores=torch.Tensor(scores),
-            iou_threshold= 0.5,
-            labels=torch.Tensor(classes))
+        if "obboxes" in dec_pred:
+            bboxes_nms, keep_ind = nms_rotated(
+                 dets=torch.Tensor([BBox(corners=corners).params for corners in dec_pred["obboxes"]]),
+                 scores=torch.Tensor(dec_pred["confidence-scores"]),
+                 iou_threshold= 0.5,
+                 labels=torch.Tensor(dec_pred["coarse-class"])
+            )
+            if keep_ind is not None:
+                save_dict["obboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
+                for k, v in dec_pred.items():
+                    if k != "obboxes":
+                        save_dict[k] = np.asarray(v)[keep_ind.cpu().numpy()].tolist()
+            else:
+                save_dict["obboxes"] = dec_pred["obboxes"]
+                for k, v in dec_pred.items():
+                    if k != "obboxes":
+                        if isinstance(v, list):
+                            save_dict[k] = v
+                        else:
+                            save_dict[k] = v.tolist()
 
-        if keep_ind is not None:
-            classes_nms = [classes[i] for i in keep_ind]
-            scores_nms = [scores[i].astype(float) for i in keep_ind]
-
-            det_labels = {
-                task:[key for pred_class in classes_nms for key,value in task_dict.items() if value==pred_class],
-                'obboxes':[BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]],
-                'confidence_scores':scores_nms
-            }
-
+        # if obboxes is not in dec_pred, hbboxes must be in dec_pred
         else:
-            det_labels = {
-                task:[key for pred_class in classes for key,value in task_dict.items() if value==pred_class],
-                'obboxes':bboxes,
-                'confidence_scores':scores
-            }
+            bboxes_nms, keep_ind = nms(
+                 boxes=torch.Tensor(dec_pred["hbboxes"]),
+                 scores=torch.Tensor(dec_pred["confidence-scores"]),
+                 iou_threshold= 0.5
+            )
+            if keep_ind is not None:
+                save_dict["hbboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
+                for k, v in dec_pred.items():
+                    if k != "hbboxes":
+                        save_dict[k] = np.asarray(v)[keep_ind].tolist()
+            else:
+                save_dict["hbboxes"] = dec_pred["hbboxes"]
+                for k, v in dec_pred.items():
+                    if k != "hbboxes":
+                        if isinstance(v, list):
+                            save_dict[k] = v
+                        else:
+                            save_dict[k] = v.tolist()
 
-
-        gt_labels = read_label(data_dict['label_path'][0],in_label_format)
-
-        matches = match_gt_and_det_bboxes(gt_labels,det_labels)
-
-        result = {
-            'gt_labels':gt_labels,
-            'det_labels':det_labels,
-            'matches':matches
-                    }
+        if in_label_folder:
+            gt_labels = read_label(data_dict['label_path'][0],in_label_format)
+            matches = match_gt_and_det_bboxes(gt_labels,save_dict)
+            save_dict["gt_labels"] = gt_labels
+            save_dict["matches"] = matches
 
         # Save results with the corresponding ground truth
         # # Save labels to json file
         with open(Path(patch_result_folder) / f"{img_name}.json",'w') as f:
-            json.dump(result, f, indent=4)
+            json.dump(save_dict, f, indent=4)

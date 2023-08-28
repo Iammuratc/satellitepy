@@ -34,7 +34,7 @@ class CELoss(nn.Module):
         pred = self._tranpose_and_gather_feat(output, ind)  # torch.Size([1, 500, 1])
         if mask.sum():
             nan_mask = torch.isnan(target) == False
-            _mask = mask & nan_mask
+            _mask = (mask & nan_mask) > 0
             loss = F.cross_entropy(pred[_mask],
                                           target[_mask].long(),
                                           reduction='mean')
@@ -44,8 +44,9 @@ class CELoss(nn.Module):
         else:
             return 0.
 class BCELoss(nn.Module):
-    def __init__(self):
+    def __init__(self, mask_loss = False):
         super(BCELoss, self).__init__()
+        self.mask_loss = mask_loss
 
     def _gather_feat(self, feat, ind, mask=None):
         dim = feat.size(2)
@@ -58,6 +59,8 @@ class BCELoss(nn.Module):
         return feat
 
     def _tranpose_and_gather_feat(self, feat, ind):
+        if self.mask_loss:
+            return feat
         feat = feat.permute(0, 2, 3, 1).contiguous()
         feat = feat.view(feat.size(0), -1, feat.size(3))
         feat = self._gather_feat(feat, ind)
@@ -71,7 +74,10 @@ class BCELoss(nn.Module):
         pred = self._tranpose_and_gather_feat(output, ind)  # torch.Size([1, 500, 1])
         if mask.sum():
             nan_mask = torch.isnan(target) == False
-            _mask = mask & nan_mask.squeeze(-1)
+            if self.mask_loss:
+                _mask = nan_mask
+            else:
+                _mask = (mask & nan_mask.squeeze(-1)) > 0
             loss = F.binary_cross_entropy(pred[_mask],
                                           target[_mask],
                                           reduction='mean')
@@ -107,13 +113,16 @@ class OffSmoothL1Loss(nn.Module):
         # torch.Size([1, 500])
         # torch.Size([1, 500, 2])
         pred = self._tranpose_and_gather_feat(output, ind)  # torch.Size([1, 500, 2])
+        if len(target.shape) == 2:
+            # we are missing a dimension, if the regression target is 1-d
+            target = target.unsqueeze(-1)
         if mask.sum():
             nan_mask = torch.isnan(target) == False
             if len(nan_mask.shape) > 2:
                 # if gt is none, than all regression targets will be None
                 nan_mask = nan_mask[:,:,0]
     
-            _mask = mask & nan_mask
+            _mask = (mask & nan_mask) > 0
             loss = F.smooth_l1_loss(pred[_mask],
                                     target[_mask],
                                     reduction='mean')
@@ -163,7 +172,7 @@ class LossAll(torch.nn.Module):
         self.tasks_losses = nn.ModuleDict()
         for t in tasks:
             if t == "masks": 
-                self.tasks_losses[t] = BCELoss()
+                self.tasks_losses[t] = BCELoss(mask_loss=True)
             elif t == "obboxes":
                 self.tasks_losses[t + "_params"] = OffSmoothL1Loss()
                 self.tasks_losses[t + "_offset"] = OffSmoothL1Loss()
