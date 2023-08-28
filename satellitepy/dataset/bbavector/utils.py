@@ -82,43 +82,37 @@ class Utils:
                     pt_new = np.float32(pt_old).copy()
                     pt_new[:,0] = np.minimum(np.maximum(pt_new[:,0], 0.), self.input_w - 1)
                     pt_new[:,1] = np.minimum(np.maximum(pt_new[:,1], 0.), self.input_h - 1)
-                    iou = ex_box_jaccard(pt_old.copy(), pt_new.copy())
-                    if iou>0.6:
-                        rect = cv2.minAreaRect(pt_new/self.down_ratio)
-                        width, height = rect[1][0], rect[1][1]
-                        if width>size_thresh and height>size_thresh:
-                            if "hbboxes" in annotation:
-                                if annotation["hbboxes"][idx] is not None:
-                                    out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
-                                else: 
-                                    out_hbb.append(None)
-                            if "obboxes" in annotation:
-                                if annotation["obboxes"][idx] is not None:
-                                    out_obb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
-                                else:
-                                    out_obb.append(None)
-                            for k in annotation.keys():
-                                if k != "hbboxes" and k != "obboxes" and k != "masks":
-                                    out_annotations.setdefault(k, [])
-                                    out_annotations[k].append(annotation[k][idx])
+                    rect = cv2.minAreaRect(pt_new/self.down_ratio)
+                    if "hbboxes" in annotation:
+                        if annotation["hbboxes"][idx] is not None:
+                            out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
+                        else: 
+                            out_hbb.append(None)
+                    if "obboxes" in annotation:
+                        if annotation["obboxes"][idx] is not None:
+                            out_obb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
+                        else:
+                            out_obb.append(None)
+                    for k in annotation.keys():
+                        if k != "hbboxes" and k != "obboxes" and k != "masks":
+                            out_annotations.setdefault(k, [])
+                            out_annotations[k].append(annotation[k][idx])
                 else:
                     rect = cv2.minAreaRect(np.float32(pt_old)/self.down_ratio)
-                    width, height = rect[1][0], rect[1][1]
-                    if width>size_thresh and height>size_thresh:
-                        if "hbboxes" in annotation:
-                            if annotation["hbboxes"][idx] is not None:
-                                out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
-                            else: 
-                                out_hbb.append(None)
-                        if "obboxes" in annotation:
-                            if annotation["obboxes"][idx] is not None:
-                                out_obb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
-                            else:
-                                out_obb.append(None)
-                        for k in annotation.keys():
-                            if k != "hbboxes" and k != "obboxes" and k != "masks":
-                                out_annotations.setdefault(k, [])
-                                out_annotations[k].append(annotation[k][idx])
+                    if "hbboxes" in annotation:
+                        if annotation["hbboxes"][idx] is not None:
+                            out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
+                        else: 
+                            out_hbb.append(None)
+                    if "obboxes" in annotation:
+                        if annotation["obboxes"][idx] is not None:
+                            out_obb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
+                        else:
+                            out_obb.append(None)
+                    for k in annotation.keys():
+                        if k != "hbboxes" and k != "obboxes" and k != "masks":
+                            out_annotations.setdefault(k, [])
+                            out_annotations[k].append(annotation[k][idx])
 
         if "hbboxes" in annotation and len(out_hbb) > 0:
             out_annotations["hbboxes"] = np.asarray(out_hbb, np.float32)
