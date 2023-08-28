@@ -74,7 +74,6 @@ class BBAVectorDataset(Dataset):
                     print(item[0], item[1])
             else:
                 for img_path, label_path in zip_matched_files(in_image_folder, in_label_folder):
-                    labels = read_label(label_path,in_label_format)
                     self.items.append((img_path, label_path, in_label_format))
 
     def __len__(self):
@@ -113,10 +112,6 @@ class BBAVectorDataset(Dataset):
         # print(annotation['masks'].shape)
         data_dict = self.utils.generate_ground_truth(image, annotation)
         data_dict['img_path']=str(img_path)
-        if 'reg_mask' not in list(data_dict.keys()):
-            test = 5
-            annotation = self.preapare_annotations(labels, image_w, image_h)#, img_path)
-            image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
         data_dict['label_path']=str(label_path)
         data_dict['img_w']=image_w
         data_dict['img_h']=image_h
