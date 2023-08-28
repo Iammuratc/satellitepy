@@ -52,6 +52,8 @@ def parse_args():
     parser.add_argument('--validate-datasets', action='store_true')
     parser.set_defaults(validate_datasets=False)
     parser.add_argument("--random-seed", default=12, type=int)
+    parser.add_argument("--augmentation", action='store_true')
+    parser.set_defaults(augmentation=False)
 
     # parser.add_argument('--resume', type=str, default='model_50.pth', help='Weights resumed in testing and evaluation')
     # parser.add_argument('--dataset', type=str, default='dota', help='Name of dataset')
@@ -113,7 +115,7 @@ def train_bbavector(args):
         input_h,
         input_w,
         down_ratio,
-        True,
+        args.augmentation,
         validate_datasets,
         K=K,
         random_seed=random_seed
@@ -128,7 +130,7 @@ def train_bbavector(args):
             input_h,
             input_w,
             down_ratio,
-            True,
+            args.augmentation,
             validate_datasets,
             K=K,
             random_seed=random_seed
