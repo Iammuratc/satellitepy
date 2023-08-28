@@ -74,7 +74,6 @@ class BBAVectorDataset(Dataset):
                     print(item[0], item[1])
             else:
                 for img_path, label_path in zip_matched_files(in_image_folder, in_label_folder):
-                    labels = read_label(label_path,in_label_format)
                     self.items.append((img_path, label_path, in_label_format))
 
     def __len__(self):

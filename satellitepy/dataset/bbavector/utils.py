@@ -37,29 +37,25 @@ class Utils:
         if augmentation:
             crop_size, crop_center = random_crop_info(h=image.shape[0], w=image.shape[1])
             image, masks, boxes, crop_center = random_flip(image, mask, boxes, crop_center)
-        if crop_center is None:
-            crop_center = np.asarray([float(image.shape[1])/2, float(image.shape[0])/2], dtype=np.float32)
-        if crop_size is None:
-            crop_size = [max(image.shape[1], image.shape[0]), max(image.shape[1], image.shape[0])]  # init
-        M = load_affine_matrix(crop_center=crop_center,
-                               crop_size=crop_size,
-                               dst_size=(self.input_w, self.input_h),
-                               inverse=False,
-                               rotation=augmentation)
-        image = cv2.warpAffine(src=image, M=M, dsize=(self.input_w, self.input_h), flags=cv2.INTER_LINEAR)
-        if mask is not None:
-            mask = cv2.warpAffine(
-                src=mask, 
-                M=M, 
-                dsize=(self.input_w, self.input_h), 
-                flags=cv2.INTER_LINEAR
-            )
-        for idx, box in enumerate(boxes):
-            for idx_1, b in enumerate(box):
-                if b is not None:
-                    new_box = np.concatenate([b, np.ones((b.shape[0], 1))], axis=1)
-                    new_box = np.matmul(new_box, np.transpose(M))
-                    boxes[idx][idx_1] = np.asarray(new_box, np.float32)
+            M = load_affine_matrix(crop_center=crop_center,
+                                   crop_size=crop_size,
+                                   dst_size=(self.input_w, self.input_h),
+                                   inverse=False,
+                                   rotation=augmentation)
+            image = cv2.warpAffine(src=image, M=M, dsize=(self.input_w, self.input_h), flags=cv2.INTER_LINEAR)
+            if mask is not None:
+                mask = cv2.warpAffine(
+                    src=mask, 
+                    M=M, 
+                    dsize=(self.input_w, self.input_h), 
+                    flags=cv2.INTER_LINEAR
+                )
+            for idx, box in enumerate(boxes):
+                for idx_1, b in enumerate(box):
+                    if b is not None:
+                        new_box = np.concatenate([b, np.ones((b.shape[0], 1))], axis=1)
+                        new_box = np.matmul(new_box, np.transpose(M))
+                        boxes[idx][idx_1] = np.asarray(new_box, np.float32)
 
         out_annotations = {}
         check_boxes = []
