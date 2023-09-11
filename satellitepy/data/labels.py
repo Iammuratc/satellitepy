@@ -4,7 +4,7 @@ from builtins import print
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from satellitepy.data.utils import get_xview_classes, set_mask, parse_potsdam_labels, set_satellitepy_dict_values, get_shipnet_categories
+from satellitepy.data.utils import get_vedai_classes, set_mask, parse_potsdam_labels, set_satellitepy_dict_values, get_shipnet_categories
 from satellitepy.data.bbox import BBox
 import json
 import numpy as np
@@ -42,6 +42,8 @@ def read_label(label_path,label_format, mask_path = None):
         return read_isprs_label(label_path)
     elif label_format == "results":
         return read_result_label(label_path)
+    elif label_format == "vedai":
+        return read_vedai_label(label_path)
     else:
         logger.info('---Label format is not defined---')
         exit(1)
@@ -755,4 +757,50 @@ def read_isprs_label(label_path):
 
         fill_none_to_empty_keys(labels, not_available_tasks)
 
+    return labels
+
+def read_vedai_label(label_path):
+    labels = init_satellitepy_label()
+    classes = get_vedai_classes()
+    available_tasks=['hbboxes', 'obboxes', 'coarse-class', 'fine-class']
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+
+    file = open(label_path, 'r')
+    for line in file.readlines():
+        separated = line.split()[3:]
+        if len(separated) < 9:
+            continue
+        coords_x = separated[3:7]
+        coords_y = separated[7:11]
+        coords = []
+        corner = []
+        
+        for i in range(0, len(coords_x)):
+            corner.append(int(coords_x[i]))
+            corner.append(int(coords_y[i]))
+            coords.append(corner)
+            corner = []
+        
+        labels['obboxes'].append(coords)
+        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
+        
+        fine_class = classes.get(int(separated[0]))
+        
+        if fine_class == "boat":
+            labels['coarse-class'].append("ship")
+            labels['fine-class'].append(None)
+        elif fine_class == "plane":
+            labels['coarse-class'].append("airplane")
+            labels['fine-class'].append(None)
+        elif fine_class == "other" or fine_class == "large":
+            labels['coarse-class'].append("other")
+            labels['fine-class'].append(None)
+        else:
+            labels['coarse-class'].append("vehicle")
+            labels['fine-class'].append(fine_class)
+            
+        fill_none_to_empty_keys(labels, not_available_tasks)
+        
     return labels
