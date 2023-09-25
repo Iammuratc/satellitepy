@@ -117,13 +117,15 @@ def save_patches(
 
             # Save patch image
             patch_img = patches['images'][i]
-            patch_image_path = Path(out_image_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.png"
-            cv2.imwrite(str(patch_image_path),patch_img)
+            patch_image_path = Path(out_image_folder) / f"{label_format}_{img_name}_x_{patch_x0}_y_{patch_y0}.png"
+
+            patch_label = patches['labels'][i]
+            if patch_label is None or len(patch_label['hbboxes']) != 0:
+                cv2.imwrite(str(patch_image_path), patch_img)
 
             # Save patch labels
-            patch_label = patches['labels'][i]
-            if patch_label is not None:
-                patch_label_path = Path(out_label_folder) / f"{img_name}_x_{patch_x0}_y_{patch_y0}.json"
+            if patch_label is not None and len(patch_label['hbboxes']) != 0:
+                patch_label_path = Path(out_label_folder) / f"{label_format}_{img_name}_x_{patch_x0}_y_{patch_y0}.json"
                 with open(str(patch_label_path),'w') as f:
                     json.dump(patch_label,f,indent=4)
 
