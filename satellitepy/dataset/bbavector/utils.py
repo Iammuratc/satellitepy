@@ -6,8 +6,7 @@ import math
 from satellitepy.dataset.bbavector.draw_gaussian import draw_umich_gaussian, gaussian_radius
 from satellitepy.dataset.bbavector.transforms import random_flip, load_affine_matrix, random_crop_info, ex_box_jaccard
 from satellitepy.dataset.bbavector import data_augment
-from satellitepy.data.utils import get_satellitepy_dict_values, get_task_dict  # , merge_satellitepy_task_values
-
+from satellitepy.data.utils import get_satellitepy_dict_values, get_task_dict #, merge_satellitepy_task_values
 
 class Utils:
     def __init__(self, tasks, input_h=None, input_w=None, down_ratio=None, K=1000):
@@ -17,7 +16,8 @@ class Utils:
         self.img_ids = None
         self.tasks = tasks
         self.max_objs = K
-        self.image_distort = data_augment.PhotometricDistort()
+        self.image_distort =  data_augment.PhotometricDistort()
+
 
     def data_transform(self, image, annotation, augmentation):
         # only do random_flip augmentation to original images
@@ -38,7 +38,7 @@ class Utils:
             crop_size, crop_center = random_crop_info(h=image.shape[0], w=image.shape[1])
             image, masks, boxes, crop_center = random_flip(image, mask, boxes, crop_center)
             if crop_center is None:
-                crop_center = np.asarray([float(image.shape[1]) / 2, float(image.shape[0]) / 2], dtype=np.float32)
+                crop_center = np.asarray([float(image.shape[1])/2, float(image.shape[0])/2], dtype=np.float32)
             if crop_size is None:
                 crop_size = [max(image.shape[1], image.shape[0]), max(image.shape[1], image.shape[0])]  # init
             M = load_affine_matrix(crop_center=crop_center,
@@ -78,53 +78,41 @@ class Utils:
         if len(check_boxes) > 0:
             size_thresh = 3
             for idx, pt_old in enumerate(check_boxes):
-                if (pt_old < 0).any() or (pt_old[:, 0] > self.input_w - 1).any() or (
-                        pt_old[:, 1] > self.input_h - 1).any():
+                if (pt_old<0).any() or (pt_old[:,0]>self.input_w-1).any() or (pt_old[:,1]>self.input_h-1).any():
                     pt_new = np.float32(pt_old).copy()
                     pt_new[:,0] = np.minimum(np.maximum(pt_new[:,0], 0.), self.input_w - 1)
                     pt_new[:,1] = np.minimum(np.maximum(pt_new[:,1], 0.), self.input_h - 1)
                     rect = cv2.minAreaRect(pt_new/self.down_ratio)
-
-                    iou = ex_box_jaccard(pt_old.copy(), pt_new.copy())
-                    if iou > 0.6:
-                        rect = cv2.minAreaRect(pt_new/self.down_ratio)
-                        width, height = rect[1][0], rect[1][1]
-                        if width > size_thresh and height > size_thresh:
-
-                            if "hbboxes" in annotation:
-                                if annotation["hbboxes"][idx] is not None:
-                                    out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
-                                else:
-                                    out_hbb.append(None)
-                            if "obboxes" in annotation:
-                                if annotation["obboxes"][idx] is not None:
-                                    out_obb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
-                                else:
-                                    out_obb.append(None)
-                            for k in annotation.keys():
-                                if k != "hbboxes" and k != "obboxes" and k != "masks":
-                                    out_annotations.setdefault(k, [])
-                                    out_annotations[k].append(annotation[k][idx])
+                    if "hbboxes" in annotation:
+                        if annotation["hbboxes"][idx] is not None:
+                            out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
+                        else:
+                            out_hbb.append(None)
+                    if "obboxes" in annotation:
+                        if annotation["obboxes"][idx] is not None:
+                            out_obb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
+                        else:
+                            out_obb.append(None)
+                    for k in annotation.keys():
+                        if k != "hbboxes" and k != "obboxes" and k != "masks":
+                            out_annotations.setdefault(k, [])
+                            out_annotations[k].append(annotation[k][idx])
                 else:
-                    rect = cv2.minAreaRect(np.float32(pt_old) / self.down_ratio)
-
-                    width, height = rect[1][0], rect[1][1]
-                    if width > size_thresh and height > size_thresh:
-
-                        if "hbboxes" in annotation:
-                            if annotation["hbboxes"][idx] is not None:
-                                out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
-                            else:
-                                out_hbb.append(None)
-                        if "obboxes" in annotation:
-                            if annotation["obboxes"][idx] is not None:
-                                out_obb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
-                            else:
-                                out_obb.append(None)
-                        for k in annotation.keys():
-                            if k != "hbboxes" and k != "obboxes" and k != "masks":
-                                out_annotations.setdefault(k, [])
-                                out_annotations[k].append(annotation[k][idx])
+                    rect = cv2.minAreaRect(np.float32(pt_old)/self.down_ratio)
+                    if "hbboxes" in annotation:
+                        if annotation["hbboxes"][idx] is not None:
+                            out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
+                        else:
+                            out_hbb.append(None)
+                    if "obboxes" in annotation:
+                        if annotation["obboxes"][idx] is not None:
+                            out_obb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1], rect[2]])
+                        else:
+                            out_obb.append(None)
+                    for k in annotation.keys():
+                        if k != "hbboxes" and k != "obboxes" and k != "masks":
+                            out_annotations.setdefault(k, [])
+                            out_annotations[k].append(annotation[k][idx])
 
         if "hbboxes" in annotation and len(out_hbb) > 0:
             out_annotations["hbboxes"] = np.asarray(out_hbb, np.float32)
@@ -143,6 +131,7 @@ class Utils:
 
         return image, out_annotations
 
+
     # def __len__(self):
     #     return len(self.img_ids)
 
@@ -160,6 +149,7 @@ class Utils:
         y1 = np.min(pts_4[:,1])
         y2 = np.max(pts_4[:,1])
         return x2-x1, y2-y1
+
 
     def cal_bbox_pts(self, pts_4):
         x1 = np.min(pts_4[:,0])
@@ -183,6 +173,7 @@ class Utils:
         bb_new = pts[b_ind,:]
         ll_new = pts[l_ind,:]
         return tt_new,rr_new,bb_new,ll_new
+
 
     def generate_ground_truth(self, image, annotation):
         image = np.asarray(np.clip(image, a_min=0., a_max=255.), np.float32)
@@ -312,6 +303,7 @@ class Utils:
     #         image, annotation = self.data_transform(image, annotation)
     #         data_dict = self.generate_ground_truth(image, annotation)
     #         return data_dict
+
 
     # def load_img_ids(self):
     #     """

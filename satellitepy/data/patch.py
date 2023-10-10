@@ -180,6 +180,8 @@ def get_pad_size(coord_max, patch_size, patch_overlap):
     if remainder != 0:
         new_coord_size = (quotient+1)*patch_size-patch_overlap
         pad_size = new_coord_size - coord_max
+    if coord_max <= patch_size:
+        pad_size = patch_size - coord_max
     return pad_size
 
 

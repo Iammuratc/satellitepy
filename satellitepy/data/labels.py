@@ -303,8 +303,7 @@ def read_dota_label(label_path, mask_path=None):
         if mask_exists:
             labels = set_mask(labels,mask_path,bbox_type='obboxes')
 
-    if not(len(labels['obboxes']) == len(labels['difficulty']) == len(labels['coarse-class']) == len(labels['role'])):
-        raise Exception()
+
     return labels
 
 def read_fair1m_label(label_path):
