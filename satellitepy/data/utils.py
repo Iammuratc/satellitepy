@@ -22,7 +22,7 @@ def set_mask(labels,mask_path,bbox_type, mask_type):
     if mask_type == 'DOTA':
         mask = cv2.cvtColor(cv2.imread(str(mask_path)), cv2.COLOR_RGB2GRAY)
     if mask_type == 'rareplanes':
-        mask = cv2.imread(mask_path)
+        mask = cv2.imread(str(mask_path))
 
     for bbox in labels[bbox_type]:
         h = BBox.get_bbox_limits(np.array(bbox))
@@ -31,12 +31,18 @@ def set_mask(labels,mask_path,bbox_type, mask_type):
 
         if mask_type == 'DOTA':
             coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist() # y,x
+            labels['masks'].append([coords[1] + h[0], coords[0] + h[2]])  # x,y
         if mask_type == 'rareplanes':
             center = (int((h[0] + h[1]) / 2), int((h[2] + h[3]) / 2))
-            color = mask[center[::-1]]
-            coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] == color)).T.tolist()
 
-        labels['masks'].append([coords[1] + h[0],coords[0] + h[2]]) # x,y
+            # Rareplanes uses various colors for the masks. If the center of the airplane is not in the image, the correct color cannot be determined
+            if 0 <= center[0] < mask.shape[1] and 0 <= center[1] < mask.shape[0] < 0:
+                color = mask[center[::-1]]
+                coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] == color)).T.tolist()
+                labels['masks'].append([coords[1] + h[0],coords[0] + h[2]]) # x,y
+            else:
+                labels['masks'].append(None)
+
 
     return labels
 
