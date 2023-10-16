@@ -29,7 +29,7 @@ def read_label(label_path,label_format, mask_path = None):
     elif label_format == 'rareplanes_real' or label_format == 'rarePlanes_real':
         return read_rareplanes_real_label(label_path)
     elif label_format == 'rareplanes_synthetic' or label_format == 'rarePlanes_synthetic':
-        return read_rareplanes_synthetic_label(label_path)
+        return read_rareplanes_synthetic_label(label_path, mask_path)
     elif label_format == 'ship_net':
         return read_ship_net_label(label_path)
     elif label_format == 'ucas':
@@ -301,7 +301,7 @@ def read_dota_label(label_path, mask_path=None):
 
         # Mask
         if mask_exists:
-            labels = set_mask(labels,mask_path,bbox_type='obboxes')
+            labels = set_mask(labels,mask_path,bbox_type='obboxes', mask_type='DOTA')
 
 
     return labels
@@ -438,11 +438,15 @@ def read_rareplanes_real_label(label_path):
     return labels
 
 
-def read_rareplanes_synthetic_label(label_path):
+def read_rareplanes_synthetic_label(label_path, mask_path):
     labels = init_satellitepy_label()
 
     # ## Available tasks for rareplanes_synthetic
     available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'role']
+
+    mask_exists = True if mask_path else False
+    if mask_exists:
+        available_tasks.append('masks')
 
     # ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
@@ -494,7 +498,12 @@ def read_rareplanes_synthetic_label(label_path):
             labels['role'].append('Large Civil Transport/Utility')
         else:
             raise Exception(f'Unexpected role found: {role}')
+
         fill_none_to_empty_keys(labels, not_available_tasks)
+
+    if mask_exists:
+        labels = set_mask(labels,mask_path, bbox_type='obboxes', mask_type='rareplanes')
+
     return labels
 
 def read_VHR_label(label_path):

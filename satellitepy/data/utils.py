@@ -5,7 +5,7 @@ from scipy.ndimage import generate_binary_structure, label, find_objects
 
 from satellitepy.data.bbox import BBox
 
-def set_mask(labels,mask_path,bbox_type):
+def set_mask(labels,mask_path,bbox_type, mask_type):
     """
     Set the masks key in the satellitepy dict by using the bboxes in the dict
     Parameters
@@ -19,15 +19,23 @@ def set_mask(labels,mask_path,bbox_type):
     labels : dict
         Satellitepy dict
     """
-    mask = cv2.cvtColor(cv2.imread(str(mask_path)), cv2.COLOR_RGB2GRAY)
+    if mask_type == 'DOTA':
+        mask = cv2.cvtColor(cv2.imread(str(mask_path)), cv2.COLOR_RGB2GRAY)
+    if mask_type == 'rareplanes':
+        mask = cv2.imread(mask_path)
 
     for bbox in labels[bbox_type]:
         h = BBox.get_bbox_limits(np.array(bbox))
         mask_0 = np.zeros((mask.shape[0],mask.shape[1]))
-
         cv2.fillPoly(mask_0, [np.array(bbox,dtype=int)], 1)
-        
-        coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist() # y,x
+
+        if mask_type == 'DOTA':
+            coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist() # y,x
+        if mask_type == 'rareplanes':
+            center = (int((h[0] + h[1]) / 2), int((h[2] + h[3]) / 2))
+            color = mask[center[::-1]]
+            coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] == color)).T.tolist()
+
         labels['masks'].append([coords[1] + h[0],coords[0] + h[2]]) # x,y
 
     return labels
