@@ -17,7 +17,7 @@ class Utils:
         self.tasks = tasks
         self.max_objs = K
         self.image_distort =  data_augment.PhotometricDistort()
-        
+
 
     def data_transform(self, image, annotation, augmentation):
         # only do random_flip augmentation to original images
@@ -49,9 +49,9 @@ class Utils:
             image = cv2.warpAffine(src=image, M=M, dsize=(self.input_w, self.input_h), flags=cv2.INTER_LINEAR)
             if mask is not None:
                 mask = cv2.warpAffine(
-                    src=mask, 
-                    M=M, 
-                    dsize=(self.input_w, self.input_h), 
+                    src=mask,
+                    M=M,
+                    dsize=(self.input_w, self.input_h),
                     flags=cv2.INTER_LINEAR
                 )
             for idx, box in enumerate(boxes):
@@ -86,7 +86,7 @@ class Utils:
                     if "hbboxes" in annotation:
                         if annotation["hbboxes"][idx] is not None:
                             out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
-                        else: 
+                        else:
                             out_hbb.append(None)
                     if "obboxes" in annotation:
                         if annotation["obboxes"][idx] is not None:
@@ -102,7 +102,7 @@ class Utils:
                     if "hbboxes" in annotation:
                         if annotation["hbboxes"][idx] is not None:
                             out_hbb.append([rect[0][0], rect[0][1], rect[1][0], rect[1][1]])
-                        else: 
+                        else:
                             out_hbb.append(None)
                     if "obboxes" in annotation:
                         if annotation["obboxes"][idx] is not None:

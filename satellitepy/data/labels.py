@@ -244,7 +244,7 @@ def read_dota_label(label_path, mask_path=None):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['hbboxes', 'obboxes','difficulty','coarse-class','role','merged-class']
+    available_tasks=['hbboxes', 'obboxes', 'difficulty', 'coarse-class', 'role']
     mask_exists = True if mask_path else False
     if mask_exists:
         available_tasks.append('masks')
@@ -292,7 +292,6 @@ def read_dota_label(label_path, mask_path=None):
             else:
                 labels['coarse-class'].append('other') #
                 labels['role'].append(None) #
-            # labels['merged-class'].append(category)
             # BBoxes
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
@@ -311,7 +310,7 @@ def read_fair1m_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['obboxes','coarse-class','fine-class','role']
+    available_tasks=['hbboxes', 'obboxes','coarse-class','fine-class','role']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -379,6 +378,7 @@ def read_fair1m_label(label_path):
                 coord.append(float(point))
             coords.append(coord)
         labels['obboxes'].append(coords)
+        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
         fill_none_to_empty_keys(labels,not_available_tasks)
 
     return labels
@@ -501,7 +501,7 @@ def read_VHR_label(label_path):
     labels = init_satellitepy_label()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for VHR
-    available_tasks=['hbboxes', 'coarse-class', "fine-class"]
+    available_tasks=['hbboxes', 'coarse-class', 'fine-class']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -594,7 +594,7 @@ def read_ship_net_label(label_path):
     # classes = get_shipnet_classes()
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['hbboxes', 'obboxes', 'difficulty', 'coarse-class','fine-class','very-fine-class','role',]
+    available_tasks=['hbboxes', 'obboxes', 'difficulty', 'coarse-class', 'fine-class', 'very-fine-class', 'role']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
