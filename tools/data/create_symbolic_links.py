@@ -21,18 +21,19 @@ def create_symbolic_paths(add_dataset_name=True):
                 out_path.symlink_to(in_path)
 
     train_folders = [
-        '/mnt/2tb-0/satellitepy/patches/fair1m/train/patch600_100/',
-        # '/mnt/2tb-0/satellitepy/patches/ship_net/train/patch600_100/',
-        # '/mnt/2tb-0/satellitepy/patches/DOTA/train/patch600_100/',
-        '/mnt/2tb-0/satellitepy/patches/xview/train/patch600_100/',
-        '/mnt/2tb-0/satellitepy/patches/DIOR/train/patch600_100/',
-        '/mnt/2tb-0/satellitepy/patches/DIOR/test/patch600_100/',
-        '/mnt/2tb-0/satellitepy/patches/Potsdam/patch600_100/',
-        '/mnt/2tb-0/satellitepy/patches/Rareplanes/train/patch600_100/',
+        '/mnt/2tb-0/satellitepy/patches/fair1m/train/',
+        '/mnt/2tb-0/satellitepy/patches/ship_net/train/',
+        '/mnt/2tb-0/satellitepy/patches/DOTA/train/',
+        '/mnt/2tb-0/satellitepy/patches/xview/train/',
+        '/mnt/2tb-0/satellitepy/patches/DIOR/train/',
+        '/mnt/2tb-0/satellitepy/patches/DIOR/test/',
+        '/mnt/2tb-0/satellitepy/patches/Potsdam/',
+        '/mnt/2tb-0/satellitepy/patches/Rareplanes/train/',
         '/mnt/2tb-0/satellitepy/patches/Rareplanes_synthetic_subset/train/',
-        '/mnt/2tb-0/satellitepy/patches/ucas/CAR/patch600_100/',
-        '/mnt/2tb-0/satellitepy/patches/ucas/PLANE/patch600_100/',
-        # '/mnt/2tb-0/satellitepy/patches/VHR/patch600_100/',
+        '/mnt/2tb-0/satellitepy/patches/ucas/CAR/',
+        '/mnt/2tb-0/satellitepy/patches/ucas/PLANE/',
+        '/mnt/2tb-0/satellitepy/patches/VHR/',
+        '/mnt/2tb-0/satellitepy/patches/VEDAI/'
         ]
     train_label_folders = [Path(train_folder) / 'labels' for train_folder in train_folders]
     train_image_folders = [Path(train_folder) / 'images' for train_folder in train_folders]
@@ -40,12 +41,12 @@ def create_symbolic_paths(add_dataset_name=True):
 
 
     val_folders = [
-        '/mnt/2tb-0/satellitepy/patches/fair1m/val/patch600_100/',
-        # '/mnt/2tb-0/satellitepy/patches/ship_net/val/patch600_100/',
-        # '/mnt/2tb-0/satellitepy/patches/DOTA/val/patch600_100/',
-        '/mnt/2tb-0/satellitepy/patches/DIOR/val/patch600_100/',
+        '/mnt/2tb-0/satellitepy/patches/fair1m/val/',
+        '/mnt/2tb-0/satellitepy/patches/ship_net/val/',
+        '/mnt/2tb-0/satellitepy/patches/DOTA/val/',
+        '/mnt/2tb-0/satellitepy/patches/DIOR/val/',
         '/mnt/2tb-0/satellitepy/patches/Rareplanes_synthetic_subset/test/',
-        '/mnt/2tb-0/satellitepy/patches/Rareplanes/test/patch600_100/',
+        '/mnt/2tb-0/satellitepy/patches/Rareplanes/test/',
     ]
     val_label_folders = [Path(val_folder) / 'labels' for val_folder in val_folders]
     val_image_folders = [Path(val_folder) / 'images' for val_folder in val_folders]
@@ -59,10 +60,10 @@ def create_symbolic_paths(add_dataset_name=True):
     val_image_paths = get_file_paths_recursively(val_image_folders)
     val_label_paths = get_file_paths_recursively(val_label_folders)
 
-    train_image_out_folder = Path('/mnt/2tb-0/satellitepy/patches/all-noDOTAshipnetVHR/train/images')
-    train_label_out_folder = Path('/mnt/2tb-0/satellitepy/patches/all-noDOTAshipnetVHR/train/labels')
-    val_image_out_folder = Path('/mnt/2tb-0/satellitepy/patches/all-noDOTAshipnetVHR/val/images')
-    val_label_out_folder = Path('/mnt/2tb-0/satellitepy/patches/all-noDOTAshipnetVHR/val/labels')
+    train_image_out_folder = Path('/mnt/2tb-0/satellitepy/patches/all/train/images')
+    train_label_out_folder = Path('/mnt/2tb-0/satellitepy/patches/all/train/labels')
+    val_image_out_folder = Path('/mnt/2tb-0/satellitepy/patches/all/val/images')
+    val_label_out_folder = Path('/mnt/2tb-0/satellitepy/patches/all/val/labels')
 
     assert create_folder(train_image_out_folder)
     assert create_folder(train_label_out_folder)
