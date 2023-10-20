@@ -36,7 +36,7 @@ def set_mask(labels,mask_path,bbox_type, mask_type):
             center = (int((h[0] + h[1]) / 2), int((h[2] + h[3]) / 2))
 
             # Rareplanes uses various colors for the masks. If the center of the airplane is not in the image, the correct color cannot be determined
-            if 0 <= center[0] < mask.shape[1] and 0 <= center[1] < mask.shape[0] < 0:
+            if 0 <= center[0] < mask.shape[1] and 0 <= center[1] < mask.shape[0]:
                 color = mask[center[::-1]]
                 coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] == color)).T.tolist()
                 labels['masks'].append([coords[1] + h[0],coords[0] + h[2]]) # x,y
@@ -95,15 +95,15 @@ def get_shipnet_categories():
 
 def get_vedai_classes():
     classes={
-        1:"car",
-        2:"truck",
-        3:"tractor", 
-        4:"camping car", 
-        5:"motorcycle", 
-        6:"bus", 
-        9:"van", 
+        1:"Car",
+        2:"Truck",
+        3:"Tractor",
+        4:"Camping Car",
+        5:"Motorcycle",
+        6:"Bus",
+        9:"Van",
         10:"other", 
-        11:"pickup", 
+        11:"Pickup Truck",
         12:"large",
         23:"boat", 
         31:"plane"
@@ -279,11 +279,11 @@ def get_satellitepy_table():
             'Boeing_777'    	:	13	,	 # Rareplanes_synthetic		
             'Boeing777'     	:	13	,	   # Fair1m		
             'Boeing787'     	:	14	,	   # Fair1m		
-            'Bus'      	:	15	,	   # Fair1m	 Xview	
+            'Bus'      	:	15	,	   # Fair1m	 Xview	Vedai
             'C919'      	:	16	,	   # Fair1m		
             'Cargo Car'     	:	17	,	   # Xview		
             'Cargo Plane'    	:	18	,	   # Xview		
-            'Truck'      	:	19	,	   # Xview		
+            'Truck'      	:	19	,	   # Xview, Vedai
             'Cement Mixer'    	:	20	,	   # Xview		
             'Landing'                   	:	21	,	   # ShipNet		
             'Maritime Vessel'   	:	22	,	   # Xview		
@@ -318,19 +318,19 @@ def get_satellitepy_table():
             'Small Car'     	:	49	,	   # Fair1m	 Xview	
             'Passenger Ship'   	:	50	,	   # Fair1m		
             'Passenger Vehicle'   	:	51	,	   # Xview		
-            'Pickup Truck'    	:	52	,	 # Xview		
+            'Pickup Truck'    	:	52	,	 # Xview    Vedai
             'Railway Vehicle'   	:	53	,	   # Xview		
             'Reach Stacker'    	:	54	,	   # Xview		
             'Scraper/Tractor'   	:	55	,	   # Xview		
             'Straddle Carrier'   	:	56	,	   # Xview		
             'Tank Car'     	:	57	,	   # Xview		
-            'Tractor'     	:	58	,	   # Fair1m		
+            'Tractor'     	:	58	,	   # Fair1m, Vedai
             'Truck Tractor'    	:	59	,	   # Fair1m	 Xview	
             'Truck w/Box'    	:	60	,	   # Xview		
             'Truck w/Flatbed'   	:	61	,	   # Xview		
             'Truck w/Liquid'   	:	62	,	   # Xview		
             'Utility Truck'    	:	63	,	   # Xview		
-            'Van'      	:	64	,	   # Fair1m		
+            'Van'      	:	64	,	   # Fair1m	Vedai
             'Trailer'                   	:	65	,	   # Fair1m		
             'Airbus_A-319'              	:	66	,	   # Rareplanes_synthetic		
             'Airbus_A300'               	:	67	,	   # Rareplanes_synthetic		
@@ -371,7 +371,9 @@ def get_satellitepy_table():
             'Ferry'                     	:	102	,	  # ShipNet	 Xview	
             'Submarine'                 	:	103	,	  # ShipNet		
             'Excavator'                 	:	104	,	  # Xview		
-
+            'Car'                           :   105,      # Vedai
+            'Camping Car'                   :   106,      # Vedai
+            'Motorcycle'                    :   107,      # Vedai
         },
         'very-fine-class':{
 			'Airbus_A330-300'					: 0,	# Rareplanes_synthetic
