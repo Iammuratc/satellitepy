@@ -391,7 +391,7 @@ def get_satellitepy_table():
 			'HBC_Hawker-4000'					: 28,	# Rareplanes_synthetic
 			'LockheedCorp_L-1011-TriStar'		: 29,	# Rareplanes_synthetic
 			'Let_L-200Morova'					: 30,	# Rareplanes_synthetic
-			'McDonnellDouglas_DC-9-30 '			: 31,	# Rareplanes_synthetic
+			'McDonnellDouglas_DC-9-30'			: 31,	# Rareplanes_synthetic
 			'McDonnellDouglas_MD-11'			: 32,	# Rareplanes_synthetic
 			'PiperAircraft_PA-28'				: 33,	# Rareplanes_synthetic
             'Other Destroyer'                   : 34,   # ShipNet
