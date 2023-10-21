@@ -379,6 +379,7 @@ def get_satellitepy_table():
 			'Airbus_A330-300'					: 0,	# Rareplanes_synthetic
 			'Airbus_A-340'						: 1,	# Rareplanes_synthetic
 			'Airbus_A380-800'					: 2,	# Rareplanes_synthetic
+            'Airbus_A-319'                      : 65,   # Rareplanes_synthetic
 			'ATR_ATR-72'						: 3,	# Rareplanes_synthetic
 			'BAE_146-100'						: 4,	# Rareplanes_synthetic
 			'BAE_146-300'						: 5,	# Rareplanes_synthetic
