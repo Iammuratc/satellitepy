@@ -57,9 +57,13 @@ def calculate_map(
     logger.info('AP')
     ap = get_average_precision(precision,recall)
     logger.info(ap)
+    logger.info('mAP')
+    mAP = np.sum(ap, axis=1)/(len(ap[0])-1)
+    logger.info(mAP)
     if plot_pr:
         fig, ax = plt.subplots()
         ax.plot(recall[pr_threshold_ind,:],precision[pr_threshold_ind,:])
         ax.set_ylabel('Precision')
         ax.set_xlabel('Recall')
+        plt.savefig(str(out_folder) + '/plot_AP.png')
         plt.show()
