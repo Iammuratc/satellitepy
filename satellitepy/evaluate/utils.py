@@ -5,7 +5,7 @@ import numpy as np
 # from typing import Optional, Tuple
 import torch
 
-from satellitepy.data.utils import get_task_dict
+from satellitepy.data.utils import get_task_dict, get_satellitepy_dict_values
 
 
 def match_gt_and_det_bboxes(gt_labels,det_labels):
@@ -61,6 +61,7 @@ def set_conf_mat_from_result(
 
     task_dict = get_task_dict(task)
     idx2name = {v: k for k, v in task_dict.items()}
+    taskResult = get_satellitepy_dict_values(result['gt_labels'], task)
     for i_iou_th, iou_th in enumerate(iou_thresholds):
         for i_conf_score_th, conf_score_th in enumerate(conf_score_thresholds):
             # (Surely) Detected gt label indices
@@ -79,7 +80,10 @@ def set_conf_mat_from_result(
 
                 gt_index = result['matches']['iou']['indexes'][i_conf_score]
                 det_gt_bbox_indices.append(gt_index)
-                det_gt_instance_name = result['gt_labels'][task][gt_index]
+
+                # det_gt_instance_name = result['gt_labels'][task][gt_index]
+                det_gt_instance_name = taskResult[gt_index]
+
                 ## Set instance name to Background if it is not defined by the user
                 det_gt_instance_name = 'Background' if det_gt_instance_name not in instance_names else det_gt_instance_name 
                 det_gt_index = instance_names.index(det_gt_instance_name)
@@ -88,9 +92,15 @@ def set_conf_mat_from_result(
                 conf_mat[i_iou_th,i_conf_score_th,det_gt_index,det_index] += 1
 
             # If a ground truth label is undetected, add it as a detected Background label
-            undet_gt_bbox_indices = set(range(len(result['gt_labels'][task]))) - set(det_gt_bbox_indices) 
+
+            # undet_gt_bbox_indices = set(range(len(result['gt_labels'][task]))) - set(det_gt_bbox_indices)
+            undet_gt_bbox_indices = set(range(len(taskResult))) - set(det_gt_bbox_indices)
+
             for undet_gt_bbox_ind in undet_gt_bbox_indices:
-                undet_gt_instance_name = result['gt_labels'][task][undet_gt_bbox_ind]
+
+                # undet_gt_instance_name = result['gt_labels'][task][undet_gt_bbox_ind]
+                undet_gt_instance_name = taskResult[undet_gt_bbox_ind]
+
                 ## Set instance name to Background if it is not defined by the user
                 undet_gt_instance_name = 'Background' if undet_gt_instance_name not in instance_names else undet_gt_instance_name
                 undet_gt_index = instance_names.index(undet_gt_instance_name)
