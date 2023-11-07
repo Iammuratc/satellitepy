@@ -1,5 +1,7 @@
 import cv2
 import os
+
+import numpy
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -50,16 +52,22 @@ def calculate_map(
 
     pr_threshold_ind = 0
     precision, recall = get_precision_recall(conf_mat,sort_values=True)
-    logger.info(f'Precision at all confidence score thresholds and iuo threshold = {iou_thresholds[pr_threshold_ind]}')
-    logger.info(precision[pr_threshold_ind,:])
-    logger.info(f'Recall at all confidence score thresholds and iou threshold = {iou_thresholds[pr_threshold_ind]} ')
-    logger.info(recall[pr_threshold_ind,:])
-    logger.info('AP')
-    ap = get_average_precision(precision,recall)
-    logger.info(ap)
-    logger.info('mAP')
-    mAP = np.sum(ap, axis=1)/(len(ap[0])-1)
-    logger.info(mAP)
+    with numpy.printoptions(threshold=numpy.inf):
+        logger.info('Confusion matrix:')
+        logger.info(conf_mat)
+        logger.info(50*'-')
+        logger.info(f'Precision at all confidence score thresholds and iuo threshold = {iou_thresholds[pr_threshold_ind]}')
+        logger.info(precision[pr_threshold_ind,:])
+        logger.info(50 * '-')
+        logger.info(f'Recall at all confidence score thresholds and iou threshold = {iou_thresholds[pr_threshold_ind]} ')
+        logger.info(recall[pr_threshold_ind,:])
+        logger.info(50 * '-')
+        logger.info('AP')
+        ap = get_average_precision(precision,recall)
+        logger.info(ap)
+        logger.info('mAP')
+        mAP = np.sum(ap[:-1], axis=1)/(len(ap[0])-1)
+        logger.info(mAP)
     if plot_pr:
         fig, ax = plt.subplots()
         ax.plot(recall[pr_threshold_ind,:],precision[pr_threshold_ind,:])
