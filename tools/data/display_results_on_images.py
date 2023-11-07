@@ -18,8 +18,6 @@ def get_args():
                         help='Images that should be displayed')
     parser.add_argument('--in-result-folder', type=Path, required=True,
                         help='Labels that corresponds to the given images')
-    parser.add_argument('--in-mask-folder', type=Path, required=False,
-                        help='Path to masks')
     parser.add_argument('--out-folder', type=Path, required=True,
                         help='Folder where the generated image should be saved to.')
     parser.add_argument('--tasks', type=str, nargs='+',
@@ -40,20 +38,13 @@ def run(args):
     assert create_folder(output_folder)
 
     tasks = args.tasks
-    mask_path = args.in_mask_folder
 
-    if mask_path != None:
-        mask_path = Path(mask_path)
     log_path = output_folder / f'display_labels.log' if args.log_path == None else args.log_path
 
     init_logger(config_path=args.log_config_path, log_path=log_path)
     logger = logging.getLogger(__name__)
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
-
-    if 'masks' in tasks and mask_path == None:
-        logger.error('No mask path given!')
-        exit(1)
 
     logger.info(f'Displaying labels on {image_path.name}')
 

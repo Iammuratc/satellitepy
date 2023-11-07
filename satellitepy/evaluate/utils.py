@@ -88,7 +88,7 @@ def set_conf_mat_from_result(
                 det_gt_instance_name = 'Background' if det_gt_instance_name not in instance_names else det_gt_instance_name 
                 det_gt_index = instance_names.index(det_gt_instance_name)
                 ## Det index
-                det_index = instance_names.index(idx2name[result[task][i_conf_score]])
+                det_index = instance_names.index(str(idx2name[result[task][i_conf_score]]))
                 conf_mat[i_iou_th,i_conf_score_th,det_gt_index,det_index] += 1
 
             # If a ground truth label is undetected, add it as a detected Background label

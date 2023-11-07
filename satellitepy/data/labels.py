@@ -717,6 +717,7 @@ def read_satellitepy_label(label_path):
 def read_result_label(label_path):
     with open(label_path,'r') as f:
         intermediate_labels = json.load(f)
+    del intermediate_labels['gt_labels']
     num_obj = len(intermediate_labels["coarse-class"])
     labels = init_satellitepy_label()
     for key, val in intermediate_labels.items():
