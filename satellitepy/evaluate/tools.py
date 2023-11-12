@@ -5,6 +5,8 @@ import numpy
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
+
+from satellitepy.data.utils import get_satellitepy_dict_values
 from satellitepy.utils.path_utils import create_folder, get_file_paths, is_file_names_match
 # from satellitepy.data.patch import get_patches, merge_patch_results
 import logging
@@ -66,7 +68,7 @@ def calculate_map(
         ap = get_average_precision(precision,recall)
         logger.info(ap)
         logger.info('mAP')
-        mAP = np.sum(ap[:-1], axis=1)/(len(ap[0])-1)
+        mAP = np.sum(np.transpose(np.transpose(ap)[:-1]), axis=1)/(len(ap[0])-1)
         logger.info(mAP)
     if plot_pr:
         fig, ax = plt.subplots()
@@ -75,3 +77,45 @@ def calculate_map(
         ax.set_xlabel('Recall')
         plt.savefig(str(out_folder) + '/plot_AP.png')
         plt.show()
+
+
+def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_thresholds, out_folder):
+    # Get logger
+    logger = logging.getLogger(__name__)
+
+    # Result paths
+    result_paths = get_file_paths(in_result_folder)
+
+    score = np.zeros(len(iou_thresholds))
+    cnt = np.zeros(len(iou_thresholds))
+
+    for result_path in tqdm(result_paths):
+        # logger.info(f'The following result file will be evaluated: {result_path}')
+        # Result json file
+        if result_path.suffix != ".json":
+            continue
+        with open(result_path,'r') as result_file:
+            result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
+            gt_results = get_satellitepy_dict_values(result['gt_labels'], task)
+            for i_iou_th, iou_th in enumerate(iou_thresholds):
+                # Iterate over the confidence scores of the detected bounding boxes
+
+                for i_conf_score, conf_score in enumerate(result['confidence-scores']):
+                    ## If the confidence score is lower than threshold, skip the object
+                    if conf_score < conf_score_threshold:
+                        continue
+                    ## Check if iou score is greater than iou_threshold
+                    iou_score = result['matches']['iou']['scores'][i_conf_score]
+                    if iou_score < iou_th:
+                        continue
+
+                    gt_index = result['matches']['iou']['indexes'][i_conf_score]
+                    det_gt_value = gt_results[gt_index]
+                    ## Det index
+                    det_value = gt_results[task][i_conf_score]
+
+                    error = abs(det_gt_value - det_value)/det_gt_value
+                    cnt[i_iou_th] += 1
+                    score[i_iou_th] += (1 - error)
+    score = score / cnt
+    logger.info(score)
