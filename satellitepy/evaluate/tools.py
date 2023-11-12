@@ -111,6 +111,8 @@ def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_t
 
                     gt_index = result['matches']['iou']['indexes'][i_conf_score]
                     det_gt_value = gt_results[gt_index]
+                    if det_gt_value is None:
+                        continue
                     ## Det index
                     det_value = gt_results[task][i_conf_score]
 
