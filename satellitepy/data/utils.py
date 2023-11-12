@@ -467,7 +467,8 @@ def get_satellitepy_table():
             'fuselage':{
                 'canards':{
                     False:0,
-                    True:1},
+                    True:1
+                },
                 'length':{
                     'max':82.5,
                     'min':4.0}

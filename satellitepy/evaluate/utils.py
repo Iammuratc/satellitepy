@@ -85,8 +85,8 @@ def set_conf_mat_from_result(
                 det_gt_instance_name = taskResult[gt_index]
 
                 ## Set instance name to Background if it is not defined by the user
-                det_gt_instance_name = 'Background' if det_gt_instance_name not in instance_names else det_gt_instance_name 
-                det_gt_index = instance_names.index(det_gt_instance_name)
+                det_gt_instance_name = 'Background' if str(det_gt_instance_name) not in instance_names else det_gt_instance_name
+                det_gt_index = instance_names.index(str(det_gt_instance_name))
                 ## Det index
                 det_index = instance_names.index(str(idx2name[result[task][i_conf_score]]))
                 conf_mat[i_iou_th,i_conf_score_th,det_gt_index,det_index] += 1
@@ -102,8 +102,8 @@ def set_conf_mat_from_result(
                 undet_gt_instance_name = taskResult[undet_gt_bbox_ind]
 
                 ## Set instance name to Background if it is not defined by the user
-                undet_gt_instance_name = 'Background' if undet_gt_instance_name not in instance_names else undet_gt_instance_name
-                undet_gt_index = instance_names.index(undet_gt_instance_name)
+                undet_gt_instance_name = 'Background' if str(undet_gt_instance_name) not in instance_names else undet_gt_instance_name
+                undet_gt_index = instance_names.index(str(undet_gt_instance_name))
 
                 conf_mat[i_iou_th, i_conf_score_th, undet_gt_index, instance_names.index('Background')] += 1
 
