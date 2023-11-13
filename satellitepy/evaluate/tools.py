@@ -114,7 +114,7 @@ def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_t
                     if det_gt_value is None:
                         continue
                     ## Det index
-                    det_value = gt_results[task][i_conf_score]
+                    det_value = result[task][i_conf_score][0]
 
                     error = abs(det_gt_value - det_value)/det_gt_value
                     cnt[i_iou_th] += 1
