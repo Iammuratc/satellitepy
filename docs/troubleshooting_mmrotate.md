@@ -20,3 +20,8 @@ Add the following lines to your config file:
 `custom_imports = dict(
     imports=['mmrotate.models.detectors.rotated_retinanet'],
     allow_failed_imports=False)`
+
+
+## For distributed training when getting error concerning local_rank
+in `<your-virtual-env>/lib/<python-version>/site-packages/torch/distributed/run.py` line 752,
+change `local-rank` to `local_rank`
