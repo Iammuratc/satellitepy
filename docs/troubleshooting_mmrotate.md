@@ -25,3 +25,6 @@ Add the following lines to your config file:
 ## For distributed training when getting error concerning local_rank
 in `<your-virtual-env>/lib/<python-version>/site-packages/torch/distributed/run.py` line 752,
 change `local-rank` to `local_rank`
+
+## TypeError: FormatCode() got an unexpected keyword argument 'verify'
+use yapf v0.40.2: `pip install yapf==0.40.1`
