@@ -5,8 +5,7 @@ import logging
 
 from satellitepy.data.labels import read_label
 from satellitepy.data.bbox import BBox
-from satellitepy.evaluate.utils import match_gt_and_det_bboxes
-
+from satellitepy.evaluate.utils import match_gt_and_det_bboxes, get_ious
 
 # from mmrotate.core.bbox import rbbox_overlaps
 from mmdet.apis.inference import init_detector, inference_detector
@@ -48,7 +47,7 @@ def get_result(
     # Results
     det_labels = get_det_labels(mmrotate_result,class_names,nms_on_multiclass_thr)
     # IOU matching between ground truth and detected bboxes 
-    matches = match_gt_and_det_bboxes(gt_labels,det_labels)
+    matches = mmrotate_match_gt_and_det_bboxes(gt_labels,det_labels)
 
     result = {
         'gt_labels':gt_labels,
@@ -154,5 +153,30 @@ def nms_on_multi_class(result,nms_iou_thr):
             result_nms_to_numpy.append(np.array(det_bboxes))
 
     return result_nms_to_numpy
+
+
+def mmrotate_match_gt_and_det_bboxes(gt_labels,det_labels):
+    matches = {'iou':{'scores':[],'indexes':[]}}
+
+    det_label_params = [BBox(corners=my_bbox).params for my_bbox in det_labels['bboxes']] if len(det_labels['bboxes'])!=0 else []
+    gt_label_params = [BBox(corners=my_bbox).params for my_bbox in gt_labels['obboxes']] if len(gt_labels['obboxes'])!=0 else []
+
+
+    ## Old IOU calculation (keep it for now 12.05)
+    # ious = rbbox_overlaps(torch.FloatTensor(det_label_params), torch.FloatTensor(gt_label_params))
+    ## New IOU calculation
+    ious = get_ious(det_labels['bboxes'], gt_labels['obboxes'])
+    for i,iou in enumerate(ious):
+        # ROW: detected bboxes
+        # COL: gt bboxes
+        try:
+            bbox_ind_gt = np.argmax(iou)
+            iou_score = iou[bbox_ind_gt]
+        except:
+            continue
+
+        matches['iou']['scores'].append(iou_score.item())
+        matches['iou']['indexes'].append(bbox_ind_gt.item())
+    return matches
 
 
