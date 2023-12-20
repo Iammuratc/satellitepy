@@ -25,7 +25,8 @@ def save_mmrotate_patch_results(
     weights_path,
     device,
     class_names,
-    nms_on_multiclass_thr
+    nms_on_multiclass_thr,
+    task_name
     ):
     """
     Pass patch images to a mmrotate model and save the detected bounding boxes as json files in satellitepy format
@@ -47,6 +48,8 @@ def save_mmrotate_patch_results(
         cpu or cuda:0
     class_names : list
         Class names
+    task_name: str
+        name of the trained task
     Returns
     -------
     None
@@ -84,6 +87,7 @@ def save_mmrotate_patch_results(
             gt_labels=gt_labels,
             mmrotate_model=mmrotate_model,
             class_names=class_names,
+            task_name=task_name,
             nms_on_multiclass_thr=nms_on_multiclass_thr)
 
         # Save labels to json file

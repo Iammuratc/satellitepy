@@ -5,7 +5,9 @@ import logging
 
 from satellitepy.data.labels import read_label
 from satellitepy.data.bbox import BBox
+from satellitepy.data.utils import get_satellitepy_table
 from satellitepy.evaluate.utils import match_gt_and_det_bboxes, get_ious
+
 
 # from mmrotate.core.bbox import rbbox_overlaps
 from mmdet.apis.inference import init_detector, inference_detector
@@ -17,6 +19,7 @@ def get_result(
     gt_labels,
     mmrotate_model,
     class_names,
+    task_name,
     nms_on_multiclass_thr):
     """
     Get the detected bounding box results from mmrotate model
@@ -32,6 +35,8 @@ def get_result(
             Label format. E.g., dota, fair1m
         class_names : list
             Class names to be used to classify the detected bounding box.
+        task_name:
+            Name of the trained task
         nms_on_multiclass_thr : float
             IUO threshold for filtering out multiple detection results oj one object.
     Returns
@@ -45,17 +50,19 @@ def get_result(
     mmrotate_result = inference_detector(mmrotate_model,img)
 
     # Results
-    det_labels = get_det_labels(mmrotate_result,class_names,nms_on_multiclass_thr)
+    det_labels = get_det_labels(mmrotate_result,class_names,task_name,nms_on_multiclass_thr)
     # IOU matching between ground truth and detected bboxes 
     matches = mmrotate_match_gt_and_det_bboxes(gt_labels,det_labels)
 
     result = {
         'gt_labels':gt_labels,
-        'det_labels':det_labels,
         'matches':matches
-                }
+    }
 
-    return result 
+    for k in det_labels:
+        result[k] = det_labels[k]
+
+    return result
 
 def get_mmrotate_model(config_path,model_path,device):
     # build the model from a config file and a checkpoint file
@@ -69,7 +76,7 @@ def get_gt_labels(label_path,label_format):
     gt_labels = read_label(label_path,label_format)
     return gt_labels
 
-def get_det_labels(mmrotate_result,class_names,nms_on_multiclass_thr):
+def get_det_labels(mmrotate_result,class_names,task_name,nms_on_multiclass_thr):
     """
     Convert mmrotate results to dict in satellitepy format
     Parameters
@@ -85,9 +92,9 @@ def get_det_labels(mmrotate_result,class_names,nms_on_multiclass_thr):
     if nms_on_multiclass_thr!=0:
         mmrotate_result = nms_on_multi_class(mmrotate_result,nms_iou_thr=nms_on_multiclass_thr)
     det_labels = {
-        'bboxes':[],
-        'instance_names':[],
-        'confidence_scores':[]}
+        'obboxes':[],
+        task_name:[],
+        'confidence-scores':[]}
     for class_bboxes_ind, class_bboxes in enumerate(mmrotate_result):
         if class_bboxes==[]:
             continue
@@ -96,9 +103,11 @@ def get_det_labels(mmrotate_result,class_names,nms_on_multiclass_thr):
 
         for class_bbox in class_bboxes:
             my_bbox = BBox(params=class_bbox[:5])
-            det_labels['instance_names'].append(class_names[class_bboxes_ind])
-            det_labels['bboxes'].append(my_bbox.corners)
-            det_labels['confidence_scores'].append(class_bbox[-1])
+            if class_names[class_bboxes_ind] == 'other':
+                continue
+            det_labels[task_name].append(get_satellitepy_table()[task_name][class_names[class_bboxes_ind].replace("_", " ")])
+            det_labels['obboxes'].append(my_bbox.corners)
+            det_labels['confidence-scores'].append(class_bbox[-1])
     return det_labels
 
 
