@@ -129,13 +129,15 @@ class DecDecoder(object):
             # ignore bounding boxes and coarse class (heatmap)
             if (
                 k == "cls_coarse-class" or
-                (k[:3] != "cls" and k[:3] != "reg")
+                (k[:3] != "cls" and k[:3] != "reg" and k != "masks")
             ):
                 continue
 
             arr_val = self._tranpose_and_gather_feat(v, idx_2d)
             # classification -> we take class with highest prob
-            if k[:3] == "cls":
+            if k == "masks":
+                result[k[:4]] = v.squeeze(0).squeeze(0).cpu().numpy()
+            elif k[:3] == "cls":
                 result[k[4:]] = torch.argmax(arr_val[:, idx_1d, :], dim=2).squeeze(0).cpu().numpy()
             # regression -> there is only one value, we squeeze
             else:

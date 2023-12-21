@@ -1,3 +1,5 @@
+import cv2
+
 from satellitepy.models.bbavector.tools import get_model, get_model_decoder
 from satellitepy.models.bbavector.utils import load_checkpoint, decode_predictions #, collater
 from satellitepy.dataset.bbavector.dataset_bbavector import BBAVectorDataset
@@ -101,7 +103,7 @@ def save_patch_results(
         predictions = model_decoder.ctdet_decode(pred)
         dec_pred = decode_predictions(
             predictions = predictions, 
-            orig_h = data_dict['img_h'].numpy(), 
+            orig_h = data_dict['img_h'].numpy(),
             orig_w = data_dict['img_w'].numpy(),
             input_h = input_h, 
             input_w = input_w, 
@@ -109,6 +111,12 @@ def save_patch_results(
         )
 
         save_dict = dict()
+
+        if "mask" in dec_pred:
+            mask_folder = Path(out_folder)/ 'results' / 'masks'
+            assert create_folder(mask_folder)
+            im = cv2.normalize(dec_pred["mask"], None, 0, 255, cv2.NORM_MINMAX)
+            cv2.imwrite(str(Path(mask_folder) / f"{img_name}.jpg"), im)
 
         if "obboxes" in dec_pred:
             bboxes_nms, keep_ind = nms_rotated(
