@@ -1,7 +1,7 @@
 import cv2
 
 from satellitepy.models.bbavector.tools import get_model, get_model_decoder
-from satellitepy.models.bbavector.utils import load_checkpoint, decode_predictions #, collater
+from satellitepy.models.bbavector.utils import load_checkpoint, decode_predictions, decode_masks  # , collater
 from satellitepy.dataset.bbavector.dataset_bbavector import BBAVectorDataset
 from satellitepy.data.utils import get_task_dict
 from satellitepy.data.tools import read_label
@@ -32,6 +32,7 @@ def save_patch_results(
     input_h,
     input_w,
     conf_thresh,
+    mask_thresh,
     down_ratio,
     K,
     # nms_on_multiclass_thr
@@ -112,12 +113,6 @@ def save_patch_results(
 
         save_dict = dict()
 
-        if "mask" in dec_pred:
-            mask_folder = Path(out_folder)/ 'results' / 'masks'
-            assert create_folder(mask_folder)
-            im = cv2.normalize(dec_pred["mask"], None, 0, 255, cv2.NORM_MINMAX)
-            cv2.imwrite(str(Path(mask_folder) / f"{img_name}.jpg"), im)
-
         if "obboxes" in dec_pred:
             bboxes_nms, keep_ind = nms_rotated(
                  dets=torch.Tensor([BBox(corners=corners).params for corners in dec_pred["obboxes"]]),
@@ -128,12 +123,16 @@ def save_patch_results(
             if keep_ind is not None:
                 save_dict["obboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
                 for k, v in dec_pred.items():
-                    if k != "obboxes":
+                    if k == "mask":
+                        save_dict["masks"] = decode_masks(save_dict["obboxes"], k, mask_thresh)
+                    elif k != "obboxes":
                         save_dict[k] = np.asarray(v)[keep_ind.cpu().numpy()].tolist()
             else:
                 save_dict["obboxes"] = dec_pred["obboxes"]
                 for k, v in dec_pred.items():
-                    if k != "obboxes":
+                    if k == "mask":
+                        save_dict["masks"] = decode_masks(save_dict["obboxes"], k, mask_thresh)
+                    elif k != "obboxes":
                         if isinstance(v, list):
                             save_dict[k] = v
                         else:
@@ -149,13 +148,17 @@ def save_patch_results(
             if keep_ind is not None:
                 save_dict["hbboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
                 for k, v in dec_pred.items():
-                    if k != "hbboxes":
+                    if k == "mask":
+                        save_dict["masks"] = decode_masks(save_dict["hbboxes"], k, mask_thresh)
+                    elif k != "hbboxes":
                         save_dict[k] = np.asarray(v)[keep_ind].tolist()
             else:
                 save_dict["hbboxes"] = dec_pred["hbboxes"]
                 for k, v in dec_pred.items():
                     if k != "hbboxes":
-                        if isinstance(v, list):
+                        if k == "mask":
+                            save_dict["masks"] = decode_masks(save_dict["hbboxes"], k, mask_thresh)
+                        elif isinstance(v, list):
                             save_dict[k] = v
                         else:
                             save_dict[k] = v.tolist()
