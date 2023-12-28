@@ -79,10 +79,14 @@ def set_conf_mat_from_result(
                     continue
 
                 gt_index = result['matches']['iou']['indexes'][i_conf_score]
-                det_gt_bbox_indices.append(gt_index)
 
                 # det_gt_instance_name = result['gt_labels'][task][gt_index]
                 det_gt_instance_name = taskResult[gt_index]
+
+                if det_gt_instance_name is None:
+                    continue
+
+                det_gt_bbox_indices.append(gt_index)
 
                 ## Set instance name to Background if it is not defined by the user
                 det_gt_instance_name = 'Background' if str(det_gt_instance_name) not in instance_names else det_gt_instance_name
