@@ -80,7 +80,7 @@ def decode_masks(bboxes, mask, mask_thresh):
         cv2.fillPoly(mask_0, [np.array(bbox, dtype=int)], 1)
 
         coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] == 1)).T.tolist()
-        labels.append([coords[1] + h[0], coords[0] + h[2]])
+        labels.append([(coords[1] + h[0]).tolist(), (coords[0] + h[2]).tolist()])
 
     return labels
 
