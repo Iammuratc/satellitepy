@@ -254,7 +254,6 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
             bboxes = 'obboxes'
 
         for bbox_corners in labels[bboxes]:
-            print(bbox_corners)
             bbox_corners = np.array(bbox_corners, np.int32)
             bbox_corners = bbox_corners.reshape((-1, 1, 2))
             # bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)

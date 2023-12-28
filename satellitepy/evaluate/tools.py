@@ -79,6 +79,65 @@ def calculate_map(
         plt.show()
 
 
+def calc_iou(gt_mask, det_mask):
+    gt_set = set(zip(gt_mask[0], gt_mask[1]))
+    det_set = set(zip(det_mask[0], det_mask[1]))
+
+    intersection = gt_set.intersection(det_set)
+    union = gt_set.union(det_set)
+
+    int_cnt = len(intersection)
+    un_cnt = len(union)
+
+    return int_cnt/un_cnt
+
+
+
+def calculate_iou_score(in_result_folder, out_folder, iou_thresholds, conf_score_threshold):
+    # Get logger
+    logger = logging.getLogger(__name__)
+
+    # Result paths
+    result_paths = get_file_paths(in_result_folder)
+
+    ious = np.zeros(len(iou_thresholds))
+    cnt = np.zeros(len(iou_thresholds))
+
+    for result_path in tqdm(result_paths):
+        if result_path.suffix != ".json":
+            continue
+
+        with open(result_path,'r') as result_file:
+            result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
+            gt_results = get_satellitepy_dict_values(result['gt_labels'], "masks")
+
+            for i_iou_th, iou_th in enumerate(iou_thresholds):
+                # Iterate over the confidence scores of the detected bounding boxes
+
+                for i_conf_score, conf_score in enumerate(result['confidence-scores']):
+                    ## If the confidence score is lower than threshold, skip the object
+                    if conf_score < conf_score_threshold:
+                        continue
+                    ## Check if iou score is greater than iou_threshold
+                    iou_score = result['matches']['iou']['scores'][i_conf_score]
+                    if iou_score < iou_th:
+                        continue
+
+                    gt_index = result['matches']['iou']['indexes'][i_conf_score]
+                    det_gt_value = gt_results[gt_index]
+                    if det_gt_value is None:
+                        continue
+                    ## Det index
+                    det_value = result["masks"][i_conf_score]
+                    iou = calc_iou(det_gt_value, det_value)
+
+                    cnt[i_iou_th] += 1
+                    ious[i_iou_th] += iou
+
+    ious = ious / cnt
+    return ious
+
+
 def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_thresholds, out_folder):
     # Get logger
     logger = logging.getLogger(__name__)
