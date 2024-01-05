@@ -714,24 +714,24 @@ def read_satellitepy_label(label_path):
         labels = json.load(f)
     return labels
 
-def read_result_label(label_path):
-    available_tasks = []
+# def read_result_label(label_path):
+#     available_tasks = []
 
-    with open(label_path,'r') as f:
-        intermediate_labels = json.load(f)
-    del intermediate_labels['gt_labels']
-    labels = init_satellitepy_label()
-    for key, val in intermediate_labels.items():
-        available_tasks.append(key)
-        labels = set_satellitepy_dict_values(labels, key, val)
+#     with open(label_path,'r') as f:
+#         intermediate_labels = json.load(f)
+#     del intermediate_labels['gt_labels']
+#     labels = init_satellitepy_label()
+#     for key, val in intermediate_labels.items():
+#         available_tasks.append(key)
+#         labels = set_satellitepy_dict_values(labels, key, val)
 
-    all_tasks = get_all_satellitepy_keys()
-    ## Not available tasks
-    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+#     all_tasks = get_all_satellitepy_keys()
+#     ## Not available tasks
+#     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
 
-    fill_none_to_empty_keys(labels, not_available_tasks)
+#     fill_none_to_empty_keys(labels, not_available_tasks)
 
-    return labels
+#     return labels
 
 def read_isprs_label(label_path):
     labels = init_satellitepy_label()

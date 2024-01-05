@@ -227,21 +227,25 @@ def get_label_by_idx(satpy_labels: dict, i: int):
     inner(satpy_labels, result)
     return result
       
-def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tasks):#, mask_folder):
+def show_results_on_image(img_dir, 
+    result_dir, 
+    out_dir, 
+    tasks, 
+    iou_th=0.5, 
+    conf_th=0.5):
+    """
+    Visualize results on images
+    """
     logger = logging.getLogger(__name__)
     logger.info(tasks)
-    img_paths = get_file_paths(img_folder)
-    label_paths = get_file_paths(label_folder)
-    # if mask_folder:
-    #     mask_paths = get_file_paths(mask_folder)
-    # else:
-    #     mask_paths = [None] * len(img_paths)
+    img_paths = get_file_paths(img_dir)
+    label_paths = get_file_paths(result_dir)
     assert len(img_paths) == len(label_paths)#
         # for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
     for img_path, label_path in zip(img_paths, label_paths):
         img = cv2.imread(str(img_path))
         logger.info(img_path)
-        labels = read_label(label_path, label_format)
+        labels = read_label(label_path, label_format='satellitepy')
 
         # logger.info('Adding bounding boxes/labels to image')
 
@@ -253,31 +257,36 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
         else:
             bboxes = 'obboxes'
 
-        for bbox_corners in labels[bboxes]:
+        for i, bbox_corners in enumerate(labels[bboxes]):
+            conf_score = labels['confidence-scores'][i]
+            iou_score = labels['matches']['iou']['scores'][i]
+            if conf_score < conf_th or iou_score < iou_th:
+                continue
             bbox_corners = np.array(bbox_corners, np.int32)
-            bbox_corners = bbox_corners.reshape((-1, 1, 2))
-            # bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)
-            # if classes:
-                # x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
-                # ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+            # bbox_corners = bbox_corners.reshape((-1, 1, 2))
+            x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
+            # ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+            cv2.putText(img,str(round(conf_score, 2)),(x_max,y_min),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
             cv2.polylines(img, [bbox_corners], True, color=(0,0,255))
                 # BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
             # fig.canvas.draw()
     
         if 'masks' in tasks:
+            img_mask = np.zeros(shape=(img.shape[0],img.shape[1]),dtype=np.uint8)
             for mask in labels['masks']:
                 if mask is not None:
                     x, y = mask
-                    img[y,x,:] = 1
+                    img_mask[y,x] = 1
+            contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            cv2.drawContours(img, contours, -1, (0,255,0), 1)
 
-
-        logger.info(Path(out_folder) / f"{img_path.stem}.png")
-        cv2.imwrite(str(Path(out_folder) / f"{img_path.stem}.png"), img)
+        logger.info(Path(out_dir) / f"{img_path.stem}.png")
+        cv2.imwrite(str(Path(out_dir) / f"{img_path.stem}.png"), img)
 
             # plt.axis('off')
             # plt.show()
-            # plt.savefig(out_folder / Path(img_folder.stem + ".png"))
-            # logger.info(f'Saved labels on {out_folder / Path(img_folder.stem + ".png")}')
+            # plt.savefig(out_dir / Path(img_folder.stem + ".png"))
+            # logger.info(f'Saved labels on {out_dir / Path(img_folder.stem + ".png")}')
   
 
 # def split_rareplanes_labels(
