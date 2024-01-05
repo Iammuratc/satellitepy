@@ -1,6 +1,6 @@
 import configargparse
 from pathlib import Path
-from satellitepy.data.tools import show_labels_on_image
+from satellitepy.data.tools import show_results_on_image
 from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
 import logging
 
@@ -14,14 +14,18 @@ project_folder = get_project_folder()
 def get_args():
     """Arguments parser."""
     parser = configargparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--in-image-folder', type=Path, required=True,
+    parser.add_argument('--in-image-dir', type=Path, required=True,
                         help='Images that should be displayed')
-    parser.add_argument('--in-result-folder', type=Path, required=True,
+    parser.add_argument('--in-result-dir', type=Path, required=True,
                         help='Labels that corresponds to the given images')
-    parser.add_argument('--out-folder', type=Path, required=True,
-                        help='Folder where the generated image should be saved to.')
+    parser.add_argument('--out-dir', type=Path, required=True,
+                        help='dir where the generated image should be saved to.')
     parser.add_argument('--tasks', type=str, nargs='+',
                         help='Which information to show on generated images. E.g.: bboxes, masks, labels')
+    parser.add_argument('--conf-score-threshold', type=float, default=0.5,
+                        help='Confidence score threshold')
+    parser.add_argument('--iou-threshold', type=float, default=0.5,
+                        help='IOU threshold')
     parser.add_argument('--log-config-path', default=project_folder /
                                                      Path("configs/log.config"), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, default=None, help='Log file path.')
@@ -30,25 +34,32 @@ def get_args():
 
 
 def run(args):
-    image_path = Path(args.in_image_folder)
-    result_path = Path(args.in_result_folder)
-    label_format = 'results'
-    output_folder = Path(args.out_folder)
+    image_dir = Path(args.in_image_dir)
+    result_dir = Path(args.in_result_dir)
+    output_dir = Path(args.out_dir)
+    iou_th = args.iou_threshold
+    conf_th = args.conf_score_threshold
 
-    assert create_folder(output_folder)
+    assert create_folder(output_dir)
 
     tasks = args.tasks
 
-    log_path = output_folder / f'display_labels.log' if args.log_path == None else args.log_path
+    log_path = output_dir / f'display_labels.log' if args.log_path == None else args.log_path
 
     init_logger(config_path=args.log_config_path, log_path=log_path)
     logger = logging.getLogger(__name__)
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
 
-    logger.info(f'Displaying labels on {image_path.name}')
+    logger.info(f'Displaying results of {image_dir.name}...')
 
-    show_labels_on_image(image_path, result_path, label_format, output_folder, tasks)
+    show_results_on_image(
+        img_dir = image_dir, 
+        result_dir = result_dir,
+        out_dir = output_dir,
+        tasks = tasks,
+        iou_th = iou_th,
+        conf_th = conf_th)
 
 
 if __name__ == '__main__':
