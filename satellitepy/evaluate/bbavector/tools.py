@@ -162,7 +162,7 @@ def save_patch_results(
                 for k, v in dec_pred.items():
                     if k != "hbboxes":
                         if k == "mask":
-                            save_dict["masks"] = decode_masks(save_dict["hbboxes"], v, mask_thresh)
+                            mask = v
                         elif isinstance(v, list):
                             save_dict[k] = v
                         else:
