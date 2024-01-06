@@ -32,7 +32,6 @@ def save_patch_results(
     input_h,
     input_w,
     conf_thresh,
-    mask_thresh,
     down_ratio,
     K,
     # nms_on_multiclass_thr
@@ -79,6 +78,7 @@ def save_patch_results(
         input_h,
         input_w,
         down_ratio,
+        False,
         False)
     # Dataloader
     data_loader = DataLoader(dataset,

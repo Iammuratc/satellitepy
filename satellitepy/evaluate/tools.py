@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 from satellitepy.data.utils import get_satellitepy_dict_values
+from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, get_file_paths, is_file_names_match
 # from satellitepy.data.patch import get_patches, merge_patch_results
 import logging
@@ -94,23 +95,25 @@ def calc_iou(gt_mask, det_mask):
 
 
 
-def calculate_iou_score(in_result_folder, out_folder, iou_thresholds, conf_score_threshold):
+def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresholds, conf_score_threshold, mask_threshold):
     # Get logger
     logger = logging.getLogger(__name__)
 
     # Result paths
     result_paths = get_file_paths(in_result_folder)
+    mask_paths = get_file_paths(in_mask_folder)
 
     ious = np.zeros(len(iou_thresholds))
     cnt = np.zeros(len(iou_thresholds))
 
-    for result_path in tqdm(result_paths):
-        if result_path.suffix != ".json":
+    for result_path, mask_path in tqdm(zip(result_paths, mask_paths)):
+        if result_path.suffix != ".json" or mask_path.suffix != ".npy":
             continue
 
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
             gt_results = get_satellitepy_dict_values(result['gt_labels'], "masks")
+            mask = np.load(mask_path)
 
             for i_iou_th, iou_th in enumerate(iou_thresholds):
                 # Iterate over the confidence scores of the detected bounding boxes
@@ -128,8 +131,11 @@ def calculate_iou_score(in_result_folder, out_folder, iou_thresholds, conf_score
                     det_gt_value = gt_results[gt_index]
                     if det_gt_value is None:
                         continue
+
+                    bbox = result["hbboxes"][i_conf_score] if result["hbboxes"][i_conf_score] else result["hbboxes"][i_conf_score]
+                    det_value = decode_masks(bbox, mask, mask_threshold)
+
                     ## Det index
-                    det_value = result["masks"][i_conf_score]
                     iou = calc_iou(det_gt_value, det_value)
 
                     cnt[i_iou_th] += 1
