@@ -95,7 +95,7 @@ def save_patch_results(
     assert create_folder(patch_result_folder)
 
     if "masks" in tasks:
-        patch_mask_folder = Path(out_folder) / 'masks' / 'patch_labels'
+        patch_mask_folder = Path(out_folder) / 'results' / 'masks'
         assert create_folder(patch_mask_folder)
 
     # criterion = loss_utils.LossAll()
