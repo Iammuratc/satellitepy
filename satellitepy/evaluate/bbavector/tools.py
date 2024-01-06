@@ -179,6 +179,6 @@ def save_patch_results(
         with open(Path(patch_result_folder) / f"{img_name}.json",'w') as f:
             json.dump(save_dict, f, indent=4)
 
-        if mask:
-            with open(Path(patch_mask_folder) / f"{img_name}.npy", 'w') as f:
+        if mask is not None:
+            with open(Path(patch_mask_folder) / f"{img_name}.npy", 'wb') as f:
                 np.save(f, mask)
