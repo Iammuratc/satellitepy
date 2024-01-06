@@ -106,7 +106,7 @@ def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresh
     ious = np.zeros(len(iou_thresholds))
     cnt = np.zeros(len(iou_thresholds))
 
-    for result_path, mask_path in tqdm(zip(result_paths, mask_paths)):
+    for result_path, mask_path in tqdm(zip(result_paths, mask_paths), total=len(result_paths)):
         if result_path.suffix != ".json" or mask_path.suffix != ".npy":
             continue
 
