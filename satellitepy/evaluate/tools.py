@@ -71,12 +71,35 @@ def calculate_map(
         mAP = np.sum(np.transpose(np.transpose(ap)[:-1]), axis=1)/(len(ap[0])-1)
         logger.info(mAP)
     if plot_pr:
-        fig, ax = plt.subplots()
-        ax.plot(recall[pr_threshold_ind,:],precision[pr_threshold_ind,:])
-        ax.set_ylabel('Precision')
-        ax.set_xlabel('Recall')
-        plt.savefig(str(out_folder) + '/plot_AP.png')
-        plt.show()
+        precision_recall_curve(out_folder, pr_threshold_ind, precision, recall)
+
+
+def precision_recall_curve(out_folder, pr_threshold_ind, precision, recall):
+    print(20*'-')
+    print(precision.shape)
+    print(20*'-')
+    fig, ax = plt.subplots()
+    ax.plot(recall[pr_threshold_ind, :], precision[pr_threshold_ind, :])
+
+    rec_values = []
+    prec_values = []
+    rec_min = 0
+    prec_max = 0
+
+    for i in range(recall[pr_threshold_ind, :], 0):
+        rec_i = recall[pr_threshold_ind, :][i]
+        prec_i = precision[pr_threshold_ind, :][i]
+        rec_values.append(rec_i)
+        rec_min = np.min([rec_i, rec_min])
+        prec_max = np.max([prec_i, prec_max])
+        prec_values.append(prec_i)
+
+    ax.plot(rec_values, prec_values)
+
+    ax.set_ylabel('Precision')
+    ax.set_xlabel('Recall')
+    plt.savefig(str(out_folder) + '/plot_AP.png')
+    plt.show()
 
 
 def calc_iou(gt_mask, det_mask):
