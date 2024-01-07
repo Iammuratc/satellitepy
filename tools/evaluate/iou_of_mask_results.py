@@ -16,7 +16,7 @@ def get_args():
     parser.add_argument('--in-result-folder', type=str,
                         help='Folder of results. The results in this folder will be processed.')
     parser.add_argument('--in-mask-folder', type=str, help='Folder of masks. The masks in this folder will be processed.')
-    parser.add_argument('--mask-threshold', type=float, default=0.5,
+    parser.add_argument('--mask-threshold', type=float, default=0.02,
                         help='Only pixels with intensity above this value will be set as mask. Range 0 to 1.')
     parser.add_argument('--out-folder',
                         type=str,

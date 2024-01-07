@@ -9,11 +9,13 @@ import numpy as np
 import logging
 
 import cv2
+from tqdm import tqdm
 
 from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys, satellitepy_labels_empty
 from satellitepy.data.patch import get_patches
 from satellitepy.data.chip import get_chips
 from satellitepy.data.utils import get_xview_classes
+from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
 from satellitepy.data.bbox import BBox
 
@@ -228,7 +230,9 @@ def get_label_by_idx(satpy_labels: dict, i: int):
     return result
       
 def show_results_on_image(img_dir, 
-    result_dir, 
+    result_dir,
+    mask_dir,
+    mask_threshold,
     out_dir, 
     tasks, 
     iou_th=0.5, 
@@ -240,10 +244,10 @@ def show_results_on_image(img_dir,
     logger.info(tasks)
     img_paths = get_file_paths(img_dir)
     label_paths = get_file_paths(result_dir)
-    assert len(img_paths) == len(label_paths)#
-    for img_path, label_path in zip(img_paths, label_paths):
+    mask_paths = get_file_paths(mask_dir) if mask_dir else [None * len(img_paths)]
+    assert len(img_paths) == len(label_paths) == len(mask_paths)
+    for img_path, label_path, mask_path in tqdm(zip(img_paths, label_paths, mask_paths), total=len(img_paths)):
         img = cv2.imread(str(img_path))
-        logger.info(img_path)
         labels = read_label(label_path, label_format='satellitepy')
 
         # Current image
@@ -266,13 +270,24 @@ def show_results_on_image(img_dir,
             cv2.polylines(img, [bbox_corners], True, color=(0,0,255))
     
         if 'masks' in tasks:
-            img_mask = np.zeros(shape=(img.shape[0],img.shape[1]),dtype=np.uint8)
-            for mask in labels['masks']:
-                if mask is not None:
-                    x, y = mask
-                    img_mask[y,x] = 1
+            mask = np.load(mask_path)
+            img_mask = np.zeros(shape=(img.shape[0], img.shape[1]), dtype=np.uint8)
+
+            for bbox in labels[bboxes]:
+                mask_values = decode_masks(bbox, mask, mask_threshold)
+                x, y = mask_values
+                img_mask[y, x] = 1
+
             contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             cv2.drawContours(img, contours, -1, (0,255,0), 1)
+
+            # img_mask = np.zeros(shape=(img.shape[0],img.shape[1]),dtype=np.uint8)
+            # for mask in labels['masks']:
+            #     if mask is not None:
+            #         x, y = mask
+            #         img_mask[y,x] = 1
+            # contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            # cv2.drawContours(img, contours, -1, (0,255,0), 1)
 
         cv2.imwrite(str(Path(out_dir) / f"{img_path.stem}.png"), img)
         logger.info(Path(out_dir) / f"{img_path.stem}.png")
