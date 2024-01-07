@@ -227,24 +227,26 @@ def get_label_by_idx(satpy_labels: dict, i: int):
     inner(satpy_labels, result)
     return result
       
-def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tasks):#, mask_folder):
+def show_results_on_image(img_dir, 
+    result_dir, 
+    out_dir, 
+    tasks, 
+    iou_th=0.5, 
+    conf_th=0.5):
+    """
+    Visualize results on images
+    """
     logger = logging.getLogger(__name__)
     logger.info(tasks)
-    img_paths = get_file_paths(img_folder)
-    label_paths = get_file_paths(label_folder)
-    # if mask_folder:
-    #     mask_paths = get_file_paths(mask_folder)
-    # else:
-    #     mask_paths = [None] * len(img_paths)
+    img_paths = get_file_paths(img_dir)
+    label_paths = get_file_paths(result_dir)
     assert len(img_paths) == len(label_paths)#
-        # for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
     for img_path, label_path in zip(img_paths, label_paths):
         img = cv2.imread(str(img_path))
         logger.info(img_path)
-        labels = read_label(label_path, label_format)
+        labels = read_label(label_path, label_format='satellitepy')
 
-        # logger.info('Adding bounding boxes/labels to image')
-
+        # Current image
         if satellitepy_labels_empty(labels):
             continue
 
@@ -253,135 +255,28 @@ def show_labels_on_image(img_folder, label_folder, label_format, out_folder, tas
         else:
             bboxes = 'obboxes'
 
-        for bbox_corners in labels[bboxes]:
+        for i, bbox_corners in enumerate(labels[bboxes]):
+            conf_score = labels['confidence-scores'][i]
+            iou_score = labels['matches']['iou']['scores'][i]
+            if conf_score < conf_th or iou_score < iou_th:
+                continue
             bbox_corners = np.array(bbox_corners, np.int32)
-            bbox_corners = bbox_corners.reshape((-1, 1, 2))
-            # bbox_corners = np.array(bbox[:8]).astype(int).reshape(4, 2)
-            # if classes:
-                # x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
-                # ax.text(x=(x_max+x_min)/2,y=(y_max+y_min)/2 - 5 ,s=labels[classes[0]][i], fontsize=8, color='r', alpha=1, horizontalalignment='center', verticalalignment='bottom')
+            x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
+            cv2.putText(img,str(round(conf_score, 2)),(x_max,y_min),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
             cv2.polylines(img, [bbox_corners], True, color=(0,0,255))
-                # BBox.plot_bbox(corners=bbox_corners, ax=ax, c='b', s=5)
-            # fig.canvas.draw()
     
         if 'masks' in tasks:
+            img_mask = np.zeros(shape=(img.shape[0],img.shape[1]),dtype=np.uint8)
             for mask in labels['masks']:
                 if mask is not None:
                     x, y = mask
-                    img[y,x,:] = 1
+                    img_mask[y,x] = 1
+            contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            cv2.drawContours(img, contours, -1, (0,255,0), 1)
 
+        cv2.imwrite(str(Path(out_dir) / f"{img_path.stem}.png"), img)
+        logger.info(Path(out_dir) / f"{img_path.stem}.png")
 
-        logger.info(Path(out_folder) / f"{img_path.stem}.png")
-        cv2.imwrite(str(Path(out_folder) / f"{img_path.stem}.png"), img)
-
-            # plt.axis('off')
-            # plt.show()
-            # plt.savefig(out_folder / Path(img_folder.stem + ".png"))
-            # logger.info(f'Saved labels on {out_folder / Path(img_folder.stem + ".png")}')
-  
-
-# def split_rareplanes_labels(
-#         label_file,
-#         out_folder
-#     ):
-#     """
-#         Save patches from the original images
-#         Parameters
-#         ----------
-#         label_file : Path
-#             Input label file. This single label file will be split up.
-#         out_folder : Path
-#             Output folder. New labels will be saved into <out-folder>/labels
-#         Returns
-#         -------
-#         Save labels in <out-folder>/labels
-#         """
-
-#     logger = logging.getLogger(__name__)
-
-#     # Create output folder
-#     out_label_folder = Path(out_folder)
-#     assert create_folder(out_label_folder)
-
-#     label_path = Path(label_file)
-
-#     file = json.load(open(label_path, 'r'))
-
-#     id_to_img = {}
-#     for image in file['images']:
-#         id_to_img[image['id']] = image['file_name']
-#         label_file_path = os.path.join(out_label_folder, image['file_name'][:-3] + 'json')
-#         label_file = open(label_file_path, 'w')
-#         logger.info(f'Initializing annotations for {label_file_path}')
-#         annotations = {'annotations': []}
-#         json.dump(annotations, label_file, indent=4)
-#         label_file.close()
-
-#     for new_annotation in file['annotations']:
-#         img_name = id_to_img[new_annotation['image_id']]
-#         label_file_path = os.path.join(out_label_folder, img_name[:-3] + 'json')
-#         label_file = open(label_file_path, 'r', encoding="utf-8")
-#         logger.info(f'Saving annotation for {label_file_path}')
-#         annotations = json.load(label_file)
-#         label_file.close()
-#         annotations['annotations'].append(new_annotation)
-#         file = open(label_file_path, 'w', encoding="utf-8")
-
-#         json.dump(annotations, file, ensure_ascii=False, indent=4)
-#         file.close()
-
-# def split_xview_labels(
-#         label_file,
-#         out_folder
-#     ):
-#     """
-#         Save patches from the original images
-#         Parameters
-#         ----------
-#         label_file : Path
-#             Input label file. This single label file will be split up.
-#         out_folder : Path
-#             Output folder. New labels will be saved into <out-folder>/labels
-#         Returns
-#         -------
-#         Save labels in <out-folder>/labels
-#         """
-
-#     logger = logging.getLogger(__name__)
-
-#     # Create output folder
-#     out_label_folder = Path(out_folder)
-#     assert create_folder(out_label_folder)
-
-#     label_path = Path(label_file)
-
-#     file = json.load(open(label_path, 'r'))
-
-#     id_to_img = {}
-#     for image in file['features']:
-#         id_to_img[image['properties']["image_id"]] = image['properties']['image_id']
-#         label_file_path = os.path.join(out_label_folder, image['properties']["image_id"][:-3] + 'geojson')
-#         label_file = open(label_file_path, 'w')
-#         logger.info(f'Initializing annotations for {label_file_path}')
-#         annotations = {'annotations': [image]}
-#         json.dump(annotations, label_file, indent=4)
-#         label_file.close()
-
-#     for new_annotation in file['features']:
-#         img_name = id_to_img[new_annotation["properties"]['image_id']]
-#         label_file_path = out_label_folder / f"{img_name[:-3]}geojson"
-#         if label_file_path.exists():
-#             continue
-#         label_file = open(label_file_path, 'r', encoding="utf-8")
-#         logger.info(f'Saving annotation for {label_file_path}')
-#         annotations = json.load(label_file)
-#         label_file.close()
-#         annotations['annotations'].append(new_annotation)
-
-#         file = open(label_file_path, 'w', encoding="utf-8")
-
-#         json.dump(annotations, file, ensure_ascii=False, indent=4)
-#         file.close()
 
 def save_xview_in_satellitepy_format(out_folder,label_path):
     """
