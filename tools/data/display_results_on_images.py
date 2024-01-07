@@ -39,7 +39,7 @@ def get_args():
 
 def run(args):
     image_dir = Path(args.in_image_dir)
-    mask_dir = Path(args.in_mask_dir) if args.in_mask_dir else None
+    mask_dir = Path(args.mask_dir) if args.in_mask_dir else None
     mask_threshold = args.mask_threshold if args.mask_threshold else 0.02
     result_dir = Path(args.in_result_dir)
     output_dir = Path(args.out_dir)

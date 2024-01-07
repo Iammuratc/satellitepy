@@ -268,16 +268,12 @@ def show_results_on_image(img_dir,
             x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
             cv2.putText(img,str(round(conf_score, 2)),(x_max,y_min),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
             cv2.polylines(img, [bbox_corners], True, color=(0,0,255))
-
+    
         if 'masks' in tasks:
             mask = np.load(mask_path)
             img_mask = np.zeros(shape=(img.shape[0], img.shape[1]), dtype=np.uint8)
 
             for bbox in labels[bboxes]:
-                conf_score = labels['confidence-scores'][i]
-                iou_score = labels['matches']['iou']['scores'][i]
-                if conf_score < conf_th or iou_score < iou_th:
-                    continue
                 mask_values = decode_masks(bbox, mask, mask_threshold)
                 x, y = mask_values
                 img_mask[y, x] = 1
@@ -285,7 +281,16 @@ def show_results_on_image(img_dir,
             contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             cv2.drawContours(img, contours, -1, (0,255,0), 1)
 
+            # img_mask = np.zeros(shape=(img.shape[0],img.shape[1]),dtype=np.uint8)
+            # for mask in labels['masks']:
+            #     if mask is not None:
+            #         x, y = mask
+            #         img_mask[y,x] = 1
+            # contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            # cv2.drawContours(img, contours, -1, (0,255,0), 1)
+
         cv2.imwrite(str(Path(out_dir) / f"{img_path.stem}.png"), img)
+        logger.info(Path(out_dir) / f"{img_path.stem}.png")
 
 
 def save_xview_in_satellitepy_format(out_folder,label_path):
