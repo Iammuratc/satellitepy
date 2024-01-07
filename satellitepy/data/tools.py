@@ -273,21 +273,18 @@ def show_results_on_image(img_dir,
             mask = np.load(mask_path)
             img_mask = np.zeros(shape=(img.shape[0], img.shape[1]), dtype=np.uint8)
 
-            for bbox in labels[bboxes]:
+            for i, bbox in enumerate(labels[bboxes]):
+                conf_score = labels['confidence-scores'][i]
+                iou_score = labels['matches']['iou']['scores'][i]
+                if conf_score < conf_th or iou_score < iou_th:
+                    continue
+
                 mask_values = decode_masks(bbox, mask, mask_threshold)
                 x, y = mask_values
                 img_mask[y, x] = 1
 
             contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             cv2.drawContours(img, contours, -1, (0,255,0), 1)
-
-            # img_mask = np.zeros(shape=(img.shape[0],img.shape[1]),dtype=np.uint8)
-            # for mask in labels['masks']:
-            #     if mask is not None:
-            #         x, y = mask
-            #         img_mask[y,x] = 1
-            # contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            # cv2.drawContours(img, contours, -1, (0,255,0), 1)
 
         cv2.imwrite(str(Path(out_dir) / f"{img_path.stem}.png"), img)
         logger.info(Path(out_dir) / f"{img_path.stem}.png")
