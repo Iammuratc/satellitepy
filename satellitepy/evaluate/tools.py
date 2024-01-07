@@ -75,24 +75,17 @@ def calculate_map(
 
 
 def precision_recall_curve(out_folder, precision, recall):
-    fig, ax = plt.subplots()
-    ax.plot(recall, precision)
-
-    ax.set_ylabel('Precision')
-    ax.set_xlabel('Recall')
-    plt.savefig(str(out_folder) + '/plot_AP.png')
-
-    rec_values = [np.array([1] * recall.shape[1])]
-    prec_values = [np.array([0] * precision.shape[1])]
+    rec_values = [np.ones(recall.shape[1])]
+    prec_values = [np.zeros(precision.shape[1])]
     prec_max = np.zeros(precision.shape[1])
 
     for i in range(len(recall)):
         rec_i = recall[i]
         rec_values.append(rec_i)
         prec_i = precision[i]
-        prec_i_pre = precision[i+1] if i < len(recall)-1 else precision[i]
-        prec_max = np.max([prec_i, prec_i_pre, prec_max], 0)
         rec_values.append(rec_i)
+        prec_i_next = precision[i+1] if i < len(recall)-1 else precision[i]
+        prec_max = np.max([prec_i, prec_i_next, prec_max], 0)
         prec_values.append(prec_i)
         prec_values.append(prec_max)
 
@@ -101,7 +94,7 @@ def precision_recall_curve(out_folder, precision, recall):
 
     ax.set_ylabel('Precision')
     ax.set_xlabel('Recall')
-    plt.savefig(str(out_folder) + '/plot_AP_new.png')
+    plt.savefig(str(out_folder) + '/plot_AP.png')
     plt.show()
 
 
