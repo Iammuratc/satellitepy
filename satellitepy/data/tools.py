@@ -287,7 +287,6 @@ def show_results_on_image(img_dir,
             cv2.drawContours(img, contours, -1, (0,255,0), 1)
 
         cv2.imwrite(str(Path(out_dir) / f"{img_path.stem}.png"), img)
-        logger.info(Path(out_dir) / f"{img_path.stem}.png")
 
 
 def save_xview_in_satellitepy_format(out_folder,label_path):
