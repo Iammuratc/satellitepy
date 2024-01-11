@@ -15,6 +15,9 @@ def get_args():
     parser = configargparse.ArgumentParser(description=__doc__)
     parser.add_argument('--in-result-folder', type=str,
                         help='Folder of results. The results in this folder will be processed.')
+    parser.add_argument('--in-mask-folder', type=str, help='Folder of masks. The masks in this folder will be processed.')
+    parser.add_argument('--mask-threshold', type=float, default=0.02,
+                        help='Only pixels with intensity above this value will be set as mask. Range 0 to 1.')
     parser.add_argument('--out-folder',
                         type=str,
                         help='Save folder of result evaluations. It will be asked to create if not exists.')
@@ -34,6 +37,7 @@ def main(args):
 
     # Init arguments
     in_result_folder = Path(args.in_result_folder)
+    in_mask_folder = Path(args.in_mask_folder)
     out_folder = Path(args.out_folder)
     assert create_folder(out_folder)
 
@@ -41,6 +45,7 @@ def main(args):
                       args.iou_thresholds.split(',')] if args.iou_thresholds != None else [x / 100.0 for x in
                                                                                            range(50, 96, 5)]
     conf_score_threshold = float(args.confidence_score_threshold) if args.confidence_score_threshold else 0.5
+    mask_threshold = float(args.mask_threshold) if args.mask_threshold else 0.02
     out_folder = Path(args.out_folder)
     # Init logger
     log_path = Path(
@@ -54,9 +59,11 @@ def main(args):
     # Calculate mAP
     calculate_iou_score(
         in_result_folder,
+        in_mask_folder,
         out_folder,
         iou_thresholds,
-        conf_score_threshold
+        conf_score_threshold,
+        mask_threshold
     )
 
 if __name__ == '__main__':

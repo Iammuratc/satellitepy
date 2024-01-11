@@ -32,7 +32,6 @@ def save_patch_results(
     input_h,
     input_w,
     conf_thresh,
-    mask_thresh,
     down_ratio,
     K,
     # nms_on_multiclass_thr
@@ -79,6 +78,7 @@ def save_patch_results(
         input_h,
         input_w,
         down_ratio,
+        False,
         False)
     # Dataloader
     data_loader = DataLoader(dataset,
@@ -93,6 +93,10 @@ def save_patch_results(
     # Create result patch folder
     patch_result_folder = Path(out_folder) / 'results' / 'patch_labels'
     assert create_folder(patch_result_folder)
+
+    if "masks" in tasks:
+        patch_mask_folder = Path(out_folder) / 'results' / 'masks'
+        assert create_folder(patch_mask_folder)
 
     # criterion = loss_utils.LossAll()
 
@@ -112,6 +116,7 @@ def save_patch_results(
         )
 
         save_dict = dict()
+        mask = None
 
         if "obboxes" in dec_pred:
             bboxes_nms, keep_ind = nms_rotated(
@@ -124,14 +129,14 @@ def save_patch_results(
                 save_dict["obboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
                 for k, v in dec_pred.items():
                     if k == "mask":
-                        save_dict["masks"] = decode_masks(save_dict["obboxes"], v, mask_thresh)
+                        mask = v
                     elif k != "obboxes":
                         save_dict[k] = np.asarray(v)[keep_ind.cpu().numpy()].tolist()
             else:
                 save_dict["obboxes"] = dec_pred["obboxes"]
                 for k, v in dec_pred.items():
                     if k == "mask":
-                        save_dict["masks"] = decode_masks(save_dict["obboxes"], v, mask_thresh)
+                        mask = v
                     elif k != "obboxes":
                         if isinstance(v, list):
                             save_dict[k] = v
@@ -149,15 +154,15 @@ def save_patch_results(
                 save_dict["hbboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
                 for k, v in dec_pred.items():
                     if k == "mask":
-                        save_dict["masks"] = decode_masks(save_dict["hbboxes"], v, mask_thresh)
+                        mask = v
                     elif k != "hbboxes":
-                        save_dict[k] = np.asarray(v)[keep_ind].tolist()
+                        mask = v
             else:
                 save_dict["hbboxes"] = dec_pred["hbboxes"]
                 for k, v in dec_pred.items():
                     if k != "hbboxes":
                         if k == "mask":
-                            save_dict["masks"] = decode_masks(save_dict["hbboxes"], v, mask_thresh)
+                            mask = v
                         elif isinstance(v, list):
                             save_dict[k] = v
                         else:
@@ -173,3 +178,7 @@ def save_patch_results(
         # # Save labels to json file
         with open(Path(patch_result_folder) / f"{img_name}.json",'w') as f:
             json.dump(save_dict, f, indent=4)
+
+        if mask is not None:
+            with open(Path(patch_mask_folder) / f"{img_name}.npy", 'wb') as f:
+                np.save(f, mask)

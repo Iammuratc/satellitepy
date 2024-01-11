@@ -66,23 +66,21 @@ def decode_obboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
         points.append(pts)
     return points
 
-def decode_masks(bboxes, mask, mask_thresh):
+def decode_masks(bbox, mask, mask_thresh):
     min = np.min(mask)
     max = np.max(mask)
     mask = (mask - min) / (max - min)
     mask = mask >= mask_thresh
 
-    labels = []
+    h = BBox.get_bbox_limits(np.array(bbox))
+    mask_0 = np.zeros((mask.shape[0], mask.shape[1]))
+    cv2.fillPoly(mask_0, [np.array(bbox, dtype=int)], 1)
 
-    for bbox in bboxes:
-        h = BBox.get_bbox_limits(np.array(bbox))
-        mask_0 = np.zeros((mask.shape[0], mask.shape[1]))
-        cv2.fillPoly(mask_0, [np.array(bbox, dtype=int)], 1)
+    coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] == 1)).T.tolist()
+    mask_res = [(coords[1] + h[0]).tolist(), (coords[0] + h[2]).tolist()]
 
-        coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] == 1)).T.tolist()
-        labels.append([(coords[1] + h[0]).tolist(), (coords[0] + h[2]).tolist()])
+    return mask_res
 
-    return labels
 
 def decode_hbboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
     points = []
