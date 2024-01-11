@@ -126,13 +126,13 @@ def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresh
     cnt = np.zeros(len(iou_thresholds))
 
     for result_path, mask_path in tqdm(zip(result_paths, mask_paths), total=len(result_paths)):
-        if result_path.suffix != ".json" or mask_path.suffix != ".npy":
+        if result_path.suffix != ".json" or mask_path.suffix != ".png":
             continue
 
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
             gt_results = get_satellitepy_dict_values(result['gt_labels'], "masks")
-            mask = np.load(mask_path)
+            mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
 
             for i_iou_th, iou_th in enumerate(iou_thresholds):
                 # Iterate over the confidence scores of the detected bounding boxes

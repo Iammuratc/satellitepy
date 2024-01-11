@@ -180,5 +180,11 @@ def save_patch_results(
             json.dump(save_dict, f, indent=4)
 
         if mask is not None:
-            with open(Path(patch_mask_folder) / f"{img_name}.npy", 'wb') as f:
-                np.save(f, mask)
+            with open(Path(patch_mask_folder) / f"{img_name}.png", 'wb') as f:
+                max = np.max(mask)
+                min = np.min(mask)
+                mask *= 255.0
+
+                print(f'min: {min}, max: {max}')
+                assert max <= 1.0, "mask value > 1.0!"
+                cv2.imwrite(f, mask, [cv2.IMWRITE_JPEG_QUALITY, 100])

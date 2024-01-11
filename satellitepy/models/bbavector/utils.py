@@ -67,10 +67,10 @@ def decode_obboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
     return points
 
 def decode_masks(bbox, mask, mask_thresh):
-    min = np.min(mask)
-    max = np.max(mask)
-    mask = (mask - min) / (max - min)
-    mask = mask >= mask_thresh
+    # min = np.min(mask)
+    # max = np.max(mask)
+    # mask = (mask - min) / (max - min)
+    # mask = mask >= mask_thresh
 
     h = BBox.get_bbox_limits(np.array(bbox))
     mask_0 = np.zeros((mask.shape[0], mask.shape[1]))
