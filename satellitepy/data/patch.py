@@ -272,8 +272,8 @@ def merge_patch_results(patch_dict, patch_size, shape):
             y_max = np.min([y_0+patch_size, shape[0]])-1
 
             new_mask = np.zeros(mask.shape)
-            patch_mask = patch_mask[0:x_max-x_min, 0:y_max-y_min]
-            new_mask[x_min:y_max, y_min:y_max] = patch_mask
+            patch_mask = patch_mask[0:y_max-y_min, 0:x_max-x_min]
+            new_mask[y_min:y_max, x_min:x_max] = patch_mask
 
             new_mask = np.where(mask == 0, new_mask*2, new_mask)
             mask = np.where(new_mask == 0, mask*2, mask)
