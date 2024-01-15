@@ -7,16 +7,80 @@ from satellitepy.dataset.bbavector.draw_gaussian import draw_umich_gaussian, gau
 from satellitepy.dataset.bbavector.transforms import random_flip, load_affine_matrix, random_crop_info, ex_box_jaccard
 from satellitepy.dataset.bbavector import data_augment
 from satellitepy.data.utils import get_satellitepy_dict_values, get_task_dict #, merge_satellitepy_task_values
+from satellitepy.data.labels import read_label, satellitepy_labels_empty
 
 class Utils:
-    def __init__(self, tasks, input_h=None, input_w=None, down_ratio=None, K=1000):
+    def __init__(self, tasks, input_h=None, input_w=None, down_ratio=None, K=1000, augmentation=False):
         self.input_h = input_h
         self.input_w = input_w
         self.down_ratio = down_ratio
-        self.img_ids = None
         self.tasks = tasks
         self.max_objs = K
+        self.augmentation = augmentation
         self.image_distort =  data_augment.PhotometricDistort()
+
+    def get_data_dict(self,image_path,label_path, label_format):
+        # hash_str = str(img_path) + str(label_path) + str(self.random_seed)
+        # hash_bytes = hashlib.sha256(bytes(hash_str, "utf-8")).digest()[:4]
+        # np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
+        image = cv2.imread(image_path.absolute().as_posix())
+        image_h, image_w, c = image.shape
+        labels = read_label(label_path,label_format)
+        annotation = self.prepare_annotations(labels, image_w, image_h)#, img_path)
+        image, annotation = self.data_transform(image, annotation, self.augmentation)
+        data_dict = self.generate_ground_truth(image, annotation)
+        data_dict['img_path']=str(image_path)
+        data_dict['label_path']=str(label_path)
+        data_dict['img_w']=image_w
+        data_dict['img_h']=image_h
+        return data_dict
+
+    def prepare_masks(self, labels, image_width, image_height):#, image_file = None):
+        if "masks" not in labels:
+            return None
+        masks = np.zeros((image_height, image_width))
+
+        for val in labels["masks"]:
+            if val is None:
+                continue
+            else:
+                m_x, m_y = val
+            if len(m_x) == 0 or len(m_y) == 0:
+                continue
+            m_x = np.array(m_x).clip(0, image_width - 1)
+            m_y = np.array(m_y).clip(0, image_height - 1)
+            masks[m_y, m_x] = 1.0
+
+        if np.count_nonzero(masks) == 0:
+            return None
+
+        return masks
+
+
+    def prepare_annotations(self, labels, image_w, image_h):#, img_path):
+        annotation = {}
+        for t in self.tasks:
+            if t in ["obboxes", "hbboxes"]:
+                annotation[t] = np.asarray(get_satellitepy_dict_values(labels, t))
+            elif t == "masks":
+                annotation[t] = self.prepare_masks(labels , image_w, image_h)#, str(img_path))
+            else:
+                task_dict = get_task_dict(t)
+
+                if 'min' in task_dict.keys() and 'max' in task_dict.keys():
+                    values = np.asarray(get_satellitepy_dict_values(labels, t))
+                    max, min = task_dict["max"], task_dict["min"]
+                    normalized = [
+                        (val - min) / (max - min) if val is not None else None
+                        for val in values
+                    ]
+                    annotation["reg_" + t] = normalized
+                else:
+                    annotation["cls_" + t] = np.asarray([
+                        task_dict[value] if value is not None else None
+                        for value in get_satellitepy_dict_values(labels,t)
+                    ])
+        return annotation
 
 
     def data_transform(self, image, annotation, augmentation):
@@ -130,18 +194,6 @@ class Utils:
                 out_annotations[k] = np.asarray(out_annotations[k])
 
         return image, out_annotations
-
-
-    # def __len__(self):
-    #     return len(self.img_ids)
-
-    # def processing_test(self, image, input_h, input_w):
-    #     image = cv2.resize(image, (input_w, input_h))
-    #     out_image = image.astype(np.float32) / 255.
-    #     out_image = out_image - 0.5
-    #     out_image = out_image.transpose(2, 0, 1).reshape(1, 3, input_h, input_w)
-    #     out_image = torch.from_numpy(out_image)
-    #     return out_image
 
     def cal_bbox_wh(self, pts_4):
         x1 = np.min(pts_4[:,0])
@@ -286,64 +338,4 @@ class Utils:
             ret[k] = torch.from_numpy(v)
 
         return ret
-
-    # def __getitem__(self, index):
-    #     image = self.load_image(index)
-    #     image_h, image_w, c = image.shape
-    #     if self.phase == 'test':
-    #         img_id = self.img_ids[index]
-    #         image = self.processing_test(image, self.input_h, self.input_w)
-    #         return {'image': image,
-    #                 'img_id': img_id,
-    #                 'image_w': image_w,
-    #                 'image_h': image_h}
-
-    #     elif self.phase == 'train':
-    #         annotation = self.load_annotation(index)
-    #         image, annotation = self.data_transform(image, annotation)
-    #         data_dict = self.generate_ground_truth(image, annotation)
-    #         return data_dict
-
-
-    # def load_img_ids(self):
-    #     """
-    #     Definition: generate self.img_ids
-    #     Usage: index the image properties (e.g. image name) for training, testing and evaluation
-    #     Format: self.img_ids = [list]
-    #     Return: self.img_ids
-    #     """
-    #     return None
-
-    # def load_image(self, index):
-    #     """
-    #     Definition: read images online
-    #     Input: index, the index of the image in self.img_ids
-    #     Return: image with H x W x 3 format
-    #     """
-    #     return None
-
-    # def load_annoFolder(self, img_id):
-    #     """
-    #     Return: the path of annotation
-    #     Note: You may not need this function
-    #     """
-    #     return None
-
-    # def load_annotation(self, index):
-    #     """
-    #     Return: dictionary of {'pts': float np array of [bl, tl, tr, br], 
-    #                             'cat': int np array of class_index}
-    #     Explaination:
-    #             bl: bottom left point of the bounding box, format [x, y]
-    #             tl: top left point of the bounding box, format [x, y]
-    #             tr: top right point of the bounding box, format [x, y]
-    #             br: bottom right point of the bounding box, format [x, y]
-    #             class_index: the category index in self.category
-    #                 example: self.category = ['ship]
-    #                          class_index of ship = 0
-    #     """
-    #     return None
-
-    # def dec_evaluation(self, result_path):
-    #     return None
 

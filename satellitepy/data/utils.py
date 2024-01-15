@@ -30,8 +30,8 @@ def set_mask(labels,mask_path,bbox_type, mask_type):
         cv2.fillPoly(mask_0, [np.array(bbox,dtype=int)], 1)
 
         if mask_type == 'DOTA':
-            coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist() # y,x
-            labels['masks'].append([coords[1] + h[0], coords[0] + h[2]])  # x,y
+            coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] != 0)).T # y,x
+            labels['masks'].append(np.array([coords[1] + h[0], coords[0] + h[2]]).tolist())  # x,y
         if mask_type == 'rareplanes':
             center = (int((h[0] + h[1]) / 2), int((h[2] + h[3]) / 2))
 

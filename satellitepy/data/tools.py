@@ -244,23 +244,23 @@ def show_results_on_image(img_dir,
     logger.info(tasks)
     img_paths = get_file_paths(img_dir)
     label_paths = get_file_paths(result_dir)
-    mask_paths = get_file_paths(mask_dir) if mask_dir else [None * len(img_paths)]
+    mask_paths = get_file_paths(mask_dir) if mask_dir else [None] * len(img_paths)
     assert len(img_paths) == len(label_paths) == len(mask_paths)
     for img_path, label_path, mask_path in tqdm(zip(img_paths, label_paths, mask_paths), total=len(img_paths)):
         img = cv2.imread(str(img_path))
         labels = read_label(label_path, label_format='satellitepy')
-
+        
         # Current image
         if satellitepy_labels_empty(labels):
             continue
 
-        if labels['obboxes'][0] == None:
+        if labels['gt_labels']['obboxes'][0] == None:
             bboxes = 'hbboxes'
         else:
             bboxes = 'obboxes'
 
-        for i, bbox_corners in enumerate(labels[bboxes]):
-            conf_score = labels['confidence-scores'][i]
+        for i, bbox_corners in enumerate(labels['det_labels'][bboxes]):
+            conf_score = labels['det_labels']['confidence-scores'][i]
             iou_score = labels['matches']['iou']['scores'][i]
             if conf_score < conf_th or iou_score < iou_th:
                 continue
