@@ -7,7 +7,7 @@ Save detected bbox details (i.e., corners, class_name) with the corresponding gr
 import os
 import configargparse
 from satellitepy.evaluate.bbavector.tools import save_original_image_results
-from satellitepy.utils.path_utils import create_folder, init_logger
+from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
 from pathlib import Path
 import logging
 
@@ -67,7 +67,9 @@ def main(args):
 
     assert create_folder(out_folder)
     # Initiate logger
-    init_logger(config_path=log_config_path,log_path=os.path.join(out_folder,'results.log'))
+    project_folder = get_project_folder()
+    assert create_folder(project_folder + 'logs')
+    init_logger(config_path=log_config_path,log_path=os.path.join('logs','results.log'))
     logger = logging.getLogger(__name__)
     logger.info('BBAVector model will process the images...')
 

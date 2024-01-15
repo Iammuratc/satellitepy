@@ -244,7 +244,7 @@ def show_results_on_image(img_dir,
     logger.info(tasks)
     img_paths = get_file_paths(img_dir)
     label_paths = get_file_paths(result_dir)
-    mask_paths = get_file_paths(mask_dir) if mask_dir else [None * len(img_paths)]
+    mask_paths = get_file_paths(mask_dir) if mask_dir else [None] * len(img_paths)
     assert len(img_paths) == len(label_paths) == len(mask_paths)
     for img_path, label_path, mask_path in tqdm(zip(img_paths, label_paths, mask_paths), total=len(img_paths)):
         img = cv2.imread(str(img_path))
