@@ -260,23 +260,23 @@ def merge_patch_results(patch_dict, patch_size, shape):
             else:
                 merged_det_labels[key].extend(patch_dict['det_labels'][i][key])
 
-    mask = np.zeros(shape, dtype=float)
+    mask = np.zeros((shape[0], shape[1]), dtype=float)
 
     if patch_dict['masks']:
         for i, (x_0, y_0) in enumerate(patch_dict['start_coords']):
             patch_mask = patch_dict['masks'][i]
 
-            patch_coords = np.array([[x_0, y_0], [np.max([x_0+patch_size, shape[0]]), y_0],
-                                     [x_0, np.max([y_0+patch_size, shape[0]])], [np.max([x_0+patch_size, shape[0]]), np.max([y_0+patch_size, shape[0]])]])
+            x_min = x_0
+            x_max = np.min([x_0+patch_size, shape[1]])
+            y_min = y_0
+            y_max = np.min([y_0+patch_size, shape[0]])
 
-            patch_region = np.zeros((mask.shape[0], mask.shape[1]))
-            cv2.fillPoly(patch_region, patch_coords, 1)
-
-            new_mask = np.zeros(shape)
-            new_mask[patch_region] = patch_mask
+            new_mask = np.zeros(mask.shape)
+            patch_mask = patch_mask[0:x_max-x_min, 0:y_max-y_min]
+            new_mask[x_min:y_max, y_min:y_max] = patch_mask
 
             new_mask = np.where(mask == 0, new_mask*2, new_mask)
-            mask = np.where(patch_region == 0, mask*2, mask)
+            mask = np.where(new_mask == 0, mask*2, mask)
 
             mask = (mask + new_mask) / 2
 

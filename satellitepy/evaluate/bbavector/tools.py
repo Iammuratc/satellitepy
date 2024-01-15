@@ -152,11 +152,11 @@ def save_original_image_results(
     logger = logging.getLogger(__name__)
 
     # Create result folders
-    result_folder = Path(out_folder) / 'result_labels'
+    result_folder = Path(out_folder) / 'results' / 'result_labels'
     assert create_folder(result_folder)
 
     if "masks" in tasks:
-        mask_folder = Path(out_folder) / 'result_masks'
+        mask_folder = Path(out_folder) / 'results' / 'result_masks'
         assert create_folder(mask_folder)
 
     # Model
@@ -226,8 +226,7 @@ def save_original_image_results(
                 device,
                 input_h,
                 input_w,
-                down_ratio,
-                mask_thresh
+                down_ratio
                 )
 
             patch_dict['det_labels'].append(save_dict)

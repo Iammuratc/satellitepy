@@ -38,6 +38,8 @@ def get_args():
     parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
     parser.add_argument('--conf-thresh', type=float, default=0.18, help='Confidence threshold, 0.1 for general evaluation')
     parser.add_argument('--mask-thresh', type=float, default=0.5, help='Only pixels with intensity above this value will be set as mask. Range 0 to 1.')
+    parser.add_argument('--log-path', type=Path,
+                        help='Log will be saved here. Default value is <out-folder>/evaluations.log')
     args = parser.parse_args()
     return args
 
@@ -67,9 +69,9 @@ def main(args):
 
     assert create_folder(out_folder)
     # Initiate logger
-    project_folder = get_project_folder()
-    assert create_folder(project_folder + 'logs')
-    init_logger(config_path=log_config_path,log_path=os.path.join('logs','results.log'))
+
+    log_path = Path(out_folder) / 'results.log' if args.log_path == None else args.log_path
+    init_logger(config_path=log_config_path,log_path=log_path)
     logger = logging.getLogger(__name__)
     logger.info('BBAVector model will process the images...')
 
