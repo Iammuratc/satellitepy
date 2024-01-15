@@ -30,8 +30,8 @@ def save_patch_results(
     num_workers,
     input_h,
     input_w,
-    conf_thresh,
     mask_thresh,
+    conf_thresh,
     down_ratio,
     K,
     # nms_on_multiclass_thr
@@ -98,12 +98,6 @@ def save_patch_results(
     for data_dict in tqdm(data_loader):
         img_name = Path(data_dict['img_path'][0]).stem
         
-        print(data_dict['input'].shape)
-        print(data_dict['img_h'])
-        print(data_dict['img_h'].shape)
-        print(data_dict['img_w'])
-        print(data_dict['img_w'].shape)
-        # print(data_dict['img_path'].shape)
         save_dict = get_patch_result(
             model,
             model_decoder,
