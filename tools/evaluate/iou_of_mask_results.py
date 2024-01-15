@@ -58,7 +58,7 @@ def main(args):
     logger = logging.getLogger(__name__)
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
-    logger.info('Saving patches from original images...')
+    logger.info('Calculating IoU-score...')
 
     # Calculate mAP
     calculate_iou_score(
