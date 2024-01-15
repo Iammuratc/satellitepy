@@ -12,8 +12,7 @@ def get_patch_result(
     device,
     input_h,
     input_w,
-    down_ratio,
-    mask_thresh):
+    down_ratio):
     """
     Infer the model on a patch
     Parameters

@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 import logging
 import shapely
@@ -235,7 +236,7 @@ def is_truncated(bbox_corners,x_0,y_0,patch_size,relative_area_threshold):
     return relative_area_threshold >= shapely.area(shapely.intersection(bbox, patch))/shapely.area(bbox)
 
 
-def merge_patch_results(patch_dict):
+def merge_patch_results(patch_dict, patch_size, shape):
     """
     Merge the patch results into original image standards
     Parameters
@@ -259,4 +260,24 @@ def merge_patch_results(patch_dict):
             else:
                 merged_det_labels[key].extend(patch_dict['det_labels'][i][key])
 
-    return merged_det_labels
+    mask = np.zeros(shape, dtype=float)
+
+    if patch_dict['masks']:
+        for i, (x_0, y_0) in enumerate(patch_dict['start_coords']):
+            patch_mask = patch_dict['masks'][i]
+
+            patch_coords = np.array([[x_0, y_0], [np.max([x_0+patch_size, shape[0]]), y_0],
+                                     [x_0, np.max([y_0+patch_size, shape[0]])], [np.max([x_0+patch_size, shape[0]]), np.max([y_0+patch_size, shape[0]])]])
+
+            patch_region = np.zeros((mask.shape[0], mask.shape[1]))
+            cv2.fillPoly(patch_region, patch_coords, 1)
+
+            new_mask = np.zeros(shape)
+            new_mask[patch_region] = patch_mask
+
+            new_mask = np.where(mask == 0, new_mask*2, new_mask)
+            mask = np.where(patch_region == 0, mask*2, mask)
+
+            mask = (mask + new_mask) / 2
+
+    return merged_det_labels, mask
