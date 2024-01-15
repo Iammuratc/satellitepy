@@ -108,8 +108,6 @@ def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_co
     x_0, y_0 = patch_start_coord
     is_truncated_bbox = is_truncated(bbox_corners=bbox_corners, x_0=x_0, y_0=y_0, patch_size=patch_size, relative_area_threshold=truncated_object_thr)
     if not is_truncated_bbox:
-        # for key in keys_with_values:
-        # patch_dict['labels'][i][key].append(gt_labels[key][i_label])
         patch_dict['labels'][i] = set_image_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
         # Since patches are cropped out, the image patch coordinates shift, so Bbox values should be shifted as well.
         bbox_corners_shifted = np.array(patch_dict['labels'][i][bboxes][-1]) - [x_0, y_0]
@@ -117,11 +115,9 @@ def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_co
         if patch_dict["labels"][i]["masks"][-1] is not None:
             mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2,1)
 
-            # mask_shifted[0][mask_shifted[0] >= patch_size] = patch_size - 1
-            # mask_shifted[1][mask_shifted[1] >= patch_size] = patch_size - 1
-            # print(np.array(patch_dict['labels'][i]['masks'][-1]).shape())
-            # print(np.shape(mask_shifted))
-            patch_dict['labels'][i]['masks'][-1] = mask_shifted#[0],mask_shifted[1]]#.tolist()
+            mask_shifted[0][mask_shifted[0] >= patch_size] = patch_size - 1
+            mask_shifted[1][mask_shifted[1] >= patch_size] = patch_size - 1
+            patch_dict['labels'][i]['masks'][-1] = mask_shifted
         if consider_additional:
             bbox_corners_shifted = np.array(patch_dict['labels'][i][additional][-1]) - [x_0, y_0]
             patch_dict['labels'][i][additional][-1] = bbox_corners_shifted.tolist()
