@@ -267,9 +267,9 @@ def merge_patch_results(patch_dict, patch_size, shape):
             patch_mask = patch_dict['masks'][i]
 
             x_min = x_0
-            x_max = np.min([x_0+patch_size, shape[1]])
+            x_max = np.min([x_0+patch_size, shape[1]])-1
             y_min = y_0
-            y_max = np.min([y_0+patch_size, shape[0]])
+            y_max = np.min([y_0+patch_size, shape[0]])-1
 
             new_mask = np.zeros(mask.shape)
             patch_mask = patch_mask[0:x_max-x_min, 0:y_max-y_min]
