@@ -119,8 +119,9 @@ def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_co
 
             # mask_shifted[0][mask_shifted[0] >= patch_size] = patch_size - 1
             # mask_shifted[1][mask_shifted[1] >= patch_size] = patch_size - 1
-
-            patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
+            # print(np.array(patch_dict['labels'][i]['masks'][-1]).shape())
+            # print(np.shape(mask_shifted))
+            patch_dict['labels'][i]['masks'][-1] = mask_shifted#[0],mask_shifted[1]]#.tolist()
         if consider_additional:
             bbox_corners_shifted = np.array(patch_dict['labels'][i][additional][-1]) - [x_0, y_0]
             patch_dict['labels'][i][additional][-1] = bbox_corners_shifted.tolist()
@@ -256,7 +257,7 @@ def merge_patch_results(patch_dict):
         # Merge all the keys to merged_det_labels
         # If key=='bboxes', first shift, then merge
         for key in merged_det_labels.keys():
-            if (key == 'hbboxes' or key == 'obboxes' or key == 'masks') and patch_dict['det_labels'][i][key] != []:
+            if (key == 'hbboxes' or key == 'obboxes') and patch_dict['det_labels'][i][key] != []:
                 bbox_corners_shifted = np.array(patch_dict['det_labels'][i][key]) + np.array([x_0,y_0])
                 merged_det_labels[key].extend(bbox_corners_shifted.tolist())
             else:
