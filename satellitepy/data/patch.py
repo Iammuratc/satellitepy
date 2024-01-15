@@ -14,9 +14,10 @@ def get_patches(
     truncated_object_thr,
     patch_size,
     patch_overlap,
-    include_object_classes,
-    exclude_object_classes,
-    label_file_exist = True
+    # include_object_classes,
+    # exclude_object_classes,
+    label_file_exist = True,
+    mask = None,
     ):
     """
     Produce patches from the original image using the labels. 
@@ -83,12 +84,12 @@ def get_patches(
                 obb_defined = obbox != None
 
                 class_targets = [gt_labels['coarse-class'][j], gt_labels['fine-class'][j], gt_labels['very-fine-class'][j]]
-                if not all([
-                    is_valid_object_class(
-                        ct, include_object_classes, exclude_object_classes
-                    ) for ct in class_targets]
-                ):
-                    continue
+                # if not all([
+                #     is_valid_object_class(
+                #         ct, include_object_classes, exclude_object_classes
+                #     ) for ct in class_targets]
+                # ):
+                #     continue
 
                 if hbb_defined and obb_defined:
                     shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr, consider_additional=True)
@@ -116,8 +117,8 @@ def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_co
         if patch_dict["labels"][i]["masks"][-1] is not None:
             mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2,1)
 
-            mask_shifted[0][mask_shifted[0] >= patch_size] = patch_size - 1
-            mask_shifted[1][mask_shifted[1] >= patch_size] = patch_size - 1
+            # mask_shifted[0][mask_shifted[0] >= patch_size] = patch_size - 1
+            # mask_shifted[1][mask_shifted[1] >= patch_size] = patch_size - 1
 
             patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
         if consider_additional:
@@ -255,9 +256,8 @@ def merge_patch_results(patch_dict):
         # Merge all the keys to merged_det_labels
         # If key=='bboxes', first shift, then merge
         for key in merged_det_labels.keys():
-            patch_bbox_corners = patch_dict['det_labels'][i]['bboxes']
-            if key == 'bboxes' and patch_bbox_corners != []:
-                bbox_corners_shifted = np.array(patch_bbox_corners) + np.array([x_0,y_0])
+            if (key == 'hbboxes' or key == 'obboxes' or key == 'masks') and patch_dict['det_labels'][i][key] != []:
+                bbox_corners_shifted = np.array(patch_dict['det_labels'][i][key]) + np.array([x_0,y_0])
                 merged_det_labels[key].extend(bbox_corners_shifted.tolist())
             else:
                 merged_det_labels[key].extend(patch_dict['det_labels'][i][key])

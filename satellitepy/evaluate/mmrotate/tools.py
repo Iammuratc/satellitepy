@@ -152,7 +152,6 @@ def save_mmrotate_original_results(
     label_paths = get_file_paths(in_label_folder)
     prog_bar = mmcv.ProgressBar(len(image_paths))
 
-    temp_count = 0
     for img_path,label_path in zip(image_paths,label_paths):
         # Check if label and image names match
         img_name = img_path.stem
