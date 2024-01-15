@@ -95,10 +95,14 @@ def save_patch_results(
     patch_result_folder = Path(out_folder) / 'results' / 'patch_labels'
     assert create_folder(patch_result_folder)
 
+    if "masks" in tasks:
+        patch_mask_folder = Path(out_folder) / 'results' / 'masks'
+        assert create_folder(patch_mask_folder)
+
     for data_dict in tqdm(data_loader):
         img_name = Path(data_dict['img_path'][0]).stem
         
-        save_dict = get_patch_result(
+        save_dict, mask = get_patch_result(
             model,
             model_decoder,
             data_dict,
@@ -118,6 +122,10 @@ def save_patch_results(
         # # Save labels to json file
         with open(Path(patch_result_folder) / f"{img_name}.json",'w') as f:
             json.dump(save_dict, f, indent=4)
+        
+        if mask is not None:
+            with open(Path(patch_mask_folder) / f"{img_name}.npy", 'wb') as f:
+                np.save(f, mask)
 
 def save_original_image_results(    
     out_folder,
@@ -200,7 +208,7 @@ def save_original_image_results(
             data_dict['input'] = torch.Tensor(data_dict['input']).unsqueeze(0)
             data_dict['img_w']= torch.from_numpy(np.array(image_w)).unsqueeze(0)
             data_dict['img_h']= torch.from_numpy(np.array(image_h)).unsqueeze(0) # torch.Tensor(image_h)
-            save_dict = get_patch_result(
+            save_dict, mask = get_patch_result(
                 model,
                 model_decoder,
                 data_dict,

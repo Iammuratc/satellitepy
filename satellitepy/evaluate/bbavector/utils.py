@@ -46,6 +46,7 @@ def get_patch_result(
     )
 
     save_dict = dict()
+    mask = None
 
     if "obboxes" in dec_pred:
         bboxes_nms, keep_ind = nms_rotated(
@@ -58,14 +59,14 @@ def get_patch_result(
             save_dict["obboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
             for k, v in dec_pred.items():
                 if k == "mask":
-                    save_dict["masks"] = decode_masks(save_dict["obboxes"], v, mask_thresh)
+                    mask = v
                 elif k != "obboxes":
                     save_dict[k] = np.asarray(v)[keep_ind.cpu().numpy()].tolist()
         else:
             save_dict["obboxes"] = dec_pred["obboxes"]
             for k, v in dec_pred.items():
                 if k == "mask":
-                    save_dict["masks"] = decode_masks(save_dict["obboxes"], v, mask_thresh)
+                    mask = v
                 elif k != "obboxes":
                     if isinstance(v, list):
                         save_dict[k] = v
@@ -83,17 +84,17 @@ def get_patch_result(
             save_dict["hbboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
             for k, v in dec_pred.items():
                 if k == "mask":
-                    save_dict["masks"] = decode_masks(save_dict["hbboxes"], v, mask_thresh)
+                    mask = v
                 elif k != "hbboxes":
-                    save_dict[k] = np.asarray(v)[keep_ind].tolist()
+                    mask = v
         else:
             save_dict["hbboxes"] = dec_pred["hbboxes"]
             for k, v in dec_pred.items():
                 if k != "hbboxes":
                     if k == "mask":
-                        save_dict["masks"] = decode_masks(save_dict["hbboxes"], v, mask_thresh)
+                        mask = v
                     elif isinstance(v, list):
                         save_dict[k] = v
                     else:
                         save_dict[k] = v.tolist()
-    return save_dict
+    return save_dict, mask
