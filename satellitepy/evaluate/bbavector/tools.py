@@ -186,7 +186,7 @@ def save_original_image_results(
         K=K,
         augmentation=False)
 
-    for img_path, label_path, mask_path in zip(img_paths,label_paths,mask_paths):
+    for img_path, label_path, mask_path in tqdm(zip(img_paths,label_paths,mask_paths), total=len(img_paths)):
         # Check if label and image names match
         img_name = img_path.stem
         logger.info(f'{img_name} will be processed...')
@@ -257,7 +257,6 @@ def save_original_image_results(
 
         # Save labels to a json file
         json_path = Path(result_folder) / f"{img_name}.json"
-        logger.info(f"The result file is saved at {json_path}")
         with open(json_path,'w') as f:
             json.dump(result, f, indent=4)
             # print(data_dict['input'].shape)
