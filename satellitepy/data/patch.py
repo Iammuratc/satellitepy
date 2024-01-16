@@ -171,15 +171,14 @@ def get_pad_size(coord_max, patch_size, patch_overlap):
         E.g., img size = 1000, patch size = 512, overlap = 10, resulting image = 1014
     """
     pad_size = 0
-    quotient, remainder = divmod(coord_max+patch_overlap, patch_size)
+    quotient, remainder = divmod(coord_max, patch_size-patch_overlap)
     if quotient==0 and remainder==0:
         msg = 'No pixels are found in image!'
         logger.error(msg)
         raise Exception(msg)
-    if remainder != 0:
-        new_coord_size = (quotient+1)*patch_size-patch_overlap
-        pad_size = new_coord_size - coord_max
-    if coord_max <= patch_size:
+    elif remainder != 0:
+        pad_size = patch_size-remainder
+    elif coord_max <= patch_size:
         pad_size = patch_size - coord_max
     return pad_size
 
@@ -200,14 +199,16 @@ def get_patch_start_coords(coord_max, patch_size, patch_overlap):
     coords : list
         Starting coordinates of the given axis
     """
-    quotient, remainder = divmod(coord_max+patch_overlap, patch_size)
-    if remainder != 0:
-        msg = f"{remainder} number of pixels will be discarded"
-        logger.warning(msg)
+    quotient, remainder = divmod(coord_max, patch_size-patch_overlap)
+
+    coords = []
+    for i in range(quotient):
+        coords.append(i*(patch_size-patch_overlap))
+
+    if  coords[-1]+patch_size >= coord_max:
+        del coords[-1] 
+    coords.append(coord_max-patch_size)
     
-    coords = [0]
-    for i in range(1,quotient):
-        coords.append(i*patch_size-patch_overlap)
     return coords
 
 def is_truncated(bbox_corners,x_0,y_0,patch_size,relative_area_threshold):
