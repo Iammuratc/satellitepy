@@ -11,7 +11,8 @@ import logging
 import cv2
 from tqdm import tqdm
 
-from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys, satellitepy_labels_empty
+from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, \
+    get_all_satellitepy_keys, satellitepy_labels_empty
 from satellitepy.data.patch import get_patches
 from satellitepy.data.chip import get_chips
 from satellitepy.data.utils import get_xview_classes
@@ -19,18 +20,82 @@ from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
 from satellitepy.data.bbox import BBox
 
+
+def create_satellitepy_labels(
+        image_folder,
+        label_folder,
+        label_format,
+        out_folder,
+        exclude_object_classes,
+        mask_folder=None
+):
+    logger = logging.getLogger(__name__)
+
+    # Create output folders
+    out_label_folder = Path(out_folder) / 'labels'
+    assert create_folder(out_label_folder)
+    label_paths = get_file_paths(label_folder)
+
+    if image_folder:
+        out_image_folder = Path(out_folder) / 'images'
+        assert create_folder(out_image_folder)
+        img_paths = get_file_paths(image_folder)
+    else:
+        img_paths = [None] * len(label_paths)
+
+    if mask_folder:
+        mask_paths = get_file_paths(mask_folder)
+    else:
+        mask_paths = [None] * len(label_paths)
+
+    assert len(label_paths) == len(mask_paths) == len(img_paths)
+
+    for label_path, mask_path, img_path in tqdm(zip(label_paths, mask_paths, img_paths), total=len(label_paths)):
+        label_name = label_path.stem
+
+        gt_labels = read_label(label_path, label_format, mask_path)
+
+        labels = init_satellitepy_label()
+        for i in range(len(gt_labels['hbboxes'])):
+            class_targets = [gt_labels['coarse-class'][i], gt_labels['fine-class'][i], gt_labels['very-fine-class'][i]]
+            skip_flag = False
+            for excluded in exclude_object_classes:
+                if excluded in class_targets:
+                    skip_flag = True
+                    continue
+            if skip_flag: continue
+
+            for key in get_all_satellitepy_keys():
+                keys = key.split("_")
+                if len(keys) == 1:
+                    labels[keys[0]].append(gt_labels[keys[0]][i])
+                elif len(keys) == 2:
+                    labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][i])
+                elif len(keys) == 3:
+                    labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][i])
+
+
+        res_label_path = Path(out_label_folder) / f"{label_format}_{label_name}.json"
+        with open(str(res_label_path), 'w') as f:
+            json.dump(labels, f, indent=4)
+        if image_folder:
+            img = cv2.imread(str(img_path))
+            copy_image_path = Path(out_image_folder) / f"{label_format}_{label_name}.png"
+            cv2.imwrite(str(copy_image_path), img)
+
+
 def save_patches(
-    image_folder,
-    label_folder,
-    label_format,
-    out_folder,
-    truncated_object_thr,
-    patch_size,
-    patch_overlap,
-    include_object_classes,
-    exclude_object_classes,
-    mask_folder = None
-    ):
+        image_folder,
+        label_folder,
+        label_format,
+        out_folder,
+        truncated_object_thr,
+        patch_size,
+        patch_overlap,
+        include_object_classes,
+        exclude_object_classes,
+        mask_folder=None
+):
     """
     Save patches from the original images
     Parameters
@@ -80,9 +145,9 @@ def save_patches(
     else:
         mask_paths = [None] * len(img_paths)
 
-    assert len(img_paths)==len(label_paths)==len(mask_paths)
+    assert len(img_paths) == len(label_paths) == len(mask_paths)
 
-    for img_path, label_path, mask_path in zip(img_paths,label_paths,mask_paths):
+    for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
         mask_name = mask_path.name if mask_path != None else None
         label_name = label_path.name if label_path is not None else None
         logger.info(f"{img_path.name}, {label_name}, {mask_name}")
@@ -90,7 +155,7 @@ def save_patches(
         img = cv2.imread(str(img_path))
         # Labels
         if label_path is not None:
-            gt_labels = read_label(label_path,label_format,mask_path)
+            gt_labels = read_label(label_path, label_format, mask_path)
         else:
             gt_labels = None
         # Save results with the corresponding ground truth
@@ -128,19 +193,20 @@ def save_patches(
             # Save patch labels
             if patch_label is not None and len(patch_label['hbboxes']) != 0:
                 patch_label_path = Path(out_label_folder) / f"{label_format}_{img_name}_x_{patch_x0}_y_{patch_y0}.json"
-                with open(str(patch_label_path),'w') as f:
-                    json.dump(patch_label,f,indent=4)
+                with open(str(patch_label_path), 'w') as f:
+                    json.dump(patch_label, f, indent=4)
+
 
 def save_chips(
-    label_format,
-    image_folder,
-    label_folder,
-    out_folder,
-    margin_size,
-    include_object_classes,
-    exclude_object_classes,
-    mask_folder = None
-    ):
+        label_format,
+        image_folder,
+        label_folder,
+        out_folder,
+        margin_size,
+        include_object_classes,
+        exclude_object_classes,
+        mask_folder=None
+):
     """
     Save chips from the original images
     Parameters
@@ -175,7 +241,7 @@ def save_chips(
     else:
         mask_paths = [None] * len(image_paths)
 
-    if (len(image_paths)==len(label_paths)==len(mask_paths)):
+    if (len(image_paths) == len(label_paths) == len(mask_paths)):
         for img_path, label_path, mask_path in zip(image_paths, label_paths, mask_paths):
             img = cv2.imread(str(img_path))
             label = read_label(label_path, label_format, mask_path)
@@ -190,7 +256,6 @@ def save_chips(
 
             count_chips = len(chips['images'])
             img_name = img_path.stem
-
 
             for i in range(count_chips):
 
@@ -208,11 +273,13 @@ def save_chips(
                 with open(str(chip_label_path), 'w') as f:
                     json.dump(chip_label, f, indent=4)
 
+
 def get_label_by_idx(satpy_labels: dict, i: int):
     """
     Creates a copy of the satpy_labels dict by doing the following:
     Sets each list to a singleton list correponding to the item at position i.
     """
+
     def inner(input_dict, output_dict):
         for k in input_dict.keys():
             if isinstance(input_dict[k], dict):
@@ -233,6 +300,7 @@ def show_results_on_image(img_dir,
     result_dir,
     mask_dir,
     mask_threshold,
+    mask_adaptive_size,
     out_dir, 
     tasks, 
     iou_th=0.5, 
@@ -270,7 +338,10 @@ def show_results_on_image(img_dir,
             cv2.polylines(img, [bbox_corners], True, color=(0,0,255))
     
         if 'masks' in tasks:
-            mask = np.load(mask_path)
+            mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+            mask = 255 - mask
+            mask = cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                    cv2.THRESH_BINARY_INV,mask_adaptive_size, mask_threshold)
             img_mask = np.zeros(shape=(img.shape[0], img.shape[1]), dtype=np.uint8)
 
             for i, bbox in enumerate(labels[bboxes]):
@@ -289,7 +360,7 @@ def show_results_on_image(img_dir,
         cv2.imwrite(str(Path(out_dir) / f"{img_path.stem}.png"), img)
 
 
-def save_xview_in_satellitepy_format(out_folder,label_path):
+def save_xview_in_satellitepy_format(out_folder, label_path):
     """
     Parameters
     ----------
@@ -305,16 +376,15 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
     logger = logging.getLogger(__name__)
     logger.info(f'Initializing save_xview_in_satellitepy_format')
 
-
     labels = json.load(open(label_path, 'r'))
     all_image_names = []
     for feature in labels['features']:
         all_image_names.append(feature['properties']['image_id'])
 
-    image_dicts = {img_name:init_satellitepy_label() for img_name in set(all_image_names)}
+    image_dicts = {img_name: init_satellitepy_label() for img_name in set(all_image_names)}
     # Get all not available tasks so we can append None to those tasks
     ## Default available tasks for dota
-    available_tasks=['hbboxes', 'coarse-class', 'fine-class', 'role']
+    available_tasks = ['hbboxes', 'coarse-class', 'fine-class', 'role']
     ## All possible tasks
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
@@ -322,7 +392,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
 
     classes = get_xview_classes()
 
-    img_name_for_log = list(image_dicts.keys())[0]        
+    img_name_for_log = list(image_dicts.keys())[0]
     for feature in labels['features']:
         img_name = feature['properties']['image_id']
         if img_name != img_name_for_log:
@@ -339,7 +409,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
         if type_class in classes['vehicles']:
             image_dicts[img_name]['coarse-class'].append('vehicle')
             image_dicts[img_name]['fine-class'].append(classes['vehicles'][type_class])
-            if type_class in [17, 23, 53, 19, 24, 25, 26, 28, 29, 54, 55, 56, 
+            if type_class in [17, 23, 53, 19, 24, 25, 26, 28, 29, 54, 55, 56,
                               57, 59, 60, 61, 62, 63, 64, 65, 66, 32]:
                 image_dicts[img_name]['role'].append('Large Vehicle')
             elif type_class in [18, 20, 21]:
@@ -358,7 +428,7 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
             elif type_class == 12:
                 image_dicts[img_name]['role'].append('Medium Civil Transport/Utility')
             elif type_class == 13:
-                image_dicts[img_name]['role'].append('Large Civil Transport/Utility') 
+                image_dicts[img_name]['role'].append('Large Civil Transport/Utility')
             else:
                 image_dicts[img_name]['role'].append(None)
         elif type_class in classes['helicopter']:
@@ -374,14 +444,14 @@ def save_xview_in_satellitepy_format(out_folder,label_path):
             image_dicts[img_name]['fine-class'].append(None)
             image_dicts[img_name]['role'].append(None)
 
-        fill_none_to_empty_keys(image_dicts[img_name],not_available_tasks)
+        fill_none_to_empty_keys(image_dicts[img_name], not_available_tasks)
 
     # Save satellitepy labels
     for img_name, satellitepy_dict in image_dicts.items():
         label_name = f"{Path(img_name).stem}.json"
         label_path = out_folder / label_name
-        with open(str(label_path),'w') as f:
-            json.dump(satellitepy_dict,f,indent=4)
+        with open(str(label_path), 'w') as f:
+            json.dump(satellitepy_dict, f, indent=4)
 
 
 def separate_dataset_parts(out_folder, label_folder, image_folder, dataset_part, dataset):
@@ -404,7 +474,7 @@ def separate_dataset_parts(out_folder, label_folder, image_folder, dataset_part,
 
     if dataset != 'shipnet' or dataset_name != 'test':
         out_label_folder = os.path.join(out_folder, Path('labels'))
-        assert(create_folder(Path(out_label_folder)))
+        assert (create_folder(Path(out_label_folder)))
 
     with open(dataset_part, 'r') as dataset:
         for line in dataset.readlines():
@@ -426,6 +496,3 @@ def separate_dataset_parts(out_folder, label_folder, image_folder, dataset_part,
                 label_path = os.path.join(label_folder, Path(padding * '0' + name + '.xml'))
                 shutil.copy(label_path, out_label_folder)
     logger.info(f'Images and labels saved for dataset-part {dataset_name}')
-
-
-

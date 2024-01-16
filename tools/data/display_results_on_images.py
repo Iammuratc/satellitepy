@@ -20,8 +20,10 @@ def get_args():
                         help='Labels that corresponds to the given images')
     parser.add_argument('--in-mask-dir', type=Path, required=False,
                         help='Masks to display on the images. Required if masks in tasks.')
-    parser.add_argument('--mask-threshold', type= float, default=0.02,
-                        help='Only pixels with intensity above this value will be set as mask. Range 0 to 1.')
+    parser.add_argument('--mask-threshold',  type=float, default=10,
+                        help='C for cv2.adaptiveThreshold. Value is subtracted from the threshold.')
+    parser.add_argument('--mask-adaptive-size', type=float, default=51,
+                        help='The threshold is the weighted sum of values in a neighbourhood of this size. Must be odd, default is 51.')
     parser.add_argument('--out-dir', type=Path, required=True,
                         help='dir where the generated image should be saved to.')
     parser.add_argument('--tasks', type=str, nargs='+',
@@ -40,7 +42,8 @@ def get_args():
 def run(args):
     image_dir = Path(args.in_image_dir)
     mask_dir = Path(args.in_mask_dir) if args.in_mask_dir else None
-    mask_threshold = args.mask_threshold if args.mask_threshold else 0.02
+    mask_threshold = args.mask_threshold if args.mask_threshold else 10
+    mask_adaptive_size = int(args.mask_adaptive_size) if args.mask_adaptive_size else 51
     result_dir = Path(args.in_result_dir)
     output_dir = Path(args.out_dir)
     iou_th = args.iou_threshold
@@ -66,6 +69,7 @@ def run(args):
         img_dir = image_dir,
         mask_dir = mask_dir,
         mask_threshold = mask_threshold,
+        mask_adaptive_size = mask_adaptive_size,
         result_dir = result_dir,
         out_dir = output_dir,
         tasks = tasks,
