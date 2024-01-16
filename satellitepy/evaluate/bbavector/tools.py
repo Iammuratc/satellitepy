@@ -189,7 +189,6 @@ def save_original_image_results(
     for img_path, label_path, mask_path in tqdm(zip(img_paths,label_paths,mask_paths), total=len(img_paths)):
         # Check if label and image names match
         img_name = img_path.stem
-        logger.info(f'{img_name} will be processed...')
 
         # Image
         img = cv2.imread(str(img_path))
