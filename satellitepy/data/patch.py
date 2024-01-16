@@ -265,6 +265,9 @@ def merge_patch_results(patch_dict, patch_size, shape):
 
     if patch_dict['masks']:
         for i, (x_0, y_0) in enumerate(patch_dict['start_coords']):
+            offset_x = 0 if x_0 == 0 else 1
+            offset_y = 0 if y_0 == 0 else 1
+
             patch_mask = patch_dict['masks'][i]
 
             x_min = x_0
@@ -273,8 +276,8 @@ def merge_patch_results(patch_dict, patch_size, shape):
             y_max = np.min([y_0+patch_size, shape[0]])-1
 
             new_mask = np.zeros(mask.shape)
-            patch_mask = patch_mask[0:y_max-y_min, 0:x_max-x_min]
-            new_mask[y_min:y_max, x_min:x_max] = patch_mask
+            patch_mask = patch_mask[offset_y:y_max-y_min, offset_x:x_max-x_min]
+            new_mask[y_min+offset_y:y_max, x_min+offset_x:x_max] = patch_mask
 
             new_mask = np.where(mask == 0, new_mask*2, new_mask)
             mask = np.where(new_mask == 0, mask*2, mask)
