@@ -114,7 +114,7 @@ def calc_iou(gt_mask, det_mask):
 
 
 
-def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresholds, conf_score_threshold, mask_threshold):
+def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresholds, conf_score_threshold, mask_threshold, mask_adaptive_size):
     # Get logger
     logger = logging.getLogger(__name__)
 
@@ -126,13 +126,15 @@ def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresh
     cnt = np.zeros(len(iou_thresholds))
 
     for result_path, mask_path in tqdm(zip(result_paths, mask_paths), total=len(result_paths)):
-        if result_path.suffix != ".json" or mask_path.suffix != ".npy":
+        if result_path.suffix != ".json" or mask_path.suffix != ".png":
             continue
 
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
             gt_results = get_satellitepy_dict_values(result['gt_labels'], "masks")
-            mask = np.load(mask_path)
+            mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+            mask = 255-mask
+            mask = cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, mask_adaptive_size, mask_threshold)
 
             for i_iou_th, iou_th in enumerate(iou_thresholds):
                 # Iterate over the confidence scores of the detected bounding boxes
@@ -152,7 +154,7 @@ def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresh
                         continue
 
                     bbox = result["hbboxes"][i_conf_score] if result["hbboxes"][i_conf_score] else result["hbboxes"][i_conf_score]
-                    det_value = decode_masks(bbox, mask, mask_threshold)
+                    det_value = decode_masks(bbox, mask)
 
                     ## Det index
                     iou = calc_iou(det_gt_value, det_value)

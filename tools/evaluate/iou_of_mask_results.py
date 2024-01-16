@@ -16,8 +16,10 @@ def get_args():
     parser.add_argument('--in-result-folder', type=str,
                         help='Folder of results. The results in this folder will be processed.')
     parser.add_argument('--in-mask-folder', type=str, help='Folder of masks. The masks in this folder will be processed.')
-    parser.add_argument('--mask-threshold', type=float, default=0.02,
-                        help='Only pixels with intensity above this value will be set as mask. Range 0 to 1.')
+    parser.add_argument('--mask-threshold', type=float, default=10,
+                        help='C for cv2.adaptiveThreshold. Value is subtracted from the threshold')
+    parser.add_argument('--mask-adaptive-size', type=float, default=51,
+                        help='The threshold is the weighted sum of values in a neighbourhood of this size. Must be odd, default is 51.')
     parser.add_argument('--out-folder',
                         type=str,
                         help='Save folder of result evaluations. It will be asked to create if not exists.')
@@ -45,7 +47,9 @@ def main(args):
                       args.iou_thresholds.split(',')] if args.iou_thresholds != None else [x / 100.0 for x in
                                                                                            range(50, 96, 5)]
     conf_score_threshold = float(args.confidence_score_threshold) if args.confidence_score_threshold else 0.5
-    mask_threshold = float(args.mask_threshold) if args.mask_threshold else 0.02
+    mask_threshold = int(args.mask_threshold) if args.mask_threshold else 10
+    mask_adaptive_size = int(args.mask_adaptive_size) if args.mask_adaptive_size else 51
+    assert mask_adaptive_size % 2 == 1, "mask-adaptive-size must be odd"
     out_folder = Path(args.out_folder)
     # Init logger
     log_path = Path(
@@ -54,7 +58,7 @@ def main(args):
     logger = logging.getLogger(__name__)
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
-    logger.info('Saving patches from original images...')
+    logger.info('Calculating IoU-score...')
 
     # Calculate mAP
     calculate_iou_score(
@@ -63,7 +67,8 @@ def main(args):
         out_folder,
         iou_thresholds,
         conf_score_threshold,
-        mask_threshold
+        mask_threshold,
+        mask_adaptive_size
     )
 
 if __name__ == '__main__':

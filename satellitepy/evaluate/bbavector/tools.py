@@ -30,7 +30,6 @@ def save_patch_results(
     num_workers,
     input_h,
     input_w,
-    mask_thresh,
     conf_thresh,
     down_ratio,
     K,
@@ -109,8 +108,7 @@ def save_patch_results(
             device,
             input_h,
             input_w,
-            down_ratio,
-            mask_thresh
+            down_ratio
             )
         if in_label_folder:
             gt_labels = read_label(data_dict['label_path'][0],in_label_format)
@@ -122,12 +120,15 @@ def save_patch_results(
         # # Save labels to json file
         with open(Path(patch_result_folder) / f"{img_name}.json",'w') as f:
             json.dump(save_dict, f, indent=4)
-        
-        if mask is not None:
-            with open(Path(patch_mask_folder) / f"{img_name}.npy", 'wb') as f:
-                np.save(f, mask)
 
-def save_original_image_results(    
+        if mask is not None:
+            path = str(patch_mask_folder.joinpath(f"{img_name}.png"))
+            max = np.max(mask)
+            mask *= 255.0
+            assert max <= 1.0, "mask value > 1.0!"
+            cv2.imwrite(path, mask, [cv2.IMWRITE_JPEG_QUALITY, 100])
+
+def save_original_image_results(
     out_folder,
     in_image_folder,
     in_label_folder,
@@ -149,6 +150,15 @@ def save_original_image_results(
     ):
 
     logger = logging.getLogger(__name__)
+
+    # Create result folders
+    result_folder = Path(out_folder) / 'results' / 'result_labels'
+    assert create_folder(result_folder)
+
+    if "masks" in tasks:
+        mask_folder = Path(out_folder) / 'results' / 'result_masks'
+        assert create_folder(mask_folder)
+
     # Model
     model = get_model(tasks,down_ratio)
     model, optimizer, epoch, valid_loss = load_checkpoint(model, checkpoint_path)
@@ -169,11 +179,11 @@ def save_original_image_results(
         logger.error('The number of files does not match.')
         logger.error(f'There are {len(img_paths)} images, {len(label_paths)} label files and {len(mask_paths)} mask images.')
         return 0
-    bbavector_dataset_utils = BBAVectorDatasetUtils(tasks=tasks, 
-        input_h=input_h, 
-        input_w=input_w, 
-        down_ratio=down_ratio, 
-        K=K, 
+    bbavector_dataset_utils = BBAVectorDatasetUtils(tasks=tasks,
+        input_h=input_h,
+        input_w=input_w,
+        down_ratio=down_ratio,
+        K=K,
         augmentation=False)
 
     for img_path, label_path, mask_path in zip(img_paths,label_paths,mask_paths):
@@ -196,6 +206,7 @@ def save_original_image_results(
             patch_overlap=patch_overlap
             )
         patch_dict['det_labels'] = []
+        patch_dict['masks'] = []
 
         for patch_img,patch_labels in zip(patch_dict['images'],patch_dict['labels']):
             # Pass every patch to model
@@ -215,15 +226,15 @@ def save_original_image_results(
                 device,
                 input_h,
                 input_w,
-                down_ratio,
-                mask_thresh
+                down_ratio
                 )
 
             patch_dict['det_labels'].append(save_dict)
+            patch_dict['masks'].append(mask)
 
 
         # Merge patch results into original results standards
-        merged_det_labels = merge_patch_results(patch_dict)
+        merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
 
         # Find matches of original image with merged patch results
         matches = match_gt_and_det_bboxes(gt_labels,merged_det_labels)
@@ -245,7 +256,7 @@ def save_original_image_results(
                     }
 
         # Save labels to a json file
-        json_path = Path(out_folder) / f"{img_name}.json"
+        json_path = Path(result_folder) / f"{img_name}.json"
         logger.info(f"The result file is saved at {json_path}")
         with open(json_path,'w') as f:
             json.dump(result, f, indent=4)
@@ -254,3 +265,10 @@ def save_original_image_results(
             # print(data_dict['img_w'].shape)
             # print(data_dict['img_h'])
             # print(data_dict['img_h'].shape)
+
+        if mask.any:
+            path = str(mask_folder.joinpath(f"{img_name}.png"))
+            max = np.max(mask)
+            mask *= 255.0
+            assert max <= 1.0, "mask value > 1.0!"
+            cv2.imwrite(path, mask, [cv2.IMWRITE_JPEG_QUALITY, 100])
