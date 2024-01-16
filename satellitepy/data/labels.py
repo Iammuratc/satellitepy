@@ -40,8 +40,8 @@ def read_label(label_path,label_format, mask_path = None):
         exit(1)
     elif label_format == 'isprs':
         return read_isprs_label(label_path)
-    elif label_format == "results":
-        return read_result_label(label_path)
+    # elif label_format == "results":
+    #     return read_result_label(label_path)
     elif label_format == "vedai":
         return read_vedai_label(label_path)
     else:
