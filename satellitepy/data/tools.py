@@ -344,13 +344,13 @@ def show_results_on_image(img_dir,
                                     cv2.THRESH_BINARY_INV,mask_adaptive_size, mask_threshold)
             img_mask = np.zeros(shape=(img.shape[0], img.shape[1]), dtype=np.uint8)
 
-            for i, bbox in enumerate(labels[bboxes]):
-                conf_score = labels['confidence-scores'][i]
+            for i, bbox in enumerate(labels['det_labels'][bboxes]):
+                conf_score = labels['det_labels']['confidence-scores'][i]
                 iou_score = labels['matches']['iou']['scores'][i]
                 if conf_score < conf_th or iou_score < iou_th:
                     continue
 
-                mask_values = decode_masks(bbox, mask, mask_threshold)
+                mask_values = decode_masks(bbox, mask)
                 x, y = mask_values
                 img_mask[y, x] = 1
 
