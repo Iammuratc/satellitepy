@@ -57,6 +57,8 @@ def set_conf_mat_from_result(
     task_dict = get_task_dict(task)
     idx2name = {v: k for k, v in task_dict.items()}
     taskResult = get_satellitepy_dict_values(result['gt_labels'], task)
+    if len(taskResult) == 0:
+        return conf_mat
     for i_iou_th, iou_th in enumerate(iou_thresholds):
         for i_conf_score_th, conf_score_th in enumerate(conf_score_thresholds):
             # (Surely) Detected gt label indices
@@ -64,7 +66,7 @@ def set_conf_mat_from_result(
             det_gt_bbox_indices = []
 
             # Iterate over the confidence scores of the detected bounding boxes
-            for i_conf_score, conf_score in enumerate(result['confidence-scores']):
+            for i_conf_score, conf_score in enumerate(result['det_labels']['confidence-scores']):
                 ## If the confidence score is lower than threshold, skip the object
                 if conf_score<conf_score_th:
                     continue
@@ -87,7 +89,7 @@ def set_conf_mat_from_result(
                 det_gt_instance_name = 'Background' if str(det_gt_instance_name) not in instance_names else det_gt_instance_name
                 det_gt_index = instance_names.index(str(det_gt_instance_name))
                 ## Det index
-                det_index = instance_names.index(str(idx2name[result[task][i_conf_score]]))
+                det_index = instance_names.index(str(idx2name[result['det_labels'][task][i_conf_score]]))
                 conf_mat[i_iou_th,i_conf_score_th,det_gt_index,det_index] += 1
 
             # If a ground truth label is undetected, add it as a detected Background label

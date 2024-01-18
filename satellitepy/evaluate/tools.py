@@ -43,8 +43,7 @@ def calculate_map(
         if result_path.suffix != ".json":
             continue
         with open(result_path,'r') as result_file:
-            result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches' 
-        
+            result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
         conf_mat = set_conf_mat_from_result(
             conf_mat,
             task,
