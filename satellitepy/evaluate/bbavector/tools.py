@@ -264,7 +264,7 @@ def save_original_image_results(
             # print(data_dict['img_h'])
             # print(data_dict['img_h'].shape)
 
-        if mask.any:
+        if "masks" in tasks & mask.any:
             path = str(mask_folder.joinpath(f"{img_name}.png"))
             max = np.max(mask)
             mask *= 255.0
