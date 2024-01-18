@@ -263,7 +263,7 @@ def merge_patch_results(patch_dict, patch_size, shape):
 
     mask = np.zeros((shape[0], shape[1]), dtype=float)
 
-    if patch_dict['masks']:
+    if patch_dict['masks'][0]:
         for i, (x_0, y_0) in enumerate(patch_dict['start_coords']):
             offset_x = 0 if x_0 == 0 else 1
             offset_y = 0 if y_0 == 0 else 1
