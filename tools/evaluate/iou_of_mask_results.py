@@ -18,7 +18,7 @@ def get_args():
     parser.add_argument('--in-mask-folder', type=str, help='Folder of masks. The masks in this folder will be processed.')
     parser.add_argument('--mask-threshold', type=float, default=10,
                         help='C for cv2.adaptiveThreshold. Value is subtracted from the threshold')
-    parser.add_argument('--mask-adaptive-size', type=float, default=51,
+    parser.add_argument('--mask-adaptive-size', type=float, default=101,
                         help='The threshold is the weighted sum of values in a neighbourhood of this size. Must be odd, default is 51.')
     parser.add_argument('--out-folder',
                         type=str,

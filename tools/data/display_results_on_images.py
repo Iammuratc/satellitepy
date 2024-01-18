@@ -22,7 +22,7 @@ def get_args():
                         help='Masks to display on the images. Required if masks in tasks.')
     parser.add_argument('--mask-threshold',  type=float, default=10,
                         help='C for cv2.adaptiveThreshold. Value is subtracted from the threshold.')
-    parser.add_argument('--mask-adaptive-size', type=float, default=51,
+    parser.add_argument('--mask-adaptive-size', type=float, default=101,
                         help='The threshold is the weighted sum of values in a neighbourhood of this size. Must be odd, default is 51.')
     parser.add_argument('--out-dir', type=Path, required=True,
                         help='dir where the generated image should be saved to.')

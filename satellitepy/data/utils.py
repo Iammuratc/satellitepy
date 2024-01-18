@@ -39,7 +39,7 @@ def set_mask(labels,mask_path,bbox_type, mask_type):
             if 0 <= center[0] < mask.shape[1] and 0 <= center[1] < mask.shape[0]:
                 color = mask[center[::-1]]
                 coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] == color)).T.tolist()
-                labels['masks'].append([coords[1] + h[0],coords[0] + h[2]]) # x,y
+                labels['masks'].append([(coords[1] + h[0]).tolist() ,(coords[0] + h[2]).tolist()]) # x,y
             else:
                 labels['masks'].append(None)
 

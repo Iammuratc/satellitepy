@@ -355,7 +355,7 @@ def show_results_on_image(img_dir,
                 img_mask[y, x] = 1
 
             contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            cv2.drawContours(img, contours, -1, (0,255,0), 1)
+            cv2.drawContours(img, contours, -1, (0,255,0), 2)
 
         cv2.imwrite(str(Path(out_dir) / f"{img_path.stem}.png"), img)
 
