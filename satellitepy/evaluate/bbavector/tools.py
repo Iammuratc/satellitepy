@@ -194,7 +194,6 @@ def save_original_image_results(
 
     for img_path, label_path, mask_path in tqdm(zip(img_paths,label_paths,mask_paths), total=len(img_paths)):
         # Check if label and image names match
-        start_inf = time.time()
 
         img_name = img_path.stem
 
@@ -218,6 +217,7 @@ def save_original_image_results(
         for patch_img,patch_labels in zip(patch_dict['images'],patch_dict['labels']):
             # Pass every patch to model
             # Data dict
+            start_inf = time.time()
 
             image_h, image_w, c = patch_img.shape
             annotation = bbavector_dataset_utils.prepare_annotations(patch_labels, image_w, image_h)#, img_path)
@@ -288,4 +288,4 @@ def save_original_image_results(
         inference_time += time.time() - start_inf
 
         all_time = inference_time+merge_labels_time+merge_masks_time
-        logger.log(f'Time splits: Inference: {inference_time/all_time}; Merging labels: {merge_labels_time/all_time}; Merging masks: {merge_masks_time/all_time}.')
+        logger.info(f'Time splits: Inference: {inference_time/all_time}; Merging labels: {merge_labels_time/all_time}; Merging masks: {merge_masks_time/all_time}.')
