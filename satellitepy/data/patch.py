@@ -1,3 +1,5 @@
+import time
+
 import cv2
 import numpy as np
 import logging
@@ -250,6 +252,9 @@ def merge_patch_results(patch_dict, patch_size, shape):
     merged_det_labels : dict
         Merged 'det_labels' dict in satellitepy format
     """
+
+    start_labels = time.time()
+
     merged_det_labels = { key:[] for key in patch_dict['det_labels'][0].keys()}
     for i,(x_0,y_0) in enumerate(patch_dict['start_coords']):
         # Merge all the keys to merged_det_labels
@@ -261,9 +266,13 @@ def merge_patch_results(patch_dict, patch_size, shape):
             else:
                 merged_det_labels[key].extend(patch_dict['det_labels'][i][key])
 
+    labels_time = time.time() - start_labels
+
+    start_mask = time.time()
+
     mask = np.zeros((shape[0], shape[1]), dtype=float)
 
-    if patch_dict['masks'][0]:
+    if np.array(patch_dict['masks']).any():
         for i, (x_0, y_0) in enumerate(patch_dict['start_coords']):
             offset_x = 0 if x_0 == 0 else 1
             offset_y = 0 if y_0 == 0 else 1
@@ -284,4 +293,5 @@ def merge_patch_results(patch_dict, patch_size, shape):
 
             mask = (mask + new_mask) / 2
 
-    return merged_det_labels, mask
+    mask_time = time.time() - start_mask
+    return merged_det_labels, mask, labels_time, mask_time

@@ -1,3 +1,5 @@
+import time
+
 import cv2
 
 from satellitepy.models.bbavector.tools import get_model, get_model_decoder
@@ -186,8 +188,14 @@ def save_original_image_results(
         K=K,
         augmentation=False)
 
+    inference_time = 0
+    merge_labels_time = 0
+    merge_masks_time = 0
+
     for img_path, label_path, mask_path in tqdm(zip(img_paths,label_paths,mask_paths), total=len(img_paths)):
         # Check if label and image names match
+        start_inf = time.time()
+
         img_name = img_path.stem
 
         # Image
@@ -231,9 +239,15 @@ def save_original_image_results(
             patch_dict['det_labels'].append(save_dict)
             patch_dict['masks'].append(mask)
 
+        inference_time += time.time() - start_inf
 
         # Merge patch results into original results standards
-        merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
+        merged_det_labels, mask, label_time, mask_time = merge_patch_results(patch_dict, patch_size, img.shape)
+
+        merge_labels_time += label_time
+        merge_masks_time += mask_time
+
+        start_inf = time.time()
 
         # Find matches of original image with merged patch results
         matches = match_gt_and_det_bboxes(gt_labels,merged_det_labels)
@@ -270,3 +284,8 @@ def save_original_image_results(
             mask *= 255.0
             assert max <= 1.0, "mask value > 1.0!"
             cv2.imwrite(path, mask, [cv2.IMWRITE_JPEG_QUALITY, 100])
+
+        inference_time += time.time() - start_inf
+
+        all_time = inference_time+merge_labels_time+merge_masks_time
+        logger.log(f'Time splits: Inference: {inference_time/all_time}; Merging labels: {merge_labels_time/all_time}; Merging masks: {merge_masks_time/all_time}.')
