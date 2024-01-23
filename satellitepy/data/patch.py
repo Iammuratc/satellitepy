@@ -266,10 +266,6 @@ def merge_patch_results(patch_dict, patch_size, shape):
             else:
                 merged_det_labels[key].extend(patch_dict['det_labels'][i][key])
 
-    labels_time = time.time() - start_labels
-
-    start_mask = time.time()
-
     mask = np.zeros((shape[0], shape[1]), dtype=float)
 
     if np.array(patch_dict['masks']).any():
@@ -288,10 +284,11 @@ def merge_patch_results(patch_dict, patch_size, shape):
             patch_mask = patch_mask[offset_y:y_max-y_min, offset_x:x_max-x_min]
             new_mask[y_min+offset_y:y_max, x_min+offset_x:x_max] = patch_mask
 
-            new_mask = np.where(mask == 0, new_mask*2, new_mask)
-            mask = np.where(new_mask == 0, mask*2, mask)
+            # new_mask = np.where(mask == 0, new_mask*2, new_mask)
+            # mask = np.where(new_mask == 0, mask*2, mask)
 
-            mask = (mask + new_mask) / 2
+            mask = np.maximum(mask, new_mask)
 
-    mask_time = time.time() - start_mask
-    return merged_det_labels, mask, labels_time, mask_time
+            # mask = (mask + new_mask) / 2
+
+    return merged_det_labels, mask
