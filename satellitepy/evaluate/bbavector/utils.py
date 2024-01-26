@@ -3,7 +3,6 @@ from satellitepy.data.bbox import BBox
 
 from mmrotate.core.bbox import rbbox_overlaps
 
-from mmcv.ops import nms_rotated, nms
 import torch
 import numpy as np
 import logging
