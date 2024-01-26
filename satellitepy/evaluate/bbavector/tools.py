@@ -239,8 +239,10 @@ def save_original_image_results(
                 input_w,
                 down_ratio
                 )
-            patch_dict['masks'].append(save_dict["mask"])
-            del save_dict["mask"]
+
+            if 'masks' in tasks:
+                patch_dict['masks'].append(save_dict["mask"])
+                del save_dict["mask"]
             patch_dict['det_labels'].append(save_dict)
 
 
