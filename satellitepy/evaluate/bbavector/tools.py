@@ -9,7 +9,7 @@ from satellitepy.data.tools import read_label
 from satellitepy.data.patch import get_patches, merge_patch_results
 from satellitepy.utils.path_utils import create_folder, get_file_paths
 from satellitepy.evaluate.utils import match_gt_and_det_bboxes
-from satellitepy.evaluate.bbavector.utils import get_patch_result
+from satellitepy.evaluate.bbavector.utils import get_patch_result, apply_nms
 
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -18,6 +18,8 @@ import logging
 from pathlib import Path
 import json 
 import numpy as np
+# from mmcv.ops import nms_rotated, nms
+# import time
 
 def save_patch_results(
     out_folder,
@@ -101,7 +103,7 @@ def save_patch_results(
     for data_dict in tqdm(data_loader):
         img_name = Path(data_dict['img_path'][0]).stem
         
-        save_dict, mask = get_patch_result(
+        save_dict = get_patch_result(
             model,
             model_decoder,
             data_dict,
@@ -110,6 +112,9 @@ def save_patch_results(
             input_w,
             down_ratio
             )
+        save_dict = apply_nms(save_dict)
+
+
         if in_label_folder:
             gt_labels = read_label(data_dict['label_path'][0],in_label_format)
             matches = match_gt_and_det_bboxes(gt_labels,save_dict)
@@ -118,15 +123,18 @@ def save_patch_results(
 
         # Save results with the corresponding ground truth
         # # Save labels to json file
+
+        mask = save_dict["mask"]
+        if mask is not None:
+            path = str(patch_mask_folder.joinpath(f"{img_name}.png"))
+            assert np.max(mask) <= 1.0, "mask value > 1.0!"
+            cv2.imwrite(path, mask*255.0, [cv2.IMWRITE_JPEG_QUALITY, 100])
+            # Remove mask from dict
+            del save_dict["mask"]
+
         with open(Path(patch_result_folder) / f"{img_name}.json",'w') as f:
             json.dump(save_dict, f, indent=4)
 
-        if mask is not None:
-            path = str(patch_mask_folder.joinpath(f"{img_name}.png"))
-            max = np.max(mask)
-            mask *= 255.0
-            assert max <= 1.0, "mask value > 1.0!"
-            cv2.imwrite(path, mask, [cv2.IMWRITE_JPEG_QUALITY, 100])
 
 def save_original_image_results(
     out_folder,
@@ -144,9 +152,9 @@ def save_original_image_results(
     input_h,
     input_w,
     conf_thresh,
-    mask_thresh,
     down_ratio,
     K,
+    nms_iou_threshold
     ):
 
     logger = logging.getLogger(__name__)
@@ -187,9 +195,10 @@ def save_original_image_results(
         augmentation=False)
 
     for img_path, label_path, mask_path in tqdm(zip(img_paths,label_paths,mask_paths), total=len(img_paths)):
+        # start = time.time()
         # Check if label and image names match
         img_name = img_path.stem
-
+        print(img_name)
         # Image
         img = cv2.imread(str(img_path))
 
@@ -207,9 +216,12 @@ def save_original_image_results(
         patch_dict['det_labels'] = []
         patch_dict['masks'] = []
 
+        # time_1 = time.time()
+        # print(f"patch_dict is initiated in {time_1-start} secs")
         for patch_img,patch_labels in zip(patch_dict['images'],patch_dict['labels']):
             # Pass every patch to model
             # Data dict
+
 
             image_h, image_w, c = patch_img.shape
             annotation = bbavector_dataset_utils.prepare_annotations(patch_labels, image_w, image_h)#, img_path)
@@ -218,7 +230,7 @@ def save_original_image_results(
             data_dict['input'] = torch.Tensor(data_dict['input']).unsqueeze(0)
             data_dict['img_w']= torch.from_numpy(np.array(image_w)).unsqueeze(0)
             data_dict['img_h']= torch.from_numpy(np.array(image_h)).unsqueeze(0) # torch.Tensor(image_h)
-            save_dict, mask = get_patch_result(
+            save_dict = get_patch_result(
                 model,
                 model_decoder,
                 data_dict,
@@ -227,26 +239,19 @@ def save_original_image_results(
                 input_w,
                 down_ratio
                 )
-
+            patch_dict['masks'].append(save_dict["mask"])
+            del save_dict["mask"]
             patch_dict['det_labels'].append(save_dict)
-            patch_dict['masks'].append(mask)
 
 
         # Merge patch results into original results standards
-        merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
+        # merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
+        merged_det_labels = merge_patch_results(patch_dict, patch_size, img.shape)
+        # print(list(merged_det_labels.keys()))
+        merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_iou_threshold)
 
         # Find matches of original image with merged patch results
         matches = match_gt_and_det_bboxes(gt_labels,merged_det_labels)
-
-        # for key_0, value_0 in gt_labels.items():
-        #     print(f"{key_0}:{type(value_0)}")
-        #     if isinstance(value_0,dict):
-        #         for key_1,value_1 in value_0.items():
-        #             print(f"{key_1}:{type(value_1)}")
-        #     elif isinstance(value_0,list):
-        #         print(f"Item in list is {type(value_0[0])}")
-
-
         # Results
         result = {
             'gt_labels':gt_labels,
@@ -258,15 +263,10 @@ def save_original_image_results(
         json_path = Path(result_folder) / f"{img_name}.json"
         with open(json_path,'w') as f:
             json.dump(result, f, indent=4)
-            # print(data_dict['input'].shape)
-            # print(data_dict['img_w'])
-            # print(data_dict['img_w'].shape)
-            # print(data_dict['img_h'])
-            # print(data_dict['img_h'].shape)
 
-        if "masks" in tasks and mask.any:
-            path = str(mask_folder.joinpath(f"{img_name}.png"))
-            max = np.max(mask)
-            mask *= 255.0
-            assert max <= 1.0, "mask value > 1.0!"
-            cv2.imwrite(path, mask, [cv2.IMWRITE_JPEG_QUALITY, 100])
+        # if "masks" in tasks and mask.any:
+        #     path = str(mask_folder.joinpath(f"{img_name}.png"))
+        #     max = np.max(mask)
+        #     mask *= 255.0
+        #     assert max <= 1.0, "mask value > 1.0!"
+        #     cv2.imwrite(path, mask, [cv2.IMWRITE_JPEG_QUALITY, 100])

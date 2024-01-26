@@ -15,6 +15,23 @@ def get_project_folder():
     project_folder = Path(__file__).resolve(strict=True).parent.parent.parent
     return project_folder
 
+def get_default_log_path(log_file_name):
+    """
+    Get default log path 
+    Parameters
+    ----------
+    log_file_name : str
+    Log name
+    Returns
+    -------
+    log_path : Path
+    Default log path. project_folder/logs/log_file_name
+    """
+    project_folder = get_project_folder() 
+    log_dir = project_folder / 'logs'
+    assert create_folder(log_dir)
+    log_path = log_dir / f'{log_file_name}.log'
+    return log_path
 
 def init_logger(config_path, log_path):
     """
