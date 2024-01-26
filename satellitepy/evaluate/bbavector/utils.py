@@ -127,52 +127,5 @@ def apply_nms(det_labels, nms_iou_threshold=0.5):
                 save_dict[k] = v
             else:
                 save_dict[k] = v.tolist()
-    ###########
-    # if "obboxes" in det_labels:
-    #     obbox_len = len(det_labels["obboxes"])
-    #     print(f"Before: {obbox_len}")
-    #     bboxes_nms, keep_ind = nms_rotated(
-    #             dets=torch.Tensor([BBox(corners=corners).params for corners in det_labels["obboxes"]]),
-    #             scores=torch.Tensor(det_labels["confidence-scores"]),
-    #             iou_threshold= nms_iou_threshold,
-    #             labels=torch.Tensor(det_labels["coarse-class"])
-    #     )
-
-    #     print(f"After: {len(keep_ind)}")
-
-    #     det_labels_keys = [key for key in list(det_labels.keys()) if key not in ["mask","obboxes"]]
-    #     if keep_ind is not None:
-    #         save_dict["obboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
-    #         for k in det_labels_keys:
-    #             save_dict[k] = np.asarray(det_labels[k])[keep_ind.cpu().numpy()].tolist()
-    #     else:
-    #         save_dict["obboxes"] = det_labels["obboxes"]
-    #         for k in det_labels_keys:
-    #             v = det_labels[k]
-    #             if isinstance(v, list):
-    #                 save_dict[k] = v
-    #             else:
-    #                 save_dict[k] = v.tolist()
-
-    # # if obboxes is not in det_labels, hbboxes must be in det_labels
-    # else:
-    #     bboxes_nms, keep_ind = nms(
-    #             boxes=torch.Tensor(det_labels["hbboxes"]),
-    #             scores=torch.Tensor(det_labels["confidence-scores"]),
-    #             iou_threshold= nms_iou_threshold
-    #     )
-    #     det_labels_keys = [key for key in list(det_labels.keys()) if key not in ["mask","hbboxes"]]
-    #     if keep_ind is not None:
-    #         save_dict["hbboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
-    #         for k in det_labels_keys:
-    #             save_dict[k] = det_labels[k]
-    #     else:
-    #         save_dict["hbboxes"] = det_labels["hbboxes"]
-    #         for k in det_labels_keys:
-    #             v = det_labels[k]
-    #             if isinstance(v, list):
-    #                 save_dict[k] = v
-    #             else:
-    #                 save_dict[k] = v.tolist()
     return save_dict
 
