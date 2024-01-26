@@ -1,5 +1,3 @@
-import time
-
 import cv2
 
 from satellitepy.models.bbavector.tools import get_model, get_model_decoder
@@ -190,7 +188,6 @@ def save_original_image_results(
 
     for img_path, label_path, mask_path in tqdm(zip(img_paths,label_paths,mask_paths), total=len(img_paths)):
         # Check if label and image names match
-
         img_name = img_path.stem
 
         # Image
@@ -213,7 +210,6 @@ def save_original_image_results(
         for patch_img,patch_labels in zip(patch_dict['images'],patch_dict['labels']):
             # Pass every patch to model
             # Data dict
-            start_inf = time.time()
 
             image_h, image_w, c = patch_img.shape
             annotation = bbavector_dataset_utils.prepare_annotations(patch_labels, image_w, image_h)#, img_path)
@@ -234,6 +230,7 @@ def save_original_image_results(
 
             patch_dict['det_labels'].append(save_dict)
             patch_dict['masks'].append(mask)
+
 
         # Merge patch results into original results standards
         merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
