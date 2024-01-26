@@ -245,8 +245,8 @@ def save_original_image_results(
 
 
         # Merge patch results into original results standards
-        # merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
-        merged_det_labels = merge_patch_results(patch_dict, patch_size, img.shape)
+        merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
+        # merged_det_labels = merge_patch_results(patch_dict, patch_size, img.shape)
         # print(list(merged_det_labels.keys()))
         merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_iou_threshold)
 
