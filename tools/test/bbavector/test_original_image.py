@@ -21,7 +21,7 @@ def get_args():
     parser.add_argument('--patch-size', type=int, help='Patch size. Patches with patch_size will be created from the original image to be tested by the MMRotate model.' 
         'Be sure patch_size is the same as the input image size of your model, if not it will be resized to the input size.')
     parser.add_argument('--patch-overlap',  type=int, help='Overlapping size of neighboring patches. In CNN terminology, stride = patch_size - patch_overlap')
-    parser.add_argument('--truncated-object-thr', default=0.5, type=float, help='If (truncated-object-thr x object area) is not in the patch area, the object will be filtered out. 1 if the object is completely in the patch, 0 if not.')
+    parser.add_argument('--truncated-object-thresh', default=0.5, type=float, help='If (truncated-object-thr x object area) is not in the patch area, the object will be filtered out. 1 if the object is completely in the patch, 0 if not.')
     # parser.add_argument('--nms-on-multiclass-thr', default=0.5, type=float, help='nms_on_multiclass_thr value is used to filter out the overlapping bounding boxes with lower scores, and keep the best. Set 0.0 to cancel it.')
     parser.add_argument('--device', default='cuda:0', help='Device to load the model.')
     parser.add_argument('--tasks', default=['coarse-class'], nargs="+", help='The model will be trained for the given tasks.' 
@@ -37,7 +37,7 @@ def get_args():
     parser.add_argument('--out-folder', help='Save folder of detected bounding boxes. Predictions will be saved into <out-folder>.')
     parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
     parser.add_argument('--conf-thresh', type=float, default=0.18, help='Confidence threshold, 0.1 for general evaluation')
-    parser.add_argument('--mask-thresh', type=float, default=0.5, help='Only pixels with intensity above this value will be set as mask. Range 0 to 1.')
+    parser.add_argument('--nms-iou-thresh', type=float, default=0.5, help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
     parser.add_argument('--log-path', type=Path,
                         help='Log will be saved here. Default value is <out-folder>/evaluations.log')
     args = parser.parse_args()
@@ -57,7 +57,6 @@ def main(args):
     in_label_format = args.in_label_format
     tasks = args.tasks
     conf_thresh = args.conf_thresh
-    mask_thresh = args.mask_thresh
     K = args.K
     input_h = args.input_h
     input_w = args.input_w
@@ -65,7 +64,8 @@ def main(args):
     down_ratio = 4
     patch_overlap = args.patch_overlap
     patch_size = args.patch_size
-    truncated_object_threshold = args.truncated_object_thr
+    truncated_object_threshold = args.truncated_object_thresh
+    nms_iou_threshold = args.nms_iou_thresh
 
     assert create_folder(out_folder)
     # Initiate logger
@@ -97,11 +97,11 @@ def main(args):
         tasks=tasks,
         K=K,
         conf_thresh=conf_thresh,
-        mask_thresh=mask_thresh,
         num_workers=num_workers,
         input_h=input_h,
         input_w=input_w,
-        down_ratio = down_ratio)
+        down_ratio = down_ratio,
+        nms_iou_threshold=nms_iou_threshold)
         # nms_on_multiclass_thr)
 
 

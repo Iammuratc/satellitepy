@@ -261,27 +261,24 @@ def merge_patch_results(patch_dict, patch_size, shape):
             else:
                 merged_det_labels[key].extend(patch_dict['det_labels'][i][key])
 
-    mask = np.zeros((shape[0], shape[1]), dtype=float)
+    # mask = np.zeros((shape[0], shape[1]), dtype=float)
 
-    if patch_dict['masks'][0]:
-        for i, (x_0, y_0) in enumerate(patch_dict['start_coords']):
-            offset_x = 0 if x_0 == 0 else 1
-            offset_y = 0 if y_0 == 0 else 1
+    # if patch_dict['masks']:
+    #     for i, (x_0, y_0) in enumerate(patch_dict['start_coords']):
+    #         patch_mask = patch_dict['masks'][i]
 
-            patch_mask = patch_dict['masks'][i]
+    #         x_min = x_0
+    #         x_max = np.min([x_0+patch_size, shape[1]])-1
+    #         y_min = y_0
+    #         y_max = np.min([y_0+patch_size, shape[0]])-1
 
-            x_min = x_0
-            x_max = np.min([x_0+patch_size, shape[1]])-1
-            y_min = y_0
-            y_max = np.min([y_0+patch_size, shape[0]])-1
+    #         new_mask = np.zeros(mask.shape)
+    #         patch_mask = patch_mask[0:y_max-y_min, 0:x_max-x_min]
+    #         new_mask[y_min:y_max, x_min:x_max] = patch_mask
 
-            new_mask = np.zeros(mask.shape)
-            patch_mask = patch_mask[offset_y:y_max-y_min, offset_x:x_max-x_min]
-            new_mask[y_min+offset_y:y_max, x_min+offset_x:x_max] = patch_mask
+    #         new_mask = np.where(mask == 0, new_mask*2, new_mask)
+    #         mask = np.where(new_mask == 0, mask*2, mask)
 
-            new_mask = np.where(mask == 0, new_mask*2, new_mask)
-            mask = np.where(new_mask == 0, mask*2, mask)
+    #         mask = (mask + new_mask) / 2
 
-            mask = (mask + new_mask) / 2
-
-    return merged_det_labels, mask
+    return merged_det_labels#, mask

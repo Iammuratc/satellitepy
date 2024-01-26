@@ -32,7 +32,6 @@ def get_args():
         help='Folder of original mask images. The mask images in this folder will be used to set mask pixel coordinates in out labels.')
     parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
     parser.add_argument('--conf-thresh', type=float, default=0.18, help='Confidence threshold, 0.1 for general evaluation')
-    parser.add_argument('--mask-thresh', type=float, default=0.5, help='Only pixels with intensity above this value will be set as mask. Range 0 to 1.')
     parser.add_argument('--out-folder',        
         help='Save folder of detected bounding boxes. Bounding box labels will be saved into <out-folder>/results/patch_labels.')
     args = parser.parse_args()
@@ -55,7 +54,6 @@ def main(args):
     in_label_format = args.in_label_format
     tasks = args.tasks
     conf_thresh = args.conf_thresh
-    mask_thresh = args.mask_thresh
     K = args.K
     input_h = args.input_h
     input_w = args.input_w
@@ -78,7 +76,6 @@ def main(args):
         tasks=tasks,
         K=K,
         conf_thresh=conf_thresh,
-        mask_thresh=mask_thresh,
         num_workers=num_workers,
         input_h=input_h,
         input_w=input_w,

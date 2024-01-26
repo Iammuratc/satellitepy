@@ -1,7 +1,7 @@
 import configargparse
 from pathlib import Path
 from satellitepy.data.tools import show_results_on_image
-from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
+from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder, get_default_log_path
 import logging
 
 """
@@ -56,14 +56,15 @@ def run(args):
     if 'masks' in tasks:
         assert mask_dir, 'in-mask-dir must be specified if masks is in tasks!'
 
-    log_path = output_dir / f'display_labels.log' if args.log_path == None else args.log_path
+    logger = logging.getLogger(__name__)
+    logger.info(f'Displaying results of {image_dir.name}...')
+    if args.log_path == None:
+        log_path = get_default_log_path(log_file_name=Path(__file__).stem)
+        logger.info(f'No log path is given, the default log path will be used: {log_path}')
+    else:
+        log_path = args.log_path
 
     init_logger(config_path=args.log_config_path, log_path=log_path)
-    logger = logging.getLogger(__name__)
-    logger.info(
-        f'No log path is given, the default log path will be used: {log_path}')
-
-    logger.info(f'Displaying results of {image_dir.name}...')
 
     show_results_on_image(
         img_dir = image_dir,
