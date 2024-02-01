@@ -37,7 +37,7 @@ def get_args():
     parser.add_argument('--out-folder', help='Save folder of detected bounding boxes. Predictions will be saved into <out-folder>.')
     parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
     parser.add_argument('--conf-thresh', type=float, default=0.18, help='Confidence threshold, 0.1 for general evaluation')
-    parser.add_argument('--nms-iou-thresh', type=float, default=0.5, help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
+    parser.add_argument('--nms-iou-thresh', type=float, default=0.3, help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
     parser.add_argument('--log-path', type=Path,
                         help='Log will be saved here. Default value is <out-folder>/evaluations.log')
     args = parser.parse_args()
