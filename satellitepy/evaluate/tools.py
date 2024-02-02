@@ -131,6 +131,10 @@ def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresh
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
             gt_results = get_satellitepy_dict_values(result['gt_labels'], "masks")
+
+            if len(gt_results) == 0:
+                continue
+
             mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
             mask = 255-mask
             mask = cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, mask_adaptive_size, mask_threshold)
@@ -152,7 +156,7 @@ def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresh
                     if det_gt_value is None:
                         continue
 
-                    bbox = result["hbboxes"][i_conf_score] if result["hbboxes"][i_conf_score] else result["hbboxes"][i_conf_score]
+                    bbox = result['det_labels']["hbboxes"][i_conf_score] if result['det_labels']["hbboxes"][i_conf_score] else result['det_labels']["hbboxes"][i_conf_score]
                     det_value = decode_masks(bbox, mask)
 
                     ## Det index

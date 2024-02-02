@@ -198,7 +198,6 @@ def save_original_image_results(
         # start = time.time()
         # Check if label and image names match
         img_name = img_path.stem
-        print(img_name)
         # Image
         img = cv2.imread(str(img_path))
 
