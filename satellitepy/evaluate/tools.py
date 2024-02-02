@@ -131,6 +131,10 @@ def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresh
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
             gt_results = get_satellitepy_dict_values(result['gt_labels'], "masks")
+
+            if len(gt_results) == 0:
+                continue
+
             mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
             mask = 255-mask
             mask = cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, mask_adaptive_size, mask_threshold)
@@ -138,7 +142,7 @@ def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresh
             for i_iou_th, iou_th in enumerate(iou_thresholds):
                 # Iterate over the confidence scores of the detected bounding boxes
 
-                for i_conf_score, conf_score in enumerate(result['confidence-scores']):
+                for i_conf_score, conf_score in enumerate(result['det_labels']['confidence-scores']):
                     ## If the confidence score is lower than threshold, skip the object
                     if conf_score < conf_score_threshold:
                         continue
@@ -152,7 +156,7 @@ def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresh
                     if det_gt_value is None:
                         continue
 
-                    bbox = result["hbboxes"][i_conf_score] if result["hbboxes"][i_conf_score] else result["hbboxes"][i_conf_score]
+                    bbox = result['det_labels']["hbboxes"][i_conf_score] if result['det_labels']["hbboxes"][i_conf_score] else result['det_labels']["hbboxes"][i_conf_score]
                     det_value = decode_masks(bbox, mask)
 
                     ## Det index
@@ -183,10 +187,14 @@ def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_t
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
             gt_results = get_satellitepy_dict_values(result['gt_labels'], task)
+
+            if len(gt_results) == 0:
+                continue
+
             for i_iou_th, iou_th in enumerate(iou_thresholds):
                 # Iterate over the confidence scores of the detected bounding boxes
 
-                for i_conf_score, conf_score in enumerate(result['confidence-scores']):
+                for i_conf_score, conf_score in enumerate(result['det_labels']['confidence-scores']):
                     ## If the confidence score is lower than threshold, skip the object
                     if conf_score < conf_score_threshold:
                         continue
@@ -200,7 +208,7 @@ def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_t
                     if det_gt_value is None:
                         continue
                     ## Det index
-                    det_value = result[task][i_conf_score][0]
+                    det_value = result['det_labels'][task][i_conf_score][0]
 
                     error = abs(det_gt_value - det_value)/det_gt_value
                     cnt[i_iou_th] += 1

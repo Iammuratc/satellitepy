@@ -1,6 +1,9 @@
 import torch.nn.functional as F
 import torch
 
+from satellitepy.data.torchify import untorchify_continuous_values
+
+
 class DecDecoder(object):
     def __init__(self, K, conf_thresh, tasks):
         self.K = K
@@ -141,6 +144,7 @@ class DecDecoder(object):
                 result[k[4:]] = torch.argmax(arr_val[:, idx_1d, :], dim=2).squeeze(0).cpu().numpy()
             # regression -> there is only one value, we squeeze
             else:
-                result[k[4:]] = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy()
+                det = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy()
+                result[k[4:]] = untorchify_continuous_values(k, det)
 
         return result

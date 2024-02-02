@@ -198,7 +198,6 @@ def save_original_image_results(
         # start = time.time()
         # Check if label and image names match
         img_name = img_path.stem
-        print(img_name)
         # Image
         img = cv2.imread(str(img_path))
 
@@ -266,9 +265,9 @@ def save_original_image_results(
         with open(json_path,'w') as f:
             json.dump(result, f, indent=4)
 
-        # if "masks" in tasks and mask.any:
-        #     path = str(mask_folder.joinpath(f"{img_name}.png"))
-        #     max = np.max(mask)
-        #     mask *= 255.0
-        #     assert max <= 1.0, "mask value > 1.0!"
-        #     cv2.imwrite(path, mask, [cv2.IMWRITE_JPEG_QUALITY, 100])
+        if "masks" in tasks and mask.any:
+            path = str(mask_folder.joinpath(f"{img_name}.png"))
+            max = np.max(mask)
+            mask *= 255.0
+            assert max <= 1.0, "mask value > 1.0!"
+            cv2.imwrite(path, mask, [cv2.IMWRITE_JPEG_QUALITY, 100])

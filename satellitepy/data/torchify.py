@@ -1,6 +1,7 @@
 import torch
 
-from satellitepy.data.utils import get_satellitepy_table
+from satellitepy.data.utils import get_satellitepy_table, get_task_dict
+
 
 def torchify_satpy_label(value: list, possible_values: dict):
     '''
@@ -52,3 +53,14 @@ def torchify_satpy_label_dict(satpy_label: dict, possible_values: dict = get_sat
 
     inner(satpy_label, possible_values)
     return torchified
+
+def untorchify_continuous_values(task, values):
+    possible_values = get_task_dict(task[4:])
+    min = possible_values["min"]
+    max = possible_values["max"]
+
+    renormalized = values*(max-min)+min
+    return renormalized
+
+
+
