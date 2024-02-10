@@ -345,7 +345,10 @@ def show_results_on_image(img_dir,
                 if labels['det_labels']['coarse-class'][i] != 0:        # Remove attributes if detected coarse-class is not airplane
                     available_tasks = [task for task in available_tasks if not 'attributes' in task]
 
-                for i, task in enumerate(available_tasks):
+                if labels['det_labels']['coarse-class'][i] not in [0, 1]:        # Remove very-fine-class if detected coarse-class is not airplane or vessel
+                    available_tasks.remove('very-fine-class')
+
+                for j, task in enumerate(available_tasks):
                     task_text = task.split('_')[-1]
                     task_dict = get_task_dict(task)
                     task_result = labels['det_labels'][task][i][0] if type(labels['det_labels'][task][i]) is list else labels['det_labels'][task][i]
@@ -356,7 +359,7 @@ def show_results_on_image(img_dir,
 
 
                     text = task_text + ': ' + str(task_result)
-                    cv2.putText(img,str(text),(x_max,y_min+i*15),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
+                    cv2.putText(img,str(text),(x_max,y_min+j*15),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
 
             else:
                 cv2.putText(img,str(round(conf_score, 2)),(x_max,y_min),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
