@@ -341,14 +341,17 @@ def show_results_on_image(img_dir,
             bbox_corners = np.array(bbox_corners, np.int32)
             x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
             cv2.polylines(img, [bbox_corners], True, color=(0,0,255))
+
+            instance_available_tasks = available_tasks.copy()
             if all_tasks_flag:
                 if labels['det_labels']['coarse-class'][i] != 0:        # Remove attributes if detected coarse-class is not airplane
-                    available_tasks = [task for task in available_tasks if not 'attributes' in task]
+                    instance_available_tasks = [task for task in instance_available_tasks if not 'attributes' in task]
 
                 if labels['det_labels']['coarse-class'][i] not in [0, 1]:        # Remove very-fine-class if detected coarse-class is not airplane or vessel
-                    available_tasks.remove('very-fine-class')
+                    instance_available_tasks.remove('very-fine-class')
 
-                for j, task in enumerate(available_tasks):
+                for j, task in enumerate(instance_available_tasks):
+
                     task_text = task.split('_')[-1]
                     task_dict = get_task_dict(task)
                     task_result = labels['det_labels'][task][i][0] if type(labels['det_labels'][task][i]) is list else labels['det_labels'][task][i]
