@@ -27,7 +27,7 @@ def get_args():
     parser.add_argument('--out-dir', type=Path, required=True,
                         help='dir where the generated image should be saved to.')
     parser.add_argument('--tasks', type=str, nargs='+',
-                        help='Which information to show on generated images. E.g.: bboxes, masks, labels')
+                        help='Which information to show on generated images. E.g.: bboxes, masks, labels. Default is all, which shows all available information.', default='all')
     parser.add_argument('--conf-score-threshold', type=float, default=0.5,
                         help='Confidence score threshold')
     parser.add_argument('--iou-threshold', type=float, default=0.5,
@@ -53,7 +53,10 @@ def run(args):
 
     tasks = args.tasks
 
-    if 'masks' in tasks:
+    all_tasks_flag = False
+    if tasks[0] == 'all':
+        all_tasks_flag = True
+    elif 'masks' in tasks:
         assert mask_dir, 'in-mask-dir must be specified if masks is in tasks!'
 
     logger = logging.getLogger(__name__)
@@ -66,6 +69,8 @@ def run(args):
 
     init_logger(config_path=args.log_config_path, log_path=log_path)
 
+    print(tasks)
+
     show_results_on_image(
         img_dir = image_dir,
         mask_dir = mask_dir,
@@ -74,6 +79,7 @@ def run(args):
         result_dir = result_dir,
         out_dir = output_dir,
         tasks = tasks,
+        all_tasks_flag = all_tasks_flag,
         iou_th = iou_th,
         conf_th = conf_th)
 
