@@ -61,15 +61,10 @@ def run(args):
 
     logger = logging.getLogger(__name__)
     logger.info(f'Displaying results of {image_dir.name}...')
-    if args.log_path == None:
-        log_path = get_default_log_path(log_file_name=Path(__file__).stem)
-        logger.info(f'No log path is given, the default log path will be used: {log_path}')
-    else:
-        log_path = args.log_path
+    log_path = Path(
+        output_dir) / 'display_results_on_images.log' if args.log_path == None else args.log_path
 
     init_logger(config_path=args.log_config_path, log_path=log_path)
-
-    print(tasks)
 
     show_results_on_image(
         img_dir = image_dir,
