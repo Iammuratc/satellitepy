@@ -241,14 +241,18 @@ class Utils:
         for k in annotation.keys():
             if k == "masks":
                 ret[k] = annotation[k]
-            if k not in ["obboxes", "hbboxes", "masks", "cls_coarse-class"]:
+            # if k not in ["obboxes", "hbboxes", "masks", "cls_coarse-class"]:
+            if k not in ["obboxes", "hbboxes", "masks", "cls_fine-class"]:
+
                 # todo: we probably have to define 0 as background class / non-object class
                 ret[k] = np.zeros((self.max_objs), dtype=np.float32)
                 for idx, v in enumerate(annotation[k]):
                     ret[k][idx] = v
 
-        num_classes = len(get_task_dict("coarse-class"))
-        ret["cls_coarse-class"] = np.zeros((num_classes, image_h, image_w), dtype=np.float32)
+        # num_classes = len(get_task_dict("fine-class"))
+        num_classes = 108 # 108 fine-classes
+
+        ret["cls_fine-class"] = np.zeros((num_classes, image_h, image_w), dtype=np.float32)
 
         if "obboxes" in annotation.keys():
             wh = np.zeros((self.max_objs, 10), dtype=np.float32)
@@ -266,7 +270,7 @@ class Utils:
                 radius = max(0, int(radius))
                 ct = np.asarray([cen_x, cen_y], dtype=np.float32)
                 ct_int = ct.astype(np.int32)
-                draw_umich_gaussian(ret["cls_coarse-class"][annotation['cls_coarse-class'][k]], ct_int, radius)
+                draw_umich_gaussian(ret["cls_fine-class"][annotation['cls_fine-class'][k]], ct_int, radius)
                 ind[k] = ct_int[1] * image_w + ct_int[0]
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1
@@ -314,7 +318,7 @@ class Utils:
                 radius = max(0, int(radius))
                 ct = np.asarray([cen_x, cen_y], dtype=np.float32)
                 ct_int = ct.astype(np.int32)
-                draw_umich_gaussian(ret["cls_coarse-class"][annotation['cls_coarse-class'][k]], ct_int, radius)
+                draw_umich_gaussian(ret["cls_fine-class"][annotation['cls_fine-class'][k]], ct_int, radius)
                 ind[k] = ct_int[1] * image_w + ct_int[0]
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1
