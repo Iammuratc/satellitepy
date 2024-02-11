@@ -78,7 +78,7 @@ def train_bbavector(args):
     down_ratio = 4
     patience = args.patience
     tasks = args.tasks
-    assert "coarse-class" in tasks, "coarse-class must be part of the tasks"
+    # assert "coarse-class" in tasks, "coarse-class must be part of the tasks"
     validate_datasets = args.validate_datasets
     # Training input
     num_epoch = args.num_epoch
