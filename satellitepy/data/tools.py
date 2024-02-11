@@ -15,7 +15,7 @@ from satellitepy.data.labels import read_label, init_satellitepy_label, fill_non
     get_all_satellitepy_keys, satellitepy_labels_empty
 from satellitepy.data.patch import get_patches
 from satellitepy.data.chip import get_chips
-from satellitepy.data.utils import get_xview_classes
+from satellitepy.data.utils import get_xview_classes, get_task_dict
 from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
 from satellitepy.data.bbox import BBox
@@ -165,8 +165,8 @@ def save_patches(
             truncated_object_thr,
             patch_size,
             patch_overlap,
-            include_object_classes,
-            exclude_object_classes,
+            # include_object_classes,
+            # exclude_object_classes,
             label_path is not None
         )
 
@@ -302,7 +302,8 @@ def show_results_on_image(img_dir,
     mask_threshold,
     mask_adaptive_size,
     out_dir, 
-    tasks, 
+    tasks,
+    all_tasks_flag,
     iou_th=0.5, 
     conf_th=0.5):
     """
@@ -317,6 +318,11 @@ def show_results_on_image(img_dir,
     for img_path, label_path, mask_path in tqdm(zip(img_paths, label_paths, mask_paths), total=len(img_paths)):
         img = cv2.imread(str(img_path))
         labels = read_label(label_path, label_format='satellitepy')
+
+        available_tasks = list(labels['det_labels'].keys())
+        available_tasks.remove('confidence-scores')
+        available_tasks.remove('obboxes')
+        available_tasks.remove('hbboxes')
         
         # Current image
         if satellitepy_labels_empty(labels):
@@ -334,10 +340,35 @@ def show_results_on_image(img_dir,
                 continue
             bbox_corners = np.array(bbox_corners, np.int32)
             x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
-            cv2.putText(img,str(round(conf_score, 2)),(x_max,y_min),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
             cv2.polylines(img, [bbox_corners], True, color=(0,0,255))
-    
-        if 'masks' in tasks:
+
+            instance_available_tasks = available_tasks.copy()
+            if all_tasks_flag:
+                if labels['det_labels']['coarse-class'][i] != 0:        # Remove attributes if detected coarse-class is not airplane
+                    instance_available_tasks = [task for task in instance_available_tasks if not 'attributes' in task]
+
+                if labels['det_labels']['coarse-class'][i] not in [0, 1]:        # Remove very-fine-class if detected coarse-class is not airplane or vessel
+                    instance_available_tasks.remove('very-fine-class')
+
+                for j, task in enumerate(instance_available_tasks):
+
+                    task_text = task.split('_')[-1]
+                    task_dict = get_task_dict(task)
+                    task_result = labels['det_labels'][task][i][0] if type(labels['det_labels'][task][i]) is list else labels['det_labels'][task][i]
+
+                    if task_text not in ['length', 'wing-span']:
+                        idx2name = {v: k for k, v in task_dict.items()}
+                        task_result = idx2name[task_result]
+
+
+                    text = task_text + ': ' + str(task_result)
+                    cv2.putText(img,str(text),(x_max,y_min+j*15),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
+
+            else:
+                cv2.putText(img,str(round(conf_score, 2)),(x_max,y_min),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
+
+
+        if mask_dir and (all_tasks_flag or 'masks' in tasks):
             mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
             mask = 255 - mask
             mask = cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
