@@ -180,7 +180,7 @@ class LossAll(torch.nn.Module):
             elif t == "hbboxes":
                 self.tasks_losses[t + "_params"] = OffSmoothL1Loss()
                 self.tasks_losses[t + "_offset"] = OffSmoothL1Loss()
-            elif t == "coarse-class": # this is the heatmap loss
+            elif t == "fine-class": # this is the heatmap loss
                 self.tasks_losses["cls_" + t] = FocalLoss() 
             else:
                 td = get_task_dict(t)
@@ -199,7 +199,7 @@ class LossAll(torch.nn.Module):
         loss_dict = dict()
 
         for task, loss_fnc in self.tasks_losses.items():
-            if task == "cls_coarse-class": 
+            if task == "cls_fine-class":
                 loss_dict[task] = loss_fnc(pr_decs[task], gt_batch[task])
             else:
                 loss_dict[task] = loss_fnc(
