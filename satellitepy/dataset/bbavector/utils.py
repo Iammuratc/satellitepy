@@ -1,3 +1,5 @@
+import logging
+
 import cv2
 import torch
 import numpy as np
@@ -264,13 +266,17 @@ class Utils:
             for k in range(num_objs):
                 if isinstance(annotation["obboxes"][k], np.float32):
                     continue
+
+                if annotation['cls_fine-class'][k] is None:
+                    continue
+
                 rect = annotation['obboxes'][k, :]
                 cen_x, cen_y, bbox_w, bbox_h, theta = rect
                 radius = gaussian_radius((math.ceil(bbox_h), math.ceil(bbox_w)))
                 radius = max(0, int(radius))
                 ct = np.asarray([cen_x, cen_y], dtype=np.float32)
                 ct_int = ct.astype(np.int32)
-                draw_umich_gaussian(ret["cls_fine-class"][annotation['cls_fine-class'][k]], ct_int, radius)
+                draw_umich_gaussian(logging, ret["cls_fine-class"][annotation['cls_fine-class'][k]], ct_int, radius)
                 ind[k] = ct_int[1] * image_w + ct_int[0]
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1
@@ -312,13 +318,18 @@ class Utils:
             for k in range(num_objs):
                 if isinstance(annotation["hbboxes"][k], np.float32):
                     continue
+
+                if annotation['cls_fine-class'][k] is None:
+                    continue
+
                 rect = annotation['hbboxes'][k, :]
                 cen_x, cen_y, bbox_w, bbox_h = rect
                 radius = gaussian_radius((math.ceil(bbox_h), math.ceil(bbox_w)))
                 radius = max(0, int(radius))
                 ct = np.asarray([cen_x, cen_y], dtype=np.float32)
                 ct_int = ct.astype(np.int32)
-                draw_umich_gaussian(ret["cls_fine-class"][annotation['cls_fine-class'][k]], ct_int, radius)
+
+                draw_umich_gaussian(logging, ret["cls_fine-class"][annotation['cls_fine-class'][k]], ct_int, radius)
                 ind[k] = ct_int[1] * image_w + ct_int[0]
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1

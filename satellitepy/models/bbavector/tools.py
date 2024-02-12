@@ -9,6 +9,8 @@ def get_model(tasks,down_ratio):
              }
 
     for task in tasks:
+        if task == 'fine-class':
+            heads["cls_" + task] = 108
         if task == "obboxes":
             heads["obboxes_params"] = 10
             heads["obboxes_offset"] = 2
