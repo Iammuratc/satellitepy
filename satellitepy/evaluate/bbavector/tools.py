@@ -124,8 +124,8 @@ def save_patch_results(
         # Save results with the corresponding ground truth
         # # Save labels to json file
 
-        mask = save_dict["mask"]
-        if mask is not None:
+        if 'masks' in tasks:
+            mask = save_dict["mask"]
             path = str(patch_mask_folder.joinpath(f"{img_name}.png"))
             assert np.max(mask) <= 1.0, "mask value > 1.0!"
             cv2.imwrite(path, mask*255.0, [cv2.IMWRITE_JPEG_QUALITY, 100])
