@@ -320,9 +320,12 @@ def show_results_on_image(img_dir,
         labels = read_label(label_path, label_format='satellitepy')
 
         available_tasks = list(labels['det_labels'].keys())
+
         available_tasks.remove('confidence-scores')
-        available_tasks.remove('obboxes')
-        available_tasks.remove('hbboxes')
+        if 'obboxes' in available_tasks:
+            available_tasks.remove('obboxes')
+        if 'hbboxes' in available_tasks:
+            available_tasks.remove('hbboxes')
         
         # Current image
         if satellitepy_labels_empty(labels):

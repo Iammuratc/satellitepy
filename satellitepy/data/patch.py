@@ -262,8 +262,10 @@ def merge_patch_results(patch_dict, patch_size, shape):
                 merged_det_labels[key].extend(patch_dict['det_labels'][i][key])
 
     mask = np.zeros((shape[0], shape[1]), dtype=float)
+    if not 'masks' in patch_dict:
+        return merged_det_labels, mask
 
-    if np.array(patch_dict['masks']).any():
+    elif np.array(patch_dict['masks']).any():
         for i, (x_0, y_0) in enumerate(patch_dict['start_coords']):
             offset_x = 0 if x_0 == 0 else 1
             offset_y = 0 if y_0 == 0 else 1

@@ -7,7 +7,9 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
+from satellitepy.data.labels import read_label
 from satellitepy.evaluate.mmrotate.utils import *
+from satellitepy.evaluate.bbavector.utils import apply_nms
 from satellitepy.utils.path_utils import create_folder, get_file_paths, is_file_names_match
 from satellitepy.data.patch import get_patches, merge_patch_results
 
@@ -79,7 +81,7 @@ def save_mmrotate_patch_results(
         img = mmcv.imread(img_path)
 
         # Labels
-        gt_labels = get_gt_labels(label_path,in_label_format)
+        gt_labels = read_label(label_path,in_label_format)
 
         # Save results with the corresponding ground truth
         result = get_result(    
@@ -107,7 +109,8 @@ def save_mmrotate_original_results(
     patch_size,
     patch_overlap,
     truncated_object_thr,
-    class_names
+    class_names,
+    task_name
     ):
     """
     Pass original images to a mmrotate model and save the detected bounding boxes in satellitepy dict format
@@ -168,7 +171,7 @@ def save_mmrotate_original_results(
         # logger.info(img_path)
 
         # Labels
-        gt_labels = get_gt_labels(label_path,in_label_format)
+        gt_labels = read_label(label_path,in_label_format)
 
         # Get patches
         patch_dict = get_patches(
@@ -180,20 +183,21 @@ def save_mmrotate_original_results(
             )
 
         # Detected labels from patches
-        det_labels = []
+        patch_dict['det_labels'] = []
 
         for patch_img in patch_dict['images']:            
             # mmrotate result
             mmrotate_result = inference_detector(mmrotate_model,patch_img)
 
             # Detected labels
-            det_label = get_det_labels(mmrotate_result,class_names,nms_on_multiclass_thr)
+            det_label = get_det_labels(mmrotate_result,class_names,task_name,nms_on_multiclass_thr)
 
-            det_labels.append(det_label)
+            patch_dict['det_labels'].append(det_label)
 
-        patch_dict['det_labels'] = det_labels
         # Merge patch results into original results standards
-        merged_det_labels = merge_patch_results(patch_dict)
+        merged_det_labels, mask = merge_patch_results(patch_dict,patch_size,shape=img.shape[0:2])
+
+        merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_on_multiclass_thr)
 
         # Find matches of original image with merged patch results
         matches = match_gt_and_det_bboxes(gt_labels,merged_det_labels)

@@ -125,7 +125,7 @@ def fill_none_to_empty_keys(labels,not_available_tasks):
             labels[keys[0]][keys[1]][keys[2]].append(None)
     return labels
 
-def satellitepy_labels_empty(labels, ignore: list[str] = []):
+def satellitepy_labels_empty(labels):#, ignore: list[str] = []):
     """
     This function checks whether the labels dict in satellitepy format is empty.
     Returns

@@ -18,6 +18,7 @@ def get_args():
     """Arguments parser."""
     parser = configargparse.ArgumentParser(description=__doc__)
     parser = add_shared_args(parser)
+    parser.add_argument('--task-name', type=str, help='Name of the satellitepy task, e.g., fine-class. Default is instance_names.')
     parser.add_argument('--patch-size', required=True, type=int, help='Patch size. Patches with patch_size will be created from the original image to be tested by the MMRotate model.' 
         'Be sure patch_size is the same as the input image size of the MMRotate model.')
     parser.add_argument('--patch-overlap', required=True, type=int, help='Overlapping size of neighboring patches. In CNN terminology, stride = patch_size - patch_overlap')
@@ -45,6 +46,7 @@ def main(args):
     patch_size = args.patch_size
     truncated_object_thr = args.truncated_object_thr
     class_names = [class_name for class_name in args.class_names.split(',')]
+    task_name = args.task_name
 
     assert create_folder(out_folder)
     # Initiate logger
@@ -64,7 +66,8 @@ def main(args):
         patch_size=patch_size,
         patch_overlap=patch_overlap,
         truncated_object_thr=truncated_object_thr,
-        class_names=class_names)
+        class_names=class_names,
+        task_name=task_name)
 
 
 if __name__ == '__main__':
