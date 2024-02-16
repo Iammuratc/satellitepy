@@ -3,7 +3,6 @@ import numpy as np
 import torch
 import logging
 
-from satellitepy.data.labels import read_label
 from satellitepy.data.bbox import BBox
 from satellitepy.data.utils import get_satellitepy_table
 from satellitepy.evaluate.utils import match_gt_and_det_bboxes, get_ious
@@ -68,13 +67,6 @@ def get_mmrotate_model(config_path,model_path,device):
     # build the model from a config file and a checkpoint file
     model = init_detector(config_path, model_path, device=device)
     return model
-
-def get_gt_labels(label_path,label_format):
-    """
-    Convert ground truth labels to dict in satellitepy format
-    """
-    gt_labels = read_label(label_path,label_format)
-    return gt_labels
 
 def get_det_labels(mmrotate_result,class_names,task_name,nms_on_multiclass_thr):
     """
@@ -167,14 +159,15 @@ def nms_on_multi_class(result,nms_iou_thr):
 def mmrotate_match_gt_and_det_bboxes(gt_labels,det_labels):
     matches = {'iou':{'scores':[],'indexes':[]}}
 
-    det_label_params = [BBox(corners=my_bbox).params for my_bbox in det_labels['bboxes']] if len(det_labels['bboxes'])!=0 else []
+    det_label_params = [BBox(corners=my_bbox).params for my_bbox in det_labels['obboxes']] if len(det_labels['obboxes'])!=0 else []
     gt_label_params = [BBox(corners=my_bbox).params for my_bbox in gt_labels['obboxes']] if len(gt_labels['obboxes'])!=0 else []
 
 
     ## Old IOU calculation (keep it for now 12.05)
     # ious = rbbox_overlaps(torch.FloatTensor(det_label_params), torch.FloatTensor(gt_label_params))
     ## New IOU calculation
-    ious = get_ious(det_labels['bboxes'], gt_labels['obboxes'])
+    print(det_labels, gt_labels)
+    ious = get_ious(det_labels['obboxes'], gt_labels['obboxes'])
     for i,iou in enumerate(ious):
         # ROW: detected bboxes
         # COL: gt bboxes
