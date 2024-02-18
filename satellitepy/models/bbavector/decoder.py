@@ -104,11 +104,11 @@ class DecDecoder(object):
         ], dim=2)
 
     def ctdet_decode(self, pr_decs):
-        heat = pr_decs['cls_coarse-class']
-        scores, idx_2d, cls_coarse_classes, _, _ = self._topk(heat)
+        heat = pr_decs['cls_fine-class']
+        scores, idx_2d, cls_fine_classes, _, _ = self._topk(heat)
         idx_1d = (scores>self.conf_thresh).squeeze(0)
         result = {
-            "coarse-class": cls_coarse_classes[:, idx_1d].squeeze(0).cpu().numpy(),
+            "fine-class": cls_fine_classes[:, idx_1d].squeeze(0).cpu().numpy(),
             "confidence-scores": scores[:, idx_1d].squeeze(0).cpu().numpy()
         }
 
@@ -131,7 +131,7 @@ class DecDecoder(object):
         for k, v in pr_decs.items():
             # ignore bounding boxes and coarse class (heatmap)
             if (
-                k == "cls_coarse-class" or
+                k == "cls_fine-class" or
                 (k[:3] != "cls" and k[:3] != "reg" and k != "masks")
             ):
                 continue
