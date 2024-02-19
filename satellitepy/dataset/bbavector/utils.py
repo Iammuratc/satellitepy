@@ -244,7 +244,7 @@ class Utils:
             if k == "masks":
                 ret[k] = annotation[k]
             # if k not in ["obboxes", "hbboxes", "masks", "cls_coarse-class"]:
-            if k not in ["obboxes", "hbboxes", "masks", "cls_fine-class"]:
+            if k not in ["obboxes", "hbboxes", "masks", "cls_role"]:
 
                 # todo: we probably have to define 0 as background class / non-object class
                 ret[k] = np.zeros((self.max_objs), dtype=np.float32)
@@ -252,9 +252,9 @@ class Utils:
                     ret[k][idx] = v
 
         # num_classes = len(get_task_dict("fine-class"))
-        num_classes = 108 # 108 fine-classes
+        num_classes = 11 # 11 roles
 
-        ret["cls_fine-class"] = np.zeros((num_classes, image_h, image_w), dtype=np.float32)
+        ret["cls_role"] = np.zeros((num_classes, image_h, image_w), dtype=np.float32)
 
         if "obboxes" in annotation.keys():
             wh = np.zeros((self.max_objs, 10), dtype=np.float32)
@@ -267,7 +267,7 @@ class Utils:
                 if isinstance(annotation["obboxes"][k], np.float32):
                     continue
 
-                if annotation['cls_fine-class'][k] is None:
+                if annotation['cls_role'][k] is None:
                     continue
 
                 rect = annotation['obboxes'][k, :]
@@ -276,7 +276,7 @@ class Utils:
                 radius = max(0, int(radius))
                 ct = np.asarray([cen_x, cen_y], dtype=np.float32)
                 ct_int = ct.astype(np.int32)
-                draw_umich_gaussian(logging, ret["cls_fine-class"][annotation['cls_fine-class'][k]], ct_int, radius)
+                draw_umich_gaussian(logging, ret["cls_role"][annotation['cls_role'][k]], ct_int, radius)
                 ind[k] = ct_int[1] * image_w + ct_int[0]
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1
@@ -319,7 +319,7 @@ class Utils:
                 if isinstance(annotation["hbboxes"][k], np.float32):
                     continue
 
-                if annotation['cls_fine-class'][k] is None:
+                if annotation['cls_role'][k] is None:
                     continue
 
                 rect = annotation['hbboxes'][k, :]
@@ -329,7 +329,7 @@ class Utils:
                 ct = np.asarray([cen_x, cen_y], dtype=np.float32)
                 ct_int = ct.astype(np.int32)
 
-                draw_umich_gaussian(logging, ret["cls_fine-class"][annotation['cls_fine-class'][k]], ct_int, radius)
+                draw_umich_gaussian(logging, ret["cls_role"][annotation['cls_role'][k]], ct_int, radius)
                 ind[k] = ct_int[1] * image_w + ct_int[0]
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1
