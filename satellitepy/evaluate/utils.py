@@ -55,7 +55,7 @@ def set_conf_mat_from_result(
     iou_thresholds,
     ignore_other_instances):
 
-    ignored_instances_ret = set
+    ignored_instances_ret = []
     ignored_cnt = 0
 
     task_dict = get_task_dict(task)
@@ -91,7 +91,7 @@ def set_conf_mat_from_result(
 
                 if ignore_other_instances and det_name not in instance_names:
                     ignored_cnt+=1
-                    ignored_instances_ret.add(det_name)
+                    ignored_instances_ret.append(det_name)
                     continue
 
                 det_gt_bbox_indices.append(gt_index)
