@@ -108,7 +108,7 @@ class DecDecoder(object):
         scores, idx_2d, cls_role, _, _ = self._topk(heat)
         idx_1d = (scores>self.conf_thresh).squeeze(0)
         result = {
-            "fine-class": cls_role[:, idx_1d].squeeze(0).cpu().numpy(),
+            "role": cls_role[:, idx_1d].squeeze(0).cpu().numpy(),
             "confidence-scores": scores[:, idx_1d].squeeze(0).cpu().numpy()
         }
 
