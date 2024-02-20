@@ -21,7 +21,7 @@ class Utils:
         self.augmentation = augmentation
         self.image_distort =  data_augment.PhotometricDistort()
 
-    def get_data_dict(self,image_path,label_path, label_format):
+    def get_data_dict(self,image_path,label_path, label_format, target_task):
         # hash_str = str(img_path) + str(label_path) + str(self.random_seed)
         # hash_bytes = hashlib.sha256(bytes(hash_str, "utf-8")).digest()[:4]
         # np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
@@ -30,7 +30,7 @@ class Utils:
         labels = read_label(label_path,label_format)
         annotation = self.prepare_annotations(labels, image_w, image_h)#, img_path)
         image, annotation = self.data_transform(image, annotation, self.augmentation)
-        data_dict = self.generate_ground_truth(image, annotation)
+        data_dict = self.generate_ground_truth(image, annotation, target_task)
         data_dict['img_path']=str(image_path)
         data_dict['label_path']=str(label_path)
         data_dict['img_w']=image_w
@@ -229,7 +229,7 @@ class Utils:
         return tt_new,rr_new,bb_new,ll_new
 
 
-    def generate_ground_truth(self, image, annotation):
+    def generate_ground_truth(self, image, annotation, target_task):
         image = np.asarray(np.clip(image, a_min=0., a_max=255.), np.float32)
         image = self.image_distort(np.asarray(image, np.float32))
         image = np.asarray(np.clip(image, a_min=0., a_max=255.), np.float32)
@@ -243,18 +243,17 @@ class Utils:
         for k in annotation.keys():
             if k == "masks":
                 ret[k] = annotation[k]
-            # if k not in ["obboxes", "hbboxes", "masks", "cls_coarse-class"]:
-            if k not in ["obboxes", "hbboxes", "masks", "cls_role"]:
+            if k not in ["obboxes", "hbboxes", "masks", "cls_"+target_task]:
 
                 # todo: we probably have to define 0 as background class / non-object class
                 ret[k] = np.zeros((self.max_objs), dtype=np.float32)
                 for idx, v in enumerate(annotation[k]):
                     ret[k][idx] = v
 
-        # num_classes = len(get_task_dict("fine-class"))
-        num_classes = 11 # 11 roles
+        td = get_task_dict(target_task)
+        num_classes = len(set(td.values()))
 
-        ret["cls_role"] = np.zeros((num_classes, image_h, image_w), dtype=np.float32)
+        ret["cls_" + target_task] = np.zeros((num_classes, image_h, image_w), dtype=np.float32)
 
         if "obboxes" in annotation.keys():
             wh = np.zeros((self.max_objs, 10), dtype=np.float32)
@@ -267,7 +266,7 @@ class Utils:
                 if isinstance(annotation["obboxes"][k], np.float32):
                     continue
 
-                if annotation['cls_role'][k] is None:
+                if annotation['cls_' + target_task][k] is None:
                     continue
 
                 rect = annotation['obboxes'][k, :]
@@ -276,7 +275,7 @@ class Utils:
                 radius = max(0, int(radius))
                 ct = np.asarray([cen_x, cen_y], dtype=np.float32)
                 ct_int = ct.astype(np.int32)
-                draw_umich_gaussian(logging, ret["cls_role"][annotation['cls_role'][k]], ct_int, radius)
+                draw_umich_gaussian(logging, ret["cls_" + target_task][annotation['cls_' + target_task][k]], ct_int, radius)
                 ind[k] = ct_int[1] * image_w + ct_int[0]
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1
@@ -319,7 +318,7 @@ class Utils:
                 if isinstance(annotation["hbboxes"][k], np.float32):
                     continue
 
-                if annotation['cls_role'][k] is None:
+                if annotation['cls_'+ target_task][k] is None:
                     continue
 
                 rect = annotation['hbboxes'][k, :]
@@ -329,7 +328,7 @@ class Utils:
                 ct = np.asarray([cen_x, cen_y], dtype=np.float32)
                 ct_int = ct.astype(np.int32)
 
-                draw_umich_gaussian(logging, ret["cls_role"][annotation['cls_role'][k]], ct_int, radius)
+                draw_umich_gaussian(logging, ret["cls_" + target_task][annotation['cls_' + target_task][k]], ct_int, radius)
                 ind[k] = ct_int[1] * image_w + ct_int[0]
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1

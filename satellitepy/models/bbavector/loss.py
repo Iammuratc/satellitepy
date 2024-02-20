@@ -163,7 +163,7 @@ def isnan(x):
     return x != x
   
 class LossAll(torch.nn.Module):
-    def __init__(self, tasks):
+    def __init__(self, tasks, target_task):
         super(LossAll, self).__init__()
         #self.L_hm = FocalLoss()
         #self.L_wh =  OffSmoothL1Loss()
@@ -180,7 +180,7 @@ class LossAll(torch.nn.Module):
             elif t == "hbboxes":
                 self.tasks_losses[t + "_params"] = OffSmoothL1Loss()
                 self.tasks_losses[t + "_offset"] = OffSmoothL1Loss()
-            elif t == "role": # this is the heatmap loss
+            elif t == target_task: # this is the heatmap loss
                 self.tasks_losses["cls_" + t] = FocalLoss() 
             else:
                 td = get_task_dict(t)
@@ -189,7 +189,7 @@ class LossAll(torch.nn.Module):
                 else:
                     self.tasks_losses["cls_" + t] = CELoss()
 
-    def forward(self, pr_decs, gt_batch):
+    def forward(self, pr_decs, gt_batch, target_task):
         #hm_loss  = self.L_hm(pr_decs['hm'], gt_batch['hm'])
         #wh_loss  = self.L_wh(pr_decs['reg_wh'], gt_batch['reg_mask'], gt_batch['ind'], gt_batch['wh'])
         #off_loss = self.L_off(pr_decs['reg'], gt_batch['reg_mask'], gt_batch['ind'], gt_batch['reg'])
@@ -199,7 +199,7 @@ class LossAll(torch.nn.Module):
         loss_dict = dict()
 
         for task, loss_fnc in self.tasks_losses.items():
-            if task == "cls_role":
+            if task == "cls_" + target_task:
                 loss_dict[task] = loss_fnc(pr_decs[task], gt_batch[task])
             else:
                 loss_dict[task] = loss_fnc(

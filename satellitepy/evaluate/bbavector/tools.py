@@ -154,7 +154,8 @@ def save_original_image_results(
     conf_thresh,
     down_ratio,
     K,
-    nms_iou_threshold
+    nms_iou_threshold,
+    target_task='coarse-class'
     ):
 
     logger = logging.getLogger(__name__)
@@ -175,7 +176,8 @@ def save_original_image_results(
 
     model_decoder = get_model_decoder(tasks,
         K,
-        conf_thresh)
+        conf_thresh,
+        target_task)
 
     # Dataset is customized, because BBAVectorDataset works only with dirs
     img_paths = get_file_paths(in_image_folder)

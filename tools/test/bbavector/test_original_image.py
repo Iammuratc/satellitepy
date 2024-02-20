@@ -27,6 +27,8 @@ def get_args():
     parser.add_argument('--tasks', default=['coarse-class'], nargs="+", help='The model will be trained for the given tasks.' 
             'Find the other task names at satellitepy.data.utils.get_satellitepy_table.'
             'If it is fine-class or very-fine class, None values in those keys will be filled from one upper level')
+    parser.add_argument('--target-task', type=str, default='coarse-class', nargs="+",
+                        help='The model will be trained for the given target task. Needs to be a classification task. Default is coarse-class')
     # Path configs
     parser.add_argument('--log-config-path', default=Path("./configs/log.config") ,type=Path, help='Log config file.')
     parser.add_argument('--in-image-folder',  help='Test image folder. The images in this folder will be tested.')
@@ -56,6 +58,10 @@ def main(args):
         
     in_label_format = args.in_label_format
     tasks = args.tasks
+
+    target_task = args.targat_task
+    assert target_task in tasks, "target task must be part of the tasks"
+
     conf_thresh = args.conf_thresh
     K = args.K
     input_h = args.input_h
@@ -101,7 +107,8 @@ def main(args):
         input_h=input_h,
         input_w=input_w,
         down_ratio = down_ratio,
-        nms_iou_threshold=nms_iou_threshold)
+        nms_iou_threshold=nms_iou_threshold,
+        target_task=target_task)
         # nms_on_multiclass_thr)
 
 
