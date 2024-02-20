@@ -55,7 +55,7 @@ def set_conf_mat_from_result(
     iou_thresholds,
     ignore_other_instances):
 
-    ignored_instances_list = []
+    ignored_instances_ret = set
     ignored_cnt = 0
 
     task_dict = get_task_dict(task)
@@ -91,7 +91,7 @@ def set_conf_mat_from_result(
 
                 if ignore_other_instances and det_name not in instance_names:
                     ignored_cnt+=1
-                    ignored_instances_list += det_name
+                    ignored_instances_ret.add(det_name)
                     continue
 
                 det_gt_bbox_indices.append(gt_index)
@@ -119,7 +119,7 @@ def set_conf_mat_from_result(
 
                 conf_mat[i_iou_th, i_conf_score_th, undet_gt_index, instance_names.index('Background')] += 1
 
-    return conf_mat, ignored_instances_list, ignored_cnt
+    return conf_mat, ignored_instances_ret, ignored_cnt
 
 def get_precision_recall(conf_mat,sort_values=True,complete_curve=True):
     """
