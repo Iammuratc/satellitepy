@@ -37,7 +37,7 @@ def calculate_map(
     # Result paths
     result_paths = get_file_paths(in_result_folder)
 
-    ignored_instances = set()
+    ignored_instances = []
     ignored_cnt = 0
 
     for result_path in tqdm(result_paths):
@@ -56,7 +56,7 @@ def calculate_map(
             iou_thresholds,
             ignore_other_instances)
 
-        ignored_instances.union(ignored_instances_ret)
+        ignored_instances += ignored_instances_ret
         ignored_cnt += ignored_cnt_ret
 
     pr_threshold_ind = 0
@@ -78,7 +78,7 @@ def calculate_map(
         mAP = np.sum(np.transpose(np.transpose(ap)[:-1]), axis=1)/(len(ap[0])-1)
         logger.info(mAP)
         if ignore_other_instances:
-            logger.info(f'ignored {ignored_cnt} other instances. Ignored instance names: {ignored_instances}')
+            logger.info(f'ignored {ignored_cnt} other instances. Ignored instance names: {set(ignored_instances)}')
 
     if plot_pr:
         precision_recall_curve(out_folder, precision[pr_threshold_ind,:], recall[pr_threshold_ind,:])
