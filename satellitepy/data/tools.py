@@ -320,9 +320,12 @@ def show_results_on_image(img_dir,
         labels = read_label(label_path, label_format='satellitepy')
 
         available_tasks = list(labels['det_labels'].keys())
+
         available_tasks.remove('confidence-scores')
-        available_tasks.remove('obboxes')
-        available_tasks.remove('hbboxes')
+        if 'obboxes' in available_tasks:
+            available_tasks.remove('obboxes')
+        if 'hbboxes' in available_tasks:
+            available_tasks.remove('hbboxes')
         
         # Current image
         if satellitepy_labels_empty(labels):
@@ -360,9 +363,12 @@ def show_results_on_image(img_dir,
                         idx2name = {v: k for k, v in task_dict.items()}
                         task_result = idx2name[task_result]
 
+                    if type(task_result) is float:
+                        task_result = round(task_result, 2)
+
 
                     text = task_text + ': ' + str(task_result)
-                    cv2.putText(img,str(text),(x_max,y_min+j*15),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
+                    cv2.putText(img,str(text),(x_max,y_min+j*15),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255),1)
 
             else:
                 cv2.putText(img,str(round(conf_score, 2)),(x_max,y_min),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255),1)
