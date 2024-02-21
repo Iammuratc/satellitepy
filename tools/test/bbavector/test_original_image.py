@@ -27,7 +27,7 @@ def get_args():
     parser.add_argument('--tasks', default=['coarse-class'], nargs="+", help='The model will be trained for the given tasks.' 
             'Find the other task names at satellitepy.data.utils.get_satellitepy_table.'
             'If it is fine-class or very-fine class, None values in those keys will be filled from one upper level')
-    parser.add_argument('--target-task', type=str, default='coarse-class', nargs="+",
+    parser.add_argument('--target-task', type=str, default='coarse-class',
                         help='The model will be trained for the given target task. Needs to be a classification task. Default is coarse-class')
     # Path configs
     parser.add_argument('--log-config-path', default=Path("./configs/log.config") ,type=Path, help='Log config file.')

@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('--tasks', default=['coarse-class'], nargs="+", help='The model will be trained for the given tasks.' 
             'Find the other task names at satellitepy.data.utils.get_satellitepy_table.'
             'If it is fine-class or very-fine class, None values in those keys will be filled from one upper level')
-    parser.add_argument('--target-task', type=str, default='coarse-class', nargs="+",
+    parser.add_argument('--target-task', type=str, default='coarse-class',
                         help='The model will be trained for the given target task. Needs to be a classification task. Default is coarse-class')
     parser.add_argument('--out-folder',
                         type=Path,
@@ -81,7 +81,7 @@ def train_bbavector(args):
     patience = args.patience
     tasks = args.tasks
 
-    target_task = args.targat_task
+    target_task = args.target_task
 
     assert target_task in tasks, "target task must be part of the tasks"
 
