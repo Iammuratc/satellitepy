@@ -81,8 +81,8 @@ def get_det_labels(mmrotate_result,class_names,task_name,nms_on_multiclass_thr):
         MMRotate models detect bounding boxes for each class, this results in several bounding boxes for one object
         nms_on_multiclass filters out the lower score bounding boxes, and keep the best
     """
-    if nms_on_multiclass_thr!=0:
-        mmrotate_result = nms_on_multi_class(mmrotate_result,nms_iou_thr=nms_on_multiclass_thr)
+    # if nms_on_multiclass_thr!=0:
+    #     mmrotate_result = nms_on_multi_class(mmrotate_result,nms_iou_thr=nms_on_multiclass_thr)
     det_labels = {
         'obboxes':[],
         task_name:[],
