@@ -9,7 +9,7 @@ from pathlib import Path
 import logging
 
 from satellitepy.evaluate.tools import calculate_map
-from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
+from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder, get_default_log_path
 
 
 def get_args():
@@ -48,8 +48,7 @@ def main(args):
     out_folder = Path(args.out_folder)
     assert create_folder(out_folder)
     # Init logger
-    log_path = Path(
-        out_folder) / 'evaluations.log' if args.log_path == None else args.log_path
+    log_path = get_default_log_path('evaluations')
     init_logger(config_path=args.log_config_path, log_path=log_path)
     logger = logging.getLogger(__name__)
     logger.info(
