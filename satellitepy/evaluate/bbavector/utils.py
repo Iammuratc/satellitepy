@@ -72,6 +72,8 @@ def nms(bboxes_0, bboxes_1, scores, iou_th):
         logger.info("IoU threshold must be larger than 0!")
         return 0
     iou = rbbox_overlaps(torch.FloatTensor(bboxes_0), torch.FloatTensor(bboxes_1)) # ROW: bboxes_0 # COL: bboxes_1
+    n = iou.shape[0]
+    iou[range(n), range(n)] = 0
     iou_upper_triangular = np.triu(iou,1) # set the lower triangular to zero
     inds_bboxes = np.nonzero(iou_upper_triangular>iou_th) # Get IOUs that are larger than IOU threshold
 
@@ -80,7 +82,7 @@ def nms(bboxes_0, bboxes_1, scores, iou_th):
     scores_bboxes_1 = np.array([scores[ind] for ind in inds_bboxes[1]])
 
     # Get mask for confidence score conditions
-    inds_to_remove = np.unique(inds_bboxes[1][scores_bboxes_0 > scores_bboxes_1])
+    inds_to_remove = np.unique(inds_bboxes[1][scores_bboxes_0 >= scores_bboxes_1])
     # Remove the overlapping bboxes (high IOU) with lower confidence scores
     all_inds = np.arange(len(scores))
     mask = np.ones_like(all_inds, dtype=bool)
