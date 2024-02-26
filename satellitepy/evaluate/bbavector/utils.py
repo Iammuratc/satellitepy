@@ -50,14 +50,12 @@ def get_patch_result(
 
     return dec_pred
 
-def nms(bboxes_0, bboxes_1, scores, iou_th):
+def nms(bboxes, scores, iou_th):
     """
     NMS for rotated and horizontal bounding boxes
     Parameters
     ----------
     bboxes_0 : np.ndarray
-        Bounding box parameters. (N,5)
-    bboxes_1 : np.ndarray
         Bounding box parameters. (N,5)
     scores : np.ndarray
         Scores to filter out the boxes. For example confidence scores. (N)
@@ -71,7 +69,7 @@ def nms(bboxes_0, bboxes_1, scores, iou_th):
     if iou_th<=0:
         logger.info("IoU threshold must be larger than 0!")
         return 0
-    iou = rbbox_overlaps(torch.FloatTensor(bboxes_0), torch.FloatTensor(bboxes_1)) # ROW: bboxes_0 # COL: bboxes_1
+    iou = rbbox_overlaps(torch.FloatTensor(bboxes), torch.FloatTensor(bboxes))
     n = iou.shape[0]
     iou[range(n), range(n)] = 0
     iou_upper_triangular = np.triu(iou,1) # set the lower triangular to zero
@@ -111,7 +109,7 @@ def apply_nms(det_labels, nms_iou_threshold=0.5):
     bbox_params = [BBox(corners=corners).params for corners in det_labels["obboxes"]]
     conf_scores = det_labels["confidence-scores"]
     # print(f"BBOXES Before : {len(bbox_params)}")
-    nms_inds = nms(bbox_params,bbox_params,scores=np.array(det_labels["confidence-scores"]),iou_th=nms_iou_threshold)#[0]
+    nms_inds = nms(bbox_params,scores=np.array(det_labels["confidence-scores"]),iou_th=nms_iou_threshold)#[0]
     # bbox_nms_inds = inds_nms[0]
     # print(f"After : {len(nms_inds)}")
     # print(inds_nms)
