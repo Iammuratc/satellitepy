@@ -5,11 +5,12 @@ from satellitepy.data.torchify import untorchify_continuous_values
 
 
 class DecDecoder(object):
-    def __init__(self, K, conf_thresh, tasks):
+    def __init__(self, K, conf_thresh, tasks, target_task):
         self.K = K
         self.conf_thresh = conf_thresh
         assert "obboxes" in tasks or "hbboxes" in tasks, "tasks must contain obboxes and/or hbboxes"
         self.tasks = tasks
+        self.target_task = target_task
 
     def _topk(self, scores):
         batch, cat, height, width = scores.size()
@@ -104,11 +105,11 @@ class DecDecoder(object):
         ], dim=2)
 
     def ctdet_decode(self, pr_decs):
-        heat = pr_decs['cls_coarse-class']
-        scores, idx_2d, cls_coarse_classes, _, _ = self._topk(heat)
+        heat = pr_decs['cls_' + self.target_task]
+        scores, idx_2d, target, _, _ = self._topk(heat)
         idx_1d = (scores>self.conf_thresh).squeeze(0)
         result = {
-            "coarse-class": cls_coarse_classes[:, idx_1d].squeeze(0).cpu().numpy(),
+            self.target_task: target[:, idx_1d].squeeze(0).cpu().numpy(),
             "confidence-scores": scores[:, idx_1d].squeeze(0).cpu().numpy()
         }
 
@@ -131,7 +132,7 @@ class DecDecoder(object):
         for k, v in pr_decs.items():
             # ignore bounding boxes and coarse class (heatmap)
             if (
-                k == "cls_coarse-class" or
+                k == "cls_" + self.target_task or
                 (k[:3] != "cls" and k[:3] != "reg" and k != "masks")
             ):
                 continue

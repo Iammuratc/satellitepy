@@ -1,7 +1,7 @@
 from satellitepy.models.bbavector import ctrbox_net, decoder, train_model
 from satellitepy.data.utils import get_task_dict
 
-def get_model(tasks,down_ratio):
+def get_model(tasks,down_ratio, target_task='coarse-class'):
     heads = {#'hm': num_classes, # heatmap
              #'reg_wh': 10, # box param
              #'reg_bb_offset': 2, # offset
@@ -32,8 +32,8 @@ def get_model(tasks,down_ratio):
                               head_conv=256)
     return model
 
-def get_model_decoder(tasks, K, conf_thresh):
+def get_model_decoder(tasks, K, conf_thresh, target_task):
     model_decoder = decoder.DecDecoder(K=K,
         conf_thresh=conf_thresh,
-        tasks=tasks)
+        tasks=tasks, target_task=target_task)
     return model_decoder

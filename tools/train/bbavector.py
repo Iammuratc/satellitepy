@@ -46,6 +46,8 @@ def parse_args():
     parser.add_argument('--tasks', default=['coarse-class'], nargs="+", help='The model will be trained for the given tasks.' 
             'Find the other task names at satellitepy.data.utils.get_satellitepy_table.'
             'If it is fine-class or very-fine class, None values in those keys will be filled from one upper level')
+    parser.add_argument('--target-task', type=str, default='coarse-class',
+                        help='The model will be trained for the given target task. Needs to be a classification task. Default is coarse-class')
     parser.add_argument('--out-folder',
                         type=Path,
                         help='Save folder of experiments. The trained weights will be saved under this folder.')
@@ -78,7 +80,11 @@ def train_bbavector(args):
     down_ratio = 4
     patience = args.patience
     tasks = args.tasks
-    assert "coarse-class" in tasks, "coarse-class must be part of the tasks"
+
+    target_task = args.target_task
+
+    assert target_task in tasks, "target task must be part of the tasks"
+
     validate_datasets = args.validate_datasets
     # Training input
     num_epoch = args.num_epoch
@@ -105,7 +111,7 @@ def train_bbavector(args):
     logger.info('Initiating the training of the BBAVector model...')
 
     # Model
-    model = get_model(tasks,down_ratio)
+    model = get_model(tasks,down_ratio, target_task)
     
     train_dataset = BBAVectorDataset(
         train_image_folder,
@@ -115,6 +121,7 @@ def train_bbavector(args):
         input_h,
         input_w,
         down_ratio,
+        target_task,
         args.augmentation,
         validate_datasets,
         K=K,
@@ -130,6 +137,7 @@ def train_bbavector(args):
             input_h,
             input_w,
             down_ratio,
+            target_task,
             args.augmentation,
             validate_datasets,
             K=K,
@@ -154,7 +162,8 @@ def train_bbavector(args):
         conf_thresh=conf_thresh,
         ngpus=ngpus,
         resume_train=checkpoint_path,
-        patience=patience
+        patience=patience,
+        target_task=target_task
         )
 
     ctrbox_obj.train_network()
