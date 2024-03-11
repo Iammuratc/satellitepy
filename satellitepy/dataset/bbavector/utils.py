@@ -1,5 +1,3 @@
-import logging
-
 import cv2
 import torch
 import numpy as np
@@ -275,7 +273,7 @@ class Utils:
                 radius = max(0, int(radius))
                 ct = np.asarray([cen_x, cen_y], dtype=np.float32)
                 ct_int = ct.astype(np.int32)
-                draw_umich_gaussian(logging, ret["cls_" + target_task][annotation['cls_' + target_task][k]], ct_int, radius)
+                draw_umich_gaussian(ret["cls_" + target_task][annotation['cls_' + target_task][k]], ct_int, radius)
                 ind[k] = ct_int[1] * image_w + ct_int[0]
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1
@@ -328,7 +326,7 @@ class Utils:
                 ct = np.asarray([cen_x, cen_y], dtype=np.float32)
                 ct_int = ct.astype(np.int32)
 
-                draw_umich_gaussian(logging, ret["cls_" + target_task][annotation['cls_' + target_task][k]], ct_int, radius)
+                draw_umich_gaussian(ret["cls_" + target_task][annotation['cls_' + target_task][k]], ct_int, radius)
                 ind[k] = ct_int[1] * image_w + ct_int[0]
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1
