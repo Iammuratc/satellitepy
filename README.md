@@ -34,15 +34,15 @@ HBB: Horizontal bounding box, OBB: Oriented bounding box, CGC: Coarse-grained cl
 
 # Results
 The evaluations of fine-tuned MTL-BBAVector models on Fair1M can be found below.
+ 
 
-
-        Model                                         | CGC   | Role  | FGC  
-        | ----------------                            | ---   | ---   | ----- |
-        RoI Transformer                               | 0.791 | 0.350 | 0.148 | 
-        Rotated RCNN                                  | 0.789 | 0.441 | 0.115 | 
-        BBAVector                                     | 0.834 | 0.542 | 0.163 | 
-        MTL-BBAVector (not pretr.)                    | 0.834 | 0.545 | 0.080 | 
-        MTL-BBAVector (pretr. on single task)         | 0.867 | 0.573 | 0.088 | 
-        MTL-BBAVector (pretr. on all tasks)           | 0.862 | 0.401 | 0.088 | 
-        MTL-BBAVector (pretr. on best combination)    | 0.860 | 0.573 | 0.085 |
+ Model                                         | CGC   | Role  | FGC  
+ | ------------------------------------------- | ----- | ----- | ----- |
+ RoI Transformer                               | 0.791 | 0.350 | 0.148 | 
+ Rotated RCNN                                  | 0.789 | 0.441 | 0.115 | 
+ BBAVector                                     | 0.834 | 0.542 | **0.163** | 
+ MTL-BBAVector (not pretr.)                    | 0.834 | 0.545 | 0.080 | 
+ MTL-BBAVector (pretr. on single task)         | **0.867** | **0.573** | 0.088 | 
+ MTL-BBAVector (pretr. on all tasks)           | 0.862 | 0.401 | 0.088 | 
+ MTL-BBAVector (pretr. on best combination)    | 0.860 | **0.573** | 0.085 |
 
