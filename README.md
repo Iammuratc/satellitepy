@@ -1,63 +1,48 @@
 # Satellitepy
-The Satellitepy package is a python module that focuses on fine-grained object recognition in high resolution satellite images. Satellitepy provides handy tools to deal with many challenges that may rise during object recognition steps. 
+Satellitepy is a python module that focuses on fine-grained object (currently, airplane, vessel, vehicle and helicopter) recognition in high resolution optical satellite images. It provides handy tools to deal with many challenges that may rise during object recognition steps.
 
-One of the greatest advantages of Satellitepy is the task separation. As CNN models mostly deal with detection and classification tasks simultaneously, it could be difficult to spot where exactly the low accuracy results from. In Satellitepy, every task is developed individually to handle the overload of multiple tasks for CNN models. The implemented approaches for each task are listed below. One can also found the list of our publications.
+One of the advantages of Satellitepy is to train a DL model, i.e., MTL-BBAVector, by using multi-task learning. There are 16 tasks in our pipeline. Satellitepy allows each task to be handled individually and/or jointly.
 
-We develop an organized pipeline and a well-written documentation such that everyone can use, contribute to and deploy `satellitepy` into their environments.
+We develop an organized pipeline and a well-written documentation such that you can use, contribute to and deploy satellitepy into your environment.
 
 # Installation
 
-**Clone satellitepy**
+Please follow the steps in [the installation manual](docs/installing_satellitepy.md) to install satellitepy.
 
-`git clone git@github.com:Iammuratc/satellitepy.git`
-
-**Create a virtual environment**
-
-`cd satellitepy`
-
-`python3 -m venv venv_satellitepy`
-
-`source venv_satellitepy/bin/activate`
-
-**Install dependencies**
-
-The installation is only tested on python3.10, please open an issue if you have any problems during any step of the installation.
-
-**Pytorch**
-
-`pip3 install torch torchvision torchaudio`
-
-Please check out [pytorch.org](https://pytorch.org/) for installing the version that is compatible with your environment (CUDA, conda etc.).
-
-**MMRotate**
-
-Our detection models rely on MMRotate. FYI, the installation of mmcv-full might take some time (30 min for me), please be patient. We are working on removing the MMRotate dependency. Please check out [MMRotate installation page](https://mmrotate.readthedocs.io/en/latest/install.html) for more details.
-
-`pip install openmim`
-
-`mim install mmcv-full` 
-
-`mim install mmdet\<3.0.0`
-
-`pip install mmrotate`
-
-**Satellitepy dependencies**
-
-`pip3 install -r requirements.txt`
-
-`pip3 install -e .`
-
-You are ready to work with satellitepy!
 # Datasets
-We support the following datasets:
+We have trained/evaluated our results in the following datasets: DOTA (w. iSaid), Fair1M, XView, Rarepl. (Real+Synthetic), VEDAI, VHR-10, ShipRSImageNet, UCAS-AOD, DIOR and Potsdam.
 
-- Fair1M
-- DOTA
-- RarePlanes
+## Tasks
+We merge and harmonize the tasks in each dataset. The table shows the task avalability for each dataset.
 
-# Tasks
-## Detection
-We use [MMRotate](https://github.com/open-mmlab/mmrotate) to detect oriented bounding boxes (OBB) of coarse-grained objects in satellite images. 
+ Dataset            | HBB | OBB | CGC | Role | FGC | FtGC | Mask | Diff. | Attr. | Res. (m)
+ | ---------------- | --- | --- | --- | ---- | --- | ---- | ---- | ----- | ----- | ------- | 
+ DOTA (w. iSaid)    | X | X | X  | x | -        | -     | X         | X   | -        | 0.5 |
+ Fair1M             | X | X | X   | x  | x  | -    | -         | -        | -        | 0.8 |
+ XView              | X  | - | X | x | X   | -    | - | -        | -        | 0.3 |
+ Rarepl. (Real)     | X | X | X   | X   | - | -    | - | - | X   | 0.31 |
+ Rarepl. (Synth.)   | X | X | X | X   | X   | X  | X   | -        | -   | 0.31 |
+ VEDAI              | X | X | X   | -        | X   | -    | - | -        | - | 0.125 |
+ VHR-10             | X | - | X | -        | -        | -    | - | - | - | 0.5 - 2 |
+ ShipRSImageNet     | X | X | X   | X   | X   | x    | -    | X        | -        | 0.12 - 6 |
+ UCAS-AOD           | X | X | X   | -        | -        | -    | -               | -        | -        | 0.5 |
+ DIOR               | X  | - | X   | - | - | -    | - |  - | - | 0.5-30 |
+ Potsdam            | X | - | X        | x  | -        | -    | X   | - | - | 0.5 |
 
-For errors during compiling the mmrotate module, refer to the [troubleshooting](docs/troubleshooting_mmrotate.md) section.
+where,
+HBB: Horizontal bounding box, OBB: Oriented bounding box, CGC: Coarse-grained class, FGC: Fine-grained class, FtGC: Finest-grained class, Diff.:Difficulty, Attr.: Attributes, Res.: Spatial Resolution
+
+# Results
+The evaluations of fine-tuned MTL-BBAVector models on Fair1M can be found below.
+
+
+        Model                                         | CGC   | Role  | FGC  
+        | ----------------                            | ---   | ---   | ----- |
+        RoI Transformer                               | 0.791 | 0.350 | 0.148 | 
+        Rotated RCNN                                  | 0.789 | 0.441 | 0.115 | 
+        BBAVector                                     | 0.834 | 0.542 | 0.163 | 
+        MTL-BBAVector (not pretr.)                    | 0.834 | 0.545 | 0.080 | 
+        MTL-BBAVector (pretr. on single task)         | 0.867 | 0.573 | 0.088 | 
+        MTL-BBAVector (pretr. on all tasks)           | 0.862 | 0.401 | 0.088 | 
+        MTL-BBAVector (pretr. on best combination)    | 0.860 | 0.573 | 0.085 |
 
