@@ -1,9 +1,9 @@
 # Satellitepy
-Satellitepy is a python module that focuses on fine-grained object (currently, airplane, vessel, vehicle and helicopter) recognition in high resolution optical satellite images. It provides handy tools to deal with many challenges that may rise during object recognition steps.
+Satellitepy is a python module that focuses on fine-grained object recognition in high resolution optical satellite images. Our target objects are airplane, vessel, vehicle and helicopter. It provides handy tools to deal with many challenges that may rise during object recognition steps.
 
-One of the advantages of Satellitepy is to train a DL model, i.e., MTL-BBAVector, by using multi-task learning. There are 16 tasks in our pipeline. Satellitepy allows each task to be handled individually and/or jointly.
+One of the advantages of Satellitepy is to train a DL model, i.e., MTL-BBAVector, by using multi-task learning, e.g, classification, detection and segmentation. There are 16 tasks in our pipeline. Satellitepy allows each task to be handled individually and/or jointly.
 
-We develop an organized pipeline and a well-written documentation such that you can use, contribute to and deploy satellitepy into your environment.
+We are trying to keep the code and the documentation up-to-date, so you can use, deploy and develop satellitepy. Feel free to create an issue for your problems/bugs.
 
 # Installation
 
@@ -45,4 +45,20 @@ The evaluations of fine-tuned MTL-BBAVector models on Fair1M can be found below.
  MTL-BBAVector (pretr. on single task)         | **0.867** | **0.573** | 0.088 | 
  MTL-BBAVector (pretr. on all tasks)           | 0.862 | 0.401 | 0.088 | 
  MTL-BBAVector (pretr. on best combination)    | 0.860 | **0.573** | 0.085 |
+
+# How to use
+
+You can download a pretrained model from this [link](pretrained_model_link_goes_here). This model is pretrained on all data and tasks, and fine-tuned on Fair1M. You can download [Fair1M](link_to_fair1m) here. You can follow the commands below to reproduce the results in the table above.
+
+ ```
+ python3 tools/evaluate.py --in-image-folder ............
+ ```
+
+
+You can also visualize the predictions by the following command:
+
+
+ ```
+ python3 tools/display_results.py --in-image-folder ............
+ ```
 
