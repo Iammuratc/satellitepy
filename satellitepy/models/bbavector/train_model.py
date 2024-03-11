@@ -6,6 +6,7 @@ import os
 import numpy as np
 import cv2
 # import func_utils
+from torch._utils import _get_all_device_indices
 from tqdm import tqdm
 
 import satellitepy.models.bbavector.loss as loss_utils
@@ -55,8 +56,10 @@ class TrainModule(object):
         save_path = str(self.out_folder)
         if self.ngpus>1:
             if torch.cuda.device_count() > 1:
-                logger.info("Let's use", torch.cuda.device_count(), "GPUs!")
-                self.model = nn.DataParallel(self.model)
+                logger.info(f"{torch.cuda.device_count()} GPUs available. Let's use {self.ngpus} GPUs!")
+                device_ids = _get_all_device_indices()[:self.ngpus]
+                print(device_ids)
+                self.model = nn.DataParallel(self.model, device_ids)
         elif self.ngpus==0:
             self.device = 'cpu'
         self.model.to(self.device)
