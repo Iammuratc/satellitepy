@@ -52,7 +52,11 @@ def set_conf_mat_from_result(
     result,
     instance_names,
     conf_score_thresholds,
-    iou_thresholds):
+    iou_thresholds,
+    ignore_other_instances):
+
+    ignored_instances_ret = []
+    ignored_cnt = 0
 
     task_dict = get_task_dict(task)
     idx2name = {v: k for k, v in task_dict.items()}
@@ -83,13 +87,20 @@ def set_conf_mat_from_result(
                 if det_gt_instance_name is None:
                     continue
 
+                det_name = str(idx2name[result['det_labels'][task][i_conf_score]])
+
+                if ignore_other_instances and det_name not in instance_names:
+                    ignored_cnt+=1
+                    ignored_instances_ret.append(det_name)
+                    continue
+
                 det_gt_bbox_indices.append(gt_index)
 
                 ## Set instance name to Background if it is not defined by the user
                 det_gt_instance_name = 'Background' if str(det_gt_instance_name) not in instance_names else det_gt_instance_name
                 det_gt_index = instance_names.index(str(det_gt_instance_name))
                 ## Det index
-                det_index = instance_names.index(str(idx2name[result['det_labels'][task][i_conf_score]]))
+                det_index = instance_names.index(det_name)
                 conf_mat[i_iou_th,i_conf_score_th,det_gt_index,det_index] += 1
 
             # If a ground truth label is undetected, add it as a detected Background label
@@ -108,7 +119,7 @@ def set_conf_mat_from_result(
 
                 conf_mat[i_iou_th, i_conf_score_th, undet_gt_index, instance_names.index('Background')] += 1
 
-    return conf_mat
+    return conf_mat, ignored_instances_ret, ignored_cnt
 
 def get_precision_recall(conf_mat,sort_values=True,complete_curve=True):
     """

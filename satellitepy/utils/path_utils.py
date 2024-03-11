@@ -13,7 +13,7 @@ def get_project_folder():
         <your-path-to-satellitepy>
     """
     project_folder = Path(__file__).resolve(strict=True).parent.parent.parent
-    return project_folder
+    return project_folder    
 
 def get_default_log_path(log_file_name):
     """

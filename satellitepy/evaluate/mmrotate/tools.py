@@ -7,6 +7,7 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 from satellitepy.data.labels import read_label
 from satellitepy.evaluate.mmrotate.utils import *
 from satellitepy.evaluate.bbavector.utils import apply_nms
@@ -147,18 +148,17 @@ def save_mmrotate_original_results(
 
 
     # Create result original folder
-    original_result_folder = Path(out_folder) / 'results' / 'original_labels'
+    original_result_folder = Path(out_folder)
     assert create_folder(original_result_folder)
 
 
     image_paths = get_file_paths(in_image_folder)
     label_paths = get_file_paths(in_label_folder)
-    prog_bar = mmcv.ProgressBar(len(image_paths))
 
     for img_path,label_path in zip(image_paths,label_paths):
         # Check if label and image names match
-        img_name = img_path.stem
-        logger.info(f'{img_name} will be processed...')
+        img_name = img_path.name
+        logger.info(f' Processing {img_name}...')
 
         # Check if label and image names match
         is_match = is_file_names_match(img_path,label_path)
@@ -188,7 +188,6 @@ def save_mmrotate_original_results(
         for patch_img in patch_dict['images']:            
             # mmrotate result
             mmrotate_result = inference_detector(mmrotate_model,patch_img)
-
             # Detected labels
             det_label = get_det_labels(mmrotate_result,class_names,task_name,nms_on_multiclass_thr)
 

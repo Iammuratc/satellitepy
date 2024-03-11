@@ -22,7 +22,8 @@ def calculate_map(
     conf_score_thresholds,
     iou_thresholds,
     out_folder,
-    plot_pr):
+    plot_pr,
+    ignore_other_instances = False):
 
     # Get logger
     logger = logging.getLogger(__name__)
@@ -36,6 +37,9 @@ def calculate_map(
     # Result paths
     result_paths = get_file_paths(in_result_folder)
 
+    ignored_instances = []
+    ignored_cnt = 0
+
     for result_path in tqdm(result_paths):
         # logger.info(f'The following result file will be evaluated: {result_path}')
         # Result json file
@@ -43,13 +47,17 @@ def calculate_map(
             continue
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
-        conf_mat = set_conf_mat_from_result(
+        conf_mat, ignored_instances_ret, ignored_cnt_ret = set_conf_mat_from_result(
             conf_mat,
             task,
             result,
             instance_names,
             conf_score_thresholds,
-            iou_thresholds)
+            iou_thresholds,
+            ignore_other_instances)
+
+        ignored_instances += ignored_instances_ret
+        ignored_cnt += ignored_cnt_ret
 
     pr_threshold_ind = 0
     precision, recall = get_precision_recall(conf_mat,sort_values=True)
@@ -69,6 +77,9 @@ def calculate_map(
         logger.info('mAP')
         mAP = np.sum(np.transpose(np.transpose(ap)[:-1]), axis=1)/(len(ap[0])-1)
         logger.info(mAP)
+        if ignore_other_instances:
+            logger.info(f'ignored {ignored_cnt} other instances. Ignored instance names: {set(ignored_instances)}')
+
     if plot_pr:
         precision_recall_curve(out_folder, precision[pr_threshold_ind,:], recall[pr_threshold_ind,:])
 

@@ -25,6 +25,8 @@ def get_args():
                         help='Save folder of result evaluations. It will be asked to create if not exists.')
     parser.add_argument('--instance-names', type=str, help='Instance names. The instance name --Background-- will be added automatically.'
         'All other instance names (e.g., bridge), that are not defined here but in the result files, will be treated as Background.')
+    parser.add_argument('--ignore-other-instances', default=False, type=bool,
+                        help='Ignores instances not in instance names if set. Default is False.')
     parser.add_argument('--confidence-score-thresholds', default=None, type=str, help='Confidence score threshold. If the detected object has a lower' 
         'confidence score than this threshold, the object will be ignored. Default value is range(0,1.01,0.05).')
     parser.add_argument('--iou-thresholds', default=None, type=str, help='Iou thresholds. Default value is range(0.5,0.96,0.05)')
@@ -41,6 +43,7 @@ def main(args):
     # Init arguments
     in_result_folder = Path(args.in_result_folder)
     instance_names = [instance_name for instance_name in args.instance_names.split(',')]
+    ignore_other_instances = args.ignore_other_instances
     iou_thresholds = [float(iou_threshold) for iou_threshold in args.iou_thresholds.split(',')] if args.iou_thresholds != None else [x / 100.0 for x in range(50, 96, 5)]
     conf_score_thresholds = [float(confidence_score_threshold) for confidence_score_threshold in args.confidence_score_thresholds.split(',')] if args.confidence_score_thresholds != None else [x / 100.0 for x in range(0, 96, 5)]
     plot_pr = args.plot_pr
@@ -64,7 +67,8 @@ def main(args):
         conf_score_thresholds,
         iou_thresholds,
         out_folder,
-        plot_pr)
+        plot_pr,
+        ignore_other_instances)
 
 if __name__ == '__main__':
     args = get_args()
