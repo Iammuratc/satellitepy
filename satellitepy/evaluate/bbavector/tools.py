@@ -295,7 +295,7 @@ def test_and_eval_original(
     down_ratio,
     K,
     nms_iou_threshold,
-    # instance_names,
+    instance_names,
     mAP_conf_score_thresholds,
     eval_iou_thresholds,
     mask_conf_score_threshold,
@@ -304,6 +304,9 @@ def test_and_eval_original(
     ignore_other_instances,
     target_task='coarse-class'
     ):
+    logger = logging.getLogger(__name__)
+
+    logger.info('Saving results for original images.')
 
     save_original_image_results(
     out_folder,
@@ -326,11 +329,15 @@ def test_and_eval_original(
     nms_iou_threshold,
     target_task)
 
+    logger.info('Saving results for original images done. Evaluating task results.')
+
     result_folder = Path(out_folder) / 'results' / 'result_labels'
     result_dict = {}
 
     for task in tasks:
         task_result_folder = Path(out_folder) / 'results' / task
+        logger.info(f'Evaluating task {task}')
+
         if task == "masks":
             result_mask_folder = Path(out_folder) / 'results' / 'result_masks'
             task_iou = calculate_iou_score(
@@ -343,6 +350,7 @@ def test_and_eval_original(
                 mask_adaptive_size
             )
             result_dict[task] = task_iou
+            logger.info(f'Evaluating masks finished. IoU: {task_iou}.')
 
         elif task in["attributes_fuselage_length", "attributes_wings_wing-span"]:
             task_score = calculate_relative_score(
@@ -353,19 +361,22 @@ def test_and_eval_original(
                 task_result_folder,
             )
             result_dict[task] = task_score
+            logger.info(f'Evaluating {task} finished. Score: {task_score}.')
+
         else:
-            instance_names = []
-
-            task_mAP = calculate_map(
-                result_folder,
-                task,
-                instance_names,
-                mAP_conf_score_thresholds,
-                eval_iou_thresholds,
-                task_result_folder,
-                True,
-                ignore_other_instances
-            )
-            result_dict[task] = task_mAP
-
-
+            task_instance_names = instance_names[task]
+            if task_instance_names:
+                task_mAP = calculate_map(
+                    result_folder,
+                    task,
+                    task_instance_names,
+                    mAP_conf_score_thresholds,
+                    eval_iou_thresholds,
+                    task_result_folder,
+                    True,
+                    ignore_other_instances
+                )
+                result_dict[task] = task_mAP
+                logger.info(f'Evaluating {task} finished. mAP: {task_mAP}.')
+    logger.info('All evaluations finished. Results:')
+    logger.info(result_dict)

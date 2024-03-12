@@ -7,7 +7,7 @@ For each available task, the matching score is calculated: mAP for classificatio
 
 import os
 import configargparse
-from satellitepy.evaluate.bbavector.tools import save_original_image_results, test_and_eval_all, test_and_eval_original
+from satellitepy.evaluate.bbavector.tools import save_original_image_results, test_and_eval_original
 from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
 from pathlib import Path
 import logging
@@ -46,9 +46,41 @@ def get_args():
                         help='Confidence threshold, 0.1 for general evaluation')
     parser.add_argument('--nms-iou-thresh', type=float, default=0.3,
                         help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
-    parser.add_argument('--instance-names', type=str,
-                        help='Instance names. The instance name --Background-- will be added automatically.'
+
+    parser.add_argument('--coarse-class-instance-names', type=str,
+                        help='Instance names for CGC. The instance name --Background-- will be added automatically. Check tools/evaluate/default_instance_names.txt for default values.'
                         )
+    parser.add_argument('--fine-class-instance-names', type=str,
+                        help='Instance names for FGC. The instance name --Background-- will be added automatically.  Check tools/evaluate/default_instance_names.txt for default values.'
+                        )
+    parser.add_argument('--very-fine-class-instance-names', type=str,
+                        help='Instance names for FtGC. The instance name --Background-- will be added automatically. Check tools/evaluate/default_instance_names.txt for default values.'
+                        )
+    parser.add_argument('--role-instance-names', type=str,
+                        help='Instance names for Role. The instance name --Background-- will be added automatically. Check tools/evaluate/default_instance_names.txt for default values.'
+                        )
+    parser.add_argument('--difficulty-instance-names', type=str,
+                        help='Instance names for Difficulty. The instance name --Background-- will be added automatically. Check tools/evaluate/default_instance_names.txt for default values.'
+                        )
+    parser.add_argument('--attributes_engines_no-engines-instance-names', type=str,
+                        help='Instance names for attributes_engines_no-engines. The instance name --Background-- will be added automatically. Check tools/evaluate/default_instance_names.txt for default values.'
+                        )
+    parser.add_argument('--attributes_engines_propulsion-instance-names', type=str,
+                        help='Instance names for attributes_engines_propulsion. The instance name --Background-- will be added automatically. Check tools/evaluate/default_instance_names.txt for default values.'
+                        )
+    parser.add_argument('--attributes_fuselage_canards-instance-names', type=str,
+                        help='Instance names for attributes_fuselage_canards. The instance name --Background-- will be added automatically. Check tools/evaluate/default_instance_names.txt for default values.'
+                        )
+    parser.add_argument('--attributes_wings_wing-shape-instance-names', type=str,
+                        help='Instance names for attributes_wings_wing-shape. The instance name --Background-- will be added automatically. Check tools/evaluate/default_instance_names.txt for default values.'
+                        )
+    parser.add_argument('--attributes_wings_wing-position-instance-names', type=str,
+                        help='Instance names for attributes_wings_wing-position. The instance name --Background-- will be added automatically. Check tools/evaluate/default_instance_names.txt for default values.'
+                        )
+    parser.add_argument('--attributes_tail_no-tail-fins-instance-names', type=str,
+                        help='Instance names for attributes_tail_no-tail-fins. The instance name --Background-- will be added automatically. Check tools/evaluate/default_instance_names.txt for default values.'
+                        )
+
     parser.add_argument('--log-path', type=Path,
                         help='Log will be saved here. Default value is <out-folder>/evaluations.log')
     parser.add_argument('--ignore-other-instances', default=True, type=bool,
@@ -104,6 +136,12 @@ def main(args):
     in_label_folder = Path(args.in_label_folder)
     in_mask_folder = Path(args.in_mask_folder) if args.in_mask_folder else None
 
+    instance_names = {}
+    for task in tasks:
+        arg_name = task.replace('-', '_') + '_instance_names'
+        task_instance_names = args.__getattribute__(arg_name) if args.__getattribute__(arg_name) else None
+        instance_names[task] = task_instance_names
+
     ignore_other_instances = args.ignore_other_instances
     mAP_conf_score_thresholds = [float(confidence_score_threshold) for confidence_score_threshold in
                              args.eval_confidence_score_thresholds.split(',')] if args.eval_confidence_score_thresholds != None else [x / 100.0 for x in range(0, 96,5)]
@@ -136,6 +174,7 @@ def main(args):
         down_ratio,
         K,
         nms_iou_threshold,
+        instance_names,
         mAP_conf_score_thresholds,
         eval_iou_thresholds,
         mask_conf_score_thersholds,

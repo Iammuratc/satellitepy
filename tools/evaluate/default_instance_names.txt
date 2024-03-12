@@ -1,0 +1,48 @@
+CGC
+---
+airplane,ship,vehicle,helicopter
+
+FGC
+---
+A220,A321,A330,Airbus_A330,A350,Airbus_A320,ARJ21,Motorboat,Hovercraft,Patrol,Destroyer,Commander,Boeing_737,Boeing737,Boeing_747,Boeing747,Boeing_777,Boeing777,Boeing787,Bus,C919,Cargo Car,Cargo Plane,Truck,Cement Mixer,Landing,Maritime Vessel,Crane Truck,Dry Cargo Ship,Dump Truck,Engineering Ship,Engineering Vessel,Cruiser,Frigate,Fishing Vessel,Fishing Boat,Auxiliary Ship,Flat Car,Front Loader,Ground Grader,Barge,Haul Truck,Aircraft Carrier,Yacht,Tugboat,Cargo,Liquid Cargo Ship,Locomotive,Container Ship,Oil Tanker,Mobile Crane,RoRo,Sailboat,Cargo Truck,Passenger Car,Small Car,Passenger Ship,Passenger Vehicle,Pickup Truck,Railway Vehicle,Reach Stacker,Scraper/Tractor,Straddle Carrier,Tank Car,Tractor,Truck Tractor,Truck w/Box,Truck w/Flatbed,Truck w/Liquid,Utility Truck,Van,Trailer,Airbus_A-319,Airbus_A300,Airbus_A,Airbus_A380,ATR_ATR,BAE_146,Boeing_707,Boeing_717,Boeing_727,Boeing_757,Boeing_767,Boeing_BBJ,Bombardier_BD,Bombardier_Challenger,Bombardier_CRJ,Bombardier_Learjet,Cessna,Cessna_170,Cessna_172,Cessna_310,Cessna_Citation,Dassault_Falcon,DeHavillandCanada_DHC,Embraer_ERJ,Embraer_Legacy,Fokker_100,Gulfstream_G200,Gulfstream_GIII,HBC_Hawker,Let_L,LockheedCorp_L,McDonnellDouglas_DC,McDonnellDouglas_MD,PiperAircraft_PA,SudAviation_Caravelle,Tupolev_154,Ferry,Submarine,Excavator,Car,Camping Car,Motorcycle
+
+FtGC
+----
+Airbus_A330-300,Airbus_A-340,Airbus_A380-800,Airbus_A-319,ATR_ATR-72,BAE_146-100,BAE_146-300,Boeing_717-200,Boeing_727-100,Boeing_737-200,Boeing_737-300,Boeing_747-200,Boeing_747-400,Boeing_757-300,Boeing_767-200,Boeing_767-400,Boeing_777-300,Boeing_BBJ-2,Bombardier_BD-700-GlobalExpress,Bombardier_Challenger-300,Bombardier_Challenger-604,Bombardier_CRJ-705,Cessna_Citation-CJ4,Dassault_Falcon-100,Dassault_Falcon-2000,Dassault_Falcon-900,DeHavillandCanada_DHC-2-Beaver,DeHavillandCanada_DHC-3-Otter,Embraer_ERJ-135,HBC_Hawker-4000,LockheedCorp_L-1011-TriStar,Let_L-200Morova,McDonnellDouglas_DC-9-30,McDonnellDouglas_MD-11,PiperAircraft_PA-28,Other Destroyer,Atago DD,Arleigh Burke DD,LSD 41 LL,Ticonderoga,Hatsuyuki DD,Asagiri DD,Hyuga DD,Perry FF,AOE,Austin LL,Other Frigate,Enterprise,Other Landing,Other Auxiliary Ship,Osumi LL,Nimitz,Sanantonio AS,Other Aircraft Carrier,EPF,Masyuu AS,Wasp LL,LHA LL,Test Ship,Training Ship,YuTing LL,Medical Ship,YuDeng LL,YuDao LL,YuZhao LL,Midway
+
+Role
+----
+Small Civil Transport/Utility,Medium Civil Transport/Utility,Large Civil Transport/Utility,Military Transport/Utility/AWAC,Military Fighter/Interceptor/Attack,Military Bomber,Military Trainer,Small Vehicle,Large Vehicle,Warship,Merchant Ship
+
+Difficulty
+----------
+0,1
+
+attributes_engines_no-engines
+-----------------------------
+0,1,2,3,4
+
+attributes_engines_propulsion
+-----------------------------
+propeller,jet,unpowered
+
+attributes_fuselage_canards
+---------------------------
+True,False
+
+attributes_wings_wing-shape
+---------------------------
+swept,straight,variable swept,delta
+
+attributes_wings_wing-position
+------------------------------
+mid/low mounted,high mounted
+
+attributes_tail_no-tail-fins
+----------------------------
+1,2
+
+
+
+
+
