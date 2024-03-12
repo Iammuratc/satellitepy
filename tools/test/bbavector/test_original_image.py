@@ -1,6 +1,6 @@
 
 """
-Test BBAVector models on the folder with patches. 
+Test BBAVector models on the folder with original images.
 Save detected bbox details (i.e., corners, class_name) with the corresponding ground truth labels.
 """
 
@@ -59,7 +59,7 @@ def main(args):
     in_label_format = args.in_label_format
     tasks = args.tasks
 
-    target_task = args.targat_task
+    target_task = args.target_task
     assert target_task in tasks, "target task must be part of the tasks"
 
     conf_thresh = args.conf_thresh

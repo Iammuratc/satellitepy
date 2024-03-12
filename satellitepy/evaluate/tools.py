@@ -83,6 +83,8 @@ def calculate_map(
     if plot_pr:
         precision_recall_curve(out_folder, precision[pr_threshold_ind,:], recall[pr_threshold_ind,:])
 
+    return mAP
+
 
 def precision_recall_curve(out_folder, precision, recall):
     rec_values = [np.ones(recall.shape[1])]
@@ -175,6 +177,7 @@ def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresh
 
     ious = ious / cnt
     logger.info(ious)
+    return ious
 
 
 def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_thresholds, out_folder):
@@ -223,3 +226,4 @@ def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_t
                     score[i_iou_th] += (1 - error)
     score = score / cnt
     logger.info(score)
+    return score
