@@ -338,7 +338,9 @@ def test_and_eval_original(
         task_result_folder = Path(out_folder) / 'results' / task
         logger.info(f'Evaluating task {task}')
 
-        if task == "masks":
+        if task in ['obboxes', 'hbboxes']:
+            continue
+        elif task == "masks":
             result_mask_folder = Path(out_folder) / 'results' / 'result_masks'
             task_iou = calculate_iou_score(
                 result_folder,

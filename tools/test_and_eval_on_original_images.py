@@ -138,6 +138,8 @@ def main(args):
 
     instance_names = {}
     for task in tasks:
+        if task in ['hbboxes', 'obboxes', 'masks', 'attributes_fuselage_length', 'attributes_wings_wing-span']:
+            continue
         arg_name = task.replace('-', '_') + '_instance_names'
         task_instance_names = args.__getattribute__(arg_name) if args.__getattribute__(arg_name) else None
         instance_names[task] = task_instance_names
