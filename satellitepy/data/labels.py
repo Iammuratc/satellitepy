@@ -4,7 +4,7 @@ from builtins import print
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from satellitepy.data.utils import get_vedai_classes, set_mask, parse_potsdam_labels, set_satellitepy_dict_values, get_shipnet_categories
+from satellitepy.data.utils import get_vedai_classes, set_mask, parse_potsdam_labels, get_shipnet_categories
 from satellitepy.data.bbox import BBox
 import json
 import numpy as np
@@ -203,12 +203,11 @@ def init_satellitepy_label():
     labels={
         'hbboxes':[],
         'obboxes': [],
-        'masks':[],
-        'coarse-class':[],
-        'role':[],
-        'fine-class':[],
-        'very-fine-class':[],
-        # 'merged-class':[], # This is a concatenated version of all class values
+        'masks':[], # Mask
+        'coarse-class':[], #CGC
+        'role':[], # Role
+        'fine-class':[], # FGC
+        'very-fine-class':[], # FtGC
         'difficulty':[],
         'attributes':{
             'engines':{

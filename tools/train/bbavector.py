@@ -172,18 +172,3 @@ def train_bbavector(args):
 if __name__ == '__main__':
     args = parse_args()
     train_bbavector(args)
-    # sample_temp = next(iter(my_dataloader))
-    # print(sample_temp.keys())
-    # import matplotlib.pyplot as plt
-    # import matplotlib
-    # import numpy as np
-    # matplotlib.use('TKAgg')
-    # for i in range(15):
-    #     sample_heatmap = sample_temp['hm'][0][i,:,:].cpu().detach().numpy()
-    #     hm_max = np.amax(sample_heatmap)
-    #     print(hm_max)
-    #     if hm_max==0:
-    #         continue
-    #     else:
-    #         plt.imshow(sample_heatmap*255)
-    #         plt.show()

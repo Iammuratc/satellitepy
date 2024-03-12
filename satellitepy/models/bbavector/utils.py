@@ -91,15 +91,3 @@ def decode_hbboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
         pts[:, 1] = pts[:, 1] * down_ratio / input_h * orig_h
         points.append(pts)
     return points
-
-# def collater(data):
-#     out_data_dict = {}
-#     for name in data[0]:
-#         out_data_dict[name] = []
-#     for sample in data:
-#         for name in sample:
-#             out_data_dict[name].append(torch.from_numpy(sample[name]))
-#     for name in out_data_dict:
-#         out_data_dict[name] = torch.stack(out_data_dict[name], dim=0)
-#     return out_data_dict
-
