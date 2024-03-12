@@ -58,16 +58,3 @@ class MTLDataset(Dataset):
 
     def __len__(self):
         return len(self.items)
-
-if __name__ == "__main__":
-    # dataset with differently sized images
-    dataset = MTLDataset(
-        image_folders=["/home/simon/unibw/data/satpy/dota/train/img/images"],
-        label_folders=["/home/simon/unibw/data/satpy/dota/train/labels"],
-        label_formats=["dota"]
-    )
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=4, collate_fn=lambda x: x)
-    
-    for batch in dataloader:
-        print(batch)
-        break
