@@ -182,7 +182,6 @@ def main(args):
         mask_threshold,
         mask_adaptive_size,
         ignore_other_instances,
-
         target_task='coarse-class'
     )
 

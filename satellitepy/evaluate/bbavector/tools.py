@@ -335,7 +335,7 @@ def test_and_eval_original(
     result_dict = {}
 
     for task in tasks:
-        task_result_folder = Path(out_folder) / 'results'
+        task_result_folder = Path(out_folder) / 'results' / task
 
         if task in ['obboxes', 'hbboxes']:
             continue
@@ -377,7 +377,7 @@ def test_and_eval_original(
                     mAP_conf_score_thresholds,
                     eval_iou_thresholds,
                     task_result_folder,
-                    True,
+                    False,
                     ignore_other_instances
                 )
                 result_dict[task] = task_mAP[0]
