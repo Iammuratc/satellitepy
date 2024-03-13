@@ -308,26 +308,26 @@ def test_and_eval_original(
 
     logger.info('Saving results for original images.')
 
-    # save_original_image_results(
-    # out_folder,
-    # in_image_folder,
-    # in_label_folder,
-    # in_mask_folder,
-    # in_label_format,
-    # checkpoint_path,
-    # truncated_object_threshold,
-    # patch_size,
-    # patch_overlap,
-    # device,
-    # tasks,
-    # num_workers,
-    # input_h,
-    # input_w,
-    # conf_thresh,
-    # down_ratio,
-    # K,
-    # nms_iou_threshold,
-    # target_task)
+    save_original_image_results(
+    out_folder,
+    in_image_folder,
+    in_label_folder,
+    in_mask_folder,
+    in_label_format,
+    checkpoint_path,
+    truncated_object_threshold,
+    patch_size,
+    patch_overlap,
+    device,
+    tasks,
+    num_workers,
+    input_h,
+    input_w,
+    conf_thresh,
+    down_ratio,
+    K,
+    nms_iou_threshold,
+    target_task)
 
     logger.info('Saving results for original images done. Evaluating task results.')
 
@@ -363,8 +363,8 @@ def test_and_eval_original(
                 eval_iou_thresholds,
                 task_result_folder,
             )
-            result_dict[task] = task_score
-            logger.info(f'Evaluating {task} finished. Score: {task_score}.')
+            result_dict[task] = task_score[0]
+            logger.info(f'Evaluating {task} finished. Score: {task_score[0]}.')
 
         else:
             logger.info(f'Evaluating task {task}')

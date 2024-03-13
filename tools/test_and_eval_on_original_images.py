@@ -82,7 +82,7 @@ def get_args():
 
     parser.add_argument('--log-path', type=Path,
                         help='Log will be saved here. Default value is <out-folder>/evaluations.log')
-    parser.add_argument('--ignore-other-instances', default=True, type=bool,
+    parser.add_argument('--ignore-other-instances', default=False, type=bool,
                         help='Ignores instances not in instance names if set. Default is False.')
     parser.add_argument('--mAP-confidence-score-thresholds', default=None, type=str,
                         help='Confidence score thresholds for evaluation of classification tasks. If the detected object has a lower'
