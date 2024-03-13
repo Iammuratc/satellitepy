@@ -54,7 +54,7 @@ def run(args):
     tasks = args.tasks
 
     all_tasks_flag = False
-    if tasks[0] == 'all':
+    if tasks[0] == 'all' or tasks == 'all':
         all_tasks_flag = True
     elif 'masks' in tasks:
         assert mask_dir, 'in-mask-dir must be specified if masks is in tasks!'
