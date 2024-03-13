@@ -308,26 +308,26 @@ def test_and_eval_original(
 
     logger.info('Saving results for original images.')
 
-    save_original_image_results(
-    out_folder,
-    in_image_folder,
-    in_label_folder,
-    in_mask_folder,
-    in_label_format,-
-    checkpoint_path,
-    truncated_object_threshold,
-    patch_size,
-    patch_overlap,
-    device,
-    tasks,
-    num_workers,
-    input_h,
-    input_w,
-    conf_thresh,
-    down_ratio,
-    K,
-    nms_iou_threshold,
-    target_task)
+    # save_original_image_results(
+    # out_folder,
+    # in_image_folder,
+    # in_label_folder,
+    # in_mask_folder,
+    # in_label_format,
+    # checkpoint_path,
+    # truncated_object_threshold,
+    # patch_size,
+    # patch_overlap,
+    # device,
+    # tasks,
+    # num_workers,
+    # input_h,
+    # input_w,
+    # conf_thresh,
+    # down_ratio,
+    # K,
+    # nms_iou_threshold,
+    # target_task)
 
     logger.info('Saving results for original images done. Evaluating task results.')
 
@@ -335,12 +335,12 @@ def test_and_eval_original(
     result_dict = {}
 
     for task in tasks:
-        task_result_folder = Path(out_folder) / 'results' / task
-        logger.info(f'Evaluating task {task}')
+        task_result_folder = Path(out_folder) / 'results'
 
         if task in ['obboxes', 'hbboxes']:
             continue
         elif task == "masks":
+            logger.info(f'Evaluating task {task}')
             result_mask_folder = Path(out_folder) / 'results' / 'result_masks'
             task_iou = calculate_iou_score(
                 result_folder,
@@ -351,10 +351,11 @@ def test_and_eval_original(
                 mask_threshold,
                 mask_adaptive_size
             )
-            result_dict[task] = task_iou
-            logger.info(f'Evaluating masks finished. IoU: {task_iou}.')
+            result_dict[task] = task_iou[0]
+            logger.info(f'Evaluating masks finished. IoU: {task_iou[0]}.')
 
         elif task in["attributes_fuselage_length", "attributes_wings_wing-span"]:
+            logger.info(f'Evaluating task {task}')
             task_score = calculate_relative_score(
                 result_folder,
                 task,
@@ -366,6 +367,7 @@ def test_and_eval_original(
             logger.info(f'Evaluating {task} finished. Score: {task_score}.')
 
         else:
+            logger.info(f'Evaluating task {task}')
             task_instance_names = instance_names[task]
             if task_instance_names:
                 task_mAP = calculate_map(
@@ -378,7 +380,7 @@ def test_and_eval_original(
                     True,
                     ignore_other_instances
                 )
-                result_dict[task] = task_mAP
-                logger.info(f'Evaluating {task} finished. mAP: {task_mAP}.')
+                result_dict[task] = task_mAP[0]
+                logger.info(f'Evaluating {task} finished. mAP: {task_mAP[0]}.')
     logger.info('All evaluations finished. Results:')
     logger.info(result_dict)

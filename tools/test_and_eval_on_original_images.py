@@ -5,10 +5,9 @@ Save detected bbox details (i.e., corners, class_name) with the corresponding gr
 For each available task, the matching score is calculated: mAP for classification tasks, relative score for regression tasks and IoU for masks.
 """
 
-import os
 import configargparse
-from satellitepy.evaluate.bbavector.tools import save_original_image_results, test_and_eval_original
-from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
+from satellitepy.evaluate.bbavector.tools import test_and_eval_original
+from satellitepy.utils.path_utils import create_folder, init_logger
 from pathlib import Path
 import logging
 
@@ -94,7 +93,7 @@ def get_args():
                         help='Confidence score threshold for evaluating masks and regression tasks. If the detected object has a lower'
                              'confidence score than this threshold, the object will be ignored. Default value is 0.5')
     parser.add_argument('--mask-threshold', type=float, default=10,
-                        help='C for cv2.adaptiveThreshold. Value is subtracted from the threshold')
+                        help='C for cv2.adaptiveThreshold. Value is subtracted from the threshold. Default is 10.')
     parser.add_argument('--mask-adaptive-size', type=float, default=101,
                         help='The threshold is the weighted sum of values in a neighbourhood of this size. Must be odd, default is 51.')
     args = parser.parse_args()
@@ -141,17 +140,17 @@ def main(args):
         if task in ['hbboxes', 'obboxes', 'masks', 'attributes_fuselage_length', 'attributes_wings_wing-span']:
             continue
         arg_name = task.replace('-', '_') + '_instance_names'
-        task_instance_names = args.__getattribute__(arg_name) if args.__getattribute__(arg_name) else None
+        task_instance_names = [name for name in args.__getattribute__(arg_name).split(',')] if args.__getattribute__(arg_name) else None
         instance_names[task] = task_instance_names
 
     ignore_other_instances = args.ignore_other_instances
     mAP_conf_score_thresholds = [float(confidence_score_threshold) for confidence_score_threshold in
-                             args.eval_confidence_score_thresholds.split(',')] if args.eval_confidence_score_thresholds != None else [x / 100.0 for x in range(0, 96,5)]
+                             args.mAP_confidence_score_thresholds.split(',')] if args.mAP_confidence_score_thresholds != None else [x / 100.0 for x in range(0, 96,5)]
 
     eval_iou_thresholds = [float(iou_threshold) for iou_threshold in
-                      args.iou_thresholds.split(',')] if args.iou_thresholds != None else [x / 100.0 for x in range(50, 96, 5)]
+                      args.eval_iou_thresholds.split(',')] if args.eval_iou_thresholds != None else [x / 100.0 for x in range(50, 96, 5)]
 
-    mask_conf_score_thersholds = float(args.confidence_score_threshold)
+    mask_conf_score_thersholds = float(args.mask_confidence_score_threshold)
 
     mask_threshold = int(args.mask_threshold) if args.mask_threshold else 10
     mask_adaptive_size = int(args.mask_adaptive_size) if args.mask_adaptive_size else 51
