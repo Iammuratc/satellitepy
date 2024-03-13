@@ -29,6 +29,7 @@ def get_args():
     parser.add_argument('--tasks', default=['coarse-class'], nargs="+",
                         help='The tasks the model was trained on.'
                              'Find the other task names at satellitepy.data.utils.get_satellitepy_table.')
+    parser.add_argument('--eval-tasks', nargs="+", required=True, help='Tasks to evaluate.')
     parser.add_argument('--target-task', type=str, default='coarse-class',
                         help='The target task the model was trained on. Needs to be a classification task. Default is coarse-class')
     parser.add_argument('--log-config-path', default=Path("./configs/log.config"), type=Path, help='Log config file.')
@@ -110,6 +111,7 @@ def main(args):
     in_image_folder = Path(args.in_image_folder)
     in_label_format = args.in_label_format
     tasks = args.tasks
+    eval_tasks = args.eval_tasks
 
     target_task = args.target_task
     assert target_task in tasks, "target task must be part of the tasks"
@@ -136,7 +138,7 @@ def main(args):
     in_mask_folder = Path(args.in_mask_folder) if args.in_mask_folder else None
 
     instance_names = {}
-    for task in tasks:
+    for task in eval_tasks:
         if task in ['hbboxes', 'obboxes', 'masks', 'attributes_fuselage_length', 'attributes_wings_wing-span']:
             continue
         arg_name = task.replace('-', '_') + '_instance_names'
@@ -168,6 +170,7 @@ def main(args):
         patch_overlap,
         device,
         tasks,
+        eval_tasks,
         num_workers,
         input_h,
         input_w,

@@ -288,6 +288,7 @@ def test_and_eval_original(
     patch_overlap,
     device,
     tasks,
+    eval_tasks,
     num_workers,
     input_h,
     input_w,
@@ -334,7 +335,7 @@ def test_and_eval_original(
     result_folder = Path(out_folder) / 'results' / 'result_labels'
     result_dict = {}
 
-    for task in tasks:
+    for task in eval_tasks:
         task_result_folder = Path(out_folder) / 'results' / task
 
         if task in ['obboxes', 'hbboxes']:
