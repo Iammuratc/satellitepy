@@ -34,6 +34,8 @@ def read_label(label_path,label_format, mask_path = None):
         return read_ship_net_label(label_path)
     elif label_format == 'ucas':
         return read_ucas_label(label_path)
+    elif label_format == "fr24":
+        return read_fr24_label(label_path)
     elif label_format == 'xview':
         logger.info('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
@@ -777,4 +779,24 @@ def read_vedai_label(label_path):
             
         fill_none_to_empty_keys(labels, not_available_tasks)
         
+    return labels
+
+def read_fr24_label(label_path):
+    labels = init_satellitepy_label()
+    available_tasks=['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'very-fine-class']
+    all_tasks = get_all_satellitepy_keys()
+    ## Not available tasks
+    not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
+    with open(label_path, 'r') as f:
+        file = json.load(f)
+
+    for annotation in file["features"]:
+        labels["coarse-class"].append("airplane")
+        labels["fine-class"].append(annotation["properties"]["Type"])
+        labels["very-fine-class"].append(annotation["properties"]["Subtype"])
+        coords = annotation["geometry"]["coordinates"][0][1][:-1]
+        labels['obboxes'].append(coords)
+        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
+        fill_none_to_empty_keys(labels, not_available_tasks)
+             
     return labels
