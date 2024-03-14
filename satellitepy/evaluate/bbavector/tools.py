@@ -1,5 +1,6 @@
 import cv2
 
+from satellitepy.evaluate.tools import calculate_map, calculate_relative_score, calculate_iou_score
 from satellitepy.models.bbavector.tools import get_model, get_model_decoder
 from satellitepy.models.bbavector.utils import load_checkpoint, decode_masks  # , collater
 from satellitepy.dataset.bbavector.dataset_bbavector import BBAVectorDataset
@@ -227,7 +228,7 @@ def save_original_image_results(
             image_h, image_w, c = patch_img.shape
             annotation = bbavector_dataset_utils.prepare_annotations(patch_labels, image_w, image_h)#, img_path)
             patch_img, annotation = bbavector_dataset_utils.data_transform(patch_img, annotation, bbavector_dataset_utils.augmentation)
-            data_dict = bbavector_dataset_utils.generate_ground_truth(patch_img, annotation)
+            data_dict = bbavector_dataset_utils.generate_ground_truth(patch_img, annotation, target_task)
             data_dict['input'] = torch.Tensor(data_dict['input']).unsqueeze(0)
             data_dict['img_w']= torch.from_numpy(np.array(image_w)).unsqueeze(0)
             data_dict['img_h']= torch.from_numpy(np.array(image_h)).unsqueeze(0) # torch.Tensor(image_h)
@@ -273,3 +274,114 @@ def save_original_image_results(
             mask *= 255.0
             assert max <= 1.0, "mask value > 1.0!"
             cv2.imwrite(path, mask, [cv2.IMWRITE_JPEG_QUALITY, 100])
+
+
+def test_and_eval_original(
+    out_folder,
+    in_image_folder,
+    in_label_folder,
+    in_mask_folder,
+    in_label_format,
+    checkpoint_path,
+    truncated_object_threshold,
+    patch_size,
+    patch_overlap,
+    device,
+    tasks,
+    eval_tasks,
+    num_workers,
+    input_h,
+    input_w,
+    conf_thresh,
+    down_ratio,
+    K,
+    nms_iou_threshold,
+    instance_names,
+    mAP_conf_score_thresholds,
+    eval_iou_thresholds,
+    mask_conf_score_threshold,
+    mask_threshold,
+    mask_adaptive_size,
+    ignore_other_instances,
+    target_task='coarse-class'
+    ):
+    logger = logging.getLogger(__name__)
+
+    logger.info('Saving results for original images.')
+
+    save_original_image_results(
+    out_folder,
+    in_image_folder,
+    in_label_folder,
+    in_mask_folder,
+    in_label_format,
+    checkpoint_path,
+    truncated_object_threshold,
+    patch_size,
+    patch_overlap,
+    device,
+    tasks,
+    num_workers,
+    input_h,
+    input_w,
+    conf_thresh,
+    down_ratio,
+    K,
+    nms_iou_threshold,
+    target_task)
+
+    logger.info('Saving results for original images done. Evaluating task results.')
+
+    result_folder = Path(out_folder) / 'results' / 'result_labels'
+    result_dict = {}
+
+    for task in eval_tasks:
+        task_result_folder = Path(out_folder) / 'results' / task
+
+        if task in ['obboxes', 'hbboxes']:
+            continue
+        elif task == "masks":
+            logger.info(f'Evaluating task {task}')
+            result_mask_folder = Path(out_folder) / 'results' / 'result_masks'
+            task_iou = calculate_iou_score(
+                result_folder,
+                result_mask_folder,
+                task_result_folder,
+                eval_iou_thresholds,
+                mask_conf_score_threshold,
+                mask_threshold,
+                mask_adaptive_size
+            )
+            result_dict[task] = task_iou[0]
+            logger.info(f'Evaluating masks finished. IoU: {task_iou[0]}.')
+
+        elif task in["attributes_fuselage_length", "attributes_wings_wing-span"]:
+            logger.info(f'Evaluating task {task}')
+            task_score = calculate_relative_score(
+                result_folder,
+                task,
+                mask_conf_score_threshold,
+                eval_iou_thresholds,
+                task_result_folder,
+            )
+            result_dict[task] = task_score[0]
+            logger.info(f'Evaluating {task} finished. Score: {task_score[0]}.')
+
+        else:
+            logger.info(f'Evaluating task {task}')
+            task_instance_names = instance_names[task]
+            if task_instance_names:
+                task_mAP = calculate_map(
+                    result_folder,
+                    task,
+                    task_instance_names,
+                    mAP_conf_score_thresholds,
+                    eval_iou_thresholds,
+                    task_result_folder,
+                    False,
+                    ignore_other_instances
+                )
+                result_dict[task] = task_mAP[0]
+                logger.info(f'Evaluating {task} finished. mAP: {task_mAP[0]}.')
+    logger.info('All evaluations finished. Results:')
+    logger.info(result_dict)

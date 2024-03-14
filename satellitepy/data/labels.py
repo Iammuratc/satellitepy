@@ -360,8 +360,8 @@ def read_fair1m_label(label_path):
             labels['fine-class'].append(None)
             labels['role'].append(None)
         else:
-            labels['coarse-class'].append('other')
-            labels['fine-class'].append(instance_name.text)
+            labels['coarse-class'].append(None)
+            labels['fine-class'].append(None)
             labels['role'].append(None)
 
     # BBOX CCORDINATES
