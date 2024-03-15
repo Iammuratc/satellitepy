@@ -178,6 +178,8 @@ def init_satellitepy_label():
         difficulty : list of int
             Detection difficulty of the object. Only DOTA provides this. 
             For example, clouds make the detection task difficult. 
+        source: list of str
+            Source for FR24 annotations. Either FR24, Mask or None
         attributes : dict of str
             This value only serves for Rareplanes at the moment. 
             Please check the rareplanes paper for details.
@@ -211,6 +213,7 @@ def init_satellitepy_label():
         'fine-class':[], # FGC
         'very-fine-class':[], # FtGC
         'difficulty':[],
+        'source': [],
         'attributes':{
             'engines':{
                 'no-engines':[],
@@ -794,6 +797,7 @@ def read_fr24_label(label_path):
         labels["coarse-class"].append("airplane")
         labels["fine-class"].append(annotation["properties"]["Type"])
         labels["very-fine-class"].append(annotation["properties"]["Subtype"])
+        labels["source"].append(annotation["properties"]["Source"])
         coords = annotation["geometry"]["coordinates"][0][1][:-1]
         labels['obboxes'].append(coords)
         labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
