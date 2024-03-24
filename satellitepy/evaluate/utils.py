@@ -61,6 +61,10 @@ def set_conf_mat_from_result(
     task_dict = get_task_dict(task)
     idx2name = {v: k for k, v in task_dict.items()}
     taskResult = get_satellitepy_dict_values(result['gt_labels'], task)
+
+    detResults = np.argmax(result['det_labels'][task], axis=1) if len(result['det_labels'][task]) > 0 else []
+    confScores = np.max(result['det_labels'][task], axis=1) if len(result['det_labels'][task]) > 0 else []
+
     if len(taskResult) == 0:
         return conf_mat
     for i_iou_th, iou_th in enumerate(iou_thresholds):
@@ -70,7 +74,7 @@ def set_conf_mat_from_result(
             det_gt_bbox_indices = []
 
             # Iterate over the confidence scores of the detected bounding boxes
-            for i_conf_score, conf_score in enumerate(result['det_labels']['confidence-scores']):
+            for i_conf_score, conf_score in enumerate(confScores):
                 ## If the confidence score is lower than threshold, skip the object
                 if conf_score<conf_score_th:
                     continue
@@ -87,7 +91,7 @@ def set_conf_mat_from_result(
                 if det_gt_instance_name is None:
                     continue
 
-                det_name = str(idx2name[result['det_labels'][task][i_conf_score]])
+                det_name = str(idx2name[detResults[i_conf_score]])
 
                 if ignore_other_instances and det_name not in instance_names:
                     ignored_cnt+=1

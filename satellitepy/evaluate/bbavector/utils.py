@@ -92,7 +92,7 @@ def nms(bboxes, scores, iou_th):
 
 
 
-def apply_nms(det_labels, nms_iou_threshold=0.5):
+def apply_nms(det_labels, nms_iou_threshold=0.5, target_task="coarse-class"):
     """
     Apply nms to labels, e.g., dec_pred, merged_det_labels
     Parameters
@@ -107,9 +107,11 @@ def apply_nms(det_labels, nms_iou_threshold=0.5):
 
     ###########
     bbox_params = [BBox(corners=corners).params for corners in det_labels["obboxes"]]
-    conf_scores = det_labels["confidence-scores"]
+
+    conf_scores = np.max(det_labels[target_task], axis=1) if len(det_labels[target_task])>0 else []
+
     # print(f"BBOXES Before : {len(bbox_params)}")
-    nms_inds = nms(bbox_params,scores=np.array(det_labels["confidence-scores"]),iou_th=nms_iou_threshold)#[0]
+    nms_inds = nms(bbox_params,scores=conf_scores,iou_th=nms_iou_threshold)#[0]
     # bbox_nms_inds = inds_nms[0]
     # print(f"After : {len(nms_inds)}")
     # print(inds_nms)

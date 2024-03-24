@@ -252,7 +252,7 @@ def save_original_image_results(
         merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
         # merged_det_labels = merge_patch_results(patch_dict, patch_size, img.shape)
         # print(list(merged_det_labels.keys()))
-        merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_iou_threshold)
+        merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_iou_threshold, target_task=target_task)
 
         # Find matches of original image with merged patch results
         matches = match_gt_and_det_bboxes(gt_labels,merged_det_labels)

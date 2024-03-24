@@ -1,3 +1,4 @@
+import numpy
 import torch.nn.functional as F
 import torch
 
@@ -27,7 +28,7 @@ class DecDecoder(object):
         topk_ys = self._gather_feat(topk_ys.view(batch, -1, 1), topk_ind).view(batch, self.K)
         topk_xs = self._gather_feat(topk_xs.view(batch, -1, 1), topk_ind).view(batch, self.K)
 
-        return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
+        return topk_score, topk_scores, topk_inds, topk_clses, topk_ys, topk_xs
 
 
     def _nms(self, heat, kernel=3):
@@ -55,7 +56,7 @@ class DecDecoder(object):
         batch, c, height, width = heatmap.size()
         heat = self._nms(heatmap)
 
-        scores, inds, clses, ys, xs = self._topk(heat)
+        scores, _, inds, clses, ys, xs = self._topk(heat)
         reg = self._tranpose_and_gather_feat(box_offsets, inds)
         reg = reg.view(batch, self.K, 2)
         xs = xs.view(batch, self.K, 1) + reg[:, :, 0:1]
@@ -91,7 +92,7 @@ class DecDecoder(object):
         batch, c, height, width = heatmap.size()
         heat = self._nms(heatmap)
 
-        scores, inds, clses, ys, xs = self._topk(heat)
+        scores, _, inds, clses, ys, xs = self._topk(heat)
         reg = self._tranpose_and_gather_feat(box_offsets, inds)
         reg = reg.view(batch, self.K, 2)
         xs = xs.view(batch, self.K, 1) + reg[:, :, 0:1]
@@ -106,11 +107,11 @@ class DecDecoder(object):
 
     def ctdet_decode(self, pr_decs):
         heat = pr_decs['cls_' + self.target_task]
-        scores, idx_2d, target, _, _ = self._topk(heat)
+        scores, all_scores, idx_2d, target, _, _ = self._topk(heat)
         idx_1d = (scores>self.conf_thresh).squeeze(0)
+        all_scores = all_scores[0, :, :].T
         result = {
-            self.target_task: target[:, idx_1d].squeeze(0).cpu().numpy(),
-            "confidence-scores": scores[:, idx_1d].squeeze(0).cpu().numpy()
+            self.target_task: all_scores[idx_1d, :].cpu().numpy()
         }
 
         if "obboxes" in self.tasks:
@@ -138,11 +139,12 @@ class DecDecoder(object):
                 continue
 
             arr_val = self._tranpose_and_gather_feat(v, idx_2d)
-            # classification -> we take class with highest prob
+
             if k == "masks":
                 result[k[:4]] = v.squeeze(0).squeeze(0).cpu().numpy()
+            # classification -> we save the confidence scores for each class
             elif k[:3] == "cls":
-                result[k[4:]] = torch.argmax(arr_val[:, idx_1d, :], dim=2).squeeze(0).cpu().numpy()
+                result[k[4:]] = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy()
             # regression -> there is only one value, we squeeze
             else:
                 det = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy()
