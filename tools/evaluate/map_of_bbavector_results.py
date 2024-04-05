@@ -3,18 +3,16 @@ Calculate mean average precision from result json files for mmrotate models.
 See the details of the result json files at satellitepy.evaluate.mmrotate.utils.get_result
 """
 
-import os
 import configargparse
 from pathlib import Path
 import logging
 
 from satellitepy.evaluate.tools import calculate_map
-from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
+from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config
 
 
 def get_args():
     """Arguments parser."""
-    project_folder = get_project_folder()
 
     parser = configargparse.ArgumentParser(description=__doc__)
     parser.add_argument('--in-result-folder', type=str,
@@ -31,14 +29,16 @@ def get_args():
         'confidence score than this threshold, the object will be ignored. Default value is range(0,1.01,0.05).')
     parser.add_argument('--iou-thresholds', default=None, type=str, help='Iou thresholds. Default value is range(0.5,0.96,0.05)')
     parser.add_argument('--plot-pr', default=False, type=bool, help='Plot the PR curve.')
-    parser.add_argument('--log-config-path', default=project_folder /
-                        Path("configs/log.config"), type=Path, help='Log config file.')
-    parser.add_argument('--log-path', type=Path, help='Log will be saved here. Default value is <out-folder>/evaluations.log')
+    parser.add_argument('--log-config-path', default=None, help='Log config file.')
+    parser.add_argument('--log-path', default=None, help='Log will be saved here.')
     args = parser.parse_args()
     return args
 
 def main(args):
     """Application entry point."""
+    # Logger configs
+    log_config_path = get_default_log_config() if args.log_config_path==None else Path(args.log_config_path)
+    log_path = get_default_log_path(Path(__file__).resolve().stem) if args.log_path==None else Path(args.log_path)
 
     # Init arguments
     in_result_folder = Path(args.in_result_folder)
@@ -50,13 +50,11 @@ def main(args):
     out_folder = Path(args.out_folder)
     task = args.task
     assert create_folder(out_folder)
+    
     # Init logger
-    log_path = Path(
-        out_folder) / 'evaluations.log' if args.log_path == None else args.log_path
-    init_logger(config_path=args.log_config_path, log_path=log_path)
+    init_logger(config_path=log_config_path, log_path=log_path)
     logger = logging.getLogger(__name__)
-    logger.info(
-        f'No log path is given, the default log path will be used: {log_path}')
+    logger.info(f'Log will be stored at: {log_path}')
     logger.info('Saving patches from original images...')
 
     # Calculate mAP

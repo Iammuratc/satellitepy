@@ -4,10 +4,9 @@ Test BBAVector models on the folder with patches.
 Save detected bbox details (i.e., corners, class_name) with the corresponding ground truth labels.
 """
 
-import os
 import configargparse
 from satellitepy.evaluate.bbavector.tools import save_patch_results
-from satellitepy.utils.path_utils import create_folder, init_logger
+from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config
 from pathlib import Path
 import logging
 
@@ -40,17 +39,23 @@ def get_args():
 
 def main(args):
     """Application entry point."""
+    # Logger configs
+    log_config_path = get_default_log_config() if args.log_config_path==None else Path(args.log_config_path)
+    log_path = get_default_log_path(Path(__file__).resolve().stem) if args.log_path==None else Path(args.log_path)
 
-    log_config_path = Path(args.log_config_path)
     weights_path = args.weights_path
     # nms_on_multiclass_thr = args.nms_on_multiclass_thr
     device = args.device
     out_folder = Path(args.out_folder)
     in_image_folder = Path(args.in_image_folder)
-    if args.in_label_folder:
-        in_label_folder = Path(args.in_label_folder)
-    else:
-        in_label_folder = None
+    in_label_folder = Path(args.in_label_folder) if args.in_label_folder else None
+    if not in_label_folder:
+        logger.info("No label folder is given. Results will have no ground truth labels.")
+
+    in_mask_folder = Path(args.in_mask_folder) if args.in_mask_folder else None
+    if not in_mask_folder:
+        logger.info("No mask folder is given. Results will have no ground truth mask.")
+
     in_label_format = args.in_label_format
     tasks = args.tasks
     conf_thresh = args.conf_thresh
@@ -62,8 +67,9 @@ def main(args):
 
     assert create_folder(out_folder)
     # Initiate logger
-    init_logger(config_path=log_config_path,log_path=os.path.join(out_folder,'results.log'))
+    init_logger(config_path=log_config_path,log_path=log_path)
     logger = logging.getLogger(__name__)
+    logger.info(f'Log will be stored at: {log_path}')
     logger.info('BBAVector model will process the images...')
 
     save_patch_results(
