@@ -4,10 +4,9 @@ Test BBAVector models on the folder with original images.
 Save detected bbox details (i.e., corners, class_name) with the corresponding ground truth labels.
 """
 
-import os
 import configargparse
 from satellitepy.evaluate.bbavector.tools import save_original_image_results
-from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
+from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config
 from pathlib import Path
 import logging
 
@@ -48,8 +47,10 @@ def get_args():
 def main(args):
     """Application entry point."""
 
-    project_folder = get_project_folder()
-    log_config_path = project_folder / "configs" / "log.config" if args.log_config_path==None else Path(args.log_config_path) 
+    # Logger configs
+    log_config_path = get_default_log_config() if args.log_config_path==None else Path(args.log_config_path)
+    log_path = get_default_log_path(Path(__file__).resolve().stem) if args.log_path==None else Path(args.log_path)
+
     weights_path = args.weights_path
     # nms_on_multiclass_thr = args.nms_on_multiclass_thr
     device = args.device
@@ -75,12 +76,10 @@ def main(args):
 
     assert create_folder(out_folder)
     # Initiate logger
-
-    log_path = project_folder / 'logs' / 'results.log' if args.log_path == None else args.log_path
-    assert create_folder(log_path)
     init_logger(config_path=log_config_path,log_path=log_path)
     logger = logging.getLogger(__name__)
     logger.info('BBAVector model will process the images...')
+    logger.info(f'Log will be stored at: {log_path}')
 
     in_label_folder = Path(args.in_label_folder) if args.in_label_folder else None
     if not in_label_folder:
