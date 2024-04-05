@@ -56,7 +56,7 @@ def get_patches(
     patch_start_coords = [[x,y] for x in x_start_coords for y in y_start_coords]
 
     # Check of label file exists
-    label_file_exist = gt_labels == None
+    label_file_exist = gt_labels != None
     # Init patch dictionary
     patch_dict = {
         'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],

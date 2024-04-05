@@ -27,6 +27,8 @@ def match_gt_and_det_bboxes(gt_labels,det_labels):
     """
     matches = {'iou':{'scores':[],'indexes':[]}}
 
+    if gt_labels == None:
+        return matches
     ## New IOU calculation
     if "obboxes" in det_labels:
         ious = get_ious(det_labels['obboxes'], gt_labels['obboxes'])

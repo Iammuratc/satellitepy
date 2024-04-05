@@ -182,7 +182,7 @@ def save_original_image_results(
 
     # Dataset is customized, because BBAVectorDataset works only with dirs
     img_paths = get_file_paths(in_image_folder)
-    label_paths = get_file_paths(in_label_folder)
+    label_paths = get_file_paths(in_label_folder) if in_label_folder != None else len(img_paths)*[None]
     mask_paths = get_file_paths(in_mask_folder) if in_mask_folder != None else len(img_paths)*[None]
     try:
         assert len(img_paths) == len(label_paths) == len(mask_paths)#
