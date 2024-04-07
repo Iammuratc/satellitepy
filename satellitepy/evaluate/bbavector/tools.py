@@ -182,7 +182,7 @@ def save_original_image_results(
 
     # Dataset is customized, because BBAVectorDataset works only with dirs
     img_paths = get_file_paths(in_image_folder)
-    label_paths = get_file_paths(in_label_folder)
+    label_paths = get_file_paths(in_label_folder) if in_label_folder != None else len(img_paths)*[None]
     mask_paths = get_file_paths(in_mask_folder) if in_mask_folder != None else len(img_paths)*[None]
     try:
         assert len(img_paths) == len(label_paths) == len(mask_paths)#
@@ -190,6 +190,7 @@ def save_original_image_results(
         logger.error('The number of files does not match.')
         logger.error(f'There are {len(img_paths)} images, {len(label_paths)} label files and {len(mask_paths)} mask images.')
         return 0
+
     bbavector_dataset_utils = BBAVectorDatasetUtils(tasks=tasks,
         input_h=input_h,
         input_w=input_w,
@@ -198,10 +199,9 @@ def save_original_image_results(
         augmentation=False)
 
     for img_path, label_path, mask_path in tqdm(zip(img_paths,label_paths,mask_paths), total=len(img_paths)):
-        # start = time.time()
-        # Check if label and image names match
-        img_name = img_path.stem
+
         # Image
+        img_name = img_path.stem
         img = cv2.imread(str(img_path))
 
         # Labels
@@ -218,13 +218,9 @@ def save_original_image_results(
         patch_dict['det_labels'] = []
         patch_dict['masks'] = []
 
-        # time_1 = time.time()
-        # print(f"patch_dict is initiated in {time_1-start} secs")
         for patch_img,patch_labels in zip(patch_dict['images'],patch_dict['labels']):
             # Pass every patch to model
             # Data dict
-
-
             image_h, image_w, c = patch_img.shape
             annotation = bbavector_dataset_utils.prepare_annotations(patch_labels, image_w, image_h)#, img_path)
             patch_img, annotation = bbavector_dataset_utils.data_transform(patch_img, annotation, bbavector_dataset_utils.augmentation)
@@ -246,7 +242,6 @@ def save_original_image_results(
                 patch_dict['masks'].append(save_dict["mask"])
                 del save_dict["mask"]
             patch_dict['det_labels'].append(save_dict)
-
 
         # Merge patch results into original results standards
         merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)

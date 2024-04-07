@@ -15,10 +15,6 @@ def get_patches(
     truncated_object_thr,
     patch_size,
     patch_overlap,
-    # include_object_classes,
-    # exclude_object_classes,
-    label_file_exist = True,
-    mask = None,
     ):
     """
     Produce patches from the original image using the labels. 
@@ -36,13 +32,6 @@ def get_patches(
         Patch size
     patch_overlap : int
         Patch overlap
-    include_object_classes: list[str]
-        A list of object class names that shall be included as ground truth for the patches. 
-        Takes precedence over exclude_object_classes, i.e. if both are provided, 
-        only include_object_classes will be considered.
-    exclude_object_classes: list[str]
-        A list of object class names that shall be excluded as ground truth for the patches.
-        include_object_classes takes precedence and overrides the behaviour of this parameter.
     mask : np.ndarray
         Mask Image
     Returns
@@ -66,10 +55,12 @@ def get_patches(
     x_start_coords =  get_patch_start_coords(x_max_padded,patch_size,patch_overlap)
     patch_start_coords = [[x,y] for x in x_start_coords for y in y_start_coords]
 
+    # Check of label file exists
+    label_file_exist = gt_labels != None
     # Init patch dictionary
     patch_dict = {
         'images':[np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in range(len(patch_start_coords))],
-        'labels':[init_satellitepy_label() if label_file_exist else None for _ in range(len(patch_start_coords))], # label_key:[] for label_key in gt_labels.keys()
+        'labels':[init_satellitepy_label() for _ in range(len(patch_start_coords))],
         'start_coords': patch_start_coords,
     }
 
@@ -84,14 +75,6 @@ def get_patches(
                 hbb_defined = hbbox != None
                 obb_defined = obbox != None
 
-                class_targets = [gt_labels['coarse-class'][j], gt_labels['fine-class'][j], gt_labels['very-fine-class'][j]]
-                # if not all([
-                #     is_valid_object_class(
-                #         ct, include_object_classes, exclude_object_classes
-                #     ) for ct in class_targets]
-                # ):
-                #     continue
-
                 if hbb_defined and obb_defined:
                     shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr, consider_additional=True)
 
@@ -101,8 +84,7 @@ def get_patches(
                 elif obb_defined:
                     shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr)
                 else:
-                    logger.error('Error reading bounding boxes! No bounding boxes found')
-                    exit(1)
+                    logger.error('No bounding boxes found!')
     return patch_dict
     
 def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, truncated_object_thr, consider_additional=False, additional='hbboxes'):

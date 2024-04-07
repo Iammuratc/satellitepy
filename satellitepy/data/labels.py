@@ -11,12 +11,13 @@ import numpy as np
 
 from satellitepy.data.bbox import BBox
 
+logger = logging.getLogger(__name__)
 def read_label(label_path,label_format, mask_path = None):
-    logger = logging.getLogger(__name__)
-
     if isinstance(label_path,Path):
         label_path = str(label_path)
-    if label_format=='dota' or label_format=='DOTA':
+    if label_path == None:
+        return None
+    elif label_format=='dota' or label_format=='DOTA':
         return read_dota_label(label_path,mask_path)
     elif label_format=='fair1m':
         return read_fair1m_label(label_path)
@@ -39,16 +40,12 @@ def read_label(label_path,label_format, mask_path = None):
     elif label_format == 'xview':
         logger.info('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
               ' Then pass label_format as satellitepy for those labels.')
-        exit(1)
     elif label_format == 'isprs':
         return read_isprs_label(label_path)
-    # elif label_format == "results":
-    #     return read_result_label(label_path)
     elif label_format == "vedai":
         return read_vedai_label(label_path)
     else:
-        logger.info('---Label format is not defined---')
-        exit(1)
+        logger.error('Label format is not defined!')
 
 def get_all_satellitepy_keys():
     """

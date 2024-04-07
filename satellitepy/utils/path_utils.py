@@ -15,6 +15,21 @@ def get_project_folder():
     project_folder = Path(__file__).resolve(strict=True).parent.parent.parent
     return project_folder    
 
+def get_default_log_config():
+    """
+    Get default log config
+    Returns
+    -------
+    log_config_path : Path
+    Default log config path. project_folder/configs/log.config
+    """
+    project_folder = get_project_folder() 
+    config_dir = project_folder / "configs" 
+    assert create_folder(config_dir)
+    log_config_path = config_dir / "log.config"  
+    return log_config_path
+
+
 def get_default_log_path(log_file_name):
     """
     Get default log path 
