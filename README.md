@@ -70,4 +70,4 @@ The prediction-ground truth, i.e., result, files will be stored under `<satellit
 python tools/data/display_results_on_images.py --in-image-dir <fair1m-dir>/val/images --in-result-dir <result-dir>/result_labels --in-mask-dir <result-dir>/result_labels/result_masks/ --out-dir <result-dir>/result_labels/all_results_on_images
  ```
 
-Note: Please let me know if you are ready to download the Fair1M dataset and the model weights. They will be uploaded when requested, because, unfortunately, it is not allowed to store big data longer than 15 days on our university servers.
+<!-- Note: Please let me know if you are ready to download the Fair1M dataset and the model weights. They will be uploaded when requested, because, unfortunately, it is not allowed to store big data longer than 15 days on our university servers. -->
