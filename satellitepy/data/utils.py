@@ -1,10 +1,43 @@
 import cv2
 import numpy as np
+import rasterio
 from satellitepy.data.bbox import BBox
 from scipy.ndimage import generate_binary_structure, label, find_objects
 
 from satellitepy.data.bbox import BBox
+import logging
 
+logger = logging.getLogger(__name__)
+
+
+
+def read_img(img_path, module='cv2'):
+    """
+    Read image.
+    Parameters
+    ----------
+    img_path : str
+        Image path
+    module : str
+        Use this module to read the image. rasterio is suggested for large TIF images
+    Returns
+    -------
+    img : np.ndarray
+        Image in the opencv format,  (rows, columns, bands). If image has four bands, the alpha channel is ignored. 
+    """
+
+    if module == 'cv2':
+        img = cv2.imread(img_path)
+    elif module == 'rasterio':
+        with rasterio.open(img_path) as src:
+            # Read the image as a numpy array
+            img_array = src.read()
+            # Swap and reorder channels from RGBA to BGR
+            img = np.transpose(img_array, axes=(1, 2, 0))[:, :, [2, 1, 0]]
+    else:
+        logger.error(f'{module} is not a valid argument!')
+        return 0
+    return img
 def set_mask(labels,mask_path,bbox_type, mask_type):
     """
     Set the masks key in the satellitepy dict by using the bboxes in the dict

@@ -92,8 +92,6 @@ def save_patches(
         truncated_object_thr,
         patch_size,
         patch_overlap,
-        include_object_classes,
-        exclude_object_classes,
         mask_folder=None
 ):
     """
@@ -170,8 +168,6 @@ def save_patches(
         count_patches = len(patches['images'])
         logger.info(f'Number of patches: {count_patches}')
         for i in range(count_patches):
-            # if satellitepy_labels_empty(patches["labels"][i]):
-            #     continue
 
             # Get original image name for naming patch files
             img_name = img_path.stem
