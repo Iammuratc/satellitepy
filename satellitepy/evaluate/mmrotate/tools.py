@@ -196,7 +196,7 @@ def save_mmrotate_original_results(
         # Merge patch results into original results standards
         merged_det_labels, mask = merge_patch_results(patch_dict,patch_size,shape=img.shape[0:2])
 
-        merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_on_multiclass_thr)
+        # merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_on_multiclass_thr)
 
         # Find matches of original image with merged patch results
         matches = match_gt_and_det_bboxes(gt_labels,merged_det_labels)

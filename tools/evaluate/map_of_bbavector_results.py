@@ -29,6 +29,8 @@ def get_args():
         'confidence score than this threshold, the object will be ignored. Default value is range(0,1.01,0.05).')
     parser.add_argument('--iou-thresholds', default=None, type=str, help='Iou thresholds. Default value is range(0.5,0.96,0.05)')
     parser.add_argument('--plot-pr', default=False, type=bool, help='Plot the PR curve.')
+    parser.add_argument('--nms-iou-thresh', type=float, default=0.3,
+                        help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
     parser.add_argument('--log-config-path', default=None, help='Log config file.')
     parser.add_argument('--log-path', default=None, help='Log will be saved here.')
     args = parser.parse_args()
@@ -50,6 +52,8 @@ def main(args):
     out_folder = Path(args.out_folder)
     task = args.task
     assert create_folder(out_folder)
+
+    nms_iou_thresh = args.nms_iou_thresh
     
     # Init logger
     init_logger(config_path=log_config_path, log_path=log_path)
@@ -66,7 +70,9 @@ def main(args):
         iou_thresholds,
         out_folder,
         plot_pr,
-        ignore_other_instances)
+        nms_iou_thresh,
+        ignore_other_instances
+        )
 
 if __name__ == '__main__':
     args = get_args()

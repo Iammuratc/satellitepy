@@ -42,6 +42,9 @@ def main(args):
     out_folder = Path(args.out_folder)
     task = args.task
     assert create_folder(out_folder)
+
+    nms_iou_thresh = args.nms_iou_thresh
+
     # Init logger
     log_path = Path(
         out_folder) / 'evaluations.log' if args.log_path == None else args.log_path
@@ -57,6 +60,7 @@ def main(args):
         task,
         conf_score_threshold,
         iou_thresholds,
+        nms_iou_thresh,
         out_folder
     )
 

@@ -36,8 +36,8 @@ def get_args():
         help='Folder of original mask images. The mask images in this folder will be used to set mask pixel coordinates in out labels.')
     parser.add_argument('--out-folder', help='Save folder of detected bounding boxes. Predictions will be saved into <out-folder>.')
     parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
-    parser.add_argument('--conf-thresh', type=float, default=0.18, help='Confidence threshold, 0.1 for general evaluation')
-    parser.add_argument('--nms-iou-thresh', type=float, default=0.3, help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
+    parser.add_argument('--conf-thresh', type=float, default=0.05, help='Confidence threshold, 0.05 for general evaluation')
+    # parser.add_argument('--nms-iou-thresh', type=float, default=0.3, help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
     parser.add_argument('--log-path', type=Path,
                         help='Log will be saved here. Default value is <out-folder>/evaluations.log')
     args = parser.parse_args()
@@ -72,7 +72,7 @@ def main(args):
     patch_overlap = args.patch_overlap
     patch_size = args.patch_size
     truncated_object_threshold = args.truncated_object_thresh
-    nms_iou_threshold = args.nms_iou_thresh
+    # nms_iou_threshold = args.nms_iou_thresh
 
     assert create_folder(out_folder)
     # Initiate logger
@@ -107,7 +107,7 @@ def main(args):
         input_h=input_h,
         input_w=input_w,
         down_ratio = down_ratio,
-        nms_iou_threshold=nms_iou_threshold,
+        # nms_iou_threshold=nms_iou_threshold,
         target_task=target_task)
         # nms_on_multiclass_thr)
 

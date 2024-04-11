@@ -113,7 +113,7 @@ def save_patch_results(
             input_w,
             down_ratio
             )
-        save_dict = apply_nms(save_dict)
+        # save_dict = apply_nms(save_dict)
 
 
         if in_label_folder:
@@ -155,7 +155,7 @@ def save_original_image_results(
     conf_thresh,
     down_ratio,
     K,
-    nms_iou_threshold,
+    # nms_iou_threshold,
     target_task='coarse-class'
     ):
 
@@ -247,7 +247,7 @@ def save_original_image_results(
         merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
         # merged_det_labels = merge_patch_results(patch_dict, patch_size, img.shape)
         # print(list(merged_det_labels.keys()))
-        merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_iou_threshold, target_task=target_task)
+        # merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_iou_threshold, target_task=target_task)
 
         # Find matches of original image with merged patch results
         matches = match_gt_and_det_bboxes(gt_labels,merged_det_labels)

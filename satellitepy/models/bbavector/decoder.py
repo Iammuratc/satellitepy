@@ -111,7 +111,7 @@ class DecDecoder(object):
         idx_1d = (scores>self.conf_thresh).squeeze(0)
         all_scores = all_scores[0, :, :].T
         result = {
-            self.target_task: all_scores[idx_1d, :].cpu().numpy()
+            self.target_task: all_scores[idx_1d, :].cpu().numpy().tolist()
         }
 
         if "obboxes" in self.tasks:
@@ -144,10 +144,10 @@ class DecDecoder(object):
                 result[k[:4]] = v.squeeze(0).squeeze(0).cpu().numpy()
             # classification -> we save the confidence scores for each class
             elif k[:3] == "cls":
-                result[k[4:]] = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy()
+                result[k[4:]] = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy().tolist()
             # regression -> there is only one value, we squeeze
             else:
                 det = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy()
-                result[k[4:]] = untorchify_continuous_values(k, det)
+                result[k[4:]] = untorchify_continuous_values(k, det).tolist()
 
         return result

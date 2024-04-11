@@ -4,6 +4,7 @@ import numpy as np
 # from torch import Tensor
 # from typing import Optional, Tuple
 import torch
+from satellitepy.evaluate.bbavector.utils import apply_nms
 
 from satellitepy.data.utils import get_task_dict, get_satellitepy_dict_values
 
@@ -55,6 +56,7 @@ def set_conf_mat_from_result(
     instance_names,
     conf_score_thresholds,
     iou_thresholds,
+    nms_iou_thresh,
     ignore_other_instances):
 
     ignored_instances_ret = []
@@ -64,8 +66,10 @@ def set_conf_mat_from_result(
     idx2name = {v: k for k, v in task_dict.items()}
     taskResult = get_satellitepy_dict_values(result['gt_labels'], task)
 
-    detResults = np.argmax(result['det_labels'][task], axis=1) if len(result['det_labels'][task]) > 0 else []
-    confScores = np.max(result['det_labels'][task], axis=1) if len(result['det_labels'][task]) > 0 else []
+    det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=task)
+
+    det_inds = np.argmax(det_results[task], axis=1) if len(result['det_labels'][task]) > 0 else []
+    confScores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
 
     if len(taskResult) == 0:
         return conf_mat
@@ -93,7 +97,7 @@ def set_conf_mat_from_result(
                 if det_gt_instance_name is None:
                     continue
 
-                det_name = str(idx2name[detResults[i_conf_score]])
+                det_name = str(idx2name[det_inds[i_conf_score]])
 
                 if ignore_other_instances and det_name not in instance_names:
                     ignored_cnt+=1
