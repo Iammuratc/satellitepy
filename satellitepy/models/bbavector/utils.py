@@ -3,7 +3,7 @@ import torch
 import logging
 import numpy as np
 
-from satellitepy.models.bbavector import ctrbox_net
+from satellitepy.models.bbavector import ctrbox_net, decoder
 from satellitepy.data.utils import get_task_dict
 from satellitepy.data.bbox import BBox
 
@@ -134,3 +134,10 @@ def decode_hbboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
         pts[:, 1] = pts[:, 1] * down_ratio / input_h * orig_h
         points.append(pts)
     return points
+
+
+def get_model_decoder(tasks, K, conf_thresh, target_task):
+    model_decoder = decoder.DecDecoder(K=K,
+        conf_thresh=conf_thresh,
+        tasks=tasks, target_task=target_task)
+    return model_decoder
