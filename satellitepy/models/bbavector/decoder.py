@@ -108,6 +108,7 @@ class DecDecoder(object):
         heat = pr_decs['cls_' + self.target_task]
         scores, all_scores, idx_2d, target, _, _ = self._topk(heat)
         all_scores = all_scores[0, :, :].T
+        all_scores_T = torch.round(all_scores, decimals=3).cpu().numpy()
         result = {
             self.target_task: all_scores.cpu().numpy().tolist()
         }
