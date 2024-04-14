@@ -95,7 +95,9 @@ class CTRBOX(nn.Module):
                 dec_dict[head] = self.__getattr__(head)(seg_combine)
             else:
                 dec_dict[head] = self.__getattr__(head)(c2_combine)
-            if head[:4] == "cls_" or head == "masks" or head == "obboxes_theta":
-                dec_dict[head] = nn.functional.softmax(torch.sigmoid(dec_dict[head]))
+            if head[:4] == "cls_":
+                dec_dict[head] = nn.functional.softmax(torch.sigmoid(dec_dict[head]), dim=1)
+            elif head == "masks" or head == "obboxes_theta":
+                dec_dict[head] = torch.sigmoid(dec_dict[head])
 
         return dec_dict
