@@ -3,9 +3,43 @@ import torch
 import logging
 import numpy as np
 
+from satellitepy.models.bbavector import ctrbox_net, decoder
+from satellitepy.data.utils import get_task_dict
 from satellitepy.data.bbox import BBox
 
 logger = logging.getLogger(__name__)
+
+def get_model(tasks,down_ratio):
+    heads = {#'hm': num_classes, # heatmap
+             #'reg_wh': 10, # box param
+             #'reg_bb_offset': 2, # offset
+             #'cls_theta': 1 # orientation
+             }
+
+    for task in tasks:
+        if task == "obboxes":
+            heads["obboxes_params"] = 10
+            heads["obboxes_offset"] = 2
+            heads["obboxes_theta"] = 1
+        elif task == "hbboxes":
+            heads["hbboxes_params"] = 2
+            heads["hbboxes_offset"] = 2
+        elif task == "masks":
+            heads[task] = 1
+        else:
+            td = get_task_dict(task)
+            if 'max' and 'min' in td.keys():
+                heads["reg_" + task] = 1
+            else:
+                heads["cls_" + task] = len(set(td.values()))
+
+    model = ctrbox_net.CTRBOX(heads=heads,
+                              pretrained=True,
+                              down_ratio=down_ratio,
+                              final_kernel=1,
+                              head_conv=256)
+    return model
+
 
 def save_model(path, epoch, model, optimizer):
     if isinstance(model, torch.nn.DataParallel):
@@ -19,9 +53,18 @@ def save_model(path, epoch, model, optimizer):
         # 'loss': loss
     }, path)
 
-def load_checkpoint(model, checkpoint_path, init_lr=1e-3):
+def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3):
     checkpoint = torch.load(checkpoint_path)
     logger.info('loaded weights from {}, epoch {}'.format(checkpoint_path, checkpoint['epoch']))
+
+    keys = checkpoint['model_state_dict'].keys()
+    bbox_keys = list(set([key[:7] for key in keys if 'bboxes' in key]))
+    cls_keys = list(set([key[4:].split('.')[0] for key in keys if 'cls_' in key]))
+    reg_keys = list(set([key[4:].split('.')[0] for key in keys if 'reg_' in key]))
+    mask_key = list(set([key.split('.')[0] for key in keys if 'masks' in key]))
+    all_keys = bbox_keys + cls_keys + reg_keys + mask_key
+
+    model = get_model(all_keys,down_ratio)
 
     if isinstance(model, torch.nn.DataParallel):
         model.module.load_state_dict(checkpoint['model_state_dict'])
@@ -91,3 +134,9 @@ def decode_hbboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
         pts[:, 1] = pts[:, 1] * down_ratio / input_h * orig_h
         points.append(pts)
     return points
+
+
+def get_model_decoder(tasks, K, target_task):
+    model_decoder = decoder.DecDecoder(K=K,
+        tasks=tasks, target_task=target_task)
+    return model_decoder
