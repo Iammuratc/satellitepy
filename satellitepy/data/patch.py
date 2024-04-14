@@ -100,7 +100,7 @@ def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_co
 
             mask_shifted[0][mask_shifted[0] >= patch_size] = patch_size - 1
             mask_shifted[1][mask_shifted[1] >= patch_size] = patch_size - 1
-            patch_dict['labels'][i]['masks'][-1] = mask_shifted
+            patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
         if consider_additional:
             bbox_corners_shifted = np.array(patch_dict['labels'][i][additional][-1]) - [x_0, y_0]
             patch_dict['labels'][i][additional][-1] = bbox_corners_shifted.tolist()

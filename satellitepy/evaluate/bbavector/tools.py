@@ -19,8 +19,6 @@ import logging
 from pathlib import Path
 import json 
 import numpy as np
-# from mmcv.ops import nms_rotated, nms
-# import time
 
 def save_patch_results(
     out_folder,
@@ -94,7 +92,7 @@ def save_patch_results(
 
 
     # Create result patch folder
-    patch_result_folder = Path(out_folder) / 'results' / 'patch_labels'
+    patch_result_folder = Path(out_folder) / 'results' / 'predictions'
     assert create_folder(patch_result_folder)
 
     if "masks" in tasks:
@@ -162,11 +160,11 @@ def save_original_image_results(
     logger = logging.getLogger(__name__)
 
     # Create result folders
-    result_folder = Path(out_folder) / 'results' / 'result_labels'
+    result_folder = Path(out_folder) / 'results' / 'predictions'
     assert create_folder(result_folder)
 
     if "masks" in tasks:
-        mask_folder = Path(out_folder) / 'results' / 'result_masks'
+        mask_folder = Path(out_folder) / 'results' / 'masks'
         assert create_folder(mask_folder)
 
     # Model

@@ -125,7 +125,7 @@ def save_patches(
         include_object_classes takes precedence and overrides the behaviour of this parameter.
     Returns
     -------
-    Save patches in <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
+    Save patches in <out-folder>/images and <out-folder>/labels
     """
     logger = logging.getLogger(__name__)
 
@@ -164,10 +164,7 @@ def save_patches(
             gt_labels,
             truncated_object_thr,
             patch_size,
-            patch_overlap,
-            # include_object_classes,
-            # exclude_object_classes,
-            label_path is not None
+            patch_overlap
         )
 
         count_patches = len(patches['images'])
@@ -187,6 +184,7 @@ def save_patches(
             patch_image_path = Path(out_image_folder) / f"{label_format}_{img_name}_x_{patch_x0}_y_{patch_y0}.png"
 
             patch_label = patches['labels'][i]
+            print(patch_label)
             if patch_label is None or len(patch_label['hbboxes']) != 0:
                 cv2.imwrite(str(patch_image_path), patch_img)
 

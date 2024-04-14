@@ -13,6 +13,7 @@ import logging
 def get_args():
     """Arguments parser."""
     parser = configargparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--config', is_config_file=True, help='Path to the configuration file')
     parser.add_argument('--weights-path',  help='Path to BBAVector model weights file.')
     parser.add_argument('--num-workers', type=int, default=4, help='Number of workers')
     parser.add_argument('--input-h', type=int, default=600, help='Resized image height. Equivalent of patch height.')
@@ -36,25 +37,37 @@ def get_args():
         help='Folder of original mask images. The mask images in this folder will be used to set mask pixel coordinates in out labels.')
     parser.add_argument('--out-folder', help='Save folder of detected bounding boxes. Predictions will be saved into <out-folder>.')
     parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
-    parser.add_argument('--conf-thresh', type=float, default=0.05, help='Confidence threshold, 0.05 for general evaluation')
-    # parser.add_argument('--nms-iou-thresh', type=float, default=0.3, help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
-    parser.add_argument('--log-path', type=Path,
-                        help='Log will be saved here. Default value is <out-folder>/evaluations.log')
-    args = parser.parse_args()
-    return args
+    parser.add_argument('--conf-thresh', type=float, default=0.05, help='Confidence threshold, 0.1 for general evaluation')
+    parser.add_argument('--log-path', type=Path, default=None, help='Log will be saved here.')
+    return parser
 
 
-def main(args):
+def main(parser):
     """Application entry point."""
+    args = parser.parse_args()
+
+    out_folder = Path(args.out_folder)
+    assert create_folder(out_folder)
+
 
     # Logger configs
     log_config_path = get_default_log_config() if args.log_config_path==None else Path(args.log_config_path)
     log_path = get_default_log_path(Path(__file__).resolve().stem) if args.log_path==None else Path(args.log_path)
 
+    # Initiate logger
+    init_logger(config_path=log_config_path,log_path=log_path)
+    logger = logging.getLogger(__name__)
+    logger.info('BBAVector model will process the images...')
+    logger.info(f'Log will be stored at: {log_path}')
+
+    # configargparse config
+    config_path = out_folder / f"{Path(__file__).resolve().stem}.ini"
+    parser.write_config_file(args, [str(config_path)])
+    logger.info(f"Configs will be stored at {config_path}")
+
+    # Model arguments
     weights_path = args.weights_path
-    # nms_on_multiclass_thr = args.nms_on_multiclass_thr
     device = args.device
-    out_folder = Path(args.out_folder)
     in_image_folder = Path(args.in_image_folder)
         
     in_label_format = args.in_label_format
@@ -72,14 +85,7 @@ def main(args):
     patch_overlap = args.patch_overlap
     patch_size = args.patch_size
     truncated_object_threshold = args.truncated_object_thresh
-    # nms_iou_threshold = args.nms_iou_thresh
 
-    assert create_folder(out_folder)
-    # Initiate logger
-    init_logger(config_path=log_config_path,log_path=log_path)
-    logger = logging.getLogger(__name__)
-    logger.info('BBAVector model will process the images...')
-    logger.info(f'Log will be stored at: {log_path}')
 
     in_label_folder = Path(args.in_label_folder) if args.in_label_folder else None
     if not in_label_folder:
@@ -107,7 +113,6 @@ def main(args):
         input_h=input_h,
         input_w=input_w,
         down_ratio = down_ratio,
-        # nms_iou_threshold=nms_iou_threshold,
         target_task=target_task)
         # nms_on_multiclass_thr)
 

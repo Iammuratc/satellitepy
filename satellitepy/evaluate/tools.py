@@ -66,15 +66,6 @@ def calculate_map(
     pr_threshold_ind = 0
     precision, recall = get_precision_recall(conf_mat,sort_values=True)
     with np.printoptions(threshold=np.inf):
-        # logger.info('Confusion matrix:')
-        # logger.info(conf_mat)
-        # logger.info(50*'-')
-        # logger.info(f'Precision at all confidence score thresholds and iuo threshold = {iou_thresholds[pr_threshold_ind]}')
-        # logger.info(precision[pr_threshold_ind,:])
-        # logger.info(50 * '-')
-        # logger.info(f'Recall at all confidence score thresholds and iou threshold = {iou_thresholds[pr_threshold_ind]} ')
-        # logger.info(recall[pr_threshold_ind,:])
-        # logger.info(50 * '-')
         logger.info('AP')
         ap = get_average_precision(precision,recall)
         logger.info(ap)
@@ -83,6 +74,11 @@ def calculate_map(
         logger.info(mAP)
         if ignore_other_instances:
             logger.info(f'ignored {ignored_cnt} other instances. Ignored instance names: {set(ignored_instances)}')
+
+        evaluation_file_path = out_folder / 'mAP_values.txt'
+        with open(evaluation_file_path, 'w') as file:
+            np.savetxt(file, ap, fmt='%.2f', delimiter=',', header=f'AP (Columns: {instance_names}, Rows: IoUs {iou_thresholds}):')
+            np.savetxt(file, mAP, fmt='%.2f', delimiter=',', header=f'mAP (Columns: {iou_thresholds}):')
 
     if plot_pr:
         precision_recall_curve(out_folder, precision[pr_threshold_ind,:], recall[pr_threshold_ind,:])

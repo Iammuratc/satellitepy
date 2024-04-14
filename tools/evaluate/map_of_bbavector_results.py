@@ -33,14 +33,30 @@ def get_args():
                         help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
     parser.add_argument('--log-config-path', default=None, help='Log config file.')
     parser.add_argument('--log-path', default=None, help='Log will be saved here.')
-    args = parser.parse_args()
-    return args
+    return parser
 
-def main(args):
+
+def main(parser):
     """Application entry point."""
+    args = parser.parse_args()
+
+    out_folder = Path(args.out_folder)
+    assert create_folder(out_folder)
+
     # Logger configs
     log_config_path = get_default_log_config() if args.log_config_path==None else Path(args.log_config_path)
     log_path = get_default_log_path(Path(__file__).resolve().stem) if args.log_path==None else Path(args.log_path)
+
+    # Initiate logger
+    init_logger(config_path=log_config_path,log_path=log_path)
+    logger = logging.getLogger(__name__)
+    logger.info('mAP values will be calculated...')
+    logger.info(f'Log will be stored at: {log_path}')
+
+    # configargparse config
+    config_path = out_folder / f"{Path(__file__).resolve().stem}.ini"
+    parser.write_config_file(args, [str(config_path)])
+    logger.info(f"Configs will be stored at {config_path}")
 
     # Init arguments
     in_result_folder = Path(args.in_result_folder)
@@ -54,12 +70,6 @@ def main(args):
     assert create_folder(out_folder)
 
     nms_iou_thresh = args.nms_iou_thresh
-    
-    # Init logger
-    init_logger(config_path=log_config_path, log_path=log_path)
-    logger = logging.getLogger(__name__)
-    logger.info(f'Log will be stored at: {log_path}')
-    logger.info('Saving patches from original images...')
 
     # Calculate mAP
     calculate_map(
