@@ -66,6 +66,8 @@ def set_conf_mat_from_result(
     idx2name = {v: k for k, v in task_dict.items()}
     taskResult = get_satellitepy_dict_values(result['gt_labels'], task)
 
+    result = remove_low_conf_results(result, task, conf_score_thresholds[0])
+
     det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=task)
 
     det_inds = np.argmax(det_results[task], axis=1) if len(result['det_labels'][task]) > 0 else []
@@ -260,3 +262,29 @@ def get_ious(bboxes_1,bboxes_2):
             ious[i,j] = iou
 
     return ious
+
+
+def remove_low_conf_results(results, task, conf_score):
+    if conf_score is 0:
+        return results
+
+    confScores = np.max(results['det_labels'][task], axis=1)
+    idx = np.argwhere(confScores > conf_score)
+
+    filtered_results = {
+        'det_labels': {},
+        'matches': {
+            'iou': {
+                'scores': [],
+                'indexes': []
+            }
+        }
+    }
+
+    for key in results['det_labels'].keys():
+        filtered_results['det_labels'][key] = results['det_labels'][key][idx]
+
+    filtered_results['matches']['iou']['scores'] = results['matches']['iou']['scores'][idx]
+    filtered_results['matches']['iou']['indexes'] = results['matches']['iou']['indexes'][idx]
+
+    return filtered_results

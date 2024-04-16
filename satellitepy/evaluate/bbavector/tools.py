@@ -229,7 +229,8 @@ def save_original_image_results(
 
             if 'masks' in tasks:
                 patch_dict['masks'].append(save_dict["mask"])
-                del save_dict["mask"]
+            if 'mask' in save_dict.keys():
+                del save_dict['mask']
             patch_dict['det_labels'].append(save_dict)
 
         # Merge patch results into original results standards
