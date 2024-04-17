@@ -62,8 +62,8 @@ def main(parser):
     in_result_folder = Path(args.in_result_folder)
     instance_names = [instance_name for instance_name in args.instance_names.split(',')]
     ignore_other_instances = args.ignore_other_instances
-    iou_thresholds = [float(iou_threshold) for iou_threshold in args.iou_thresholds.split(',')] if args.iou_thresholds != None else [x / 100.0 for x in range(50, 96, 5)]
-    conf_score_thresholds = [float(confidence_score_threshold) for confidence_score_threshold in args.confidence_score_thresholds.split(',')] if args.confidence_score_thresholds != None else [x / 100.0 for x in range(0.2, 96, 5)]
+    iou_thresholds = [float(iou_threshold) for iou_threshold in args.iou_thresholds.split(',')] if args.iou_thresholds != None else [x / 100.0 for x in range(20, 96, 5)]
+    conf_score_thresholds = [float(confidence_score_threshold) for confidence_score_threshold in args.confidence_score_thresholds.split(',')] if args.confidence_score_thresholds != None else [x / 100.0 for x in range(20, 96, 5)]
     plot_pr = args.plot_pr
     out_folder = Path(args.out_folder)
     task = args.task

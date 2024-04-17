@@ -265,11 +265,11 @@ def get_ious(bboxes_1,bboxes_2):
 
 
 def remove_low_conf_results(results, task, conf_score):
-    if conf_score is 0:
+    if conf_score == 0:
         return results
 
     confScores = np.max(results['det_labels'][task], axis=1)
-    idx = np.argwhere(confScores > conf_score)
+    idx = np.argwhere(confScores > conf_score).flatten()
 
     filtered_results = {
         'det_labels': {},
@@ -282,9 +282,9 @@ def remove_low_conf_results(results, task, conf_score):
     }
 
     for key in results['det_labels'].keys():
-        filtered_results['det_labels'][key] = results['det_labels'][key][idx]
+        filtered_results['det_labels'][key] = np.array(results['det_labels'][key])[idx]
 
-    filtered_results['matches']['iou']['scores'] = results['matches']['iou']['scores'][idx]
-    filtered_results['matches']['iou']['indexes'] = results['matches']['iou']['indexes'][idx]
+    filtered_results['matches']['iou']['scores'] = np.array(results['matches']['iou']['scores'])[idx]
+    filtered_results['matches']['iou']['indexes'] = np.array(results['matches']['iou']['indexes'])[idx]
 
     return filtered_results
