@@ -140,7 +140,7 @@ class DecDecoder(object):
             arr_val = self._tranpose_and_gather_feat(v, idx_2d)
 
             if k == "masks":
-                result[k[:4]] = v.squeeze(0).squeeze(0).cpu().numpy().tolist()
+                result[k[:4]] = v.squeeze(0).squeeze(0).cpu().numpy()
             # classification -> we save the confidence scores for each class
             elif k[:3] == "cls":
                 result[k[4:]] = arr_val.squeeze(0).cpu().numpy().tolist()
