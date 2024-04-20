@@ -181,7 +181,8 @@ class LossAll(torch.nn.Module):
                 self.tasks_losses[t + "_params"] = OffSmoothL1Loss()
                 self.tasks_losses[t + "_offset"] = OffSmoothL1Loss()
             elif t == target_task: # this is the heatmap loss
-                self.tasks_losses["cls_" + t] = FocalLoss() 
+                # self.tasks_losses["cls_" + t] = FocalLoss()
+             self.tasks_losses["cls_" + t] = CELoss()
             else:
                 td = get_task_dict(t)
                 if 'max' in td.keys() and 'min' in td.keys():
