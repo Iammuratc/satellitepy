@@ -168,11 +168,22 @@ class FocalLoss(nn.Module):
     #     return loss
 
     def forward(self, pred, gt):
-        ce_loss = F.cross_entropy(pred, gt, reduction='none')
-        pt = torch.exp(-ce_loss)
-        focal_loss = ((1 - pt) ** self.gamma * self.alpha * ce_loss).mean()
+        pos_idx = gt.eq(1).float().sum(axis=1)
+        neg_idx = gt.lt(1).float().sum(axis=1)
 
-        return focal_loss
+        pos_sum = pos_idx.sum()
+        neg_sum = neg_idx.sum()
+
+        neg_weights = torch.pow(1 - gt, 4).sum(axis=1)
+
+        ce_loss = F.cross_entropy(pred, gt, reduction='none')
+
+        pos_loss = (ce_loss * pos_idx).sum() / pos_sum
+        neg_loss = (ce_loss * neg_idx * neg_weights).sum() / neg_sum
+
+        loss = pos_loss + neg_loss
+
+        return loss
 
 
 def isnan(x):
