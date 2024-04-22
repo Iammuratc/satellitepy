@@ -1,6 +1,7 @@
 import numpy
 import torch.nn.functional as F
 import torch
+import numpy as np
 
 from satellitepy.data.torchify import untorchify_continuous_values
 
@@ -14,8 +15,16 @@ class DecDecoder(object):
 
     def _topk(self, scores):
         batch, cat, height, width = scores.size()
+        scores = scores.view(batch, cat, -1)
 
-        topk_scores, topk_inds = torch.topk(scores.view(batch, cat, -1), self.K)
+        own_topk_scores, own_topk_inds = torch.topk(scores[0, :, :].flatten(), self.K)
+        own_inds = np.array(np.unravel_index(own_topk_inds.cpu().numpy(), scores.shape[1:])).T
+        y = own_inds[:, 1]
+
+        # implementation without numpy, check again with proper predictions
+        y2 = own_topk_inds // cat
+
+        topk_scores, topk_inds = torch.topk(scores, self.K)
 
         topk_inds = topk_inds % (height * width)
         topk_ys = (topk_inds // width).int().float()
@@ -27,7 +36,9 @@ class DecDecoder(object):
         topk_ys = self._gather_feat(topk_ys.view(batch, -1, 1), topk_ind).view(batch, self.K)
         topk_xs = self._gather_feat(topk_xs.view(batch, -1, 1), topk_ind).view(batch, self.K)
 
-        return topk_score, topk_scores, topk_inds, topk_clses, topk_ys, topk_xs
+        full_scores = scores[0, :, y]
+
+        return topk_score, full_scores, topk_inds, topk_clses, topk_ys, topk_xs
 
 
     def _nms(self, heat, kernel=3):
@@ -107,10 +118,8 @@ class DecDecoder(object):
     def ctdet_decode(self, pr_decs):
         heat = pr_decs['cls_' + self.target_task]
         scores, all_scores, idx_2d, target, _, _ = self._topk(heat)
-        all_scores = all_scores[0, :, :].T
-        all_scores_T = torch.round(all_scores, decimals=3).cpu().numpy()
         result = {
-            self.target_task: all_scores.cpu().numpy().tolist()
+            self.target_task: all_scores.cpu().numpy().T.tolist()
         }
 
         if "obboxes" in self.tasks:

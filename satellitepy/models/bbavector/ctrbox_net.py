@@ -60,7 +60,7 @@ class CTRBOX(nn.Module):
                                    nn.ReLU(inplace=True),
                                    nn.Conv2d(head_conv, classes, kernel_size=final_kernel, stride=1, padding=final_kernel // 2, bias=True))
             if head[:4] == "cls_":
-                fc[-1].bias.data.fill_(-2.19)
+                fc[-1].bias.data.fill_(0.)
             else:
                 self.fill_fc_weights(fc)
 
