@@ -70,7 +70,7 @@ def calculate_map(
         ap = get_average_precision(precision,recall)
         logger.info(ap)
         logger.info('mAP')
-        mAP = np.sum(np.transpose(np.transpose(ap)[:-1]), axis=1)/(len(ap[0])-1)
+        mAP = np.sum(np.transpose(np.transpose(ap)[:-1]), axis=1)/(len(ap[0]))
         logger.info(mAP)
         if ignore_other_instances:
             logger.info(f'ignored {ignored_cnt} other instances. Ignored instance names: {set(ignored_instances)}')
