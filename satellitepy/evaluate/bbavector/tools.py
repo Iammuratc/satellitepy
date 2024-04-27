@@ -1,7 +1,7 @@
 import cv2
 
 from satellitepy.evaluate.tools import calculate_map, calculate_relative_score, calculate_iou_score
-from satellitepy.models.bbavector.utils import get_model_decoder, load_checkpoint, decode_masks  # , collater
+from satellitepy.models.bbavector.utils import load_checkpoint, get_model_decoder  # , collater
 from satellitepy.dataset.bbavector.dataset_bbavector import BBAVectorDataset
 from satellitepy.dataset.bbavector.utils import Utils as BBAVectorDatasetUtils
 from satellitepy.data.tools import read_label
