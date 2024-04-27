@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -144,45 +145,27 @@ class FocalLoss(nn.Module):
         self.gamma = 2
         self.alpha = 0.25
 
-    # def forward(self, pred, gt):
-    #     pos_inds = gt.eq(1).float()
-    #     neg_inds = gt.lt(1).float()
-    #     # Simon 18/07/23: prevent log(0)
-    #     pred = torch.clamp(pred, min=EPSILON, max=1 - EPSILON)
-    #
-    #     neg_weights = torch.pow(1 - gt, 4)
-    #
-    #     loss = 0
-    #
-    #     pos_loss = torch.log(pred) * torch.pow(1 - pred, 2) * pos_inds
-    #     neg_loss = torch.log(1 - pred) * torch.pow(pred, 2) * neg_weights * neg_inds
-    #
-    #     num_pos = pos_inds.float().sum()
-    #     pos_loss = pos_loss.sum()
-    #     neg_loss = neg_loss.sum()
-    #
-    #     if num_pos == 0:
-    #         loss = loss - neg_loss
-    #     else:
-    #         loss = loss - (pos_loss + neg_loss) / num_pos
-    #     return loss
-
     def forward(self, pred, gt):
-        pos_idx = gt.eq(1).float().sum(axis=1)
-        neg_idx = gt.lt(1).float().sum(axis=1)
+        pos_inds = gt.eq(1).float()
+        neg_inds = gt.lt(1).float()
+        # Simon 18/07/23: prevent log(0)
+        pred = torch.clamp(pred, min=EPSILON, max=1 - EPSILON)
 
-        pos_sum = pos_idx.sum()
-        neg_sum = neg_idx.sum()
+        neg_weights = torch.pow(1 - gt, 4)
 
-        neg_weights = torch.pow(1 - gt, 4).sum(axis=1)
+        loss = 0
 
-        ce_loss = F.cross_entropy(pred, gt, reduction='none')
+        pos_loss = torch.log(pred) * torch.pow(1 - pred, 2) * pos_inds
+        neg_loss = torch.log(1 - pred) * torch.pow(pred, 2) * neg_weights * neg_inds
 
-        pos_loss = (ce_loss * pos_idx).sum() / pos_sum
-        neg_loss = (ce_loss * neg_idx * neg_weights).sum() / neg_sum
+        num_pos = pos_inds.float().sum()
+        pos_loss = pos_loss.sum()
+        neg_loss = neg_loss.sum()
 
-        loss = pos_loss + neg_loss
-
+        if num_pos == 0:
+            loss = loss - neg_loss
+        else:
+            loss = loss - (pos_loss + neg_loss) / num_pos
         return loss
 
 
@@ -210,7 +193,6 @@ class LossAll(torch.nn.Module):
                 self.tasks_losses[t + "_offset"] = OffSmoothL1Loss()
             elif t == target_task:  # this is the heatmap loss
                 self.tasks_losses["cls_" + t] = FocalLoss()
-            # self.tasks_losses["cls_" + t] = CELoss()
             else:
                 td = get_task_dict(t)
                 if 'max' in td.keys() and 'min' in td.keys():

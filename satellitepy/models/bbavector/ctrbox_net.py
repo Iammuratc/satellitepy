@@ -60,7 +60,7 @@ class CTRBOX(nn.Module):
                                    nn.ReLU(inplace=True),
                                    nn.Conv2d(head_conv, classes, kernel_size=final_kernel, stride=1, padding=final_kernel // 2, bias=True))
             if head[:4] == "cls_":
-                fc[-1].bias.data.fill_(0.)
+                fc[-1].bias.data.fill_(-2.19)
             else:
                 self.fill_fc_weights(fc)
 
@@ -95,9 +95,7 @@ class CTRBOX(nn.Module):
                 dec_dict[head] = self.__getattr__(head)(seg_combine)
             else:
                 dec_dict[head] = self.__getattr__(head)(c2_combine)
-            if head[:4] == "cls_":
-                dec_dict[head] = F.softmax(dec_dict[head], dim=1)
-            elif head == "masks" or head == "obboxes_theta":
+            if head[:4] == "cls_" or head == "masks" or head == "obboxes_theta":
                 dec_dict[head] = torch.sigmoid(dec_dict[head])
 
         return dec_dict
