@@ -102,8 +102,6 @@ def apply_nms(det_labels, nms_iou_threshold=0.5, target_task="coarse-class"):
     """
 
     save_dict = dict()
-    if "mask" in det_labels.keys():
-        save_dict["mask"] = det_labels["mask"]
 
     ###########
     bbox_params = [BBox(corners=corners).params for corners in det_labels["obboxes"]]
@@ -115,7 +113,7 @@ def apply_nms(det_labels, nms_iou_threshold=0.5, target_task="coarse-class"):
     # bbox_nms_inds = inds_nms[0]
     # print(f"After : {len(nms_inds)}")
     # print(inds_nms)
-    det_labels_keys = [key for key in list(det_labels.keys()) if key not in ["mask"]]
+    det_labels_keys = [key for key in list(det_labels.keys()) if key not in ["masks"]]
     if nms_inds is not None:
         # save_dict["obboxes"] = [BBox(params=params.tolist()).corners for params in bboxes_nms[:,:5]]
         for k in det_labels_keys:

@@ -119,12 +119,12 @@ def save_patch_results(
         # # Save labels to json file
 
         if 'masks' in tasks:
-            mask = save_dict["mask"]
+            mask = save_dict["masks"]
             path = str(patch_mask_folder.joinpath(f"{img_name}.png"))
             assert np.max(mask) <= 1.0, "mask value > 1.0!"
             cv2.imwrite(path, mask*255.0, [cv2.IMWRITE_JPEG_QUALITY, 100])
             # Remove mask from dict
-            del save_dict["mask"]
+            del save_dict["masks"]
 
         with open(Path(patch_result_folder) / f"{img_name}.json",'w') as f:
             json.dump(save_dict, f, indent=4)
@@ -228,9 +228,9 @@ def save_original_image_results(
                 )
 
             if 'masks' in tasks:
-                patch_dict['masks'].append(save_dict["mask"])
-            if 'mask' in save_dict.keys():
-                del save_dict['mask']
+                patch_dict['masks'].append(save_dict["masks"])
+            if 'masks' in save_dict.keys():
+                del save_dict['masks']
             patch_dict['det_labels'].append(save_dict)
 
         # Merge patch results into original results standards
