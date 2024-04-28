@@ -153,7 +153,7 @@ class DecDecoder(object):
             elif k[:3] == "cls":
                 result[k[4:]] = arr_val.squeeze(0).cpu().numpy().tolist()
             # regression -> there is only one value, we squeeze
-            else:
+            elif k != "masks":
                 det = arr_val.squeeze(0).cpu().numpy()
                 result[k[4:]] = untorchify_continuous_values(k, det).tolist()
 
