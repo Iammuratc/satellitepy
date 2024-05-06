@@ -29,6 +29,7 @@ def save_patch_results(
     num_workers,
     input_h,
     input_w,
+    conf_thresh,
     down_ratio,
     K,
     # nms_on_multiclass_thr
@@ -62,7 +63,8 @@ def save_patch_results(
     model.eval()
 
     model_decoder = get_model_decoder(tasks,
-    K)
+    K,
+    conf_thresh)
 
     # Dataset
     dataset = BBAVectorDataset(
@@ -130,6 +132,8 @@ def save_patch_results(
             json.dump(save_dict, f, indent=4)
 
 
+import time
+
 def save_original_image_results(
     out_folder,
     in_image_folder,
@@ -147,6 +151,7 @@ def save_original_image_results(
     input_w,
     down_ratio,
     K,
+    conf_thresh,
     target_task='coarse-class'
     ):
 
@@ -167,6 +172,7 @@ def save_original_image_results(
 
     model_decoder = get_model_decoder(tasks,
         K,
+        conf_thresh,
         target_task)
 
     # Dataset is customized, because BBAVectorDataset works only with dirs
@@ -187,7 +193,20 @@ def save_original_image_results(
         K=K,
         augmentation=False)
 
-    for img_path, label_path, mask_path in tqdm(zip(img_paths,label_paths,mask_paths), total=len(img_paths)):
+
+    create_patch_time = 0
+    inference_time = 0
+    merge_time = 0
+    match_time = 0
+    save_time = 0
+    overall_time = 1
+
+    for i, (img_path, label_path, mask_path) in tqdm(enumerate(zip(img_paths,label_paths,mask_paths)), total=len(img_paths)):
+
+        if i % 50 == 0:
+            print(f'create_patches: {create_patch_time/overall_time}; inference: {inference_time/overall_time}; merging: {merge_time/overall_time}; matching: {match_time/overall_time}; saving: {save_time/overall_time}')
+
+        start = time.time()
 
         # Image
         img_name = img_path.stem
@@ -206,6 +225,9 @@ def save_original_image_results(
             )
         patch_dict['det_labels'] = []
         patch_dict['masks'] = []
+
+        create_patch_time += time.time() - start
+        start1 = time.time()
 
         for patch_img,patch_labels in zip(patch_dict['images'],patch_dict['labels']):
             # Pass every patch to model
@@ -233,14 +255,24 @@ def save_original_image_results(
                 del save_dict['masks']
             patch_dict['det_labels'].append(save_dict)
 
+        inference_time += time.time() - start1
+        start2 = time.time()
+
         # Merge patch results into original results standards
         merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
         # merged_det_labels = merge_patch_results(patch_dict, patch_size, img.shape)
         # print(list(merged_det_labels.keys()))
         # merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_iou_threshold, target_task=target_task)
 
+        merge_time += time.time() - start2
+        start3 = time.time()
+
         # Find matches of original image with merged patch results
         matches = match_gt_and_det_bboxes(gt_labels,merged_det_labels)
+
+        match_time += time.time() - start3
+        start4 = time.time()
+
         # Results
         result = {
             'gt_labels':gt_labels,
@@ -259,6 +291,9 @@ def save_original_image_results(
             mask *= 255.0
             assert max <= 1.0, "mask value > 1.0!"
             cv2.imwrite(path, mask, [cv2.IMWRITE_JPEG_QUALITY, 100])
+
+        save_time += time.time()-start4
+        overall_time += time.time() - start
 
 
 def test_and_eval_original(

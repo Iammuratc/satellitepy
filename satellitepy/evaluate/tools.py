@@ -49,7 +49,6 @@ def calculate_map(
             continue
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
-
         conf_mat, ignored_instances_ret, ignored_cnt_ret = set_conf_mat_from_result(
             conf_mat,
             task,

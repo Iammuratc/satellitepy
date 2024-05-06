@@ -136,7 +136,8 @@ def decode_hbboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
     return points
 
 
-def get_model_decoder(tasks, K, target_task):
+def get_model_decoder(tasks, K, conf_thresh, target_task):
     model_decoder = decoder.DecDecoder(K=K,
+        conf_thresh=conf_thresh,
         tasks=tasks, target_task=target_task)
     return model_decoder

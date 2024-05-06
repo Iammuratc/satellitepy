@@ -210,7 +210,7 @@ def init_satellitepy_label():
         'fine-class':[], # FGC
         'very-fine-class':[], # FtGC
         'difficulty':[],
-        # 'source': [],
+        'source': [],
         'attributes':{
             'engines':{
                 'no-engines':[],

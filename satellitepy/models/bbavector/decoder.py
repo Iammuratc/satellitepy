@@ -6,8 +6,9 @@ from satellitepy.data.torchify import untorchify_continuous_values
 
 
 class DecDecoder(object):
-    def __init__(self, K, tasks, target_task):
+    def __init__(self, K, conf_thresh, tasks, target_task):
         self.K = K
+        self.conf_thresh = conf_thresh
         assert "obboxes" in tasks or "hbboxes" in tasks, "tasks must contain obboxes and/or hbboxes"
         self.tasks = tasks
         self.target_task = target_task
@@ -117,8 +118,9 @@ class DecDecoder(object):
     def ctdet_decode(self, pr_decs):
         heat = pr_decs['cls_' + self.target_task]
         scores, all_scores, idx_2d, target, _, _ = self._topk(heat)
+        idx_1d = (scores > self.conf_thresh).squeeze(0)
         result = {
-            self.target_task: all_scores.cpu().numpy().T.tolist()
+            self.target_task: all_scores[:, idx_1d].cpu().numpy().T.tolist()
         }
 
         if "obboxes" in self.tasks:
@@ -128,14 +130,14 @@ class DecDecoder(object):
                 pr_decs["obboxes_theta"],
                 heat
             )
-            result["obboxes"] = obb_detections.squeeze(0).cpu().numpy()
+            result["obboxes"] = obb_detections[:, idx_1d, :].squeeze(0).cpu().numpy()
         if "hbboxes" in self.tasks:
             hbb_detections = self.decode_hbboxes(
                 pr_decs["hbboxes_params"],
                 pr_decs["hbboxes_offset"],
                 heat
             )
-            result["hbboxes"] = hbb_detections.squeeze(0).cpu().numpy()
+            result["hbboxes"] = hbb_detections[:, idx_1d, :].squeeze(0).cpu().numpy()
         
         for k, v in pr_decs.items():
             # ignore bounding boxes and coarse class (heatmap)
@@ -148,13 +150,13 @@ class DecDecoder(object):
             arr_val = self._tranpose_and_gather_feat(v, idx_2d)
 
             if k == "masks" and 'masks' in self.tasks:
-                result[k[:4]] = v.squeeze(0).squeeze(0).cpu().numpy()
+                result[k] = v.squeeze(0).squeeze(0).cpu().numpy()
             # classification -> we save the confidence scores for each class
             elif k[:3] == "cls":
-                result[k[4:]] = arr_val.squeeze(0).cpu().numpy().tolist()
+                result[k[4:]] = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy().tolist()
             # regression -> there is only one value, we squeeze
             elif k != "masks":
-                det = arr_val.squeeze(0).cpu().numpy()
+                det = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy()
                 result[k[4:]] = untorchify_continuous_values(k, det).tolist()
 
         return result

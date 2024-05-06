@@ -37,6 +37,8 @@ def get_args():
         help='Folder of original mask images. The mask images in this folder will be used to set mask pixel coordinates in out labels.')
     parser.add_argument('--out-folder', help='Save folder of detected bounding boxes. Predictions will be saved into <out-folder>.')
     parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
+    parser.add_argument('--conf-thresh', type=float, default=0.25,
+                        help='Confidence threshold, 0.18 for general evaluation')
     parser.add_argument('--log-path', type=Path, default=None, help='Log will be saved here.')
     return parser
 
@@ -75,6 +77,7 @@ def main(parser):
     target_task = args.target_task
     assert target_task in tasks, "target task must be part of the tasks"
 
+    conf_thresh = args.conf_thresh
     K = args.K
     input_h = args.input_h
     input_w = args.input_w
@@ -106,6 +109,7 @@ def main(parser):
         device=device,
         tasks=tasks,
         K=K,
+        conf_thresh=conf_thresh,
         num_workers=num_workers,
         input_h=input_h,
         input_w=input_w,
