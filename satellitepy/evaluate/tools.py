@@ -214,9 +214,9 @@ def calculate_relative_score(in_result_folder, task, target_task, conf_score_thr
             continue
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
-            result = remove_low_conf_results(result, task, conf_score_threshold)
             gt_results = get_satellitepy_dict_values(result['gt_labels'], task)
-            det_results = nms_iou_thresh = apply_nms(result['det_labels'],nms_iou_threshold=nms_iou_thresh, target_task=target_task)
+            result = remove_low_conf_results(result, target_task, conf_score_threshold)
+            det_results = apply_nms(result['det_labels'],nms_iou_threshold=nms_iou_thresh, target_task=target_task)
             conf_scores = np.max(det_results[target_task], axis=1) if len(det_results[target_task]) > 0 else []
 
             if len(gt_results) == 0:

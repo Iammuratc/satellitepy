@@ -27,6 +27,8 @@ def get_args():
     parser.add_argument('--confidence-score-threshold', default=None, type=str, help='Confidence score threshold. If the detected object has a lower' 
         'confidence score than this threshold, the object will be ignored. Default value is 0.5')
     parser.add_argument('--iou-thresholds', default=None, type=str, help='Iou thresholds. Default value is range(0.5,0.96,0.05)')
+    parser.add_argument('--nms-iou-thresh', type=float, default=0.3,
+                        help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
     parser.add_argument('--log-config-path', default=project_folder /
                         Path("configs/log.config"), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, help='Log will be saved here. Default value is <out-folder>/evaluations.log')

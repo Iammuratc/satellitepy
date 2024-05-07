@@ -279,8 +279,8 @@ def remove_low_conf_results(results, task, conf_score):
     if conf_score == 0:
         return results
 
-    confScores = np.max(results['det_labels'][task], axis=1)
-    idx = np.argwhere(confScores > conf_score).flatten()
+    confScores = np.max(results['det_labels'][task], axis=1) if len(results['det_labels'][task]) > 0 else []
+    idx = np.argwhere(confScores > conf_score).flatten() if len(results['det_labels'][task]) > 0 else []
 
     filtered_results = {
         'det_labels': {},
