@@ -47,7 +47,7 @@ def calculate_map(
 
     for i, result_path in tqdm(enumerate(result_paths), total=len(result_paths)):
         if i % 100 == 0:
-            all_time = remove_time+nms_time+eval_time
+            all_time = remove_time+nms_time+eval_time+1
             print(f'Remove low detections: {remove_time/all_time}, nms: {nms_time/all_time}, eval: {eval_time/all_time}')
 
         # logger.info(f'The following result file will be evaluated: {result_path}')
@@ -80,7 +80,7 @@ def calculate_map(
         ap = get_average_precision(precision,recall)
         logger.info(ap)
         logger.info('mAP')
-        mAP = np.sum(np.transpose(np.transpose(ap)[:-1]), axis=1)/(len(ap[0]))
+        mAP = np.sum(np.transpose(np.transpose(ap)[:-1]), axis=1)/(len(ap[0])-1)
         logger.info(mAP)
         if ignore_other_instances:
             logger.info(f'ignored {ignored_cnt} other instances. Ignored instance names: {set(ignored_instances)}')
