@@ -11,7 +11,8 @@ from satellitepy.utils.path_utils import create_folder, get_file_paths, is_file_
 # from satellitepy.data.patch import get_patches, merge_patch_results
 import logging
 import json
-from satellitepy.evaluate.utils import set_conf_mat_from_result, get_precision_recall, get_average_precision
+from satellitepy.evaluate.utils import set_conf_mat_from_result, get_precision_recall, get_average_precision, \
+    remove_low_conf_results
 from tqdm import tqdm
 from satellitepy.evaluate.bbavector.utils import apply_nms
 
@@ -196,7 +197,7 @@ def calculate_iou_score(in_result_folder,
     return ious
 
 
-def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_thresholds, nms_iou_thresh, out_folder):
+def calculate_relative_score(in_result_folder, task, target_task, conf_score_threshold, iou_thresholds, nms_iou_thresh, out_folder):
     # Get logger
     logger = logging.getLogger(__name__)
 
@@ -213,9 +214,10 @@ def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_t
             continue
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
+            result = remove_low_conf_results(result, task, conf_score_threshold)
             gt_results = get_satellitepy_dict_values(result['gt_labels'], task)
-            det_results = nms_iou_thresh = apply_nms(result['det_labels'],nms_iou_threshold=nms_iou_thresh, target_task=task)
-            conf_scores = np.max(det_results[task], axis=1) if len(det_results[task]) > 0 else []
+            det_results = nms_iou_thresh = apply_nms(result['det_labels'],nms_iou_threshold=nms_iou_thresh, target_task=target_task)
+            conf_scores = np.max(det_results[target_task], axis=1) if len(det_results[target_task]) > 0 else []
 
             if len(gt_results) == 0:
                 continue

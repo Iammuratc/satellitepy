@@ -20,6 +20,7 @@ def get_args():
     parser.add_argument('--in-result-folder', type=str,
                         help='Folder of results. The results in this folder will be processed.')
     parser.add_argument('--task', required=True, type=str, help='Task name. This task will be evaluated.')
+    parser.add_argument('--target-task', required=True, type=str, help='Target task the model was trained with. Used for nms and confidence scores.')
     parser.add_argument('--out-folder',
                         type=str,
                         help='Save folder of result evaluations. It will be asked to create if not exists.')
@@ -41,6 +42,7 @@ def main(args):
     conf_score_threshold = float(args.confidence_score_threshold) if args.confidence_score_threshold else 0.5
     out_folder = Path(args.out_folder)
     task = args.task
+    target_task = args.target_task
     assert create_folder(out_folder)
 
     nms_iou_thresh = args.nms_iou_thresh
@@ -58,6 +60,7 @@ def main(args):
     calculate_relative_score(
         in_result_folder,
         task,
+        target_task,
         conf_score_threshold,
         iou_thresholds,
         nms_iou_thresh,
