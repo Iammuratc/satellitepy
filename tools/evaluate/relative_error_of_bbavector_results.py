@@ -25,7 +25,7 @@ def get_args():
                         type=str,
                         help='Save folder of result evaluations. It will be asked to create if not exists.')
     parser.add_argument('--confidence-score-threshold', default=None, type=str, help='Confidence score threshold. If the detected object has a lower' 
-        'confidence score than this threshold, the object will be ignored. Default value is 0.5')
+        'confidence score than this threshold, the object will be ignored. Default value is 0.25')
     parser.add_argument('--iou-thresholds', default=None, type=str, help='Iou thresholds. Default value is range(0.5,0.96,0.05)')
     parser.add_argument('--nms-iou-thresh', type=float, default=0.3,
                         help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
@@ -41,7 +41,7 @@ def main(args):
     # Init arguments
     in_result_folder = Path(args.in_result_folder)
     iou_thresholds = [float(iou_threshold) for iou_threshold in args.iou_thresholds.split(',')] if args.iou_thresholds != None else [x / 100.0 for x in range(50, 96, 5)]
-    conf_score_threshold = float(args.confidence_score_threshold) if args.confidence_score_threshold else 0.5
+    conf_score_threshold = float(args.confidence_score_threshold) if args.confidence_score_threshold else 0.25
     out_folder = Path(args.out_folder)
     task = args.task
     target_task = args.target_task
