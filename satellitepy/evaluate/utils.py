@@ -74,7 +74,7 @@ def set_conf_mat_from_result(
     confScores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
 
     if len(taskResult) == 0:
-        return conf_mat
+        return conf_mat, ignored_instances_ret, ignored_cnt
     for i_iou_th, iou_th in enumerate(iou_thresholds):
         for i_conf_score_th, conf_score_th in enumerate(conf_score_thresholds):
             # (Surely) Detected gt label indices
