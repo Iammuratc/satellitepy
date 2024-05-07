@@ -215,7 +215,7 @@ def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_t
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
             gt_results = get_satellitepy_dict_values(result['gt_labels'], task)
             det_results = nms_iou_thresh = apply_nms(result['det_labels'],nms_iou_threshold=nms_iou_thresh, target_task=task)
-            confScores = np.max(det_results[task], axis=1) if len(det_results[task]) > 0 else []
+            conf_scores = np.max(det_results[task], axis=1) if len(det_results[task]) > 0 else []
 
             if len(gt_results) == 0:
                 continue
@@ -223,7 +223,7 @@ def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_t
             for i_iou_th, iou_th in enumerate(iou_thresholds):
                 # Iterate over the confidence scores of the detected bounding boxes
 
-                for i_conf_score, conf_score in enumerate(confScores):
+                for i_conf_score, conf_score in enumerate(conf_scores):
                     ## If the confidence score is lower than threshold, skip the object
                     if conf_score < conf_score_threshold:
                         continue
