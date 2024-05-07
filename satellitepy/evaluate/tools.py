@@ -15,6 +15,7 @@ from satellitepy.evaluate.utils import set_conf_mat_from_result, get_precision_r
 from tqdm import tqdm
 from satellitepy.evaluate.bbavector.utils import apply_nms
 
+import time
 
 def calculate_map(
     in_result_folder,
@@ -42,14 +43,20 @@ def calculate_map(
     ignored_instances = []
     ignored_cnt = 0
 
-    for result_path in tqdm(result_paths):
+    remove_time, nms_time, eval_time = 0, 0, 0
+
+    for i, result_path in tqdm(enumerate(result_paths)):
+        if i % 100 == 0:
+            all_time = remove_time+nms_time+eval_time
+            print(f'Remove low detections: {remove_time/all_time}, nms: {nms_time/all_time}, eval: {eval_time/all_time}')
+
         # logger.info(f'The following result file will be evaluated: {result_path}')
         # Result json file
         if result_path.suffix != ".json":
             continue
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
-        conf_mat, ignored_instances_ret, ignored_cnt_ret = set_conf_mat_from_result(
+        conf_mat, ignored_instances_ret, ignored_cnt_ret, r_time, n_time, e_time = set_conf_mat_from_result(
             conf_mat,
             task,
             result,
@@ -58,6 +65,10 @@ def calculate_map(
             iou_thresholds,
             nms_iou_thresh,
             ignore_other_instances)
+
+        remove_time += r_time
+        nms_time += n_time
+        eval_time += e_time
 
         ignored_instances += ignored_instances_ret
         ignored_cnt += ignored_cnt_ret

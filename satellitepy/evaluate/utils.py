@@ -48,6 +48,7 @@ def match_gt_and_det_bboxes(gt_labels,det_labels):
         matches['iou']['indexes'].append(bbox_ind_gt.item())
     return matches
 
+import time
 
 def set_conf_mat_from_result(
     conf_mat,
@@ -66,15 +67,23 @@ def set_conf_mat_from_result(
     idx2name = {v: k for k, v in task_dict.items()}
     taskResult = get_satellitepy_dict_values(result['gt_labels'], task)
 
+    start = time.time()
+
     result = remove_low_conf_results(result, task, conf_score_thresholds[0])
 
+    remove_time = time.time() - start
+    start = time.time()
+
     det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=task)
+
+    nms_time = time.time() - start
+    start = time.time()
 
     det_inds = np.argmax(det_results[task], axis=1) if len(result['det_labels'][task]) > 0 else []
     confScores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
 
     if len(taskResult) == 0:
-        return conf_mat, ignored_instances_ret, ignored_cnt
+        return conf_mat, ignored_instances_ret, ignored_cnt, remove_time, nms_time, 0
     for i_iou_th, iou_th in enumerate(iou_thresholds):
         for i_conf_score_th, conf_score_th in enumerate(conf_score_thresholds):
             # (Surely) Detected gt label indices
@@ -131,7 +140,9 @@ def set_conf_mat_from_result(
 
                 conf_mat[i_iou_th, i_conf_score_th, undet_gt_index, instance_names.index('Background')] += 1
 
-    return conf_mat, ignored_instances_ret, ignored_cnt
+    eval_time = time.time() - start
+
+    return conf_mat, ignored_instances_ret, ignored_cnt, remove_time, nms_time, eval_time
 
 def get_precision_recall(conf_mat,sort_values=True,complete_curve=True):
     """
