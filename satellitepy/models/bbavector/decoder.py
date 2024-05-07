@@ -15,14 +15,15 @@ class DecDecoder(object):
 
     def _topk(self, scores):
         batch, cat, height, width = scores.size()
+
+        assert batch == 1   # Do we ever use batches here? Doesn't really make sense
+
         scores = scores.view(batch, cat, -1)
 
-        own_topk_scores, own_topk_inds = torch.topk(scores[0, :, :].flatten(), self.K)
-        own_inds = np.array(np.unravel_index(own_topk_inds.cpu().numpy(), scores.shape[1:])).T
-        y = own_inds[:, 1]
-
-        # implementation without numpy, check again with proper predictions
-        y2 = own_topk_inds // cat
+        max_scores, _ = torch.max(scores, dim=1)
+        _, max_topk_inds = torch.topk(max_scores, self.K, dim=-1)
+        max_topk_inds = max_topk_inds.unsqueeze(2).expand(-1, -1, cat).permute(0, 2, 1)
+        max_topk_scores = torch.gather(scores, -1, max_topk_inds)
 
         topk_scores, topk_inds = torch.topk(scores, self.K)
 
@@ -36,9 +37,7 @@ class DecDecoder(object):
         topk_ys = self._gather_feat(topk_ys.view(batch, -1, 1), topk_ind).view(batch, self.K)
         topk_xs = self._gather_feat(topk_xs.view(batch, -1, 1), topk_ind).view(batch, self.K)
 
-        full_scores = scores[0, :, y]
-
-        return topk_score, full_scores, topk_inds, topk_clses, topk_ys, topk_xs
+        return topk_score, max_topk_scores[0, :, :].T, topk_inds, topk_clses, topk_ys, topk_xs
 
 
     def _nms(self, heat, kernel=3):
@@ -120,7 +119,7 @@ class DecDecoder(object):
         scores, all_scores, idx_2d, target, _, _ = self._topk(heat)
         idx_1d = (scores > self.conf_thresh).squeeze(0)
         result = {
-            self.target_task: all_scores[:, idx_1d].cpu().numpy().T.tolist()
+            self.target_task: all_scores[idx_1d, :].cpu().numpy().tolist()
         }
 
         if "obboxes" in self.tasks:

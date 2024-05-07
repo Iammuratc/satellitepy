@@ -45,7 +45,7 @@ def calculate_map(
 
     remove_time, nms_time, eval_time = 0, 0, 0
 
-    for i, result_path in tqdm(enumerate(result_paths)):
+    for i, result_path in tqdm(enumerate(result_paths), total=len(result_paths)):
         if i % 100 == 0:
             all_time = remove_time+nms_time+eval_time
             print(f'Remove low detections: {remove_time/all_time}, nms: {nms_time/all_time}, eval: {eval_time/all_time}')

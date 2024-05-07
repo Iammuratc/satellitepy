@@ -41,12 +41,12 @@ def create_symbolic_paths(add_dataset_name=True):
 
 
     val_folders = [
-        '/mnt/2tb-0/satellitepy/patches/fair1m/val/',
-        '/mnt/2tb-0/satellitepy/patches/ship_net/val/',
-        '/mnt/2tb-0/satellitepy/patches/DOTA/val/',
-        '/mnt/2tb-0/satellitepy/patches/DIOR/val/',
-        '/mnt/2tb-0/satellitepy/patches/Rareplanes_synthetic_subset/test/',
-        '/mnt/2tb-0/satellitepy/patches/Rareplanes/test/',
+        '/mnt/2tb-0/satellitepy/full_satpy/fair1m/val/',
+        '/mnt/2tb-0/satellitepy/full_satpy/ship_net/val/',
+        '/mnt/2tb-0/satellitepy/full_satpy/DOTA/val/',
+        '/mnt/2tb-0/satellitepy/full_satpy/DIOR/val/',
+        '/mnt/2tb-0/satellitepy/full_satpy/Rareplanes_synth_subset/test/',
+        '/mnt/2tb-0/satellitepy/full_satpy/Rareplanes/test/',
     ]
     val_label_folders = [Path(val_folder) / 'labels' for val_folder in val_folders]
     val_image_folders = [Path(val_folder) / 'images' for val_folder in val_folders]
