@@ -1,17 +1,16 @@
 import logging
-from builtins import print
-
 import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from satellitepy.data.utils import get_vedai_classes, set_mask, parse_potsdam_labels, get_shipnet_categories
-from satellitepy.data.bbox import BBox
 import json
 import numpy as np
 
+from satellitepy.data.utils import get_vedai_classes, set_mask, parse_potsdam_labels, get_shipnet_categories
 from satellitepy.data.bbox import BBox
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('')
+
+
 def read_label(label_path,label_format, mask_path = None):
     if isinstance(label_path,Path):
         label_path = str(label_path)
@@ -35,7 +34,7 @@ def read_label(label_path,label_format, mask_path = None):
         return read_ship_net_label(label_path)
     elif label_format == 'ucas':
         return read_ucas_label(label_path)
-    elif label_format == "fr24":
+    elif label_format == 'fr24':
         return read_fr24_label(label_path)
     elif label_format == 'xview':
         logger.info('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
@@ -46,7 +45,7 @@ def read_label(label_path,label_format, mask_path = None):
         return read_vedai_label(label_path)
     else:
         logger.error('Label format is not defined!')
-
+        return 0
 def get_all_satellitepy_keys():
     """
     Get all possible satellitepy keys
@@ -175,6 +174,8 @@ def init_satellitepy_label():
         difficulty : list of int
             Detection difficulty of the object. Only DOTA provides this. 
             For example, clouds make the detection task difficult. 
+        source: list of str
+            Source for FR24 annotations. Either FR24, Mask or None
         attributes : dict of str
             This value only serves for Rareplanes at the moment. 
             Please check the rareplanes paper for details.
@@ -208,6 +209,7 @@ def init_satellitepy_label():
         'fine-class':[], # FGC
         'very-fine-class':[], # FtGC
         'difficulty':[],
+        'source': [], # data annotation source
         'attributes':{
             'engines':{
                 'no-engines':[],
@@ -780,7 +782,7 @@ def read_vedai_label(label_path):
 
 def read_fr24_label(label_path):
     labels = init_satellitepy_label()
-    available_tasks=['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'very-fine-class']
+    available_tasks=['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'role', 'source']
     all_tasks = get_all_satellitepy_keys()
     ## Not available tasks
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
@@ -791,7 +793,9 @@ def read_fr24_label(label_path):
         labels["coarse-class"].append("airplane")
         labels["fine-class"].append(annotation["properties"]["Type"])
         labels["very-fine-class"].append(annotation["properties"]["Subtype"])
-        coords = annotation["geometry"]["coordinates"][0][1][:-1]
+        labels["source"].append(annotation["properties"]["Source"])
+        labels["role"].append(annotation["properties"]["Role"])
+        coords = annotation["geometry"]["coordinates"][:-1]
         labels['obboxes'].append(coords)
         labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
         fill_none_to_empty_keys(labels, not_available_tasks)

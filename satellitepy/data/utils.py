@@ -1,15 +1,12 @@
 import cv2
 import numpy as np
 import rasterio
-from satellitepy.data.bbox import BBox
 from scipy.ndimage import generate_binary_structure, label, find_objects
-
-from satellitepy.data.bbox import BBox
 import logging
 
-logger = logging.getLogger(__name__)
+from satellitepy.data.bbox import BBox
 
-
+logger = logging.getLogger('')
 
 def read_img(img_path, module='cv2'):
     """
@@ -31,13 +28,24 @@ def read_img(img_path, module='cv2'):
     elif module == 'rasterio':
         with rasterio.open(img_path) as src:
             # Read the image as a numpy array
-            img_array = src.read()
+            img_array = src.read() # RGBA
             # Swap and reorder channels from RGBA to BGR
-            img = np.transpose(img_array, axes=(1, 2, 0))[:, :, [2, 1, 0]]
+            img = np.transpose(img_array, axes=(1, 2, 0))
+            img = cv2.cvtColor(img,cv2.COLOR_RGBA2BGR)
+            # lo - low value as percentile 0.1 (1/1000 of test values are below lo)
+            # hi - high value as percentile 99.9 (1/1000 of test values are above hi)
+            lo, hi = np.percentile(img, (1, 99))
+
+            # Apply linear "stretch" - lo goes to 0, and hi goes to 255
+            img = (img.astype(float) - lo) * (255/(hi-lo))
+
+            #Clamp range to [0, 255] and convert to uint8
+            img = np.clip(img,0,255).astype(np.uint8)
     else:
         logger.error(f'{module} is not a valid argument!')
         return 0
     return img
+
 def set_mask(labels,mask_path,bbox_type, mask_type):
     """
     Set the masks key in the satellitepy dict by using the bboxes in the dict
