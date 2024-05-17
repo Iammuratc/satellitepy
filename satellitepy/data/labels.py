@@ -402,19 +402,8 @@ def read_rareplanes_real_label(label_path):
 
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
-
-        A = (points[0], points[1])
-        B = (points[2], points[3])
-        C = (points[4], points[5])
-        D = (points[6], points[7])
-        # converting polygon-annotations to bounding box
-        vecBD = tuple(np.subtract(D, B))
-        middle = tuple(np.add(B, np.divide(vecBD, 2)))
-        vecToC = tuple(np.subtract(C, middle))
-        vecToA = tuple(np.subtract(A, middle))
-
-        corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(),
-                   np.add(B, vecToA).tolist()]
+        bbox = BBox(diamond_corners=points.reshape(4,2))
+        corners = bbox.corners
         labels['obboxes'].append(corners)
         labels['hbboxes'].append(BBox.get_hbb_from_obb(corners))
         labels['coarse-class'].append('airplane')
@@ -796,8 +785,9 @@ def read_fr24_label(label_path):
         labels["source"].append(annotation["properties"]["Source"])
         labels["role"].append(annotation["properties"]["Role"])
         coords = annotation["geometry"]["coordinates"][:-1]
-        labels['obboxes'].append(coords)
-        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
+        bbox = BBox(diamond_corners=coords)
+        labels['obboxes'].append(bbox.corners)
+        labels['hbboxes'].append(bbox.get_hbb_from_obb(bbox.corners))
         fill_none_to_empty_keys(labels, not_available_tasks)
              
     return labels

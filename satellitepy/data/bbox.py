@@ -8,12 +8,10 @@ class BBox:
     - Params to points, i.e.,  center_x, center_y, width, height, rotation angle >> corner points
     - Rotation calculations of bounding boxes
     '''
-    def __init__(self, **kwargs):
-        is_corners = 'corners' in kwargs.keys() 
-        is_params = 'params' in kwargs.keys()
+    def __init__(self, **kwargs): 
 
         #ensure that the bbox is either in corner or parameter paramtrization
-        if is_corners:
+        if 'corners' in kwargs.keys():
             corners = kwargs['corners']
 
             #ensure that the bbox is a np array
@@ -29,8 +27,19 @@ class BBox:
                 raise Exception('The bbox in corner parametrization must end in shape (4,2) but has shape:',np.shape(corners))
             self.params = self.get_params()
 
+        elif 'diamond_corners' in kwargs.keys():
+            diamond_corners = kwargs['diamond_corners']
+            #ensure that the bbox is a np array
+            if isinstance(diamond_corners, list):
+                diamond_corners = np.array(diamond_corners)
+            else:
+                raise Exception('Diamond corners must be either list or numpy array.')
+            if np.shape(diamond_corners)[-2:]!=(4,2):
+                raise Exception('The diamond bbox in corner parametrization must end in shape (4,2) but has shape:',np.shape(corners))
+            self.corners = self.convert_diamond_corners_to_corners(diamond_corners)
+            self.params = self.get_params()
 
-        elif is_params:
+        elif 'params' in kwargs.keys():
             params = kwargs['params']
 
             #ensure that the bbox is a np array
@@ -46,8 +55,25 @@ class BBox:
                 raise Exception('The bbox in parameter parametrization must end in shape (5) but has shape:',np.shape(params))
             self.params = params
             self.corners=self.get_corners()
+        
         else:
             raise Exception('Either corners or params have to be defined to create a BBox instance')
+
+    def convert_diamond_corners_to_corners(self,diamond_corners):
+        A, B, C, D = diamond_corners
+        # A = (points[0], points[1])
+        # B = (points[2], points[3])
+        # C = (points[4], points[5])
+        # D = (points[6], points[7])
+        # converting polygon-annotations to bounding box
+        vecBD = tuple(np.subtract(D, B))
+        middle = tuple(np.add(B, np.divide(vecBD, 2)))
+        vecToC = tuple(np.subtract(C, middle))
+        vecToA = tuple(np.subtract(A, middle))
+
+        corners = np.array([np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(),
+                   np.add(B, vecToA).tolist()])
+        return corners
 
     def get_neighbor_corner_dif(self,corners,i):
         i_0 = i
