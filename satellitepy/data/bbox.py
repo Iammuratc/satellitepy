@@ -191,6 +191,14 @@ class BBox:
         return ax
 
     @staticmethod
+    def draw_bbox_to_img(img, corners, color=(255,0,0), thickness=1):
+        if not isinstance(corners, np.ndarray):
+            corners = np.array(corners)
+        img = cv2.polylines(img,corners.astype(np.int32),isClosed=True,color=color,thickness=thickness)
+        return img
+
+
+    @staticmethod
     def get_bbox_limits(corners):
         if not isinstance(corners, np.ndarray):
             corners = np.array(corners)

@@ -1,9 +1,50 @@
 import cv2
 import numpy as np
-from satellitepy.data.bbox import BBox
+import rasterio
 from scipy.ndimage import generate_binary_structure, label, find_objects
+import logging
 
 from satellitepy.data.bbox import BBox
+
+logger = logging.getLogger('')
+
+def read_img(img_path, module='cv2'):
+    """
+    Read image.
+    Parameters
+    ----------
+    img_path : str
+        Image path
+    module : str
+        Use this module to read the image. rasterio is suggested for large TIF images
+    Returns
+    -------
+    img : np.ndarray
+        Image in the opencv format,  (rows, columns, bands). If image has four bands, the alpha channel is ignored. 
+    """
+
+    if module == 'cv2':
+        img = cv2.imread(img_path)
+    elif module == 'rasterio':
+        with rasterio.open(img_path) as src:
+            # Read the image as a numpy array
+            img_array = src.read() # RGBA
+            # Swap and reorder channels from RGBA to BGR
+            img = np.transpose(img_array, axes=(1, 2, 0))
+            img = cv2.cvtColor(img,cv2.COLOR_RGBA2BGR)
+            # lo - low value as percentile 0.1 (1/1000 of test values are below lo)
+            # hi - high value as percentile 99.9 (1/1000 of test values are above hi)
+            lo, hi = np.percentile(img, (1, 99))
+
+            # Apply linear "stretch" - lo goes to 0, and hi goes to 255
+            img = (img.astype(float) - lo) * (255/(hi-lo))
+
+            #Clamp range to [0, 255] and convert to uint8
+            img = np.clip(img,0,255).astype(np.uint8)
+    else:
+        logger.error(f'{module} is not a valid argument!')
+        return 0
+    return img
 
 def set_mask(labels,mask_path,bbox_type, mask_type):
     """

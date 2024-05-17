@@ -4,6 +4,7 @@ from satellitepy.evaluate.tools import calculate_map, calculate_relative_score, 
 from satellitepy.models.bbavector.utils import load_checkpoint, get_model_decoder  # , collater
 from satellitepy.dataset.bbavector.dataset_bbavector import BBAVectorDataset
 from satellitepy.dataset.bbavector.utils import Utils as BBAVectorDatasetUtils
+from satellitepy.data.utils import get_task_dict, read_img
 from satellitepy.data.tools import read_label
 from satellitepy.data.patch import get_patches, merge_patch_results
 from satellitepy.utils.path_utils import create_folder, get_file_paths
@@ -151,6 +152,7 @@ def save_original_image_results(
     down_ratio,
     K,
     nms_iou_threshold,
+    img_read_module='cv2',
     target_task='coarse-class'
     ):
 
@@ -196,7 +198,7 @@ def save_original_image_results(
 
         # Image
         img_name = img_path.stem
-        img = cv2.imread(str(img_path))
+        img = read_img(img_path=str(img_path),module=img_read_module)
 
         # Labels
         gt_labels = read_label(label_path,in_label_format,mask_path)
