@@ -109,8 +109,6 @@ def save_patch_results(
             input_w,
             down_ratio
             )
-        save_dict = apply_nms(save_dict)
-
 
         if in_label_folder:
             gt_labels = read_label(data_dict['label_path'][0],in_label_format)
@@ -122,12 +120,12 @@ def save_patch_results(
         # # Save labels to json file
 
         if 'masks' in tasks:
-            mask = save_dict["mask"]
+            mask = save_dict["masks"]
             path = str(patch_mask_folder.joinpath(f"{img_name}.png"))
             assert np.max(mask) <= 1.0, "mask value > 1.0!"
             cv2.imwrite(path, mask*255.0, [cv2.IMWRITE_JPEG_QUALITY, 100])
             # Remove mask from dict
-            del save_dict["mask"]
+            del save_dict["masks"]
 
         with open(Path(patch_result_folder) / f"{img_name}.json",'w') as f:
             json.dump(save_dict, f, indent=4)
@@ -151,7 +149,6 @@ def save_original_image_results(
     conf_thresh,
     down_ratio,
     K,
-    nms_iou_threshold,
     img_read_module='cv2',
     target_task='coarse-class'
     ):
@@ -235,15 +232,13 @@ def save_original_image_results(
                 )
 
             if 'masks' in tasks:
-                patch_dict['masks'].append(save_dict["mask"])
-                del save_dict["mask"]
+                patch_dict['masks'].append(save_dict["masks"])
+            if 'masks' in save_dict.keys():
+                del save_dict['masks']
             patch_dict['det_labels'].append(save_dict)
 
         # Merge patch results into original results standards
         merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
-        # merged_det_labels = merge_patch_results(patch_dict, patch_size, img.shape)
-        # print(list(merged_det_labels.keys()))
-        merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_iou_threshold)
 
         # Find matches of original image with merged patch results
         matches = match_gt_and_det_bboxes(gt_labels,merged_det_labels)

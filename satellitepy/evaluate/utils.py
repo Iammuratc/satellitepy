@@ -4,6 +4,7 @@ import numpy as np
 # from torch import Tensor
 # from typing import Optional, Tuple
 import torch
+from satellitepy.evaluate.bbavector.utils import apply_nms
 
 from satellitepy.data.utils import get_task_dict, get_satellitepy_dict_values
 
@@ -55,6 +56,7 @@ def set_conf_mat_from_result(
     instance_names,
     conf_score_thresholds,
     iou_thresholds,
+    nms_iou_thresh,
     ignore_other_instances):
 
     ignored_instances_ret = []
@@ -63,8 +65,15 @@ def set_conf_mat_from_result(
     task_dict = get_task_dict(task)
     idx2name = {v: k for k, v in task_dict.items()}
     taskResult = get_satellitepy_dict_values(result['gt_labels'], task)
+
+    result = remove_low_conf_results(result, task, conf_score_thresholds[0])
+    det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=task)
+
+    det_inds = np.argmax(det_results[task], axis=1) if len(result['det_labels'][task]) > 0 else []
+    confScores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
+
     if len(taskResult) == 0:
-        return conf_mat
+        return conf_mat, ignored_instances_ret, ignored_cnt
     for i_iou_th, iou_th in enumerate(iou_thresholds):
         for i_conf_score_th, conf_score_th in enumerate(conf_score_thresholds):
             # (Surely) Detected gt label indices
@@ -72,7 +81,7 @@ def set_conf_mat_from_result(
             det_gt_bbox_indices = []
 
             # Iterate over the confidence scores of the detected bounding boxes
-            for i_conf_score, conf_score in enumerate(result['det_labels']['confidence-scores']):
+            for i_conf_score, conf_score in enumerate(confScores):
                 ## If the confidence score is lower than threshold, skip the object
                 if conf_score<conf_score_th:
                     continue
@@ -89,7 +98,7 @@ def set_conf_mat_from_result(
                 if det_gt_instance_name is None:
                     continue
 
-                det_name = str(idx2name[result['det_labels'][task][i_conf_score]])
+                det_name = str(idx2name[det_inds[i_conf_score]])
 
                 if ignore_other_instances and det_name not in instance_names:
                     ignored_cnt+=1
@@ -252,3 +261,29 @@ def get_ious(bboxes_1,bboxes_2):
             ious[i,j] = iou
 
     return ious
+
+
+def remove_low_conf_results(results, task, conf_score):
+    if conf_score == 0:
+        return results
+
+    confScores = np.max(results['det_labels'][task], axis=1) if len(results['det_labels'][task]) > 0 else []
+    idx = np.argwhere(confScores > conf_score).flatten() if len(results['det_labels'][task]) > 0 else []
+
+    filtered_results = {
+        'det_labels': {},
+        'matches': {
+            'iou': {
+                'scores': [],
+                'indexes': []
+            }
+        }
+    }
+
+    for key in results['det_labels'].keys():
+        filtered_results['det_labels'][key] = np.array(results['det_labels'][key])[idx]
+
+    filtered_results['matches']['iou']['scores'] = np.array(results['matches']['iou']['scores'])[idx]
+    filtered_results['matches']['iou']['indexes'] = np.array(results['matches']['iou']['indexes'])[idx]
+
+    return filtered_results

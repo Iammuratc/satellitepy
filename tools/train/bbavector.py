@@ -1,15 +1,12 @@
 import argparse
-import os
 from pathlib import Path
 import logging
-import torch
 
 
 from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
 from satellitepy.models.bbavector import train_model
 from satellitepy.models.bbavector.utils import get_model
 from satellitepy.dataset.bbavector.dataset_bbavector import BBAVectorDataset
-from satellitepy.data.utils import get_task_dict
 
 
 

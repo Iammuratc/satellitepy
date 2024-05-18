@@ -1,5 +1,6 @@
 import torch.nn.functional as F
 import torch
+import numpy as np
 
 from satellitepy.data.torchify import untorchify_continuous_values
 
@@ -15,7 +16,16 @@ class DecDecoder(object):
     def _topk(self, scores):
         batch, cat, height, width = scores.size()
 
-        topk_scores, topk_inds = torch.topk(scores.view(batch, cat, -1), self.K)
+        assert batch == 1   # Do we ever use batches here? Doesn't really make sense
+
+        scores = scores.view(batch, cat, -1)
+
+        max_scores, _ = torch.max(scores, dim=1)
+        _, max_topk_inds = torch.topk(max_scores, self.K, dim=-1)
+        max_topk_inds = max_topk_inds.unsqueeze(2).expand(-1, -1, cat).permute(0, 2, 1)
+        max_topk_scores = torch.gather(scores, -1, max_topk_inds)
+
+        topk_scores, topk_inds = torch.topk(scores, self.K)
 
         topk_inds = topk_inds % (height * width)
         topk_ys = (topk_inds // width).int().float()
@@ -27,7 +37,7 @@ class DecDecoder(object):
         topk_ys = self._gather_feat(topk_ys.view(batch, -1, 1), topk_ind).view(batch, self.K)
         topk_xs = self._gather_feat(topk_xs.view(batch, -1, 1), topk_ind).view(batch, self.K)
 
-        return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
+        return topk_score, max_topk_scores[0, :, :].T, topk_inds, topk_clses, topk_ys, topk_xs
 
 
     def _nms(self, heat, kernel=3):
@@ -55,7 +65,7 @@ class DecDecoder(object):
         batch, c, height, width = heatmap.size()
         heat = self._nms(heatmap)
 
-        scores, inds, clses, ys, xs = self._topk(heat)
+        scores, _, inds, clses, ys, xs = self._topk(heat)
         reg = self._tranpose_and_gather_feat(box_offsets, inds)
         reg = reg.view(batch, self.K, 2)
         xs = xs.view(batch, self.K, 1) + reg[:, :, 0:1]
@@ -91,7 +101,7 @@ class DecDecoder(object):
         batch, c, height, width = heatmap.size()
         heat = self._nms(heatmap)
 
-        scores, inds, clses, ys, xs = self._topk(heat)
+        scores, _, inds, clses, ys, xs = self._topk(heat)
         reg = self._tranpose_and_gather_feat(box_offsets, inds)
         reg = reg.view(batch, self.K, 2)
         xs = xs.view(batch, self.K, 1) + reg[:, :, 0:1]
@@ -106,11 +116,10 @@ class DecDecoder(object):
 
     def ctdet_decode(self, pr_decs):
         heat = pr_decs['cls_' + self.target_task]
-        scores, idx_2d, target, _, _ = self._topk(heat)
-        idx_1d = (scores>self.conf_thresh).squeeze(0)
+        scores, all_scores, idx_2d, target, _, _ = self._topk(heat)
+        idx_1d = (scores > self.conf_thresh).squeeze(0)
         result = {
-            self.target_task: target[:, idx_1d].squeeze(0).cpu().numpy(),
-            "confidence-scores": scores[:, idx_1d].squeeze(0).cpu().numpy()
+            self.target_task: all_scores[idx_1d, :].cpu().numpy().tolist()
         }
 
         if "obboxes" in self.tasks:
@@ -138,14 +147,15 @@ class DecDecoder(object):
                 continue
 
             arr_val = self._tranpose_and_gather_feat(v, idx_2d)
-            # classification -> we take class with highest prob
-            if k == "masks":
-                result[k[:4]] = v.squeeze(0).squeeze(0).cpu().numpy() if "masks" in self.tasks else []
+
+            if k == "masks" and 'masks' in self.tasks:
+                result[k] = v.squeeze(0).squeeze(0).cpu().numpy()
+            # classification -> we save the confidence scores for each class
             elif k[:3] == "cls":
-                result[k[4:]] = torch.argmax(arr_val[:, idx_1d, :], dim=2).squeeze(0).cpu().numpy()
+                result[k[4:]] = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy().tolist()
             # regression -> there is only one value, we squeeze
-            else:
+            elif k != "masks":
                 det = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy()
-                result[k[4:]] = untorchify_continuous_values(k, det)
+                result[k[4:]] = untorchify_continuous_values(k, det).tolist()
 
         return result

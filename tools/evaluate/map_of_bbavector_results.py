@@ -26,9 +26,11 @@ def get_args():
     parser.add_argument('--ignore-other-instances', default=False, type=bool,
                         help='Ignores instances not in instance names if set. Default is False.')
     parser.add_argument('--confidence-score-thresholds', default=None, type=str, help='Confidence score threshold. If the detected object has a lower' 
-        'confidence score than this threshold, the object will be ignored. Default value is range(0,1.01,0.05).')
+        'confidence score than this threshold, the object will be ignored. Default value is range(0,1.01,0.05)')
     parser.add_argument('--iou-thresholds', default=None, type=str, help='Iou thresholds. Default value is range(0.5,0.96,0.05)')
     parser.add_argument('--plot-pr', default=False, type=bool, help='Plot the PR curve.')
+    parser.add_argument('--nms-iou-thresh', type=float, default=0.3,
+                        help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
     parser.add_argument('--log-config-path', default=None, help='Log config file.')
     parser.add_argument('--log-path', default=None, help='Log will be saved here.')
     return parser
@@ -50,7 +52,7 @@ def main(parser):
     logger = logging.getLogger(__name__)
     logger.info('mAP values will be calculated...')
     logger.info(f'Log will be stored at: {log_path}')
-    
+
     # configargparse config
     config_path = out_folder / f"{Path(__file__).resolve().stem}.ini"
     parser.write_config_file(args, [str(config_path)])
@@ -67,6 +69,8 @@ def main(parser):
     task = args.task
     assert create_folder(out_folder)
 
+    nms_iou_thresh = args.nms_iou_thresh
+
     # Calculate mAP
     calculate_map(
         in_result_folder,
@@ -76,7 +80,9 @@ def main(parser):
         iou_thresholds,
         out_folder,
         plot_pr,
-        ignore_other_instances)
+        nms_iou_thresh,
+        ignore_other_instances
+        )
 
 if __name__ == '__main__':
     args = get_args()

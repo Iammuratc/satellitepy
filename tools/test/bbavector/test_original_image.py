@@ -37,8 +37,8 @@ def get_args():
         help='Folder of original mask images. The mask images in this folder will be used to set mask pixel coordinates in out labels.')
     parser.add_argument('--out-folder', help='Save folder of detected bounding boxes. Predictions will be saved into <out-folder>.')
     parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
-    parser.add_argument('--conf-thresh', type=float, default=0.18, help='Confidence threshold, 0.1 for general evaluation')
-    parser.add_argument('--nms-iou-thresh', type=float, default=0.3, help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed according to this value.')
+    parser.add_argument('--conf-thresh', type=float, default=0.25,
+                        help='Confidence threshold, 0.25 for general evaluation')
     parser.add_argument('--log-path', type=Path, default=None, help='Log will be saved here.')
     parser.add_argument('--image-read-module', type=str, default='cv2', help='This module will be used to read the image. rasterio is suggested for large TIF images.')
     return parser
@@ -61,7 +61,7 @@ def main(parser):
     logger = logging.getLogger(__name__)
     logger.info('BBAVector model will process the images...')
     logger.info(f'Log will be stored at: {log_path}')
-    
+
     # configargparse config
     config_path = out_folder / f"{Path(__file__).resolve().stem}.ini"
     parser.write_config_file(args, [str(config_path)])
@@ -73,6 +73,9 @@ def main(parser):
     assert target_task in tasks, "target task must be part of the tasks"
 
     down_ratio = 4
+    patch_overlap = args.patch_overlap
+    patch_size = args.patch_size
+    truncated_object_threshold = args.truncated_object_thresh
 
     # Data arguments
     in_image_folder = Path(args.in_image_folder)

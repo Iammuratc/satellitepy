@@ -284,8 +284,8 @@ def get_satellitepy_table():
             'airplane':0,
             'ship':1,
             'vehicle':2,
-            'helicopter':3,
-            'other':4},
+            'helicopter':3},
+            #'other':4},
         'role':{
             'Small Civil Transport/Utility': 0,
             'Medium Civil Transport/Utility': 1,

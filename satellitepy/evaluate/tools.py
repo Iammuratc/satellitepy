@@ -11,9 +11,12 @@ from satellitepy.utils.path_utils import create_folder, get_file_paths, is_file_
 # from satellitepy.data.patch import get_patches, merge_patch_results
 import logging
 import json
-from satellitepy.evaluate.utils import set_conf_mat_from_result, get_precision_recall, get_average_precision
+from satellitepy.evaluate.utils import set_conf_mat_from_result, get_precision_recall, get_average_precision, \
+    remove_low_conf_results
 from tqdm import tqdm
+from satellitepy.evaluate.bbavector.utils import apply_nms
 
+import time
 
 def calculate_map(
     in_result_folder,
@@ -23,6 +26,7 @@ def calculate_map(
     iou_thresholds,
     out_folder,
     plot_pr,
+    nms_iou_thresh,
     ignore_other_instances = False):
 
     # Get logger
@@ -54,6 +58,7 @@ def calculate_map(
             instance_names,
             conf_score_thresholds,
             iou_thresholds,
+            nms_iou_thresh,
             ignore_other_instances)
 
         ignored_instances += ignored_instances_ret
@@ -121,7 +126,13 @@ def calc_iou(gt_mask, det_mask):
 
 
 
-def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresholds, conf_score_threshold, mask_threshold, mask_adaptive_size):
+def calculate_iou_score(in_result_folder,
+                        in_mask_folder,
+                        out_folder,
+                        iou_thresholds,
+                        conf_score_threshold,
+                        mask_threshold,
+                        mask_adaptive_size):
     # Get logger
     logger = logging.getLogger(__name__)
 
@@ -176,7 +187,7 @@ def calculate_iou_score(in_result_folder, in_mask_folder, out_folder, iou_thresh
     return ious
 
 
-def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_thresholds, out_folder):
+def calculate_relative_score(in_result_folder, task, target_task, conf_score_threshold, iou_thresholds, nms_iou_thresh, out_folder):
     # Get logger
     logger = logging.getLogger(__name__)
 
@@ -194,6 +205,9 @@ def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_t
         with open(result_path,'r') as result_file:
             result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches'
             gt_results = get_satellitepy_dict_values(result['gt_labels'], task)
+            result = remove_low_conf_results(result, target_task, conf_score_threshold)
+            det_results = apply_nms(result['det_labels'],nms_iou_threshold=nms_iou_thresh, target_task=target_task)
+            conf_scores = np.max(det_results[target_task], axis=1) if len(det_results[target_task]) > 0 else []
 
             if len(gt_results) == 0:
                 continue
@@ -201,7 +215,7 @@ def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_t
             for i_iou_th, iou_th in enumerate(iou_thresholds):
                 # Iterate over the confidence scores of the detected bounding boxes
 
-                for i_conf_score, conf_score in enumerate(result['det_labels']['confidence-scores']):
+                for i_conf_score, conf_score in enumerate(conf_scores):
                     ## If the confidence score is lower than threshold, skip the object
                     if conf_score < conf_score_threshold:
                         continue
@@ -215,7 +229,7 @@ def calculate_relative_score(in_result_folder, task, conf_score_threshold, iou_t
                     if det_gt_value is None:
                         continue
                     ## Det index
-                    det_value = result['det_labels'][task][i_conf_score][0]
+                    det_value = det_results[task][i_conf_score][0]
 
                     error = abs(det_gt_value - det_value)/det_gt_value
                     cnt[i_iou_th] += 1

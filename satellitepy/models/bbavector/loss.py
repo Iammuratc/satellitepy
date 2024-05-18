@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -43,8 +44,10 @@ class CELoss(nn.Module):
             return loss
         else:
             return 0.
+
+
 class BCELoss(nn.Module):
-    def __init__(self, mask_loss = False):
+    def __init__(self, mask_loss=False):
         super(BCELoss, self).__init__()
         self.mask_loss = mask_loss
 
@@ -87,6 +90,7 @@ class BCELoss(nn.Module):
         else:
             return 0.
 
+
 class OffSmoothL1Loss(nn.Module):
     def __init__(self):
         super(OffSmoothL1Loss, self).__init__()
@@ -120,8 +124,8 @@ class OffSmoothL1Loss(nn.Module):
             nan_mask = torch.isnan(target) == False
             if len(nan_mask.shape) > 2:
                 # if gt is none, than all regression targets will be None
-                nan_mask = nan_mask[:,:,0]
-    
+                nan_mask = nan_mask[:, :, 0]
+
             _mask = (mask & nan_mask) > 0
             loss = F.smooth_l1_loss(pred[_mask],
                                     target[_mask],
@@ -131,6 +135,7 @@ class OffSmoothL1Loss(nn.Module):
             return loss
         else:
             return 0.
+
 
 class FocalLoss(nn.Module):
   def __init__(self):
@@ -159,9 +164,11 @@ class FocalLoss(nn.Module):
         loss = loss - (pos_loss + neg_loss) / num_pos
       return loss
 
+
 def isnan(x):
     return x != x
-  
+
+
 class LossAll(torch.nn.Module):
     def __init__(self, tasks, target_task):
         super(LossAll, self).__init__()
@@ -171,7 +178,7 @@ class LossAll(torch.nn.Module):
         #self.L_cls_theta = BCELoss()
         self.tasks_losses = nn.ModuleDict()
         for t in tasks:
-            if t == "masks": 
+            if t == "masks":
                 self.tasks_losses[t] = BCELoss(mask_loss=True)
             elif t == "obboxes":
                 self.tasks_losses[t + "_params"] = OffSmoothL1Loss()
@@ -181,7 +188,7 @@ class LossAll(torch.nn.Module):
                 self.tasks_losses[t + "_params"] = OffSmoothL1Loss()
                 self.tasks_losses[t + "_offset"] = OffSmoothL1Loss()
             elif t == target_task: # this is the heatmap loss
-                self.tasks_losses["cls_" + t] = FocalLoss() 
+                self.tasks_losses["cls_" + t] = FocalLoss()
             else:
                 td = get_task_dict(t)
                 if 'max' in td.keys() and 'min' in td.keys():
@@ -203,9 +210,9 @@ class LossAll(torch.nn.Module):
                 loss_dict[task] = loss_fnc(pr_decs[task], gt_batch[task])
             else:
                 loss_dict[task] = loss_fnc(
-                    pr_decs[task], 
-                    gt_batch["reg_mask"], 
-                    gt_batch["ind"], 
+                    pr_decs[task],
+                    gt_batch["reg_mask"],
+                    gt_batch["ind"],
                     gt_batch[task]
                 )
 

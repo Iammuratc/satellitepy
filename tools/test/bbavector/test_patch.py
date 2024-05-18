@@ -31,7 +31,7 @@ def get_args():
         help='Folder of original mask images. The mask images in this folder will be used to set mask pixel coordinates in out labels.')
     parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
     parser.add_argument('--conf-thresh', type=float, default=0.18, help='Confidence threshold, 0.1 for general evaluation')
-    parser.add_argument('--out-folder',        
+    parser.add_argument('--out-folder',
         help='Save folder of detected bounding boxes. Bounding box labels will be saved into <out-folder>/results/patch_labels.')
     args = parser.parse_args()
     return args
@@ -42,6 +42,12 @@ def main(args):
     # Logger configs
     log_config_path = get_default_log_config() if args.log_config_path==None else Path(args.log_config_path)
     log_path = get_default_log_path(Path(__file__).resolve().stem) if args.log_path==None else Path(args.log_path)
+
+    # Initiate logger
+    init_logger(config_path=log_config_path, log_path=log_path)
+    logger = logging.getLogger(__name__)
+    logger.info('BBAVector model will process the images...')
+    logger.info(f'Log will be stored at: {log_path}')
 
     weights_path = args.weights_path
     # nms_on_multiclass_thr = args.nms_on_multiclass_thr
