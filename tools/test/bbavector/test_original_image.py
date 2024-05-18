@@ -38,8 +38,9 @@ def get_args():
     parser.add_argument('--out-folder', help='Save folder of detected bounding boxes. Predictions will be saved into <out-folder>.')
     parser.add_argument('--K', type=int, default=500, help='Maximum of objects')
     parser.add_argument('--conf-thresh', type=float, default=0.25,
-                        help='Confidence threshold, 0.18 for general evaluation')
+                        help='Confidence threshold, 0.25 for general evaluation')
     parser.add_argument('--log-path', type=Path, default=None, help='Log will be saved here.')
+    parser.add_argument('--image-read-module', type=str, default='cv2', help='This module will be used to read the image. rasterio is suggested for large TIF images.')
     return parser
 
 
@@ -67,26 +68,18 @@ def main(parser):
     logger.info(f"Configs will be stored at {config_path}")
 
     # Model arguments
-    weights_path = args.weights_path
-    device = args.device
-    in_image_folder = Path(args.in_image_folder)
-        
-    in_label_format = args.in_label_format
     tasks = args.tasks
-
     target_task = args.target_task
     assert target_task in tasks, "target task must be part of the tasks"
 
-    conf_thresh = args.conf_thresh
-    K = args.K
-    input_h = args.input_h
-    input_w = args.input_w
-    num_workers = args.num_workers
     down_ratio = 4
     patch_overlap = args.patch_overlap
     patch_size = args.patch_size
     truncated_object_threshold = args.truncated_object_thresh
 
+    # Data arguments
+    in_image_folder = Path(args.in_image_folder)
+    in_label_format = args.in_label_format
 
     in_label_folder = Path(args.in_label_folder) if args.in_label_folder else None
     if not in_label_folder:
@@ -96,25 +89,28 @@ def main(parser):
     if not in_mask_folder:
         logger.info("No mask folder is given. Results will have no ground truth mask.")
  
+    # Call the testing function
     save_original_image_results(
         out_folder=out_folder,
         in_image_folder=in_image_folder,
         in_mask_folder=in_mask_folder,
         in_label_folder=in_label_folder,
         in_label_format=in_label_format,
-        truncated_object_threshold=truncated_object_threshold,
-        patch_size=patch_size,
-        patch_overlap=patch_overlap,
-        checkpoint_path=weights_path,
-        device=device,
+        truncated_object_threshold=args.truncated_object_thresh,
+        patch_size=args.patch_size,
+        patch_overlap=args.patch_overlap,
+        checkpoint_path=args.weights_path,
+        device=args.device,
         tasks=tasks,
-        K=K,
-        conf_thresh=conf_thresh,
-        num_workers=num_workers,
-        input_h=input_h,
-        input_w=input_w,
+        K=args.K,
+        conf_thresh=args.conf_thresh,
+        num_workers=args.num_workers,
+        input_h=args.input_h,
+        input_w=args.input_w,
         down_ratio = down_ratio,
-        target_task=target_task)
+        nms_iou_threshold=args.nms_iou_thresh,
+        target_task=target_task,
+        img_read_module=args.image_read_module)
         # nms_on_multiclass_thr)
 
 

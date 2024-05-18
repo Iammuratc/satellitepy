@@ -4,6 +4,7 @@ from satellitepy.evaluate.tools import calculate_map, calculate_relative_score, 
 from satellitepy.models.bbavector.utils import load_checkpoint, get_model_decoder  # , collater
 from satellitepy.dataset.bbavector.dataset_bbavector import BBAVectorDataset
 from satellitepy.dataset.bbavector.utils import Utils as BBAVectorDatasetUtils
+from satellitepy.data.utils import get_task_dict, read_img
 from satellitepy.data.tools import read_label
 from satellitepy.data.patch import get_patches, merge_patch_results
 from satellitepy.utils.path_utils import create_folder, get_file_paths
@@ -108,8 +109,6 @@ def save_patch_results(
             input_w,
             down_ratio
             )
-        # save_dict = apply_nms(save_dict)
-
 
         if in_label_folder:
             gt_labels = read_label(data_dict['label_path'][0],in_label_format)
@@ -147,9 +146,10 @@ def save_original_image_results(
     num_workers,
     input_h,
     input_w,
+    conf_thresh,
     down_ratio,
     K,
-    conf_thresh,
+    img_read_module='cv2',
     target_task='coarse-class'
     ):
 
@@ -191,12 +191,11 @@ def save_original_image_results(
         K=K,
         augmentation=False)
 
-
     for img_path, label_path, mask_path in tqdm(zip(img_paths,label_paths,mask_paths), total=len(img_paths)):
 
         # Image
         img_name = img_path.stem
-        img = cv2.imread(str(img_path))
+        img = read_img(img_path=str(img_path),module=img_read_module)
 
         # Labels
         gt_labels = read_label(label_path,in_label_format,mask_path)
@@ -240,13 +239,9 @@ def save_original_image_results(
 
         # Merge patch results into original results standards
         merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
-        # merged_det_labels = merge_patch_results(patch_dict, patch_size, img.shape)
-        # print(list(merged_det_labels.keys()))
-        # merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_iou_threshold, target_task=target_task)
 
         # Find matches of original image with merged patch results
         matches = match_gt_and_det_bboxes(gt_labels,merged_det_labels)
-
         # Results
         result = {
             'gt_labels':gt_labels,

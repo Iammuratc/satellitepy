@@ -15,10 +15,60 @@ from satellitepy.data.labels import read_label, init_satellitepy_label, fill_non
     get_all_satellitepy_keys, satellitepy_labels_empty
 from satellitepy.data.patch import get_patches
 from satellitepy.data.chip import get_chips
-from satellitepy.data.utils import get_xview_classes, get_task_dict
+from satellitepy.data.utils import get_xview_classes, get_task_dict, read_img
 from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, zip_matched_files, get_file_paths
 from satellitepy.data.bbox import BBox
+
+logger = logging.getLogger('')
+
+def show_labels_on_images(
+    image_folder,
+    label_folder,
+    mask_folder,
+    label_format,
+    img_read_module,
+    out_folder,
+    tasks,
+):
+    """
+    Images visualizing given tasks (e.g., bounding boxes in polygons, classification tasks in text, masks in contours) 
+    will be stored under out_folder/images
+    Parameters
+    ----------
+    img_read_module : str
+        Module to read image, e.g., cv2, rasterio
+    out_folder : Path
+        Output directory. Image will be saved here.
+    tasks : list
+        List of tasks
+    label_format : str
+        Label format, e.g., dota, satellitepy
+    """
+    logger.info('Drawing labels on images, and saving the images.')
+
+    out_image_folder = out_folder / "images"
+    assert create_folder(out_image_folder)
+
+    img_paths = get_file_paths(image_folder)
+    label_paths = get_file_paths(label_folder)    
+    mask_paths = get_file_paths(mask_folder) if mask_folder else [None] * len(img_paths)
+
+    assert len(img_paths) == len(label_paths) == len(mask_paths)
+    
+    for label_path, mask_path, img_path in tqdm(zip(label_paths, mask_paths, img_paths), total=len(label_paths)):
+        img = read_img(str(img_path),img_read_module)
+        labels = read_label(label_path, label_format)
+        for task in tasks:
+            if task in ['obboxes','hbboxes']:
+                for bbox_corners in labels[task]:
+                    bbox = BBox(corners=bbox_corners)
+                    img = bbox.draw_bbox_to_img(img,corners=[bbox.corners],thickness=5)
+
+        # scaled_img = cv2.resize(img,(0,0),fx=0.2,fy=0.2)
+        out_img_path = out_image_folder / f"{img_path.stem}.png"
+        cv2.imwrite(str(out_img_path),img)#scaled_img)
+
 
 
 def create_satellitepy_labels(
@@ -29,8 +79,6 @@ def create_satellitepy_labels(
         exclude_object_classes,
         mask_folder=None
 ):
-    logger = logging.getLogger(__name__)
-
     # Create output folders
     out_label_folder = Path(out_folder) / 'labels'
     assert create_folder(out_label_folder)
@@ -92,9 +140,8 @@ def save_patches(
         truncated_object_thr,
         patch_size,
         patch_overlap,
-        include_object_classes,
-        exclude_object_classes,
-        mask_folder=None
+        image_read_module,
+        mask_folder=None,
 ):
     """
     Save patches from the original images
@@ -116,19 +163,13 @@ def save_patches(
         Patch size
     patch_overlap : int
         Patch overlap
-    include_object_classes: list[str]
-        A list of object class names that shall be included as ground truth for the patches. 
-        Takes precedence over exclude_object_classes, i.e. if both are provided, 
-        only include_object_classes will be considered.
-    exclude_object_classes: list[str]
-        A list of object class names that shall be excluded as ground truth for the patches.
-        include_object_classes takes precedence and overrides the behaviour of this parameter.
+    image_read_module : str
+        cv2 or rasterio to read the images
     Returns
     -------
     Save patches in <out-folder>/images and <out-folder>/labels
     """
-    logger = logging.getLogger(__name__)
-
+    logger.info('Saving patches')
     # Create output folders
     out_image_folder = Path(out_folder) / 'images'
     out_label_folder = Path(out_folder) / 'labels'
@@ -151,13 +192,10 @@ def save_patches(
         mask_name = mask_path.name if mask_path != None else None
         label_name = label_path.name if label_path is not None else None
         logger.info(f"{img_path.name}, {label_name}, {mask_name}")
-        # Image
-        img = cv2.imread(str(img_path))
         # Labels
-        if label_path is not None:
-            gt_labels = read_label(label_path, label_format, mask_path)
-        else:
-            gt_labels = None
+        gt_labels = read_label(label_path, label_format, mask_path)
+        # Image
+        img = read_img(str(img_path),module=image_read_module)
         # Save results with the corresponding ground truth
         patches = get_patches(
             img,
@@ -169,30 +207,40 @@ def save_patches(
 
         count_patches = len(patches['images'])
         logger.info(f'Number of patches: {count_patches}')
-        for i in range(count_patches):
-            # if satellitepy_labels_empty(patches["labels"][i]):
-            #     continue
+        count_skipped_patches = [0,0]
+        for i in tqdm(range(count_patches),leave=True):
 
             # Get original image name for naming patch files
             img_name = img_path.stem
 
             # Patch starting coordinates
             patch_x0, patch_y0 = patches['start_coords'][i]
+            patch_name = f"{img_name}_x_{patch_x0}_y_{patch_y0}"
 
             # Save patch image
             patch_img = patches['images'][i]
-            patch_image_path = Path(out_image_folder) / f"{label_format}_{img_name}_x_{patch_x0}_y_{patch_y0}.png"
+            patch_image_path = Path(out_image_folder) / f"{patch_name}.png"
+
+            # If image consists of only zeros, skip it
+            if len(np.unique(patch_img)) == 1:
+                count_skipped_patches[0] += 1
+                continue
 
             patch_label = patches['labels'][i]
-            print(patch_label)
-            if patch_label is None or len(patch_label['hbboxes']) != 0:
-                cv2.imwrite(str(patch_image_path), patch_img)
+            patch_label_path = Path(out_label_folder) / f"{patch_name}.json"
 
-            # Save patch labels
-            if patch_label is not None and len(patch_label['hbboxes']) != 0:
-                patch_label_path = Path(out_label_folder) / f"{label_format}_{img_name}_x_{patch_x0}_y_{patch_y0}.json"
-                with open(str(patch_label_path), 'w') as f:
-                    json.dump(patch_label, f, indent=4)
+            # If there is not any bounding boxes in the patch, skip it
+            if not (any(patch_label['obboxes']) or any(patch_label['hbboxes'])):
+                count_skipped_patches[1] += 1
+                continue
+
+            # Save patch and its label file
+            cv2.imwrite(str(patch_image_path), patch_img)
+            with open(str(patch_label_path), 'w') as f:
+                json.dump(patch_label, f, indent=4)
+        logger.info(f"{count_skipped_patches[0]} patches are skipped because images consist of only zeros.")
+        logger.info(f"{count_skipped_patches[1]} patches are skipped because no bounding boxes are defined.")
+        logger.info(f"{sum(count_skipped_patches)} patches are skipped in total.")
 
 
 def save_chips(
@@ -293,7 +341,8 @@ def get_label_by_idx(satpy_labels: dict, i: int):
     result = {}
     inner(satpy_labels, result)
     return result
-      
+
+
 def show_results_on_image(img_dir, 
     result_dir,
     mask_dir,
@@ -307,7 +356,6 @@ def show_results_on_image(img_dir,
     """
     Visualize results on images
     """
-    logger = logging.getLogger(__name__)
     logger.info(tasks)
     img_paths = get_file_paths(img_dir)
     label_paths = get_file_paths(result_dir)
