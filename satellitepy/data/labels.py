@@ -402,7 +402,7 @@ def read_rareplanes_real_label(label_path):
 
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
-        bbox = BBox(diamond_corners=points.reshape(4,2))
+        bbox = BBox(diamond_corners=np.array(points[:8]).reshape(4,2))
         corners = bbox.corners
         labels['obboxes'].append(corners)
         labels['hbboxes'].append(BBox.get_hbb_from_obb(corners))
@@ -448,18 +448,8 @@ def read_rareplanes_synthetic_label(label_path, mask_path):
     for annotation in file['annotations']:
         points = annotation['segmentation'][0]
 
-        A = (points[0], points[1])
-        B = (points[2], points[3])
-        C = (points[4], points[5])
-        D = (points[6], points[7])
-        # converting polygon-annotations to bounding box
-        vecBD = tuple(np.subtract(D, B))
-        middle = tuple(np.add(B, np.divide(vecBD, 2)))
-        vecToC = tuple(np.subtract(C, middle))
-        vecToA = tuple(np.subtract(A, middle))
-
-        corners = [np.add(D, vecToA).tolist(), np.add(D, vecToC).tolist(), np.add(B, vecToC).tolist(),
-                   np.add(B, vecToA).tolist()]
+        bbox = BBox(diamond_corners=np.array(points[:8]).reshape(4, 2))
+        corners = bbox.corners
 
         # masks missing
 

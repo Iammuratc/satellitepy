@@ -72,8 +72,8 @@ def get_patches(
         # Patch labels
         if label_file_exist:
             for j, (hbbox, obbox) in enumerate(zip(gt_labels['hbboxes'],gt_labels['obboxes'])):
-                hbb_defined = hbbox != None
-                obb_defined = obbox != None
+                hbb_defined = np.array(hbbox).any()
+                obb_defined = np.array(obbox).any()
 
                 if hbb_defined and obb_defined:
                     shift_bboxes(patch_dict, gt_labels, j, i , 'obboxes', patch_start_coord, obbox, patch_size, truncated_object_thr, consider_additional=True)
