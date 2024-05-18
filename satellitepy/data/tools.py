@@ -65,9 +65,10 @@ def show_labels_on_images(
                     bbox = BBox(corners=bbox_corners)
                     img = bbox.draw_bbox_to_img(img,corners=[bbox.corners],thickness=5)
 
-        # scaled_img = cv2.resize(img,(0,0),fx=0.2,fy=0.2)
         out_img_path = out_image_folder / f"{img_path.stem}.png"
-        cv2.imwrite(str(out_img_path),img)#scaled_img)
+        cv2.imwrite(str(out_img_path),img)
+        # scaled_img = cv2.resize(img,(0,0),fx=0.2,fy=0.2)
+        # cv2.imwrite(str(out_img_path),scaled_img)
 
 
 

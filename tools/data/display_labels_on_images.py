@@ -64,7 +64,7 @@ def run(parser):
         logger.info("No mask folder is given. Patches will have no ground truth mask.")
     
     if args.image_read_module == 'rasterio':
-        logger.warning("Images will be normalized and clipped to [0,255].")
+        logger.info("Images will be normalized and clipped to [0,255].")
 
     show_labels_on_images(
         image_folder=in_image_folder,
