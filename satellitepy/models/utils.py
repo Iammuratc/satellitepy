@@ -12,7 +12,7 @@ class EarlyStopping:
     """
 
     def __init__(self, patience=7, verbose=False, delta=0,
-                 path=None, trace_func=logging.getLogger(__name__).info, val_loss_min=None):
+                 path=None, trace_func=logging.getLogger('').info, val_loss_min=None):
         """
         Args:
             patience (int): How long to wait after last time validation loss improved.

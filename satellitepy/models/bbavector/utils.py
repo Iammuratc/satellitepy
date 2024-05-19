@@ -7,31 +7,28 @@ from satellitepy.models.bbavector import ctrbox_net, decoder
 from satellitepy.data.utils import get_task_dict
 from satellitepy.data.bbox import BBox
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('')
 
-def get_model(tasks,down_ratio):
-    heads = {#'hm': num_classes, # heatmap
-             #'reg_wh': 10, # box param
-             #'reg_bb_offset': 2, # offset
-             #'cls_theta': 1 # orientation
-             }
+
+def get_model(tasks, down_ratio):
+    heads = {}
 
     for task in tasks:
-        if task == "obboxes":
-            heads["obboxes_params"] = 10
-            heads["obboxes_offset"] = 2
-            heads["obboxes_theta"] = 1
-        elif task == "hbboxes":
-            heads["hbboxes_params"] = 2
-            heads["hbboxes_offset"] = 2
-        elif task == "masks":
+        if task == 'obboxes':
+            heads['obboxes_params'] = 10
+            heads['obboxes_offset'] = 2
+            heads['obboxes_theta'] = 1
+        elif task == 'hbboxes':
+            heads['hbboxes_params'] = 2
+            heads['hbboxes_offset'] = 2
+        elif task == 'masks':
             heads[task] = 1
         else:
             td = get_task_dict(task)
             if 'max' and 'min' in td.keys():
-                heads["reg_" + task] = 1
+                heads['reg_' + task] = 1
             else:
-                heads["cls_" + task] = len(set(td.values()))
+                heads['cls_' + task] = len(set(td.values()))
 
     model = ctrbox_net.CTRBOX(heads=heads,
                               pretrained=True,
@@ -49,13 +46,13 @@ def save_model(path, epoch, model, optimizer):
     torch.save({
         'epoch': epoch,
         'model_state_dict': state_dict,
-        'optimizer_state_dict': optimizer.state_dict(),
-        # 'loss': loss
+        'optimizer_state_dict': optimizer.state_dict()
     }, path)
+
 
 def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3):
     checkpoint = torch.load(checkpoint_path)
-    logger.info('loaded weights from {}, epoch {}'.format(checkpoint_path, checkpoint['epoch']))
+    logger.info(f'loaded weights from {checkpoint_path}, epoch {checkpoint["epoch"]}')
 
     keys = checkpoint['model_state_dict'].keys()
     bbox_keys = list(set([key[:7] for key in keys if 'bboxes' in key]))
@@ -64,32 +61,33 @@ def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3):
     mask_key = list(set([key.split('.')[0] for key in keys if 'masks' in key]))
     all_keys = bbox_keys + cls_keys + reg_keys + mask_key
 
-    model = get_model(all_keys,down_ratio)
+    model = get_model(all_keys, down_ratio)
 
     if isinstance(model, torch.nn.DataParallel):
         model.module.load_state_dict(checkpoint['model_state_dict'])
         optimizer = torch.optim.Adam(model.module.parameters(), lr=init_lr)
     else:
-        # we crop the weight sizes in first dimension if necessary
         for k, v in model.state_dict().items():
-            saved_weights = checkpoint["model_state_dict"][k]
+            saved_weights = checkpoint['model_state_dict'][k]
             if v.shape != saved_weights.shape:
-                checkpoint["model_state_dict"][k] = saved_weights[:v.shape[0], ...]
+                checkpoint['model_state_dict'][k] = saved_weights[:v.shape[0], ...]
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer = torch.optim.Adam(model.parameters(), lr=init_lr)
 
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']
     valid_loss = checkpoint['loss']
-    # model.to(device)
+
     return model, optimizer, epoch, valid_loss
 
+
 def decode_predictions(predictions, orig_h, orig_w, input_h, input_w, down_ratio):
-    if "obboxes" in predictions:
-        predictions["obboxes"] = decode_obboxes(predictions["obboxes"], orig_w, orig_h, input_w, input_h, down_ratio)
-    if "hbboxes" in predictions:
-        predictions["hbboxes"] = decode_hbboxes(predictions["hbboxes"], orig_w, orig_h, input_w, input_h, down_ratio)
+    if 'obboxes' in predictions:
+        predictions['obboxes'] = decode_obboxes(predictions['obboxes'], orig_w, orig_h, input_w, input_h, down_ratio)
+    if 'hbboxes' in predictions:
+        predictions['hbboxes'] = decode_hbboxes(predictions['hbboxes'], orig_w, orig_h, input_w, input_h, down_ratio)
     return predictions
+
 
 def decode_obboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
     points = []
@@ -103,11 +101,12 @@ def decode_obboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
         bl = bb + ll - cen_pt
         tr = tt + rr - cen_pt
         br = bb + rr - cen_pt
-        pts = np.asarray([tl, bl,br, tr,], np.float32)
+        pts = np.asarray([tl, bl, br, tr, ], np.float32)
         pts[:, 0] = pts[:, 0] * down_ratio / input_w * orig_w
         pts[:, 1] = pts[:, 1] * down_ratio / input_h * orig_h
         points.append(pts)
     return points
+
 
 def decode_masks(bbox, mask):
     h = BBox.get_bbox_limits(np.array(bbox))
@@ -125,11 +124,11 @@ def decode_hbboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
     for box in boxes:
         cen_pt = np.asarray([box[0], box[1]], np.float32)
         width, height = box[2], box[3]
-        tl = cen_pt + np.asarray([-width/2, -height/2], np.float32)
-        tr = cen_pt + np.asarray([width/2, -height/2], np.float32)
-        br = cen_pt + np.asarray([width/2, height/2], np.float32)
-        bl = cen_pt + np.asarray([-width/2, height/2], np.float32)
-        pts = np.asarray([tl, bl,br, tr,], np.float32)
+        tl = cen_pt + np.asarray([-width / 2, -height / 2], np.float32)
+        tr = cen_pt + np.asarray([width / 2, -height / 2], np.float32)
+        br = cen_pt + np.asarray([width / 2, height / 2], np.float32)
+        bl = cen_pt + np.asarray([-width / 2, height / 2], np.float32)
+        pts = np.asarray([tl, bl, br, tr, ], np.float32)
         pts[:, 0] = pts[:, 0] * down_ratio / input_w * orig_w
         pts[:, 1] = pts[:, 1] * down_ratio / input_h * orig_h
         points.append(pts)
@@ -138,6 +137,6 @@ def decode_hbboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
 
 def get_model_decoder(tasks, K, conf_thresh, target_task):
     model_decoder = decoder.DecDecoder(K=K,
-        conf_thresh=conf_thresh,
-        tasks=tasks, target_task=target_task)
+                                       conf_thresh=conf_thresh,
+                                       tasks=tasks, target_task=target_task)
     return model_decoder

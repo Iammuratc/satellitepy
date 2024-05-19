@@ -20,14 +20,17 @@ def get_args():
                         help='Labels that corresponds to the given images')
     parser.add_argument('--in-mask-dir', type=Path, required=False,
                         help='Masks to display on the images. Required if masks in tasks.')
-    parser.add_argument('--mask-threshold',  type=float, default=10,
+    parser.add_argument('--mask-threshold', type=float, default=10,
                         help='C for cv2.adaptiveThreshold. Value is subtracted from the threshold.')
     parser.add_argument('--mask-adaptive-size', type=float, default=101,
-                        help='The threshold is the weighted sum of values in a neighbourhood of this size. Must be odd, default is 51.')
+                        help='The threshold is the weighted sum of values in a neighbourhood of this size. Must be '
+                             'odd, default is 51.')
     parser.add_argument('--out-dir', type=Path, required=True,
                         help='dir where the generated image should be saved to.')
     parser.add_argument('--tasks', type=str, nargs='+',
-                        help='Which information to show on generated images. E.g.: bboxes, masks, labels. Default is all, which shows all available information.', default='all')
+                        help='Which information to show on generated images. E.g.: bboxes, masks, labels. Default is '
+                             'all, which shows all available information.',
+                        default='all')
     parser.add_argument('--conf-score-threshold', type=float, default=0.5,
                         help='Confidence score threshold')
     parser.add_argument('--iou-threshold', type=float, default=0.5,
@@ -59,24 +62,24 @@ def run(args):
     elif 'masks' in tasks:
         assert mask_dir, 'in-mask-dir must be specified if masks is in tasks!'
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('')
     logger.info(f'Displaying results of {image_dir.name}...')
     log_path = Path(
-        output_dir) / 'display_results_on_images.log' if args.log_path == None else args.log_path
+        output_dir) / 'display_results_on_images.log' if args.log_path is None else args.log_path
 
     init_logger(config_path=args.log_config_path, log_path=log_path)
 
     show_results_on_image(
-        img_dir = image_dir,
-        mask_dir = mask_dir,
-        mask_threshold = mask_threshold,
-        mask_adaptive_size = mask_adaptive_size,
-        result_dir = result_dir,
-        out_dir = output_dir,
-        tasks = tasks,
-        all_tasks_flag = all_tasks_flag,
-        iou_th = iou_th,
-        conf_th = conf_th)
+        img_dir=image_dir,
+        mask_dir=mask_dir,
+        mask_threshold=mask_threshold,
+        mask_adaptive_size=mask_adaptive_size,
+        result_dir=result_dir,
+        out_dir=output_dir,
+        tasks=tasks,
+        all_tasks_flag=all_tasks_flag,
+        iou_th=iou_th,
+        conf_th=conf_th)
 
 
 if __name__ == '__main__':

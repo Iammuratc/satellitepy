@@ -7,6 +7,7 @@ import logging
 
 project_folder = get_project_folder()
 
+
 def get_args():
     """Arguments parser."""
     parser = configargparse.ArgumentParser(description=__doc__)
@@ -15,7 +16,7 @@ def get_args():
     parser.add_argument('--out-folder', type=Path,
                         help='Save folder of new labels. Labels will be saved into <out-folder>/labels.')
     parser.add_argument('--log-config-path', default=project_folder /
-                        Path("configs/log.config"), type=Path, help='Log config file.')
+                                                     Path("configs/log.config"), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, help='Log file path.')
     args = parser.parse_args()
     return args
@@ -27,18 +28,16 @@ def run(args):
 
     assert create_folder(out_folder)
 
-    # Init logger
-    log_path = project_folder / f'save_xview_in_satellitepy_format.log' if args.log_path == None else args.log_path
+    log_path = project_folder / f'save_xview_in_satellitepy_format.log' if args.log_path is None else args.log_path
     init_logger(config_path=args.log_config_path, log_path=log_path)
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('')
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
     logger.info('Saving satellitepy labels')
 
-    save_xview_in_satellitepy_format(out_folder,in_label_file)
+    save_xview_in_satellitepy_format(out_folder, in_label_file)
 
 
 if __name__ == '__main__':
     args = get_args()
     run(args)
-

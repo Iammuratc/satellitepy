@@ -141,19 +141,12 @@ class TrainModule(object):
 
             logger.info(msg)
 
-    def test_network(self):
-
-        logger = logging.getLogger(__name__)
-
-        valid_loss = self.run_valid(valid_loader, criterion)
-        logger.info(f'valid_loss: {valid_loss:.5f}')
-
     def run_train(self, data_loader, criterion):
         self.model.train()
         running_loss = {}
         for data_dict in tqdm(data_loader):
             for name in data_dict.keys():
-                if name not in ["img_w", "img_h", "img_path", "label_path"]:
+                if name not in ['img_w', 'img_h', 'img_path', 'label_path']:
                     data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             self.optimizer.zero_grad()
             pr_decs = self.model(data_dict['input'])
@@ -173,14 +166,12 @@ class TrainModule(object):
         return epoch_loss
 
     def run_valid(self, data_loader, criterion):
-        # VALIDATE MODEL
         self.model.eval()
-        acc_sums = 0
         running_loss = {}
 
         for data_dict in tqdm(data_loader):
             for name in data_dict.keys():
-                if name not in ["img_w", "img_h", "img_path", "label_path"]:
+                if name not in ['img_w', 'img_h', 'img_path', 'label_path']:
                     data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             with torch.no_grad():
                 pr_decs = self.model(data_dict['input'])

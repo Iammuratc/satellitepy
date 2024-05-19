@@ -7,10 +7,11 @@ import logging
 
 project_folder = get_project_folder()
 
+
 def get_args():
     """Arguments parser."""
     parser = configargparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--in-label-folder', type=Path, required = False,
+    parser.add_argument('--in-label-folder', type=Path, required=False,
                         help='The original label folder.')
     parser.add_argument('--in-image-folder', type=Path,
                         help='The original image folder.')
@@ -21,7 +22,7 @@ def get_args():
     parser.add_argument('--dataset', type=str,
                         help='Dataset, to split, either shipnet or dior')
     parser.add_argument('--log-config-path', default=project_folder /
-                        Path("configs/log.config"), type=Path, help='Log config file.')
+                                                     Path('configs/log.config'), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, help='Log file path.')
     args = parser.parse_args()
     return args
@@ -38,10 +39,9 @@ def run(args):
 
     assert dataset == 'dior' or dataset == 'shipnet'
 
-    # Init logger
-    log_path = project_folder / f'separate_shipnet_data.log' if args.log_path == None else args.log_path
+    log_path = project_folder / f'separate_shipnet_data.log' if args.log_path is None else args.log_path
     init_logger(config_path=args.log_config_path, log_path=log_path)
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('')
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
 
@@ -51,4 +51,3 @@ def run(args):
 if __name__ == '__main__':
     args = get_args()
     run(args)
-

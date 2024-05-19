@@ -33,16 +33,14 @@ def run(args):
     assert create_folder(out_folder)
     assert create_folder(out_labels_folder)
 
-    # Init logger
     log_path = Path(
         out_folder) / 'split_rareplanes_labels.log' if args.log_path == None else args.log_path
     init_logger(config_path=args.log_config_path, log_path=log_path)
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('')
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
     logger.info('Saving split rareplanes labels')
 
-    # Split label
     split_rareplanes_labels(
         label_file=in_label_file,
         out_folder=out_labels_folder
