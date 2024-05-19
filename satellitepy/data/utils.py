@@ -8,6 +8,7 @@ from satellitepy.data.bbox import BBox
 
 logger = logging.getLogger('')
 
+
 def read_img(img_path, module='cv2'):
     """
     Read image.
@@ -20,33 +21,28 @@ def read_img(img_path, module='cv2'):
     Returns
     -------
     img : np.ndarray
-        Image in the opencv format,  (rows, columns, bands). If image has four bands, the alpha channel is ignored. 
+        Image in the opencv format,  (rows, columns, bands). If image has four bands, the alpha channel is ignored.
     """
 
     if module == 'cv2':
         img = cv2.imread(img_path)
     elif module == 'rasterio':
         with rasterio.open(img_path) as src:
-            # Read the image as a numpy array
-            img_array = src.read() # RGBA
-            # Swap and reorder channels from RGBA to BGR
+            img_array = src.read()
             img = np.transpose(img_array, axes=(1, 2, 0))
-            img = cv2.cvtColor(img,cv2.COLOR_RGBA2BGR)
-            # lo - low value as percentile 0.1 (1/1000 of test values are below lo)
-            # hi - high value as percentile 99.9 (1/1000 of test values are above hi)
+            img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
             lo, hi = np.percentile(img, (1, 99))
 
-            # Apply linear "stretch" - lo goes to 0, and hi goes to 255
-            img = (img.astype(float) - lo) * (255/(hi-lo))
+            img = (img.astype(float) - lo) * (255 / (hi - lo))
 
-            #Clamp range to [0, 255] and convert to uint8
-            img = np.clip(img,0,255).astype(np.uint8)
+            img = np.clip(img, 0, 255).astype(np.uint8)
     else:
         logger.error(f'{module} is not a valid argument!')
         return 0
     return img
 
-def set_mask(labels,mask_path,bbox_type, mask_type):
+
+def set_mask(labels, mask_path, bbox_type, mask_type):
     """
     Set the masks key in the satellitepy dict by using the bboxes in the dict
     Parameters
@@ -62,170 +58,155 @@ def set_mask(labels,mask_path,bbox_type, mask_type):
     """
     if mask_type == 'DOTA':
         mask = cv2.cvtColor(cv2.imread(str(mask_path)), cv2.COLOR_RGB2GRAY)
-    if mask_type == 'rareplanes':
+    elif mask_type == 'rareplanes':
         mask = cv2.imread(str(mask_path))
+    else:
+        raise Exception(f'mask_type {mask_type} not defined')
 
     for bbox in labels[bbox_type]:
         h = BBox.get_bbox_limits(np.array(bbox))
-        mask_0 = np.zeros((mask.shape[0],mask.shape[1]))
-        cv2.fillPoly(mask_0, [np.array(bbox,dtype=int)], 1)
+        mask_0 = np.zeros((mask.shape[0], mask.shape[1]))
+        cv2.fillPoly(mask_0, [np.array(bbox, dtype=int)], 1)
 
         if mask_type == 'DOTA':
-            coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] != 0)).T # y,x
+            coords = np.argwhere((mask_0[h[2]:h[3], h[0]:h[1]] == 1) & (mask[h[2]:h[3], h[0]:h[1]] != 0)).T
             labels['masks'].append(np.array([coords[1] + h[0], coords[0] + h[2]]).tolist())  # x,y
         if mask_type == 'rareplanes':
             center = (int((h[0] + h[1]) / 2), int((h[2] + h[3]) / 2))
 
-            # Rareplanes uses various colors for the masks. If the center of the airplane is not in the image, the correct color cannot be determined
             if 0 <= center[0] < mask.shape[1] and 0 <= center[1] < mask.shape[0]:
                 color = mask[center[::-1]]
                 coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] == color)).T.tolist()
-                labels['masks'].append([(coords[1] + h[0]).tolist() ,(coords[0] + h[2]).tolist()]) # x,y
+                labels['masks'].append([(coords[1] + h[0]).tolist(), (coords[0] + h[2]).tolist()])
             else:
                 labels['masks'].append(None)
 
-
     return labels
 
+
 def get_shipnet_categories():
-    # Categories rely on the original shipnet categories. Check out the paper
     categories = {
-        #'Other Ship'
-        # 1: {
-        #     1: {
-        1:'Other Ship',
-            # },
-            # # Warship
-            # 2: {
-        2:'Other Warship',
-        3:'Submarine',
-        4:'Aircraft Carrier',
-        5:'Cruiser',
-        6:'Destroyer',
-        7:'Frigate',
-        8:'Patrol',
-        9:'Landing',
-        10:'Commander',
-        11:'Auxiliary Ship',
-            # },
-            # # Merchant
-            # 3: {
-        12:'Other Merchant',
-        13:'Container Ship',
-        14:'RoRo',
-        15:'Cargo',
-        16:'Barge',
-        17:'Tugboat',
-        18:'Ferry',
-        19:'Yacht',
-        20:'Sailboat',
-        21:'Fishing Vessel',
-        22:'Oil Tanker',
-        23:'Hovercraft',
-        24:'Motorboat',
-        #     }
-        # },
-        # Dock
-        # 2: {
-        #     4: {
-        25:'Dock'
-        #     }
-        # }
+        1: 'Other Ship',
+        2: 'Other Warship',
+        3: 'Submarine',
+        4: 'Aircraft Carrier',
+        5: 'Cruiser',
+        6: 'Destroyer',
+        7: 'Frigate',
+        8: 'Patrol',
+        9: 'Landing',
+        10: 'Commander',
+        11: 'Auxiliary Ship',
+        12: 'Other Merchant',
+        13: 'Container Ship',
+        14: 'RoRo',
+        15: 'Cargo',
+        16: 'Barge',
+        17: 'Tugboat',
+        18: 'Ferry',
+        19: 'Yacht',
+        20: 'Sailboat',
+        21: 'Fishing Vessel',
+        22: 'Oil Tanker',
+        23: 'Hovercraft',
+        24: 'Motorboat',
+        25: 'Dock'
     }
     return categories
 
+
 def get_vedai_classes():
-    classes={
-        1:"Car",
-        2:"Truck",
-        3:"Tractor",
-        4:"Camping Car",
-        5:"Motorcycle",
-        6:"Bus",
-        9:"Van",
-        10:"other", 
-        11:"Pickup Truck",
-        12:"large",
-        23:"boat", 
-        31:"plane"
+    classes = {
+        1: 'Car',
+        2: 'Truck',
+        3: 'Tractor',
+        4: 'Camping Car',
+        5: 'Motorcycle',
+        6: 'Bus',
+        9: 'Van',
+        10: 'other',
+        11: 'Pickup Truck',
+        12: 'large',
+        23: 'boat',
+        31: 'plane'
     }
     return classes
 
+
 def get_xview_classes():
-    classes={
-            'vehicles':{
-                17: 'Passenger Vehicle',
-                23: 'Truck',
-                18: 'Small Car',
-                19: 'Bus',
-                20: 'Pickup Truck',
-                21: 'Utility Truck',
-                24: 'Cargo Truck',
-                25: 'Truck w/Box',
-                26: 'Truck Tractor',
-                28: 'Truck w/Flatbed', 
-                29: 'Truck w/Liquid',
-                56: 'Reach Stacker',
-                57: 'Straddle Carrier',
-                59: 'Mobile Crane',
-                60: 'Dump Truck',
-                61: 'Haul Truck',
-                62: 'Scraper/Tractor',
-                63: 'Front Loader',
-                64: 'Excavator',
-                65: 'Cement Mixer',
-                66: 'Ground Grader',
-                32: 'Crane Truck',
-                33: 'Railway Vehicle',
-                34: 'Passenger Car',
-                35: 'Cargo Car',
-                36: 'Flat Car',
-                37: 'Tank Car',
-                38: 'Locomotive',
+    classes = {
+        'vehicles': {
+            17: 'Passenger Vehicle',
+            23: 'Truck',
+            18: 'Small Car',
+            19: 'Bus',
+            20: 'Pickup Truck',
+            21: 'Utility Truck',
+            24: 'Cargo Truck',
+            25: 'Truck w/Box',
+            26: 'Truck Tractor',
+            28: 'Truck w/Flatbed',
+            29: 'Truck w/Liquid',
+            56: 'Reach Stacker',
+            57: 'Straddle Carrier',
+            59: 'Mobile Crane',
+            60: 'Dump Truck',
+            61: 'Haul Truck',
+            62: 'Scraper/Tractor',
+            63: 'Front Loader',
+            64: 'Excavator',
+            65: 'Cement Mixer',
+            66: 'Ground Grader',
+            32: 'Crane Truck',
+            33: 'Railway Vehicle',
+            34: 'Passenger Car',
+            35: 'Cargo Car',
+            36: 'Flat Car',
+            37: 'Tank Car',
+            38: 'Locomotive',
 
-            },
-            'ships':{
-                40: 'Maritime Vessel',
-                41: 'Motorboat',
-                42: 'Sailboat',
-                44: 'Tugboat',
-                45: 'Barge',
-                47: 'Fishing Vessel',
-                49: 'Ferry',
-                50: 'Yacht',
-                51: 'Container Ship',
-                52: 'Oil Tanker',
-                53: 'Engineering Vessel',
-            },
-            'airplanes':{
-                11: 'Fixed-Wing Aircraft', # role small aircraft
-                12: 'Small Aircraft', # role medium aircraft
-                13: 'Cargo Plane' # role large aircraft
-            },
-            'helicopter': {
-                15: 'Helicopter'
-            },
-            'objects': {
-                73: 'Building',
-                71: 'Hut/Tent',
-                72: 'Shed',
-                74: 'Aircraft Hangar',
-                76: 'Damaged Building',
-                77: 'Facility',	  
-                84: 'Helipad',
-                93: 'Pylon',
-                91: 'Shipping Container',
-                89: 'Shipping Container Lot',
-                85: 'Storage Tank',
-                83: 'Vehicle Lot',
-                79: 'Construction Site',
-                94: 'Tower Structure',
-                54: 'Tower Crane',
-                55: 'Container Crane'
-            }
+        },
+        'ships': {
+            40: 'Maritime Vessel',
+            41: 'Motorboat',
+            42: 'Sailboat',
+            44: 'Tugboat',
+            45: 'Barge',
+            47: 'Fishing Vessel',
+            49: 'Ferry',
+            50: 'Yacht',
+            51: 'Container Ship',
+            52: 'Oil Tanker',
+            53: 'Engineering Vessel',
+        },
+        'airplanes': {
+            11: 'Fixed-Wing Aircraft',
+            12: 'Small Aircraft',
+            13: 'Cargo Plane'
+        },
+        'helicopter': {
+            15: 'Helicopter'
+        },
+        'objects': {
+            73: 'Building',
+            71: 'Hut/Tent',
+            72: 'Shed',
+            74: 'Aircraft Hangar',
+            76: 'Damaged Building',
+            77: 'Facility',
+            84: 'Helipad',
+            93: 'Pylon',
+            91: 'Shipping Container',
+            89: 'Shipping Container Lot',
+            85: 'Storage Tank',
+            83: 'Vehicle Lot',
+            79: 'Construction Site',
+            94: 'Tower Structure',
+            54: 'Tower Crane',
+            55: 'Container Crane'
         }
+    }
     return classes
-
 
 
 def parse_potsdam_labels(label_path):
@@ -241,18 +222,16 @@ def parse_potsdam_labels(label_path):
         Horizontal bounding boxes of the objects
     """
     img = cv2.imread(label_path)
-    
-    # bleaching every color except yellow
-    hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
 
-    lower=np.array([20,100,100])
-    upper=np.array([40,255,255])
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    mask=cv2.inRange(hsv,lower,upper)
+    lower = np.array([20, 100, 100])
+    upper = np.array([40, 255, 255])
+
+    mask = cv2.inRange(hsv, lower, upper)
 
     s = generate_binary_structure(2, 2)
 
-    # figuring out the hbboxes for the yellow segements
     labeled_image, num_features = label(mask, structure=s)
     objs = find_objects(labeled_image)
 
@@ -260,7 +239,8 @@ def parse_potsdam_labels(label_path):
     hbboxes = []
 
     for obj in objs:
-        hbbox = [[obj[1].start, obj[0].start], [obj[1].stop, obj[0].start], [obj[1].stop, obj[0].stop], [obj[1].start, obj[0].stop]]
+        hbbox = [[obj[1].start, obj[0].start], [obj[1].stop, obj[0].start], [obj[1].stop, obj[0].stop],
+                 [obj[1].start, obj[0].stop]]
         h = BBox.get_bbox_limits(np.array(hbbox))
 
         coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist()
@@ -269,9 +249,10 @@ def parse_potsdam_labels(label_path):
         hbboxes.append(hbbox)
 
     return (hbboxes, masks)
-  
+
+
 def get_satellitepy_table():
-    """
+    """"
     This function returns an indexing/mapping table for the satellitepy dict
     Returns
     -------
@@ -285,7 +266,6 @@ def get_satellitepy_table():
             'ship':1,
             'vehicle':2,
             'helicopter':3},
-            #'other':4},
         'role':{
             'Small Civil Transport/Utility': 0,
             'Medium Civil Transport/Utility': 1,
@@ -301,115 +281,115 @@ def get_satellitepy_table():
         },
         'fine-class':
         {
-            'A220'       	:	0	,	    # Fair1m		
-            'A321'       	:	1	,	    # Fair1m		
-            'A330'       	:	2	,	    # Fair1m		
-            'Airbus_A330'               	:	2	,	 # Rareplanes_synthetic		
-            'A350'       	:	3	,	    # Fair1m		
-            'Airbus_A320'               	:	4	,	 # Rareplanes_synthetic		
-            'ARJ21'      	:	5	,	    # Fair1m		
-            'Motorboat'                 	:	6	,	    # ShipNet		
-            'Hovercraft'                	:	7	,	    # ShipNet		
-            'Patrol'                    	:	8	,	    # ShipNet		
-            'Destroyer'                 	:	9	,	    # ShipNet		
+            'A220'       	                :	0	,	   # Fair1m
+            'A321'       	                :	1	,	   # Fair1m
+            'A330'       	                :	2	,	   # Fair1m
+            'Airbus_A330'               	:	2	,	   # Rareplanes_synthetic
+            'A350'                      	:	3	,	   # Fair1m
+            'Airbus_A320'               	:	4	,	   # Rareplanes_synthetic
+            'ARJ21'      	                :	5	,	   # Fair1m
+            'Motorboat'                 	:	6	,	   # ShipNet
+            'Hovercraft'                	:	7	,	   # ShipNet
+            'Patrol'                    	:	8	,	   # ShipNet
+            'Destroyer'                 	:	9	,	   # ShipNet
             'Commander'                 	:	10	,	   # ShipNet		
-            'Boeing_737'    	:	11	,	 # Rareplanes_synthetic		
-            'Boeing737'     	:	11	,	   # Fair1m		
-            'Boeing_747'    	:	12	,	 # Rareplanes_synthetic		
-            'Boeing747'     	:	12	,	   # Fair1m		
-            'Boeing_777'    	:	13	,	 # Rareplanes_synthetic		
-            'Boeing777'     	:	13	,	   # Fair1m		
-            'Boeing787'     	:	14	,	   # Fair1m		
-            'Bus'      	:	15	,	   # Fair1m	 Xview	Vedai
-            'C919'      	:	16	,	   # Fair1m		
-            'Cargo Car'     	:	17	,	   # Xview		
-            'Cargo Plane'    	:	18	,	   # Xview		
-            'Truck'      	:	19	,	   # Xview, Vedai
-            'Cement Mixer'    	:	20	,	   # Xview		
+            'Boeing_737'    	            :	11	,	   # Rareplanes_synthetic
+            'Boeing737'     	            :	11	,	   # Fair1m
+            'Boeing_747'    	            :	12	,	   # Rareplanes_synthetic
+            'Boeing747'     	            :	12	,	   # Fair1m
+            'Boeing_777'    	            :	13	,	   # Rareplanes_synthetic
+            'Boeing777'     	            :	13	,	   # Fair1m
+            'Boeing787'     	            :	14	,	   # Fair1m
+            'Bus'                       	:	15	,	   # Fair1m	 Xview	Vedai
+            'C919'      	                :	16	,	   # Fair1m
+            'Cargo Car'     	            :	17	,	   # Xview
+            'Cargo Plane'    	            :	18	,	   # Xview
+            'Truck'      	                :	19	,	   # Xview, Vedai
+            'Cement Mixer'    	            :	20	,	   # Xview
             'Landing'                   	:	21	,	   # ShipNet		
-            'Maritime Vessel'   	:	22	,	   # Xview		
-            'Crane Truck'    	:	23	,	   # Xview		
-            'Dry Cargo Ship'   	:	24	,	   # Fair1m		
-            'Dump Truck'    	:	25	,	   # Fair1m	 Xview	
-            'Engineering Ship'   	:	26	,	   # Fair1m		
-            'Engineering Vessel'  	:	26	,	   # Xview		
+            'Maritime Vessel'   	        :	22	,	   # Xview
+            'Crane Truck'    	            :	23	,	   # Xview
+            'Dry Cargo Ship'            	:	24	,	   # Fair1m
+            'Dump Truck'    	            :	25	,	   # Fair1m	 Xview
+            'Engineering Ship'          	:	26	,	   # Fair1m
+            'Engineering Vessel'        	:	26	,	   # Xview
             'Cruiser'                   	:	27	,	   # ShipNet		
             'Frigate'                   	:	28	,	   # ShipNet		
             'Fishing Vessel'            	:	29	,	   # ShipNet	 Xview	
-            'Fishing Boat'    	:	29	,	   # Fair1m		
+            'Fishing Boat'              	:	29	,	   # Fair1m
             'Auxiliary Ship'            	:	30	,	   # ShipNet		
-            'Flat Car'     	:	31	,	   # Xview		
-            'Front Loader'    	:	32	,	   # Xview		
-            'Ground Grader'    	:	33	,	   # Xview		
+            'Flat Car'                  	:	31	,	   # Xview
+            'Front Loader'    	            :	32	,	   # Xview
+            'Ground Grader'             	:	33	,	   # Xview
             'Barge'                     	:	34	,	   # ShipNet		
-            'Haul Truck'    	:	35	,	   # Xview		
+            'Haul Truck'    	            :	35	,	   # Xview
             'Aircraft Carrier'          	:	36	,	   # ShipNet		
             'Yacht'                     	:	37	,	   # ShipNet	 Xview	
             'Tugboat'                   	:	38	,	   # ShipNet	 Fair1m	 Xview
             'Cargo'                     	:	39	,	   # ShipNet		
-            'Liquid Cargo Ship'   	:	40	,	   # Fair1m		
-            'Locomotive'    	:	41	,	   # Xview		
+            'Liquid Cargo Ship'   	        :	40	,	   # Fair1m
+            'Locomotive'    	            :	41	,	   # Xview
             'Container Ship'            	:	42	,	   # ShipNet	 Xview	
             'Oil Tanker'                	:	43	,	   # ShipNet	 Xview	
             'Mobile Crane'              	:	44	,	   # Xview		
             'RoRo'                      	:	45	,	   # ShipNet		
             'Sailboat'                  	:	46	,	   # ShipNet	Xview	
-            'Cargo Truck'    	:	47	,	   # Fair1m	 Xview	
-            'Passenger Car'    	:	48	,	   # Xview		
-            'Small Car'     	:	49	,	   # Fair1m	 Xview	
-            'Passenger Ship'   	:	50	,	   # Fair1m		
-            'Passenger Vehicle'   	:	51	,	   # Xview		
-            'Pickup Truck'    	:	52	,	 # Xview    Vedai
-            'Railway Vehicle'   	:	53	,	   # Xview		
-            'Reach Stacker'    	:	54	,	   # Xview		
-            'Scraper/Tractor'   	:	55	,	   # Xview		
-            'Straddle Carrier'   	:	56	,	   # Xview		
-            'Tank Car'     	:	57	,	   # Xview		
-            'Tractor'     	:	58	,	   # Fair1m, Vedai
-            'Truck Tractor'    	:	59	,	   # Fair1m	 Xview	
-            'Truck w/Box'    	:	60	,	   # Xview		
-            'Truck w/Flatbed'   	:	61	,	   # Xview		
-            'Truck w/Liquid'   	:	62	,	   # Xview		
-            'Utility Truck'    	:	63	,	   # Xview		
-            'Van'      	:	64	,	   # Fair1m	Vedai
-            'Trailer'                   	:	65	,	   # Fair1m		
+            'Cargo Truck'    	            :	47	,	   # Fair1m	 Xview
+            'Passenger Car'             	:	48	,	   # Xview
+            'Small Car'     	            :	49	,	   # Fair1m	 Xview
+            'Passenger Ship'   	            :	50	,	   # Fair1m
+            'Passenger Vehicle'   	        :	51	,	   # Xview
+            'Pickup Truck'    	            :	52	,	   # Xview    Vedai
+            'Railway Vehicle'   	        :	53	,	   # Xview
+            'Reach Stacker'    	            :	54	,	   # Xview
+            'Scraper/Tractor'   	        :	55	,	   # Xview
+            'Straddle Carrier'   	        :	56	,	   # Xview
+            'Tank Car'     	                :	57	,	   # Xview
+            'Tractor'     	                :	58	,	   # Fair1m, Vedai
+            'Truck Tractor'             	:	59	,	   # Fair1m	 Xview
+            'Truck w/Box'    	            :	60	,	   # Xview
+            'Truck w/Flatbed'   	        :	61	,	   # Xview
+            'Truck w/Liquid'   	            :	62	,	   # Xview
+            'Utility Truck'             	:	63	,	   # Xview
+            'Van'      	                    :	64	,	   # Fair1m	Vedai
+            'Trailer'                   	:	65	,	   # Fair1m
             'Airbus_A-319'              	:	66	,	   # Rareplanes_synthetic		
             'Airbus_A300'               	:	67	,	   # Rareplanes_synthetic		
-            'Airbus_A'                  	:	68	,	 # Rareplanes_synthetic		
-            'Airbus_A380'               	:	69	,	 # Rareplanes_synthetic		
-            'ATR_ATR'                   	:	70	,	 # Rareplanes_synthetic		
-            'BAE_146'                   	:	71	,	 # Rareplanes_synthetic		
-            'Boeing_707'                	:	72	,	  # Rareplanes_synthetic		
-            'Boeing_717'                	:	73	,	 # Rareplanes_synthetic		
-            'Boeing_727'                	:	74	,	 # Rareplanes_synthetic		
-            'Boeing_757'                	:	75	,	 # Rareplanes_synthetic		
-            'Boeing_767'                	:	76	,	 # Rareplanes_synthetic		
-            'Boeing_BBJ'                	:	77	,	 # Rareplanes_synthetic		
-            'Bombardier_BD'             	:	78	,	 # Rareplanes_synthetic		
-            'Bombardier_Challenger'     	:	79	,	 # Rareplanes_synthetic		
-            'Bombardier_CRJ'            	:	80	,	 # Rareplanes_synthetic		
-            'Bombardier_Learjet'        	:	81	,	 # Rareplanes_synthetic		
-            'Cessna'                    	:	82	,	 # Rareplanes_synthetic		
-            'Cessna_170'                	:	83	,	 # Rareplanes_synthetic		
-            'Cessna_172'                	:	84	,	 # Rareplanes_synthetic		
-            'Cessna_310'                	:	85	,	 # Rareplanes_synthetic		
-            'Cessna_Citation'           	:	86	,	 # Rareplanes_synthetic		
-            'Dassault_Falcon'           	:	87	,	 # Rareplanes_synthetic		
-            'DeHavillandCanada_DHC'     	:	88	,	 # Rareplanes_synthetic		
-            'Embraer_ERJ'               	:	89	,	 # Rareplanes_synthetic		
-            'Embraer_Legacy'            	:	90	,	 # Rareplanes_synthetic		
-            'Fokker_100'                	:	91	,	 # Rareplanes_synthetic		
-            'Gulfstream_G200'           	:	92	,	 # Rareplanes_synthetic		
-            'Gulfstream_GIII'           	:	93	,	 # Rareplanes_synthetic		
-            'HBC_Hawker'                	:	94	,	 # Rareplanes_synthetic		
-            'Let_L'                     	:	95	,	 # Rareplanes_synthetic		
-            'LockheedCorp_L'            	:	96	,	 # Rareplanes_synthetic		
-            'McDonnellDouglas_DC'       	:	97	,	 # Rareplanes_synthetic		
-            'McDonnellDouglas_MD'       	:	98	,	 # Rareplanes_synthetic		
-            'PiperAircraft_PA'          	:	99	,	 # Rareplanes_synthetic		
-            'SudAviation_Caravelle'     	:	100	,	 # Rareplanes_synthetic		
-            'Tupolev_154'               	:	101	,	 # Rareplanes_synthetic		
-            'Ferry'                     	:	102	,	  # ShipNet	 Xview	
+            'Airbus_A'                  	:	68	,	   # Rareplanes_synthetic
+            'Airbus_A380'               	:	69	,	   # Rareplanes_synthetic
+            'ATR_ATR'                   	:	70	,	   # Rareplanes_synthetic
+            'BAE_146'                   	:	71	,	   # Rareplanes_synthetic
+            'Boeing_707'                	:	72	,	   # Rareplanes_synthetic
+            'Boeing_717'                	:	73	,	   # Rareplanes_synthetic
+            'Boeing_727'                	:	74	,	   # Rareplanes_synthetic
+            'Boeing_757'                	:	75	,	   # Rareplanes_synthetic
+            'Boeing_767'                	:	76	,	   # Rareplanes_synthetic
+            'Boeing_BBJ'                	:	77	,	   # Rareplanes_synthetic
+            'Bombardier_BD'             	:	78	,	   # Rareplanes_synthetic
+            'Bombardier_Challenger'     	:	79	,	   # Rareplanes_synthetic
+            'Bombardier_CRJ'            	:	80	,	   # Rareplanes_synthetic
+            'Bombardier_Learjet'        	:	81	,	   # Rareplanes_synthetic
+            'Cessna'                    	:	82	,	   # Rareplanes_synthetic
+            'Cessna_170'                	:	83	,	   # Rareplanes_synthetic
+            'Cessna_172'                	:	84	,	   # Rareplanes_synthetic
+            'Cessna_310'                	:	85	,	   # Rareplanes_synthetic
+            'Cessna_Citation'           	:	86	,	   # Rareplanes_synthetic
+            'Dassault_Falcon'           	:	87	,	   # Rareplanes_synthetic
+            'DeHavillandCanada_DHC'     	:	88	,	   # Rareplanes_synthetic
+            'Embraer_ERJ'               	:	89	,	   # Rareplanes_synthetic
+            'Embraer_Legacy'            	:	90	,	   # Rareplanes_synthetic
+            'Fokker_100'                	:	91	,	   # Rareplanes_synthetic
+            'Gulfstream_G200'           	:	92	,	   # Rareplanes_synthetic
+            'Gulfstream_GIII'           	:	93	,	   # Rareplanes_synthetic
+            'HBC_Hawker'                	:	94	,	   # Rareplanes_synthetic
+            'Let_L'                     	:	95	,	   # Rareplanes_synthetic
+            'LockheedCorp_L'            	:	96	,	   # Rareplanes_synthetic
+            'McDonnellDouglas_DC'       	:	97	,	   # Rareplanes_synthetic
+            'McDonnellDouglas_MD'       	:	98	,	   # Rareplanes_synthetic
+            'PiperAircraft_PA'          	:	99	,	   # Rareplanes_synthetic
+            'SudAviation_Caravelle'     	:	100	,	   # Rareplanes_synthetic
+            'Tupolev_154'               	:	101	,	   # Rareplanes_synthetic
+            'Ferry'                     	:	102	,	  # ShipNet	 Xview
             'Submarine'                 	:	103	,	  # ShipNet		
             'Excavator'                 	:	104	,	  # Xview		
             'Car'                           :   105,      # Vedai
@@ -485,70 +465,60 @@ def get_satellitepy_table():
             'Midway'                            : 64,   # ShipNet
 
         },
-        'difficulty':{
+        'difficulty': {
             '0': 0,
             '1': 1
         },
-        # calculated from rareplanes train
         'attributes':{
             'engines':{
-                'no-engines':{
+                'no-engines': {
                     0:0,
                     1:1,
                     2:2,
                     3:3,
                     4:4
                     },
-                'propulsion':{
-                    'propeller':0,
-                    'jet':1,
-                    'unpowered':2
+                'propulsion': {
+                    'propeller': 0,
+                    'jet':       1,
+                    'unpowered': 2
                     }
             },
-            'fuselage':{
-                'canards':{
-                    False:0,
-                    True:1
+            'fuselage': {
+                'canards': {
+                    False: 0,
+                    True:  1
                 },
-                'length':{
-                    'max':82.5,
-                    'min':4.0}
+                'length': {
+                    'max': 82.5,
+                    'min': 4.0}
             },
-            'wings':{
-                'wing-span':{
-                    'max':80.0,
-                    'min':4.0
+            'wings': {
+                'wing-span': {
+                    'max': 80.0,
+                    'min': 4.0
                     },
-                'wing-shape':{
-                    'swept':0,
-                    'straight':1,
-                    'variable swept':2,
-                    'delta':3
+                'wing-shape': {
+                    'swept':            0,
+                    'straight':         1,
+                    'variable swept':   2,
+                    'delta':            3
                     },
-                'wing-position':{
-                    'mid/low mounted':0,
-                    'high mounted':1
+                'wing-position': {
+                    'mid/low mounted': 0,
+                    'high mounted':    1
                     }
             },
-            'tail':{
-                'no-tail-fins':{
-                    1:0,
-                    2:1
+            'tail': {
+                'no-tail-fins': {
+                    1: 0,
+                    2: 1
                     }
             }
         }
     }
-
-    # Add the merged class
-    # For example, this is a solution to be able to train the bbavector on the original dota dataset
-    # len_coarse_class = len(satellitepy_table['coarse-class'])
-    # len_fine_class = len(satellitepy_table['fine-class'])
-    # satellitepy_table['merged-class'] = satellitepy_table['coarse-class'].copy()
-    # for key,value in satellitepy_table['fine-class'].items():
-    #     satellitepy_table['merged-class'][key] = value+len_coarse_class
-    # for key,value in satellitepy_table['very-fine-class'].items():
-    #     satellitepy_table['merged-class'][key] = value+len_coarse_class+len_fine_class
     return satellitepy_table
+
 
 def analyze_satellitepy_table():
     satellitepy_table = get_satellitepy_table()
@@ -565,8 +535,9 @@ def analyze_satellitepy_table():
     for key, value in group_by_index.items():
         print(key, value)
 
+
 def get_satellitepy_dict_values(satellitepy_dict,task):
-    '''
+    """
     Get the satellitepy dict values by parsing task.
     Parameters
     ----------
@@ -578,20 +549,21 @@ def get_satellitepy_dict_values(satellitepy_dict,task):
     -------
         values : list or dict
             The values of the corresponding task
-    '''
+    """
 
     keys = task.split('_')
-    if len(keys)==1:
+    if len(keys) == 1:
         return satellitepy_dict[keys[0]]
-    elif len(keys)==2:
+    elif len(keys) == 2:
         return satellitepy_dict[keys[0]][keys[1]]
-    elif len(keys)==3:
+    elif len(keys) == 3:
         return satellitepy_dict[keys[0]][keys[1]][keys[2]]
     else:
         return 0
 
+
 def set_satellitepy_dict_values(satellitepy_dict,task, value):
-    '''
+    """
     Get the satellitepy dict values by parsing task.
     Parameters
     ----------
@@ -603,113 +575,20 @@ def set_satellitepy_dict_values(satellitepy_dict,task, value):
     -------
         values : list or dict
             The values of the corresponding task
-    '''
+    """
 
     keys = task.split('_')
-    if len(keys)==1:
+    if len(keys) == 1:
         satellitepy_dict[keys[0]] = value
-    elif len(keys)==2:
+    elif len(keys) == 2:
         satellitepy_dict[keys[0]][keys[1]] = value
-    elif len(keys)==3:
+    elif len(keys) == 3:
         satellitepy_dict[keys[0]][keys[1]][keys[2]] = value
 
     return satellitepy_dict
 
+
 def get_task_dict(task):
     satellitepy_table = get_satellitepy_table()
-    task_dict = get_satellitepy_dict_values(satellitepy_table,task)
+    task_dict = get_satellitepy_dict_values(satellitepy_table, task)
     return task_dict
-
-
-# def set_merged_task_values(satellitepy_dict,merged_task_name):
-#     '''
-#     Merge the satellitepy dict task values.
-#     For example, this function can merge coarse-class and fine-class values into one list,
-#     so the models can train be trained on this list. <merged_task_name> must have the tasks in the order of fine to coarse
-
-#     Parameters
-#     ----------
-#         satellitepy_dict : dict
-#             Satellitepy formatted dict
-#         merged_task_name : str
-#             Task names. E.g. fine-class--coarse-class
-#     Returns
-#     -------
-#         satellitepy_dict : dict
-#             This dict includes a key whose values are the merged task values
-#     '''
-
-#     satellitepy_dict_values = {}
-#     merged_task = []
-#     tasks = merged_task_name.split('--')
-
-#     for task in tasks:
-#         satellitepy_dict_values[task] = get_satellitepy_dict_values(satellitepy_dict,task)
-
-
-#     len_tasks = len(tasks)
-#     len_values = len(satellitepy_dict_values[tasks[0]])
-
-#     for i_value in range(len_values):
-#         for i_task in range(len(tasks)):
-#             task_value = satellitepy_dict_values[tasks[i_task]][i_value]
-#             if task_value != None:
-#                 merged_task.append(task_value)
-#                 break
-
-#     satellitepy_dict[merged_task_name] = merged_task
-#     return satellitepy_dict
-
-# def get_shipnet_classes():
-# 	classes = {
-# 		1 : ["Other Ship","Other Ship"],
-# 		2 : ["Other Warship","Other Warship"],
-# 		3 : ["Submarine","Submarine"],
-# 		4 : ["Aircraft Carrier","Other Aircraft Carrier"],
-# 		5 : ["Aircraft Carrier","Enterprise"],
-# 		6 : ["Aircraft Carrier","Nimitz"],
-# 		7 : ["Aircraft Carrier","Midway"],
-# 		8 : ["Cruiser","Ticonderoga"],
-# 		9 : ["Destroyer","Other Destroyer"],
-# 		10: ["Destroyer","Atago DD"],
-# 		11: ["Destroyer","Arleigh Burke DD"],
-# 		12: ["Destroyer","Hatsuyuki DD"],
-# 		13: ["Destroyer","Hyuga DD"],
-# 		14: ["Destroyer","Asagiri DD"],
-# 		15: ["Frigate","Other Frigate"],
-# 		16: ["Frigate","Perry FF"],
-# 		17: ["Patrol","Patrol"],
-# 		18: ["Landing","Other Landing"],
-# 		19: ["Landing","YuTing LL"],
-# 		20: ["Landing","YuDeng LL"],
-# 		21: ["Landing","YuDao LL"],
-# 		22: ["Landing","Yuzhao LL"],
-# 		23: ["Landing","Austin LL"],
-# 		24: ["Landing","Asumi LL"],
-# 		25: ["Landing","Wasp LL"],
-# 		26: ["Landing","LSD 41 LL"],
-# 		27: ["Landing","LHA LL"],
-# 		28: ["Commander","Commander"],
-# 		29: ["Auxiliary Ship","Other Auxiliary Ship"],
-# 		30: ["Auxiliary Ship","Medical Ship"],
-# 		31: ["Auxiliary Ship","Test Ship"],
-# 		32: ["Auxiliary Ship","Training Ship"],
-# 		33: ["Auxiliary Ship","AOE"],
-# 		34: ["Auxiliary Ship","Masyuu AS"],
-# 		35: ["Auxiliary Ship","Sanantonio AS"],
-# 		36: ["Auxiliary Ship","EPF"],
-# 		37: ["Other Merchant","Other Merchant"],
-# 		38: ["Container Ship","Container SHip"],
-# 		39: ["RoRo","RoRo"],
-# 		40: ["Cargo","Cargo"],
-# 		41: ["Barge","Barge"],
-# 		42: ["Tugboat","Tugboat"],
-# 		43: ["Ferry","Ferry"],
-# 		44: ["Yacht","Yacht"],
-# 		45: ["Sailboat","Sailboat"],
-# 		46: ["Fishing Vessel","Fishing Vessel"],
-# 		47: ["Oil Tanker","Oil Tanker"],
-# 		48: ["Hovercraft","Hovercraft"],
-# 		49: ["Motorboat","Motorboat"]
-# 	}
-# 	return classes
