@@ -35,7 +35,7 @@ TASK_TARGET_MAP = {
     'attributes_fuselage_canards': {
         'metrics': ['Acc'],
         'metrics_fn': AccMetric(),
-        'loss_fn': CELoss(), # maybe change to BCE ?
+        'loss_fn': CELoss(),
         'weight': [1]
     },
     'attributes_fuselage_length': {
@@ -59,13 +59,13 @@ TASK_TARGET_MAP = {
     'attributes_wings_wing_position': {
         'metrics': ['Acc'],
         'metrics_fn': AccMetric(),
-        'loss_fn': CELoss(), # BCE ?
+        'loss_fn': CELoss(),
         'weight': [1]
     },
     'attributes_tail_no-tail-fins': {
         'metrics': ['Acc'],
         'metrics_fn': AccMetric(),
-        'loss_fn': CELoss(), # BCE?
+        'loss_fn': CELoss(),
         'weight': [1]
     },
     'role': {
@@ -75,6 +75,7 @@ TASK_TARGET_MAP = {
         'weight': [1]
     },
 }
+
 
 def build_targets(tasks_cfg: dict):
     targets = {}

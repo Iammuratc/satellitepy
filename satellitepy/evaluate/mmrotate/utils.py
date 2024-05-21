@@ -1,25 +1,22 @@
-import os
 import numpy as np
 import torch
 import logging
 
 from satellitepy.data.bbox import BBox
 from satellitepy.data.utils import get_satellitepy_table
-from satellitepy.evaluate.utils import match_gt_and_det_bboxes, get_ious
+from satellitepy.evaluate.utils import get_ious
 
-
-# from mmrotate.core.bbox import rbbox_overlaps
 from mmdet.apis.inference import init_detector, inference_detector
 from mmcv.ops import nms_rotated
 
 
 def get_result(
-    img,
-    gt_labels,
-    mmrotate_model,
-    class_names,
-    task_name,
-    nms_on_multiclass_thr):
+        img,
+        gt_labels,
+        mmrotate_model,
+        class_names,
+        task_name,
+        nms_on_multiclass_thr):
     """
     Get the detected bounding box results from mmrotate model
     Parameters
@@ -43,19 +40,16 @@ def get_result(
         result : dict
             Detected bounding box with their corresponding ground truth and IOU values 
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('')
 
-    # Inference mmrotate model
-    mmrotate_result = inference_detector(mmrotate_model,img)
+    mmrotate_result = inference_detector(mmrotate_model, img)
 
-    # Results
-    det_labels = get_det_labels(mmrotate_result,class_names,task_name,nms_on_multiclass_thr)
-    # IOU matching between ground truth and detected bboxes 
-    matches = mmrotate_match_gt_and_det_bboxes(gt_labels,det_labels)
+    det_labels = get_det_labels(mmrotate_result, class_names, task_name, nms_on_multiclass_thr)
+    matches = mmrotate_match_gt_and_det_bboxes(gt_labels, det_labels)
 
     result = {
-        'gt_labels':gt_labels,
-        'matches':matches
+        'gt_labels': gt_labels,
+        'matches': matches
     }
 
     for k in det_labels:
@@ -63,12 +57,13 @@ def get_result(
 
     return result
 
-def get_mmrotate_model(config_path,model_path,device):
-    # build the model from a config file and a checkpoint file
+
+def get_mmrotate_model(config_path, model_path, device):
     model = init_detector(config_path, model_path, device=device)
     return model
 
-def get_det_labels(mmrotate_result,class_names,task_name,nms_on_multiclass_thr):
+
+def get_det_labels(mmrotate_result, class_names, task_name, nms_on_multiclass_thr):
     """
     Convert mmrotate results to dict in satellitepy format
     Parameters
@@ -81,29 +76,28 @@ def get_det_labels(mmrotate_result,class_names,task_name,nms_on_multiclass_thr):
         MMRotate models detect bounding boxes for each class, this results in several bounding boxes for one object
         nms_on_multiclass filters out the lower score bounding boxes, and keep the best
     """
-    # if nms_on_multiclass_thr!=0:
-    #     mmrotate_result = nms_on_multi_class(mmrotate_result,nms_iou_thr=nms_on_multiclass_thr)
     det_labels = {
-        'obboxes':[],
-        task_name:[],
-        'confidence-scores':[]}
+        'obboxes': [],
+        task_name: [],
+        'confidence-scores': []}
     for class_bboxes_ind, class_bboxes in enumerate(mmrotate_result):
-        if class_bboxes==[]:
+        if not class_bboxes:
             continue
-        if not isinstance(class_bboxes,np.ndarray):
+        if not isinstance(class_bboxes, np.ndarray):
             class_bboxes = np.array(class_bboxes)
 
         for class_bbox in class_bboxes:
             my_bbox = BBox(params=class_bbox[:5])
             if class_names[class_bboxes_ind] == 'other':
                 continue
-            det_labels[task_name].append(get_satellitepy_table()[task_name][class_names[class_bboxes_ind].replace("_", " ")])
+            det_labels[task_name].append(
+                get_satellitepy_table()[task_name][class_names[class_bboxes_ind].replace('_', ' ')])
             det_labels['obboxes'].append(my_bbox.corners)
             det_labels['confidence-scores'].append(class_bbox[-1])
     return det_labels
 
 
-def nms_on_multi_class(result,nms_iou_thr):
+def nms_on_multi_class(result, nms_iou_thr):
     """
     Merge all the bboxes of each class and apply nms
     MMRotate returns overlapping bounding boxes for different classes for some reason, so this function is recommended for multiclass mmrotate models.
@@ -119,26 +113,26 @@ def nms_on_multi_class(result,nms_iou_thr):
         change the nms IoU threshold.
     """
     result_len = sum([len(det_bboxes) for det_bboxes in result])
-    result_squeezed = np.zeros(shape=(result_len,6))
-    labels_squeezed = np.zeros(shape=(result_len))
-    i=0
+    result_squeezed = np.zeros(shape=(result_len, 6))
+    labels_squeezed = np.zeros(shape=result_len)
+    i = 0
     for det_label, det_bboxes in enumerate(result):
         for det_bbox in det_bboxes:
             if len(det_bbox) == 0:
                 continue
-            result_squeezed[i,:] = det_bbox#[:5]
+            result_squeezed[i, :] = det_bbox
             labels_squeezed[i] = det_label
-            i+=1
+            i += 1
 
     result_squeezed_nms, keep_ind = nms_rotated(
-        dets=torch.from_numpy(result_squeezed[:,:5]),
-        scores=torch.from_numpy(result_squeezed[:,-1]),
-        iou_threshold= nms_iou_thr,
+        dets=torch.from_numpy(result_squeezed[:, :5]),
+        scores=torch.from_numpy(result_squeezed[:, -1]),
+        iou_threshold=nms_iou_thr,
         labels=torch.from_numpy(labels_squeezed))
 
     if keep_ind is None:
         return result
-    ### Put the remaining bboxes into their class lists 
+
     result_nms = [[] for _ in range(len(result))]
 
     for ind in keep_ind:
@@ -146,31 +140,21 @@ def nms_on_multi_class(result,nms_iou_thr):
         bbox = result_squeezed[ind]
         result_nms[ind_cls].append(bbox)
 
-    result_nms_to_numpy = [] 
+    result_nms_to_numpy = []
     for det_bboxes in result_nms:
-        if det_bboxes == []:
-            result_nms_to_numpy.append(np.empty(shape=(0,6)))
+        if not det_bboxes:
+            result_nms_to_numpy.append(np.empty(shape=(0, 6)))
         else:
             result_nms_to_numpy.append(np.array(det_bboxes))
 
     return result_nms_to_numpy
 
 
-def mmrotate_match_gt_and_det_bboxes(gt_labels,det_labels):
-    matches = {'iou':{'scores':[],'indexes':[]}}
-
-    det_label_params = [BBox(corners=my_bbox).params for my_bbox in det_labels['obboxes']] if len(det_labels['obboxes'])!=0 else []
-    gt_label_params = [BBox(corners=my_bbox).params for my_bbox in gt_labels['obboxes']] if len(gt_labels['obboxes'])!=0 else []
-
-
-    ## Old IOU calculation (keep it for now 12.05)
-    # ious = rbbox_overlaps(torch.FloatTensor(det_label_params), torch.FloatTensor(gt_label_params))
-    ## New IOU calculation
-    print(det_labels, gt_labels)
+def mmrotate_match_gt_and_det_bboxes(gt_labels, det_labels):
+    matches = {'iou': {'scores': [], 'indexes': []}}
     ious = get_ious(det_labels['obboxes'], gt_labels['obboxes'])
-    for i,iou in enumerate(ious):
-        # ROW: detected bboxes
-        # COL: gt bboxes
+
+    for i, iou in enumerate(ious):
         try:
             bbox_ind_gt = np.argmax(iou)
             iou_score = iou[bbox_ind_gt]
@@ -180,5 +164,3 @@ def mmrotate_match_gt_and_det_bboxes(gt_labels,det_labels):
         matches['iou']['scores'].append(iou_score.item())
         matches['iou']['indexes'].append(bbox_ind_gt.item())
     return matches
-
-

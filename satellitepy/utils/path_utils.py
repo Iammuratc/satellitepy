@@ -15,6 +15,7 @@ def get_project_folder():
     project_folder = Path(__file__).resolve(strict=True).parent.parent.parent
     return project_folder    
 
+
 def get_default_log_config():
     """
     Get default log config
@@ -24,9 +25,9 @@ def get_default_log_config():
     Default log config path. project_folder/configs/log.config
     """
     project_folder = get_project_folder() 
-    config_dir = project_folder / "configs" 
+    config_dir = project_folder / 'configs'
     assert create_folder(config_dir)
-    log_config_path = config_dir / "log.config"  
+    log_config_path = config_dir / 'log.config'
     return log_config_path
 
 
@@ -48,9 +49,10 @@ def get_default_log_path(log_file_name):
     log_path = log_dir / f'{log_file_name}.log'
     return log_path
 
+
 def init_logger(config_path, log_path):
     """
-    Initate the logger. This function is mostly called from the tools scripts.
+    Initiate the logger. This function is mostly called from the tools scripts.
     Parameters
     ----------
     config_path : Path
@@ -62,6 +64,7 @@ def init_logger(config_path, log_path):
     Initiate the log file at log_path using config_path
     """
     logging.config.fileConfig(config_path, defaults={'logfilename': log_path})
+
 
 def create_folder(folder):
     """
@@ -137,19 +140,17 @@ def zip_matched_files(*folders):
     file_paths : list of Path
         Matched file paths
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('')
 
     all_file_paths = [get_file_paths(folder) for folder in folders]
     all_file_paths_zipped = zip(*all_file_paths)
     for file_paths in all_file_paths_zipped:
-        file_name = file_paths[0].stem
-        # logger.info(f'{file_name} will be processed...')
-        # Check if file names match
         is_match = is_file_names_match(*file_paths)
         if not is_match:
             logger.error('File names do not match!')
-            raise Exception("File names do not match")
+            raise Exception('File names do not match')
         yield file_paths
+
 
 def unzip_files_in_folder(path):
     """
@@ -159,15 +160,15 @@ def unzip_files_in_folder(path):
     path : Path to folder
     """
 
-    zip_files = path.rglob("*.zip")
+    zip_files = path.rglob('*.zip')
     while True:
         try:
             path = next(zip_files)
         except StopIteration:
-            break # no more files
+            break
         except PermissionError:
-            logging.exception("Permission error! Cant open file")
+            logging.exception('Permission error! Cant open file')
         else:
             extract_dir = path.with_name(path.stem)
-            logging.info("Unzipping " + str(path))
+            logging.info('Unzipping ' + str(path))
             unpack_archive(str(path), str(extract_dir), 'zip')  

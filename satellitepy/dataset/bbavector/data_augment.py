@@ -5,8 +5,8 @@ class RandomContrast(object):
     def __init__(self, lower=0.5, upper=1.5):
         self.lower = lower
         self.upper = upper
-        assert self.upper >= self.lower, "contrast upper must be >= lower."
-        assert self.lower >= 0, "contrast lower must be non-negative."
+        assert self.upper >= self.lower, 'contrast upper must be >= lower.'
+        assert self.lower >= 0, 'contrast lower must be non-negative.'
 
     def __call__(self, img):
         if random.randint(2):
@@ -27,9 +27,11 @@ class RandomBrightness(object):
             img += delta
         return img
 
+
 class SwapChannels(object):
     def __init__(self, swaps):
         self.swaps = swaps
+
     def __call__(self, img):
         img = img[:, :, self.swaps]
         return img
@@ -40,6 +42,7 @@ class RandomLightingNoise(object):
         self.perms = ((0, 1, 2), (0, 2, 1),
                       (1, 0, 2), (1, 2, 0),
                       (2, 0, 1), (2, 1, 0))
+
     def __call__(self, img):
         if random.randint(2):
             swap = self.perms[random.randint(len(self.perms))]

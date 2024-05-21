@@ -17,9 +17,11 @@ def get_args():
     parser.add_argument('--in-image-folder', type=Path, required=False,
                         help='Folder of original images.')
     parser.add_argument('--in-label-folder', type=Path, required=True,
-                        help='Folder of original labels. The labels in this folder will be converted to satellitepy format.')
+                        help='Folder of original labels. The labels in this folder will be converted to satellitepy '
+                             'format.')
     parser.add_argument('--in-mask-folder', type=Path, required = False,
-                        help='Folder of original mask images. The mask images in this folder will be used to set mask pixel coordinates in out labels.')
+                        help='Folder of original mask images. The mask images in this folder will be used to set mask '
+                             'pixel coordinates in out labels.')
     parser.add_argument('--in-label-format', type=Path,
                         help='Label file format. e.g., dota, fair1m.')
     parser.add_argument('--out-folder',
@@ -29,9 +31,11 @@ def get_args():
                         Path("configs/log.config"), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, required=False, help='Log path.')
     parser.add_argument('--include-object-classes', nargs="*", type=str, default=None,
-                        help='A list of object class names that shall be included. Ignores all other object classes if not None. Takes precedence over --exclude-object-classes.')
+                        help='A list of object class names that shall be included. Ignores all other object classes '
+                             'if not None. Takes precedence over --exclude-object-classes.')
     parser.add_argument('--exclude-object-classes', nargs="*", type=str, default=None,
-                        help='A list of object class names that shall be excluded. Includes all other object classes. Overriden by --include-object-classes if set.')
+                        help='A list of object class names that shall be excluded. Includes all other object classes. '
+                             'Overriden by --include-object-classes if set.')
     args = parser.parse_args()
     return args
 
@@ -43,7 +47,7 @@ def run(args):
     in_label_format = str(args.in_label_format)
     assert in_label_format != 'satellitepy', 'Label format is already satellitepy.'
 
-    if (args.in_mask_folder != None):
+    if args.in_mask_folder is not None:
         in_mask_folder = Path(args.in_mask_folder)
     else:
         in_mask_folder = None
@@ -52,11 +56,10 @@ def run(args):
 
     assert create_folder(out_folder)
 
-    # Init logger
     log_path = Path(
-        out_folder) / 'create_satellitepy_labels.log' if args.log_path == None else args.log_path
+        out_folder) / 'create_satellitepy_labels.log' if args.log_path is None else args.log_path
     init_logger(config_path=args.log_config_path, log_path=log_path)
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('')
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
     logger.info('Saving satellitepy labels from original labels...')
