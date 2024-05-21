@@ -1,4 +1,6 @@
 *.pyc
 *.tex
-launch.json
-satellitepy.egg-info
+# install cache and whatnot
+**/*.egg*
+# launch.json for nvim-dap and vscode
+**/launch.json

@@ -1,19 +1,23 @@
 import mmcv
+from mmdet.apis.inference import init_detector, inference_detector
 # import os
 from pathlib import Path
-import pathlib
 import json
-from mmdet.apis.inference import init_detector, inference_detector
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+from satellitepy.data.labels import read_label
 from satellitepy.evaluate.mmrotate.utils import *
+from satellitepy.evaluate.bbavector.utils import apply_nms
 from satellitepy.utils.path_utils import create_folder, get_file_paths, is_file_names_match
 from satellitepy.data.patch import get_patches, merge_patch_results
 
 # TODO:
 #   set_conf_mat_from_result reads the gt instance names from class_1, implement a way to read different class levels
+
+
 
 def save_mmrotate_patch_results(
     out_folder,
@@ -24,7 +28,8 @@ def save_mmrotate_patch_results(
     weights_path,
     device,
     class_names,
-    nms_on_multiclass_thr
+    nms_on_multiclass_thr,
+    task_name
     ):
     """
     Pass patch images to a mmrotate model and save the detected bounding boxes as json files in satellitepy format
@@ -46,6 +51,8 @@ def save_mmrotate_patch_results(
         cpu or cuda:0
     class_names : list
         Class names
+    task_name: str
+        name of the trained task
     Returns
     -------
     None
@@ -75,7 +82,7 @@ def save_mmrotate_patch_results(
         img = mmcv.imread(img_path)
 
         # Labels
-        gt_labels = get_gt_labels(label_path,in_label_format)
+        gt_labels = read_label(label_path,in_label_format)
 
         # Save results with the corresponding ground truth
         result = get_result(    
@@ -83,6 +90,7 @@ def save_mmrotate_patch_results(
             gt_labels=gt_labels,
             mmrotate_model=mmrotate_model,
             class_names=class_names,
+            task_name=task_name,
             nms_on_multiclass_thr=nms_on_multiclass_thr)
 
         # Save labels to json file
@@ -102,7 +110,8 @@ def save_mmrotate_original_results(
     patch_size,
     patch_overlap,
     truncated_object_thr,
-    class_names
+    class_names,
+    task_name
     ):
     """
     Pass original images to a mmrotate model and save the detected bounding boxes in satellitepy dict format
@@ -139,19 +148,17 @@ def save_mmrotate_original_results(
 
 
     # Create result original folder
-    original_result_folder = Path(out_folder) / 'results' / 'original_labels'
+    original_result_folder = Path(out_folder)
     assert create_folder(original_result_folder)
 
 
     image_paths = get_file_paths(in_image_folder)
     label_paths = get_file_paths(in_label_folder)
-    prog_bar = mmcv.ProgressBar(len(image_paths))
 
-    temp_count = 0
     for img_path,label_path in zip(image_paths,label_paths):
         # Check if label and image names match
-        img_name = img_path.stem
-        logger.info(f'{img_name} will be processed...')
+        img_name = img_path.name
+        logger.info(f' Processing {img_name}...')
 
         # Check if label and image names match
         is_match = is_file_names_match(img_path,label_path)
@@ -164,7 +171,7 @@ def save_mmrotate_original_results(
         # logger.info(img_path)
 
         # Labels
-        gt_labels = get_gt_labels(label_path,in_label_format)
+        gt_labels = read_label(label_path,in_label_format)
 
         # Get patches
         patch_dict = get_patches(
@@ -176,20 +183,20 @@ def save_mmrotate_original_results(
             )
 
         # Detected labels from patches
-        det_labels = []
+        patch_dict['det_labels'] = []
 
         for patch_img in patch_dict['images']:            
             # mmrotate result
             mmrotate_result = inference_detector(mmrotate_model,patch_img)
-
             # Detected labels
-            det_label = get_det_labels(mmrotate_result,class_names,nms_on_multiclass_thr)
+            det_label = get_det_labels(mmrotate_result,class_names,task_name,nms_on_multiclass_thr)
 
-            det_labels.append(det_label)
+            patch_dict['det_labels'].append(det_label)
 
-        patch_dict['det_labels'] = det_labels
         # Merge patch results into original results standards
-        merged_det_labels = merge_patch_results(patch_dict)
+        merged_det_labels, mask = merge_patch_results(patch_dict,patch_size,shape=img.shape[0:2])
+
+        # merged_det_labels = apply_nms(merged_det_labels,nms_iou_threshold=nms_on_multiclass_thr)
 
         # Find matches of original image with merged patch results
         matches = match_gt_and_det_bboxes(gt_labels,merged_det_labels)
@@ -205,51 +212,3 @@ def save_mmrotate_original_results(
         with open(Path(original_result_folder) / f"{img_name}.json",'w') as f:
             json.dump(result, f, indent=4)
 
-
-def calculate_map(
-    in_result_folder,
-    instance_names,
-    conf_score_thresholds,
-    iou_thresholds,
-    out_folder,
-    plot_pr):
-
-    # Get logger
-    logger = logging.getLogger(__name__)
-
-    # Add background to instance_names
-    instance_names = instance_names + ['Background']
-
-    # Init confusion matrix
-    conf_mat = np.zeros(shape=(len(iou_thresholds),len(conf_score_thresholds),len(instance_names),len(instance_names)))
-
-    # Result paths
-    result_paths = get_file_paths(in_result_folder)
-
-    for result_path in result_paths:
-        logger.info(f'The following result file will be evaluated: {result_path}')
-        # Result json file
-        with open(result_path,'r') as result_file:
-            result = json.load(result_file) # dict of 'gt_labels', 'det_labels', 'matches' 
-        
-        conf_mat = set_conf_mat_from_result(
-            conf_mat,
-            result,
-            instance_names,
-            conf_score_thresholds,
-            iou_thresholds)
-
-    precision, recall = get_precision_recall(conf_mat,sort_values=True)
-    print('Precision at all confidence score thresholds and iuo threshold = 0.5')
-    print(precision[0,:])
-    print('Recall at all confidence score thresholds and iou threshold = 0.5 ')
-    print(recall[0,:])
-    print('AP')
-    ap = get_average_precision(precision,recall)
-    print(ap)
-    if plot_pr:
-        fig, ax = plt.subplots()
-        ax.plot(recall[0,:],precision[0,:])
-        ax.set_ylabel('Precision')
-        ax.set_xlabel('Recall')
-        plt.show()

@@ -1,4 +1,8 @@
 configargparse
 wget
-torrentp
 patool
+opencv-python==4.7.0.72
+tqdm
+scipy
+shapely
+rasterio

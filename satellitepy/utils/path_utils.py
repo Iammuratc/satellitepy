@@ -13,8 +13,40 @@ def get_project_folder():
         <your-path-to-satellitepy>
     """
     project_folder = Path(__file__).resolve(strict=True).parent.parent.parent
-    return project_folder
+    return project_folder    
 
+def get_default_log_config():
+    """
+    Get default log config
+    Returns
+    -------
+    log_config_path : Path
+    Default log config path. project_folder/configs/log.config
+    """
+    project_folder = get_project_folder() 
+    config_dir = project_folder / "configs" 
+    assert create_folder(config_dir)
+    log_config_path = config_dir / "log.config"  
+    return log_config_path
+
+
+def get_default_log_path(log_file_name):
+    """
+    Get default log path 
+    Parameters
+    ----------
+    log_file_name : str
+    Log name
+    Returns
+    -------
+    log_path : Path
+    Default log path. project_folder/logs/log_file_name
+    """
+    project_folder = get_project_folder() 
+    log_dir = project_folder / 'logs'
+    assert create_folder(log_dir)
+    log_path = log_dir / f'{log_file_name}.log'
+    return log_path
 
 def init_logger(config_path, log_path):
     """
@@ -30,7 +62,6 @@ def init_logger(config_path, log_path):
     Initiate the log file at log_path using config_path
     """
     logging.config.fileConfig(config_path, defaults={'logfilename': log_path})
-
 
 def create_folder(folder):
     """
@@ -112,12 +143,12 @@ def zip_matched_files(*folders):
     all_file_paths_zipped = zip(*all_file_paths)
     for file_paths in all_file_paths_zipped:
         file_name = file_paths[0].stem
-        logger.info(f'{file_name} will be processed...')
+        # logger.info(f'{file_name} will be processed...')
         # Check if file names match
         is_match = is_file_names_match(*file_paths)
         if not is_match:
             logger.error('File names do not match!')
-            exit(1)
+            raise Exception("File names do not match")
         yield file_paths
 
 def unzip_files_in_folder(path):
