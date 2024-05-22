@@ -9,3 +9,16 @@ python3 tools/train/bbavector.py --train-image-folder <train-image-patches-folde
 ```
 
 The explanations for some arguments can be found below:
+* `--train-image-folder`: Input image folder for training. This folder consists of image files for training the model.
+* `--train-label-folder`: Input label folder for training. This folder consists of label files for training the model.
+* `--train-label-format`: Input label format for training. Since each dataset has its own label format, this should be adjusted accordingly. All label formats can be found in `satellitepy.data.labels`.
+* `--valid-image-folder`: Input image folder for validation. This folder consists of image files for training the model.
+* `--valid-label-folder`: Input label folder for validation. This folder consists of label files for training the model.
+* `--valid-label-format`: Input label format for validation. Since each dataset has its own label format, this should be adjusted accordingly. All label formats can be found in `satellitepy.data.labels`.
+* `--out-folder`: Output folder. The prediction results (.json) for the validation images will be stored in this folder.
+
+There are many more arguments such as `batch-size` and `init-lr`. You can find all arguments in [the script](tools/train/bbavector.py) or you can run the help command in a terminal:
+
+```
+python3 tools/train/bbavector.py --help
+```
