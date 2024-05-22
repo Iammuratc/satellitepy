@@ -49,7 +49,7 @@ def get_patches(
     x_start_coords = get_patch_start_coords(x_max_padded, patch_size, patch_overlap)
     patch_start_coords = [[x, y] for x in x_start_coords for y in y_start_coords]
 
-    label_file_exist = gt_labels != None
+    label_file_exist = gt_labels is not None
 
     patch_dict = {
         'images': [np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in

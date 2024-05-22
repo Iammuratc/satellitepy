@@ -25,7 +25,6 @@ def create_satellitepy_labels(
         label_folder,
         label_format,
         out_folder,
-        exclude_object_classes,
         mask_folder=None
 ):
     out_label_folder = Path(out_folder) / 'labels'
@@ -53,13 +52,6 @@ def create_satellitepy_labels(
 
         labels = init_satellitepy_label()
         for i in range(len(gt_labels['hbboxes'])):
-            class_targets = [gt_labels['coarse-class'][i], gt_labels['fine-class'][i], gt_labels['very-fine-class'][i]]
-            skip_flag = False
-            for excluded in exclude_object_classes:
-                if excluded in class_targets:
-                    skip_flag = True
-                    continue
-            if skip_flag: continue
 
             for key in get_all_satellitepy_keys():
                 keys = key.split("_")
@@ -517,7 +509,6 @@ def save_xview_in_satellitepy_format(out_folder, label_path):
 
         fill_none_to_empty_keys(image_dicts[img_name], not_available_tasks)
 
-    # Save satellitepy labels
     for img_name, satellitepy_dict in image_dicts.items():
         label_name = f'{Path(img_name).stem}.json'
         label_path = out_folder / label_name
@@ -525,7 +516,7 @@ def save_xview_in_satellitepy_format(out_folder, label_path):
             json.dump(satellitepy_dict, f, indent=4)
 
 
-def separate_dataset_parts(out_folder, label_folder, image_folder, dataset_part, dataset):
+def separate_dataset_parts(out_folder, label_folder, image_folder, dataset_part, dataset_name):
     """
     Parameters
     -------
@@ -538,34 +529,35 @@ def separate_dataset_parts(out_folder, label_folder, image_folder, dataset_part,
 
     logger.info(f'Initializing separate_shipnet_data')
 
-    dataset_name = dataset_part.stem
+    data_part_name = dataset_part.stem
     out_image_folder = os.path.join(out_folder, Path('images'))
     assert create_folder(Path(out_image_folder))
 
-    if dataset != 'shipnet' or dataset_name != 'test':
+    if dataset_name != 'shipnet' or data_part_name != 'test':
         out_label_folder = os.path.join(out_folder, Path('labels'))
         assert (create_folder(Path(out_label_folder)))
 
     with open(dataset_part, 'r') as dataset:
-        for line in dataset.readlines():
-            name = line.split('.')[0][:-1]
+        for line in tqdm(dataset.readlines()):
 
-            if dataset == 'shipnet':
+            if dataset_name == 'shipnet':
                 extension = '.bmp'
+                name = line.split('.')[0]
             else:
                 extension = '.jpg'
+                name = line.split('.')[0][:-1]
 
             image_path = os.path.join(image_folder, Path(name + extension))
 
             shutil.copy(image_path, out_image_folder)
 
-            if dataset != 'shipnet' or dataset_name != 'test':
+            if dataset_name != 'shipnet' or data_part_name != 'test':
                 padding = max(0, 6 - name.__len__())
-                if dataset == 'dior':
+                if dataset_name == 'dior':
                     padding = 0
                 label_path = os.path.join(label_folder, Path(padding * '0' + name + '.xml'))
                 shutil.copy(label_path, out_label_folder)
-    logger.info(f'Images and labels saved for dataset-part {dataset_name}')
+    logger.info(f'Images and labels saved for dataset-part {data_part_name}')
 
 
 def split_rareplanes_labels(

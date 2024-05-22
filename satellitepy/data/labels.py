@@ -3,7 +3,6 @@ import numpy as np
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import json
-import numpy as np
 
 from satellitepy.data.utils import get_vedai_classes, set_mask, parse_potsdam_labels, get_shipnet_categories
 from satellitepy.data.bbox import BBox
@@ -417,7 +416,7 @@ def read_rareplanes_synthetic_label(label_path, mask_path):
         points = annotation['segmentation'][0]
 
         bbox = BBox(diamond_corners=np.array(points[:8]).reshape(4, 2))
-        corners = bbox.corners
+        corners = bbox.corners.tolist()
 
         labels['obboxes'].append(corners)
         labels['hbboxes'].append(BBox.get_hbb_from_obb(corners))
@@ -494,7 +493,7 @@ def read_dior_label(label_path):
     for elem in root.findall('object'):
         typ = elem.find('name').text
         if typ == 'ship' or typ == 'vehicle' or typ == 'airplane':
-            coarse = type
+            coarse = typ
         else:
             continue
 
@@ -533,10 +532,14 @@ def read_ship_net_label(label_path):
     coarse_classes = {1: 'ship', 2: 'other'}  # 2 is dock, and other in our framework
     roles = {1: 'Other Ship', 2: 'Warship', 3: 'Merchant Ship', 4: 'Dock'}
     fine_classes = get_shipnet_categories()
-    for ship_object in objects:
+
+    skiplist = []
+
+    for i, ship_object in enumerate(objects):
         coarse_class_ind = int(ship_object.find('level_0').text)
         coarse_class = coarse_classes[coarse_class_ind]
         if coarse_class == 'other':
+            skiplist.append(i)
             continue
 
         labels['coarse-class'].append(coarse_class)
@@ -567,7 +570,9 @@ def read_ship_net_label(label_path):
         labels['very-fine-class'].append(very_fine_class)
 
     point_spaces = root.findall('./object/polygon')
-    for point_space in point_spaces:
+    for i, point_space in enumerate(point_spaces):
+        if i in skiplist:
+            continue
         my_points = point_space.findall('.//')
         coords = []
         corner = []
@@ -653,19 +658,6 @@ def read_vedai_label(label_path):
         separated = line.split()[3:]
         if len(separated) < 9:
             continue
-        coords_x = separated[3:7]
-        coords_y = separated[7:11]
-        coords = []
-        corner = []
-
-        for i in range(0, len(coords_x)):
-            corner.append(int(coords_x[i]))
-            corner.append(int(coords_y[i]))
-            coords.append(corner)
-            corner = []
-
-        labels['obboxes'].append(coords)
-        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
 
         fine_class = classes.get(int(separated[0]))
 
@@ -680,6 +672,20 @@ def read_vedai_label(label_path):
             fine = fine_class
         else:
             continue
+
+        coords_x = separated[3:7]
+        coords_y = separated[7:11]
+        coords = []
+        corner = []
+
+        for i in range(0, len(coords_x)):
+            corner.append(int(coords_x[i]))
+            corner.append(int(coords_y[i]))
+            coords.append(corner)
+            corner = []
+
+        labels['obboxes'].append(coords)
+        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
 
         labels['coarse-class'].append(coarse)
         labels['fine-class'].append(fine)

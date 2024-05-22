@@ -55,7 +55,7 @@ class BBox:
                 raise Exception('The bbox in parameter parametrization must end in shape (5) but has shape:',
                                 np.shape(params))
             self.params = params
-            self.corners = self.get_corners()
+            self.corners = self.get_corners().tolist()
 
         else:
             raise Exception('Either corners or params have to be defined to create a BBox instance')
