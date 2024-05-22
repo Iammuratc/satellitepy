@@ -18,7 +18,7 @@ The explanations for some arguments can be found below:
 * `--out-folder`: Output folder. The prediction results (.json) for the validation images will be stored in this folder.
 * `--tasks`: Task list. The model will be trained for <tasks> jointly. For example, segmentation from DOTA/iSaid and fine-grained classification from Fair1M can be jointly trained within the MTL-BBAVector model.
 
-There are many more arguments such as `batch-size` and `init-lr`. You can find all arguments in [the script](tools/train/bbavector.py) or you can run the help command in a terminal:
+There are many more arguments such as `batch-size` and `init-lr`. You can find all arguments in [the script](tools/train/bbavector.py) with their explanations, or you can run the help command in a terminal:
 
 ```
 python3 tools/train/bbavector.py --help
