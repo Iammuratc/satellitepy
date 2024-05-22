@@ -14,12 +14,13 @@ python3 tools/data/create_patches.py --patch-size 512 --in-image-folder <fair1m-
 ```
 
 Further explanations for the arguments can be found below.
-`--in-image-folder`: Input image folder. This folder consists of image files, for example, .tif files for Fair1M.
-`--in-label-folder`: Input label folder. This folder consists of label files, for example, .xml files for Fair1M.
-`--in-label-format`: Input label format. Since each dataset has its own label format, this should be adjusted accordingly. All label formats can be found in `satellitepy.data.labels`.
-`--out-folder`: Output folder. The patches will be stored in this folder.
-`--patch-overlap`: Stride. The neighboring patches will overlap for the pixels of <patch-overlap>. This is needed, so each object is present in patches without any cutoff part.
+* `--in-image-folder`: Input image folder. This folder consists of image files, for example, .tif files for Fair1M.
+* `--in-label-folder`: Input label folder. This folder consists of label files, for example, .xml files for Fair1M.
+* `--in-label-format`: Input label format. Since each dataset has its own label format, this should be adjusted accordingly. All label formats can be found in `satellitepy.data.labels`.
+* `--out-folder`: Output folder. The patches will be stored in this folder.
+* `--patch-overlap`: Stride. The neighboring patches will overlap for the pixels of <patch-overlap>. This is needed, so each object is present in patches without any cutoff part.
 There are many more arguments, e.g., `truncated-object-thr` and `log-path`. You can find all arguments in [the script](tools/data/create_patches.py).
+
 
 
 # Special Cases
