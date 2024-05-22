@@ -1,6 +1,6 @@
 # What are Patches?
 
-Image patches (or patches in short) are small parts of original images. Since deep learning models moslty need a fixed size of input, e.g., 512*512, 1024*1024, patches are created to unify the image size.
+Image patches (or patches in short) are small parts of original images. Since deep learning models moslty need a fixed size of input, e.g., 512 $\times$ 512, $1024 \times 1024$, patches are created to unify the image size.
 
 # Datasets that are supported by satellitepy
 Most well-known satellite imagery datasets for object detection are supported by satellitepy. You can download the datasets by using the scripts in [the folder](tools/data/download). 
