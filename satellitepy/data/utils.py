@@ -9,7 +9,31 @@ from satellitepy.data.bbox import BBox
 logger = logging.getLogger('')
 
 
-def read_img(img_path, module='cv2'):
+def rescale_labels(labels,rescaling):
+    '''
+    Rescale the tasks obboxes, hbooxes and masks, if defined.
+    Parameters
+    ----------
+    labels : dict
+        Label dictionary in the satellitepy format.
+    Returns
+    -------
+    labels_rescaled : dict
+        Label dictionary in the satellitepy format. Relevant tasks are rescaled.
+    '''
+    labels_rescaled = labels.copy()
+    for task in ['obboxes', 'hbboxes', 'masks', 'attributes_fuselage_length', 'attributes_wings_wing-span']:
+        rescaled_values = []
+        for i, value in enumerate(get_satellitepy_dict_values(labels,task)):
+            if value is None:
+                rescaled_values.append(value)
+            else:
+                rescaled_value = np.array(value) * rescaling
+                rescaled_values.append(rescaled_value.tolist())
+        set_satellitepy_dict_values(satellitepy_dict=labels_rescaled,task=task,value=rescaled_values)
+    return labels_rescaled
+
+def read_img(img_path, module='cv2', rescaling=1.0, interpolation_method=cv2.INTER_LINEAR):
     """
     Read image.
     Parameters
@@ -39,6 +63,15 @@ def read_img(img_path, module='cv2'):
     else:
         logger.error(f'{module} is not a valid argument!')
         return 0
+    
+    if rescaling != 1.0:
+        interpolation_dict = {
+            'INTER_NEAREST':cv2.INTER_NEAREST,
+            'INTER_LINEAR':cv2.INTER_LINEAR,
+            'INTER_CUBIC':cv2.INTER_CUBIC,
+            'INTER_AREA':cv2.INTER_AREA
+            }
+        img = cv2.resize(img, (0, 0), fx = rescaling, fy = rescaling, interpolation = interpolation_dict[interpolation_method])
     return img
 
 

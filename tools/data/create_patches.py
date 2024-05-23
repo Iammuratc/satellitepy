@@ -37,8 +37,14 @@ def get_args():
                                                           'If necessary, the original image will be padded with zeros to create full size patches.')
     parser.add_argument('--log-config-path', default=None, type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, default=None, help='Log path.')
+    # Reading image
     parser.add_argument('--image-read-module', type=str, default='cv2',
                         help='This module will be used to read the image. rasterio is suggested for large TIF images.')
+    parser.add_argument('--rescaling', type=float, default=1, help='Scale the images before creating patches. This is helpful to unify the spatial resolution over patches from different datasets. '
+                        'For example, fair1m (spatial resolution ~0.8) can be rescaled to the spatial resolution of 0.5, rescaling equals 0.8/0.5=1.6. The tasks will be rescaled by the factor of <rescaling>, too, if applicable.')
+    parser.add_argument('--interpolation-method', type=str, default='INTER_LINEAR', 
+        help='Interpolation method to scale the images before creating patches. This is used only if rescaling is different than 1.0.',
+        choices=['INTER_NEAREST','INTER_LINEAR','INTER_CUBIC','INTER_AREA'])
     return parser
 
 
@@ -81,7 +87,9 @@ def run(parser):
         patch_size=args.patch_size,
         patch_overlap=args.patch_overlap,
         mask_folder=in_mask_folder,
-        image_read_module=args.image_read_module
+        image_read_module=args.image_read_module,
+        rescaling=args.rescaling,
+        interpolation_method=args.interpolation_method,
     )
 
 
