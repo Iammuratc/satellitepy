@@ -12,7 +12,7 @@ from satellitepy.data.labels import read_label, init_satellitepy_label, fill_non
     get_all_satellitepy_keys, satellitepy_labels_empty
 from satellitepy.data.patch import get_patches
 from satellitepy.data.chip import get_chips
-from satellitepy.data.utils import get_xview_classes, get_task_dict, read_img
+from satellitepy.data.utils import get_xview_classes, get_task_dict, read_img, rescale_labels
 from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, get_file_paths
 from satellitepy.data.bbox import BBox
@@ -89,7 +89,9 @@ def save_patches(
         patch_overlap,
         image_read_module,
         mask_folder=None,
-):
+        rescaling=1,
+        interpolation_method=cv2.INTER_LINEAR
+    ):
     """
     Save patches from the original images
     Parameters
@@ -112,6 +114,10 @@ def save_patches(
         Patch overlap
     image_read_module : str
         cv2 or rasterio to read the images
+    rescaling : float
+        Images and the corresponding labels will be rescaled.
+    interpolation_method : str
+        <interpolation-method> will be used to rescale images. 
     Returns
     -------
     Save patches in <out-folder>/images and <out-folder>/labels
@@ -141,8 +147,10 @@ def save_patches(
         logger.info(f"{img_path.name}, {label_name}, {mask_name}")
 
         gt_labels = read_label(label_path, label_format, mask_path)
+        if rescaling != 1.0:
+            gt_labels = rescale_labels(gt_labels, rescaling=rescaling)
 
-        img = read_img(str(img_path), module=image_read_module)
+        img = read_img(str(img_path), module=image_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
 
         patches = get_patches(
             img,
@@ -183,6 +191,7 @@ def save_patches(
         logger.info(f"{count_skipped_patches[0]} patches are skipped because images consist of only zeros.")
         logger.info(f"{count_skipped_patches[1]} patches are skipped because no bounding boxes are defined.")
         logger.info(f"{sum(count_skipped_patches)} patches are skipped in total.")
+        logger.info(f"{count_patches - sum(count_skipped_patches)} patches are created in total.")
 
 
 def save_chips(
