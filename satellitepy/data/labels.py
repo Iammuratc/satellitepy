@@ -255,11 +255,10 @@ def read_dota_label(label_path, mask_path=None):
             len_bbox_line = len(bbox_line)
             if len_bbox_line == 10:
                 difficulty = bbox_line[-1].rstrip()
-                labels['difficulty'].append(difficulty)
                 category_i = -2
             elif len_bbox_line == 9:
+                difficulty = None
                 category_i = -1
-                labels['difficulty'].append(None)
             else:
                 continue
 
@@ -273,13 +272,14 @@ def read_dota_label(label_path, mask_path=None):
                     labels['role'].append('Large Vehicle')
                 else:
                     labels['role'].append(None)
-            elif category == 'plane' or category == 'ship' or category == 'helicopter':
+            elif category != 'plane' and category != 'ship' and category != 'helicopter':
+                continue
+            else:
                 category = 'airplane' if category == 'plane' else category
                 labels['coarse-class'].append(category)
                 labels['role'].append(None)
-            else:
-                labels['coarse-class'].append('other')
-                labels['role'].append(None)
+
+            labels['difficulty'].append(difficulty)
 
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
@@ -529,7 +529,7 @@ def read_ship_net_label(label_path):
 
     root = ET.parse(label_path).getroot()
     objects = root.findall('./object')
-    coarse_classes = {1: 'ship', 2: 'other'}  # 2 is dock, and other in our framework
+    coarse_classes = {1: 'ship', 2: 'other'}
     roles = {1: 'Other Ship', 2: 'Warship', 3: 'Merchant Ship', 4: 'Dock'}
     fine_classes = get_shipnet_categories()
 

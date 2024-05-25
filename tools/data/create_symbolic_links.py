@@ -20,52 +20,52 @@ def create_symbolic_paths(add_dataset_name=True):
                 out_path.symlink_to(in_path)
 
     train_folders = [
-        '/raid/userdata/j0nl0060/data/patches/fair1m/train/',
-        '/raid/userdata/j0nl0060/data/patches/ship_net/train/',
-        '/raid/userdata/j0nl0060/data/patches/DOTA/train/',
-        '/raid/userdata/j0nl0060/data/patches/xview/train/',
-        '/raid/userdata/j0nl0060/data/patches/DIOR/train/',
-        '/raid/userdata/j0nl0060/data/patches/DIOR/test/',
-        '/raid/userdata/j0nl0060/data/patches/Potsdam/',
-        '/raid/userdata/j0nl0060/data/patches/Rareplanes/train/',
-        '/raid/userdata/j0nl0060/data/patches/Rareplanes_synthetic_subset/train/',
-        '/raid/userdata/j0nl0060/data/patches/ucas/CAR/',
-        '/raid/userdata/j0nl0060/data/patches/ucas/PLANE/',
-        '/raid/userdata/j0nl0060/data/patches/VHR/',
-        '/raid/userdata/j0nl0060/data/patches/VEDAI/'
+        # '/raid/userdata/j0nl0060/data/patches/fair1m/train/',
+        # '/raid/userdata/j0nl0060/data/patches/shipnet/train/',
+        # '/raid/userdata/j0nl0060/data/patches/DOTA/train/',
+        # '/raid/userdata/j0nl0060/data/patches/xview/train/',
+        # '/raid/userdata/j0nl0060/data/patches/DIOR/train/',
+        # '/raid/userdata/j0nl0060/data/patches/DIOR/test/',
+        # '/raid/userdata/j0nl0060/data/patches/Potsdam/',
+        # '/raid/userdata/j0nl0060/data/patches/Rareplanes/train/',
+        # '/raid/userdata/j0nl0060/data/patches/Rareplanes_synthetic_subset/train/',
+        # '/raid/userdata/j0nl0060/data/patches/ucas/CAR/',
+        # '/raid/userdata/j0nl0060/data/patches/ucas/PLANE/',
+        # '/raid/userdata/j0nl0060/data/patches/VHR/',
+        # '/raid/userdata/j0nl0060/data/patches/VEDAI/'
     ]
-    train_label_folders = [Path(train_folder) / 'labels' for train_folder in train_folders]
-    train_image_folders = [Path(train_folder) / 'images' for train_folder in train_folders]
+    # train_label_folders = [Path(train_folder) / 'labels' for train_folder in train_folders]
+    # train_image_folders = [Path(train_folder) / 'images' for train_folder in train_folders]
 
     val_folders = [
-        '/raid/userdata/j0nl0060/data/patches/fair1m/val/',
-        '/raid/userdata/j0nl0060/data/patches/ship_net/val/',
-        '/raid/userdata/j0nl0060/data/patches/DOTA/val/',
-        '/raid/userdata/j0nl0060/data/patches/DIOR/val/',
-        '/raid/userdata/j0nl0060/data/patches/Rareplanes_synthetic_subset/test/',
-        '/raid/userdata/j0nl0060/data/patches/Rareplanes/test/',
+        '/raid/userdata/j0nl0060/data/full_satpy/fair1m/val/',
+        '/raid/userdata/j0nl0060/data/full_satpy/shipnet/val/',
+        '/raid/userdata/j0nl0060/data/full_satpy/DOTA/val/',
+        '/raid/userdata/j0nl0060/data/full_satpy/DIOR/val/',
+        '/raid/userdata/j0nl0060/data/full_satpy/Rareplanes_synth_subset/test/',
+        '/raid/userdata/j0nl0060/data/full_satpy/Rareplanes/test/',
     ]
     val_label_folders = [Path(val_folder) / 'labels' for val_folder in val_folders]
     val_image_folders = [Path(val_folder) / 'images' for val_folder in val_folders]
 
-    train_image_paths = get_file_paths_recursively(train_image_folders)
-    train_label_paths = get_file_paths_recursively(train_label_folders)
+    # train_image_paths = get_file_paths_recursively(train_image_folders)
+    # train_label_paths = get_file_paths_recursively(train_label_folders)
 
     val_image_paths = get_file_paths_recursively(val_image_folders)
     val_label_paths = get_file_paths_recursively(val_label_folders)
 
-    train_image_out_folder = Path('/raid/userdata/j0nl0060/data/patches/all/train/images')
-    train_label_out_folder = Path('/raid/userdata/j0nl0060/data/patches/all/train/labels')
-    val_image_out_folder = Path('/raid/userdata/j0nl0060/data/patches/all/val/images')
-    val_label_out_folder = Path('/raid/userdata/j0nl0060/data/patches/all/val/labels')
+    # train_image_out_folder = Path('/raid/userdata/j0nl0060/data/patches/all/train/images')
+    # train_label_out_folder = Path('/raid/userdata/j0nl0060/data/patches/all/train/labels')
+    val_image_out_folder = Path('/raid/userdata/j0nl0060/data/full_satpy/all/val/images')
+    val_label_out_folder = Path('/raid/userdata/j0nl0060/data/full_satpy/all/val/labels')
 
-    assert create_folder(train_image_out_folder)
-    assert create_folder(train_label_out_folder)
+    # assert create_folder(train_image_out_folder)
+    # assert create_folder(train_label_out_folder)
     assert create_folder(val_image_out_folder)
     assert create_folder(val_label_out_folder)
 
-    save_symbolic_links(train_image_paths, out_folder=train_image_out_folder)
-    save_symbolic_links(train_label_paths, out_folder=train_label_out_folder)
+    # save_symbolic_links(train_image_paths, out_folder=train_image_out_folder)
+    # save_symbolic_links(train_label_paths, out_folder=train_label_out_folder)
     save_symbolic_links(val_image_paths, out_folder=val_image_out_folder)
     save_symbolic_links(val_label_paths, out_folder=val_label_out_folder)
 
