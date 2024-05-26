@@ -74,6 +74,8 @@ def train_bbavector(args):
     patience = args.patience
     tasks = args.tasks
 
+    assert 'obboxes' in tasks or 'hbboxes' in tasks, 'Tasks must contain at least one type of bounding boxes.'
+
     target_task = args.target_task
 
     assert target_task in tasks, 'target task must be part of the tasks'
