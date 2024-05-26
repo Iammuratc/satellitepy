@@ -265,7 +265,8 @@ def remove_low_conf_results(results, task, conf_score):
     for key in results['det_labels'].keys():
         filtered_results['det_labels'][key] = np.array(results['det_labels'][key])[idx]
 
-    filtered_results['matches']['iou']['scores'] = np.array(results['matches']['iou']['scores'])[idx]
-    filtered_results['matches']['iou']['indexes'] = np.array(results['matches']['iou']['indexes'])[idx]
+    if len(results['gt_labels'][task]) != 0:
+        filtered_results['matches']['iou']['scores'] = np.array(results['matches']['iou']['scores'])[idx]
+        filtered_results['matches']['iou']['indexes'] = np.array(results['matches']['iou']['indexes'])[idx]
 
     return filtered_results

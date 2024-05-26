@@ -38,12 +38,12 @@ def create_symbolic_paths(add_dataset_name=True):
     # train_image_folders = [Path(train_folder) / 'images' for train_folder in train_folders]
 
     val_folders = [
-        '/raid/userdata/j0nl0060/data/full_satpy/fair1m/val/',
-        '/raid/userdata/j0nl0060/data/full_satpy/shipnet/val/',
-        '/raid/userdata/j0nl0060/data/full_satpy/DOTA/val/',
-        '/raid/userdata/j0nl0060/data/full_satpy/DIOR/val/',
-        '/raid/userdata/j0nl0060/data/full_satpy/Rareplanes_synth_subset/test/',
-        '/raid/userdata/j0nl0060/data/full_satpy/Rareplanes/test/',
+        '/mnt/2tb-0/satellitepy/full_satpy/fair1m/val/',
+        '/mnt/2tb-0/satellitepy/full_satpy/shipnet/val/',
+        '/mnt/2tb-0/satellitepy/full_satpy/DOTA/val/',
+        '/mnt/2tb-0/satellitepy/full_satpy/DIOR/val/',
+        '/mnt/2tb-0/satellitepy/full_satpy/Rareplanes_synth_subset/test/',
+        '/mnt/2tb-0/satellitepy/full_satpy/Rareplanes/test/',
     ]
     val_label_folders = [Path(val_folder) / 'labels' for val_folder in val_folders]
     val_image_folders = [Path(val_folder) / 'images' for val_folder in val_folders]
@@ -56,8 +56,8 @@ def create_symbolic_paths(add_dataset_name=True):
 
     # train_image_out_folder = Path('/raid/userdata/j0nl0060/data/patches/all/train/images')
     # train_label_out_folder = Path('/raid/userdata/j0nl0060/data/patches/all/train/labels')
-    val_image_out_folder = Path('/raid/userdata/j0nl0060/data/full_satpy/all/val/images')
-    val_label_out_folder = Path('/raid/userdata/j0nl0060/data/full_satpy/all/val/labels')
+    val_image_out_folder = Path('/mnt/2tb-0/satellitepy/full_satpy/all/val/images')
+    val_label_out_folder = Path('/mnt/2tb-0/satellitepy/full_satpy/all/val/labels')
 
     # assert create_folder(train_image_out_folder)
     # assert create_folder(train_label_out_folder)
