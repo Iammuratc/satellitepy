@@ -39,6 +39,7 @@ def get_args():
     parser.add_argument('--out-folder',
                         help='Save folder of detected bounding boxes. Bounding box labels will be saved into '
                              '<out-folder>/results/patch_labels.')
+    parser.add_argument('--log-path', type=Path, default=None, help='Log will be saved here.')
     args = parser.parse_args()
     return args
 
