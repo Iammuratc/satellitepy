@@ -104,7 +104,7 @@ def decode_obboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
         pts = np.asarray([tl, bl, br, tr, ], np.float32)
         pts[:, 0] = pts[:, 0] * down_ratio / input_w * orig_w
         pts[:, 1] = pts[:, 1] * down_ratio / input_h * orig_h
-        points.append(pts)
+        points.append(pts.tolist())
     return points
 
 
@@ -131,7 +131,7 @@ def decode_hbboxes(boxes, orig_w, orig_h, input_w, input_h, down_ratio):
         pts = np.asarray([tl, bl, br, tr, ], np.float32)
         pts[:, 0] = pts[:, 0] * down_ratio / input_w * orig_w
         pts[:, 1] = pts[:, 1] * down_ratio / input_h * orig_h
-        points.append(pts)
+        points.append(pts.tolist())
     return points
 
 
