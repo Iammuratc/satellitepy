@@ -27,6 +27,7 @@ def save_patch_results(
         checkpoint_path,
         device,
         tasks,
+        target_task,
         num_workers,
         input_h,
         input_w,
@@ -64,7 +65,7 @@ def save_patch_results(
 
     model_decoder = get_model_decoder(tasks,
                                       K,
-                                      conf_thresh)
+                                      conf_thresh, target_task)
 
     dataset = BBAVectorDataset(
         in_image_folder=in_image_folder,
