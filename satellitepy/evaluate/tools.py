@@ -121,6 +121,7 @@ def calculate_iou_score(in_result_folder,
                         out_folder,
                         iou_thresholds,
                         conf_score_threshold,
+                        nms_iou_thresh,
                         mask_threshold,
                         mask_adaptive_size,
                         target_task):
@@ -147,9 +148,13 @@ def calculate_iou_score(in_result_folder,
             mask = cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,
                                          mask_adaptive_size, mask_threshold)
 
+            result = remove_low_conf_results(result, target_task, conf_score_threshold)
+            det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=target_task)
+            conf_scores = np.max(det_results[target_task], axis=1) if len(det_results[target_task]) > 0 else []
+
             for i_iou_th, iou_th in enumerate(iou_thresholds):
 
-                for i_conf_score, conf_score in enumerate(result['det_labels'][target_task]):
+                for i_conf_score, conf_score in enumerate(conf_scores):
                     if conf_score < conf_score_threshold:
                         continue
                     iou_score = result['matches']['iou']['scores'][i_conf_score]

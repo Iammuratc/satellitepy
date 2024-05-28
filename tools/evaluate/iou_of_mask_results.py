@@ -33,6 +33,9 @@ def get_args():
     parser.add_argument('--target-task', type=str, default='coarse-class',
                         help='The model will be trained for the given target task. Needs to be a classification task. '
                              'Default is coarse-class')
+    parser.add_argument('--nms-iou-thresh', type=float, default=0.3,
+                        help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed '
+                             'according to this value.')
     parser.add_argument('--log-config-path', default=project_folder /
                                                      Path("configs/log.config"), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, help='Log will be saved here. Default value is '
@@ -60,6 +63,8 @@ def main(args):
 
     target_task = args.target_task
 
+    nms_iou_thresh = args.nms_iou_thresh
+
     log_path = Path(
         out_folder) / 'evaluations.log' if args.log_path is None else args.log_path
     init_logger(config_path=args.log_config_path, log_path=log_path)
@@ -74,6 +79,7 @@ def main(args):
         out_folder,
         iou_thresholds,
         conf_score_threshold,
+        nms_iou_thresh,
         mask_threshold,
         mask_adaptive_size,
         target_task
