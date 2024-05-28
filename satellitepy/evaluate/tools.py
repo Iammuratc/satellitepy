@@ -122,7 +122,8 @@ def calculate_iou_score(in_result_folder,
                         iou_thresholds,
                         conf_score_threshold,
                         mask_threshold,
-                        mask_adaptive_size):
+                        mask_adaptive_size,
+                        target_task):
 
     logger = logging.getLogger('')
 
@@ -148,7 +149,7 @@ def calculate_iou_score(in_result_folder,
 
             for i_iou_th, iou_th in enumerate(iou_thresholds):
 
-                for i_conf_score, conf_score in enumerate(result['det_labels']['confidence-scores']):
+                for i_conf_score, conf_score in enumerate(result['det_labels'][target_task]):
                     if conf_score < conf_score_threshold:
                         continue
                     iou_score = result['matches']['iou']['scores'][i_conf_score]
