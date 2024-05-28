@@ -14,6 +14,12 @@ The command below will store the predictions of the pretrained model with the co
 python3 tools/test/bbavector/test_original_image.py  --weights-path <weights-dir/CGC_pretrained_on_all_finetuned_on_fair1m.pth --num-workers 0 --input-h 600 --input-w 600 --device cuda:0 --in-image-folder <fair1m-dir>/val/images --in-label-folder <fair1m-dir>/val/labels --K 1000 --out-folder <satellitepy-dir>/test_eval --in-label-format fair1m --patch-size 600 --patch-overlap 100 --tasks hbboxes obboxes masks coarse-class fine-class very-fine-class role difficulty attributes_engines_no-engines attributes_engines_propulsion attributes_fuselage_canards attributes_fuselage_length attributes_wings_wing-span attributes_wings_wing-shape attributes_wings_wing-position attributes_tail_no-tail-fins
 ```
 
+To evaluate a model on multiple datasets, the datasets need to be combined and have a common label format. To save the original images of a dataset with their satellitepy labels, use the following command:
+
+```
+python3 tools/data/create_satellitepy_labels.py --in-image-folder <fair1m-dir>/val/images --in-label-folder <fair1m-dir>/val/ --in-label-format fair1m --out-folder <fair1m-dir>/val/satpy_format
+```
+
 The prediction-ground truth files will be stored under `<satellitepy-dir>/test_eval/results`, which is called `<result-dir>` from now on. The AP and mAP metrics can be calculated by using the predictions:
 
 ```
