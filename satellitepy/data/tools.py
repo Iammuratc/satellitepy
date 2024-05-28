@@ -334,15 +334,29 @@ def show_labels_on_images(
 
     assert len(img_paths) == len(label_paths) == len(mask_paths)
 
+    requested_classes = [task for task in tasks if task in ['coarse-class', 'role', 'very-fine-class', 'fine-class']]
     for label_path, mask_path, img_path in tqdm(zip(label_paths, mask_paths, img_paths), total=len(label_paths)):
         img = read_img(str(img_path), img_read_module)
         labels = read_label(label_path, label_format)
         for task in tasks:
             if task in ['obboxes', 'hbboxes']:
-                for bbox_corners in labels[task]:
+                for i,bbox_corners in enumerate(labels[task]):
                     bbox = BBox(corners=bbox_corners)
                     img = bbox.draw_bbox_to_img(img, corners=[bbox.corners], thickness=5)
-
+                    if requested_classes:
+                        cx, cy, width, height, angle = bbox.params
+                        center = (cx.astype(int), cy.astype(int))
+                        img = cv2.circle(img, center, 1, color=(255,255,255), thickness=-1)
+                    for class_task in requested_classes:
+                        cv2.putText(img,
+                            text=str(labels[class_task][i]), 
+                            org=center, 
+                            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                            fontScale=0.6,
+                            color=(0,0,255),
+                            thickness=2,
+                            lineType=2)
+            
         out_img_path = out_image_folder / f'{img_path.stem}.png'
         cv2.imwrite(str(out_img_path), img)
 
