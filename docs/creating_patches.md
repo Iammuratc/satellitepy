@@ -26,10 +26,10 @@ There are many more arguments such as `truncated-object-thr` and `log-path`. You
 There are a few datasets that require some preprocessing before creating patches:
 
 ## Rareplanes (+synthetic)
-Annotations are provided in a single file for each dataset part. For efficiency and compatibility, the annotations need to be split into one file for each image. Use `tools/data/split_rareplanes_labels.py`.
+Annotations are provided in a single file for each dataset part. For efficiency and compatibility, the annotations need to be split into one file for each image. Use [split_rareplanes_labels.py](tools/data/split_rareplanes_labels.py).
 
 ## Xiew
-Similar to Rareplanes, the annotations are provided in a single .geojson file. Split them using `tools/data/split_xview_into_satellitepy_labels.py`. Note that the resulting label files are already in satellitepy format, so 'satellitepy' must be used as `label-format`.
+Similar to Rareplanes, the annotations are provided in a single .geojson file. Split them using [split_xview_into_satellitepy_labels.py](tools/data/split_xview_into_satellitepy_labels.py). Note that the resulting label files are already in satellitepy format, so 'satellitepy' must be used as `label-format`.
 
 ## Shipnet and DIOR
-All dataset parts are provided in a combined directory, with text files specifying the splits. Use `tools/data/separate_dataset_parts.py` to separate them.
+All dataset parts are provided in a combined directory, with text files specifying the splits. Use [separate_dataset_parts.py](tools/data/separate_dataset_parts.py) to separate them.
