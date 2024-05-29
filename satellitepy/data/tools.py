@@ -328,64 +328,28 @@ def show_labels_on_images(
 
     assert len(img_paths) == len(label_paths) == len(mask_paths)
 
+    requested_classes = [task for task in tasks if task in ['coarse-class', 'role', 'very-fine-class', 'fine-class']]
     for label_path, mask_path, img_path in tqdm(zip(label_paths, mask_paths, img_paths), total=len(label_paths)):
         img = read_img(str(img_path), img_read_module)
         labels = read_label(label_path, label_format)
-
-        bboxes = 'obboxes' if 'obboxes' in tasks else 'hbboxes'
-
-        for i, bbox_corners in enumerate(labels[bboxes]):
-
-            bbox_corners = np.array(bbox_corners, np.int32)
-            x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
-            cv2.polylines(img, [bbox_corners], True, color=(255, 0, 0))
-
-            available_tasks = tasks.copy()
-
-            if 'obboxes' in available_tasks:
-                available_tasks.remove('obboxes')
-            if 'hbboxes' in available_tasks:
-                available_tasks.remove('hbboxes')
-
-            if 'masks' in available_tasks:
-                available_tasks.remove('masks')
-
-            if labels['coarse-class'][i] != 'airplane':
-                available_tasks = [task for task in available_tasks if 'attributes' not in task]
-
-            if labels['coarse-class'][i] not in ['airplane', 'ship'] and 'very-fine-class' in available_tasks:
-                available_tasks.remove('very-fine-class')
-
-            for j, task in enumerate(available_tasks):
-                task_keys = task.split('_')
-                task_text = task_keys[-1]
-
-                task_result = labels
-                for x in task_keys:
-                    task_result = task_result[x]
-
-                task_result = task_result[i]
-
-                if type(task_result) is float:
-                    task_result = round(task_result, 2)
-
-                text = task_text + ': ' + str(task_result)
-                cv2.putText(img, str(text), (x_max, y_min + j * 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-
-        if 'masks' in tasks and labels['masks'][0] is not None:
-            if label_format == 'satellitepy':
-                mask = labels['masks']
-            else:
-                mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
-
-            img_mask = np.zeros(shape=(img.shape[0], img.shape[1]), dtype=np.uint8)
-            for i in range(len(labels[bboxes])):
-                x, y = mask[i]
-                img_mask[y, x] = 1
-
-            contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            cv2.drawContours(img, contours, -1, (0, 0, 255), 1)
-
+        for task in tasks:
+            if task in ['obboxes', 'hbboxes']:
+                for i,bbox_corners in enumerate(labels[task]):
+                    bbox = BBox(corners=bbox_corners)
+                    img = bbox.draw_bbox_to_img(img, corners=[bbox.corners], thickness=5)
+                    if requested_classes:
+                        cx, cy, width, height, angle = bbox.params
+                        center = (cx.astype(int), cy.astype(int))
+                        img = cv2.circle(img, center, 1, color=(255,255,255), thickness=-1)
+                    for class_task in requested_classes:
+                        cv2.putText(img,
+                            text=str(labels[class_task][i]),
+                            org=center,
+                            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                            fontScale=0.6,
+                            color=(0,0,255),
+                            thickness=2,
+                            lineType=2)
 
         out_img_path = out_image_folder / f'{img_path.stem}.png'
         cv2.imwrite(str(out_img_path), img)

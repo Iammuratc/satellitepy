@@ -50,4 +50,4 @@ Please follow the steps in [the installation manual](docs/installing_satellitepy
 
 1) You can [create patches](docs/creating_patches.md) from original images to train/test your models.
 2) You can [train a model](docs/training_mtl_bbavector.md) on your [patches](docs/creating_patches.md).
-3) You can evaluate [a pretrained model](docs/training_mtl_bbavector.md) on your [patches](docs/creating_patches.md).
+3) You can [evaluate a pretrained model](docs/evaluating_pretrained_model.md) on your original test images. The model will make predictions for patches of the original image and merge the patch predictions automatically.
