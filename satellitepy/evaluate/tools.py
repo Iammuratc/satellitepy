@@ -155,8 +155,6 @@ def calculate_iou_score(in_result_folder,
             for i_iou_th, iou_th in enumerate(iou_thresholds):
 
                 for i_conf_score, conf_score in enumerate(conf_scores):
-                    if conf_score < conf_score_threshold:
-                        continue
                     iou_score = result['matches']['iou']['scores'][i_conf_score]
                     if iou_score < iou_th:
                         continue
@@ -167,7 +165,7 @@ def calculate_iou_score(in_result_folder,
                         continue
 
                     bbox = result['det_labels']['hbboxes'][i_conf_score] if result['det_labels']['hbboxes'][
-                        i_conf_score] else result['det_labels']['hbboxes'][i_conf_score]
+                        i_conf_score].any() else result['det_labels']['hbboxes'][i_conf_score]
                     det_value = decode_masks(bbox, mask)
 
                     iou = calc_iou(det_gt_value, det_value)
