@@ -314,11 +314,11 @@ def get_satellitepy_table():
         },
         'fine-class':
         {
-            'A220'       	                :	0	,	   # Fair1m
-            'A321'       	                :	1	,	   # Fair1m
-            'A330'       	                :	2	,	   # Fair1m
+            'A220'       	                :	0	,	   # Fair1m FR24
+            'A321'       	                :	1	,	   # Fair1m FR24
+            'A330'       	                :	2	,	   # Fair1m FR24
             'Airbus_A330'               	:	2	,	   # Rareplanes_synthetic
-            'A350'                      	:	3	,	   # Fair1m
+            'A350'                      	:	3	,	   # Fair1m FR24
             'Airbus_A320'               	:	4	,	   # Rareplanes_synthetic
             'ARJ21'      	                :	5	,	   # Fair1m
             'Motorboat'                 	:	6	,	   # ShipNet
@@ -402,7 +402,7 @@ def get_satellitepy_table():
             'Bombardier_Challenger'     	:	79	,	   # Rareplanes_synthetic
             'Bombardier_CRJ'            	:	80	,	   # Rareplanes_synthetic
             'Bombardier_Learjet'        	:	81	,	   # Rareplanes_synthetic
-            'Cessna'                    	:	82	,	   # Rareplanes_synthetic
+            'Cessna'                    	:	82	,	   # Rareplanes_synthetic FR24
             'Cessna_170'                	:	83	,	   # Rareplanes_synthetic
             'Cessna_172'                	:	84	,	   # Rareplanes_synthetic
             'Cessna_310'                	:	85	,	   # Rareplanes_synthetic
@@ -428,6 +428,41 @@ def get_satellitepy_table():
             'Car'                           :   105,      # Vedai
             'Camping Car'                   :   106,      # Vedai
             'Motorcycle'                    :   107,      # Vedai
+            'B787'                          :   108,      # FR24
+            'A320'                          :   109,      # FR24
+            'E190'                          :   110,      # FR24
+            'E195'                          :   111,      # FR24
+            'B777'                          :   112,      # FR24
+            'B737'                          :   113,      # FR24
+            'E175'                          :   114,      # FR24
+            'B747'                          :   115,      # FR24
+            'A319'                          :   116,      # FR24
+            'B767'                          :   117,      # FR24
+            'A380'                          :   118,      # FR24
+            'B757'                          :   119,      # FR24
+            'E170'                          :   120,      # FR24
+            'CRJ7'                          :   121,      # FR24
+            'E145'                          :   122,      # FR24
+            'CRJ2'                          :   123,      # FR24
+            'MD11'                          :   124,      # FR24
+            'B717'                          :   125,      # FR24
+            'A340'                          :   126,      # FR24
+            'CRJ9'                          :   127,      # FR24
+            'CRJ-900'                       :   128,      # FR24
+            'CRJ-701'                       :   129,      # FR24
+            'CRJ-700'                       :   130,      # FR24
+            'R175'                          :   131,      # FR24
+            'Beechcraft'                    :   132,      # FR24
+            'ERJ'                           :   133,      # FR24
+            'CRJ'                           :   134,      # FR24
+            'Falcon'                        :   135,      # FR24
+            'Sukhoi 100'                    :   136,      # FR24
+            'Embraer'                       :   137,      # FR24
+            'Bombardier-Global'             :   138,      # FR24
+            'C68A'                          :   139,      # FR24
+            'E135'                          :   140,      # FR24
+            'Cessna560'                     :   141,      # FR24
+            'H25B'                          :   142,      # FR24
         },
         'very-fine-class':{
 			'Airbus_A330-300'					: 0,	# Rareplanes_synthetic
