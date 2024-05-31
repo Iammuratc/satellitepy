@@ -16,6 +16,7 @@ from satellitepy.data.utils import get_xview_classes, get_task_dict, read_img, r
 from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, get_file_paths
 from satellitepy.data.bbox import BBox
+from satellitepy.data.utils import get_satellitepy_dict_values
 from satellitepy.evaluate.utils import remove_low_conf_results
 from satellitepy.evaluate.bbavector.utils import apply_nms
 
@@ -357,6 +358,9 @@ def show_labels_on_images(
                 for x in task_keys:
                     task_result = task_result[x]
                 task_result = task_result[i]
+
+                task_result = get_satellitepy_dict_values(labels, task)[i]
+
                 if type(task_result) is float:
                     task_result = round(task_result, 2)
 
