@@ -301,7 +301,9 @@ def read_fair1m_label(label_path):
 
     root = ET.parse(label_path).getroot()
     instance_names = root.findall('./objects/object/possibleresult/name')
-    for instance_name in instance_names:
+
+    skip_list = []
+    for i, instance_name in enumerate(instance_names):
         if instance_name.text in ['Boeing747', 'Boeing787', 'A330', 'Boeing777', 'A350']:
             labels['coarse-class'].append('airplane')
             labels['fine-class'].append(instance_name.text)
@@ -341,12 +343,13 @@ def read_fair1m_label(label_path):
             labels['fine-class'].append(None)
             labels['role'].append(None)
         else:
-            labels['coarse-class'].append(None)
-            labels['fine-class'].append(None)
-            labels['role'].append(None)
+            skip_list.append(i)
+            continue
 
     point_spaces = root.findall('./objects/object/points')
-    for point_space in point_spaces:
+    for i, point_space in enumerate(point_spaces):
+        if i in skip_list:
+            continue
         my_points = point_space.findall('point')[:4]
         coords = []
         for my_point in my_points:
