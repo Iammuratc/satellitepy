@@ -107,9 +107,14 @@ def set_mask(labels, mask_path, bbox_type, mask_type):
         if mask_type == 'rareplanes':
             center = (int((h[0] + h[1]) / 2), int((h[2] + h[3]) / 2))
 
+            h = np.clip(h, a_min=0, a_max=1919)
+
+
             if 0 <= center[0] < mask.shape[1] and 0 <= center[1] < mask.shape[0]:
                 color = mask[center[::-1]]
-                coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] == color)).T.tolist()
+
+                coords = np.array(np.argwhere(np.all((mask[h[2]:h[3], h[0]:h[1]] == color), axis=-1)).T.tolist())
+
                 labels['masks'].append([(coords[1] + h[0]).tolist(), (coords[0] + h[2]).tolist()])
             else:
                 labels['masks'].append(None)
