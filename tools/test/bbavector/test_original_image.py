@@ -109,7 +109,6 @@ def main(parser):
         input_h=args.input_h,
         input_w=args.input_w,
         down_ratio=down_ratio,
-        nms_iou_threshold=args.nms_iou_thresh,
         target_task=target_task,
         img_read_module=args.image_read_module)
 

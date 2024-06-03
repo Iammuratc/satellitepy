@@ -30,8 +30,8 @@ class CELoss(nn.Module):
     def forward(self, output, mask, ind, target):
         pred = self._tranpose_and_gather_feat(output, ind)
         if mask.sum():
-            nan_mask = torch.isnan(target) is False
-            _mask = (mask & nan_mask) == 0
+            nan_mask = torch.isnan(target) == False
+            _mask = (mask & nan_mask) > 0
             loss = F.cross_entropy(pred[_mask],
                                    target[_mask].long(),
                                    reduction='mean')
@@ -72,7 +72,7 @@ class BCELoss(nn.Module):
             if self.mask_loss:
                 _mask = nan_mask
             else:
-                _mask = (mask & nan_mask.squeeze(-1)) == 0
+                _mask = (mask & nan_mask.squeeze(-1)) > 0
             loss = F.binary_cross_entropy(pred[_mask],
                                           target[_mask],
                                           reduction='mean')

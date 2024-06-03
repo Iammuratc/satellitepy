@@ -49,7 +49,7 @@ def get_patches(
     x_start_coords = get_patch_start_coords(x_max_padded, patch_size, patch_overlap)
     patch_start_coords = [[x, y] for x in x_start_coords for y in y_start_coords]
 
-    label_file_exist = gt_labels != None
+    label_file_exist = gt_labels is not None
 
     patch_dict = {
         'images': [np.empty(shape=(patch_size, patch_size, ch), dtype=np.uint8) for _ in
@@ -97,7 +97,9 @@ def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_co
             mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2, 1)
 
             mask_shifted[0][mask_shifted[0] >= patch_size] = patch_size - 1
+            mask_shifted[0][mask_shifted[0] < 0] = 0
             mask_shifted[1][mask_shifted[1] >= patch_size] = patch_size - 1
+            mask_shifted[1][mask_shifted[1] < 0] = 0
             patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
         if consider_additional:
             bbox_corners_shifted = np.array(patch_dict['labels'][i][additional][-1]) - [x_0, y_0]
