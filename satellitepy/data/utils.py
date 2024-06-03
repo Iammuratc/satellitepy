@@ -625,3 +625,27 @@ def get_task_dict(task):
     satellitepy_table = get_satellitepy_table()
     task_dict = get_satellitepy_dict_values(satellitepy_table, task)
     return task_dict
+
+def count_unique_values(satellitepy_values, instances={}):
+    for value in satellitepy_values:
+        if isinstance(value, str) or isinstance(value, int):
+            if value not in instances.keys():
+                instances[value] = 0
+            instances[value] += 1
+        elif isinstance(value, list):
+            if 'count' not in instances.keys():
+                instances['count'] = 0
+            instances['count'] += 1
+        elif isinstance(value, float):
+            if 'max' not in instances.keys():
+                instances['max'] = 0
+                instances['min'] = np.inf
+            if value > instances['max']:
+                instances['max'] = value
+            if value < instances['min']:
+                instances['min'] = value
+        elif value is None:
+            if 'None' not in instances.keys():
+                instances['None'] = 0
+            instances['None'] += 1
+    return instances

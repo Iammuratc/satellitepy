@@ -32,7 +32,7 @@ class BBox:
             if isinstance(diamond_corners, list):
                 diamond_corners = np.array(diamond_corners)
             elif isinstance(diamond_corners, np.ndarray):
-                self.corners = diamond_corners
+                pass
             else:
                 raise Exception('Diamond corners must be either list or numpy array.')
             if np.shape(diamond_corners)[-2:] != (4, 2):

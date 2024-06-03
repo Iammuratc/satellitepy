@@ -146,9 +146,7 @@ def save_patches(
         label_name = label_path.name if label_path is not None else None
         logger.info(f"{img_path.name}, {label_name}, {mask_name}")
 
-        gt_labels = read_label(label_path, label_format, mask_path)
-        if rescaling != 1.0:
-            gt_labels = rescale_labels(gt_labels, rescaling=rescaling)
+        gt_labels = read_label(label_path, label_format, mask_path, rescaling)
 
         img = read_img(str(img_path), module=image_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
 
@@ -302,7 +300,9 @@ def show_labels_on_images(
         img_read_module,
         out_folder,
         tasks,
-):
+        rescaling,
+        interpolation_method,
+    ):
     """
     Images visualizing given tasks (e.g., bounding boxes in polygons, classification tasks in text, masks in contours)
     will be stored under out_folder/images
@@ -336,13 +336,13 @@ def show_labels_on_images(
 
     requested_classes = [task for task in tasks if task in ['coarse-class', 'role', 'very-fine-class', 'fine-class']]
     for label_path, mask_path, img_path in tqdm(zip(label_paths, mask_paths, img_paths), total=len(label_paths)):
-        img = read_img(str(img_path), img_read_module)
-        labels = read_label(label_path, label_format)
+        img = read_img(str(img_path), img_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
+        labels = read_label(label_path, label_format, rescaling=rescaling)
         for task in tasks:
-            if task in ['obboxes', 'hbboxes']:
+            if task in ['dbboxes', 'obboxes', 'hbboxes']:
                 for i,bbox_corners in enumerate(labels[task]):
                     bbox = BBox(corners=bbox_corners)
-                    img = bbox.draw_bbox_to_img(img, corners=[bbox.corners], thickness=5)
+                    img = bbox.draw_bbox_to_img(img, corners=[bbox.corners], thickness=3)
                     if requested_classes:
                         cx, cy, width, height, angle = bbox.params
                         center = (cx.astype(int), cy.astype(int))
@@ -359,6 +359,7 @@ def show_labels_on_images(
             
         out_img_path = out_image_folder / f'{img_path.stem}.png'
         cv2.imwrite(str(out_img_path), img)
+        logger.info(f"Image with labels is saved here: {out_img_path}")
 
 
 def show_results_on_image(img_dir,
