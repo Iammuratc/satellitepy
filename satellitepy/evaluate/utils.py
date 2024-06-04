@@ -63,7 +63,7 @@ def set_conf_mat_from_result(
     result = remove_low_conf_results(result, task, conf_score_thresholds[0])
     det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=task)
 
-    det_inds = np.argmax(det_results[task], axis=1) if len(result['det_labels'][task]) > 0 else []
+    det_inds = np.argmax(det_results[task], axis=1) if len(det_results[task]) > 0 else []
     conf_scores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
 
     if len(task_result) == 0:
@@ -265,7 +265,8 @@ def remove_low_conf_results(results, task, conf_score):
     for key in results['det_labels'].keys():
         filtered_results['det_labels'][key] = np.array(results['det_labels'][key])[idx]
 
-    filtered_results['matches']['iou']['scores'] = np.array(results['matches']['iou']['scores'])[idx]
-    filtered_results['matches']['iou']['indexes'] = np.array(results['matches']['iou']['indexes'])[idx]
+    if len(results['gt_labels'][task]) != 0:
+        filtered_results['matches']['iou']['scores'] = np.array(results['matches']['iou']['scores'])[idx]
+        filtered_results['matches']['iou']['indexes'] = np.array(results['matches']['iou']['indexes'])[idx]
 
     return filtered_results

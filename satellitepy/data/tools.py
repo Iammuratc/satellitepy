@@ -16,6 +16,9 @@ from satellitepy.data.utils import get_xview_classes, get_task_dict, read_img, r
 from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, get_file_paths
 from satellitepy.data.bbox import BBox
+from satellitepy.data.utils import get_satellitepy_dict_values
+from satellitepy.evaluate.utils import remove_low_conf_results
+from satellitepy.evaluate.bbavector.utils import apply_nms
 
 logger = logging.getLogger('')
 
@@ -25,7 +28,6 @@ def create_satellitepy_labels(
         label_folder,
         label_format,
         out_folder,
-        exclude_object_classes,
         mask_folder=None
 ):
     out_label_folder = Path(out_folder) / 'labels'
@@ -53,13 +55,6 @@ def create_satellitepy_labels(
 
         labels = init_satellitepy_label()
         for i in range(len(gt_labels['hbboxes'])):
-            class_targets = [gt_labels['coarse-class'][i], gt_labels['fine-class'][i], gt_labels['very-fine-class'][i]]
-            skip_flag = False
-            for excluded in exclude_object_classes:
-                if excluded in class_targets:
-                    skip_flag = True
-                    continue
-            if skip_flag: continue
 
             for key in get_all_satellitepy_keys():
                 keys = key.split("_")
@@ -334,7 +329,7 @@ def show_labels_on_images(
 
     assert len(img_paths) == len(label_paths) == len(mask_paths)
 
-    requested_classes = [task for task in tasks if task in ['coarse-class', 'role', 'very-fine-class', 'fine-class']]
+    requested_classes = [task for task in tasks if task not in ['obboxes', 'hbboxes', 'masks']]
     for label_path, mask_path, img_path in tqdm(zip(label_paths, mask_paths, img_paths), total=len(label_paths)):
         img = read_img(str(img_path), img_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
         labels = read_label(label_path, label_format, rescaling=rescaling)
@@ -369,6 +364,7 @@ def show_results_on_image(img_dir,
                           mask_adaptive_size,
                           out_dir,
                           tasks,
+                          target_task,
                           all_tasks_flag,
                           iou_th=0.5,
                           conf_th=0.5):
@@ -382,51 +378,49 @@ def show_results_on_image(img_dir,
     assert len(img_paths) == len(label_paths) == len(mask_paths)
     for img_path, label_path, mask_path in tqdm(zip(img_paths, label_paths, mask_paths), total=len(img_paths)):
         img = cv2.imread(str(img_path))
-        labels = read_label(label_path, label_format='satellitepy')
+        results0 = read_label(label_path, label_format='satellitepy')
 
-        available_tasks = list(labels['det_labels'].keys())
+        if len(results0['det_labels'][target_task]) == 0:
+            print('skipping0: No detections at all')
+            continue
 
-        available_tasks.remove('confidence-scores')
+        results1 = remove_low_conf_results(results0, target_task, conf_th)
+        results = apply_nms(results1['det_labels'], nms_iou_threshold=iou_th, target_task=target_task)
+
+        if satellitepy_labels_empty(results):
+            print(np.max(results0['det_labels'][target_task]))
+            print('skipping1')
+            continue
+
+        available_tasks = list(results.keys())
+
+        if not all_tasks_flag:
+            available_tasks = tasks.copy()
+
+        if 'masks' in tasks:
+            available_tasks.remove('masks')
+
         if 'obboxes' in available_tasks:
             available_tasks.remove('obboxes')
         if 'hbboxes' in available_tasks:
             available_tasks.remove('hbboxes')
 
-        if not all_tasks_flag:
-            available_tasks = tasks.copy()
-            available_tasks.remove('masks')
-
-        if satellitepy_labels_empty(labels):
-            continue
-
-        if labels['gt_labels']['obboxes'][0] == None:
+        if results['obboxes'][0] is None:
             bboxes = 'hbboxes'
         else:
             bboxes = 'obboxes'
 
-        for i, bbox_corners in enumerate(labels['det_labels'][bboxes]):
-            conf_score = labels['det_labels']['confidence-scores'][i]
-            iou_score = labels['matches']['iou']['scores'][i]
-            if conf_score < conf_th or iou_score < iou_th:
-                continue
+        for i, bbox_corners in enumerate(results[bboxes]):
             bbox_corners = np.array(bbox_corners, np.int32)
             x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
             cv2.polylines(img, [bbox_corners], True, color=(255, 0, 0))
 
-            instance_available_tasks = available_tasks.copy()
+            for j, task in enumerate(available_tasks):
 
-            if labels['det_labels']['coarse-class'][i] != 0:
-                instance_available_tasks = [task for task in instance_available_tasks if 'attributes' not in task]
-
-            if labels['det_labels']['coarse-class'][i] not in [0, 1] and 'very-fine-class' in instance_available_tasks:
-                instance_available_tasks.remove('very-fine-class')
-
-            for j, task in enumerate(instance_available_tasks):
+                task_result = np.argmax(results[task][i])
 
                 task_text = task.split('_')[-1]
                 task_dict = get_task_dict(task)
-                task_result = labels['det_labels'][task][i][0] if type(labels['det_labels'][task][i]) is list else \
-                    labels['det_labels'][task][i]
 
                 if task_text not in ['length', 'wing-span']:
                     idx2name = {v: k for k, v in task_dict.items()}
@@ -445,9 +439,9 @@ def show_results_on_image(img_dir,
                                          cv2.THRESH_BINARY_INV, mask_adaptive_size, mask_threshold)
             img_mask = np.zeros(shape=(img.shape[0], img.shape[1]), dtype=np.uint8)
 
-            for i, bbox in enumerate(labels['det_labels'][bboxes]):
-                conf_score = labels['det_labels']['confidence-scores'][i]
-                iou_score = labels['matches']['iou']['scores'][i]
+            for i, bbox in enumerate(results['det_labels'][bboxes]):
+                conf_score = results['det_labels']['confidence-scores'][i]
+                iou_score = results['matches']['iou']['scores'][i]
                 if conf_score < conf_th or iou_score < iou_th:
                     continue
 
@@ -459,6 +453,7 @@ def show_results_on_image(img_dir,
             cv2.drawContours(img, contours, -1, (0, 0, 255), 1)
 
         cv2.imwrite(str(Path(out_dir) / f"{img_path.stem}.png"), img)
+
 
 
 def save_xview_in_satellitepy_format(out_folder, label_path):
@@ -541,7 +536,6 @@ def save_xview_in_satellitepy_format(out_folder, label_path):
 
         fill_none_to_empty_keys(image_dicts[img_name], not_available_tasks)
 
-    # Save satellitepy labels
     for img_name, satellitepy_dict in image_dicts.items():
         label_name = f'{Path(img_name).stem}.json'
         label_path = out_folder / label_name
@@ -549,7 +543,7 @@ def save_xview_in_satellitepy_format(out_folder, label_path):
             json.dump(satellitepy_dict, f, indent=4)
 
 
-def separate_dataset_parts(out_folder, label_folder, image_folder, dataset_part, dataset):
+def separate_dataset_parts(out_folder, label_folder, image_folder, dataset_part, dataset_name):
     """
     Parameters
     -------
@@ -562,34 +556,35 @@ def separate_dataset_parts(out_folder, label_folder, image_folder, dataset_part,
 
     logger.info(f'Initializing separate_shipnet_data')
 
-    dataset_name = dataset_part.stem
+    data_part_name = dataset_part.stem
     out_image_folder = os.path.join(out_folder, Path('images'))
     assert create_folder(Path(out_image_folder))
 
-    if dataset != 'shipnet' or dataset_name != 'test':
+    if dataset_name != 'shipnet' or data_part_name != 'test':
         out_label_folder = os.path.join(out_folder, Path('labels'))
         assert (create_folder(Path(out_label_folder)))
 
     with open(dataset_part, 'r') as dataset:
-        for line in dataset.readlines():
-            name = line.split('.')[0][:-1]
+        for line in tqdm(dataset.readlines()):
 
-            if dataset == 'shipnet':
+            if dataset_name == 'shipnet':
                 extension = '.bmp'
+                name = line.split('.')[0]
             else:
                 extension = '.jpg'
+                name = line.split('.')[0][:-1]
 
             image_path = os.path.join(image_folder, Path(name + extension))
 
             shutil.copy(image_path, out_image_folder)
 
-            if dataset != 'shipnet' or dataset_name != 'test':
+            if dataset_name != 'shipnet' or data_part_name != 'test':
                 padding = max(0, 6 - name.__len__())
-                if dataset == 'dior':
+                if dataset_name == 'dior':
                     padding = 0
                 label_path = os.path.join(label_folder, Path(padding * '0' + name + '.xml'))
                 shutil.copy(label_path, out_label_folder)
-    logger.info(f'Images and labels saved for dataset-part {dataset_name}')
+    logger.info(f'Images and labels saved for dataset-part {data_part_name}')
 
 
 def split_rareplanes_labels(
