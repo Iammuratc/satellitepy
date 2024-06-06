@@ -428,24 +428,24 @@ def get_satellitepy_table():
             'Car'                           :   105,      # Vedai
             'Camping Car'                   :   106,      # Vedai
             'Motorcycle'                    :   107,      # Vedai
-            'B787'                          :   108,      # FR24
-            'A320'                          :   109,      # FR24
+            'B787'                          :   14,      # FR24
+            'A320'                          :   4,      # FR24
             'E190'                          :   110,      # FR24
             'E195'                          :   111,      # FR24
-            'B777'                          :   112,      # FR24
-            'B737'                          :   113,      # FR24
+            'B777'                          :   13,      # FR24
+            'B737'                          :   11,      # FR24
             'E175'                          :   114,      # FR24
-            'B747'                          :   115,      # FR24
-            'A319'                          :   116,      # FR24
-            'B767'                          :   117,      # FR24
-            'A380'                          :   118,      # FR24
-            'B757'                          :   119,      # FR24
+            'B747'                          :   12,      # FR24
+            'A319'                          :   66,      # FR24
+            'B767'                          :   76,      # FR24
+            'A380'                          :   69,      # FR24
+            'B757'                          :   75,      # FR24
             'E170'                          :   120,      # FR24
             'CRJ7'                          :   121,      # FR24
             'E145'                          :   122,      # FR24
             'CRJ2'                          :   123,      # FR24
             'MD11'                          :   124,      # FR24
-            'B717'                          :   125,      # FR24
+            'B717'                          :   73,      # FR24
             'A340'                          :   126,      # FR24
             'CRJ9'                          :   127,      # FR24
             'CRJ-900'                       :   128,      # FR24
@@ -456,13 +456,13 @@ def get_satellitepy_table():
             'ERJ'                           :   133,      # FR24
             'CRJ'                           :   134,      # FR24
             'Falcon'                        :   135,      # FR24
-            'Sukhoi 100'                    :   136,      # FR24
+            'Sukhoi-100'                    :   136,      # FR24
             'Embraer'                       :   137,      # FR24
             'Bombardier-Global'             :   138,      # FR24
-            'C68A'                          :   139,      # FR24
-            'E135'                          :   140,      # FR24
-            'Cessna560'                     :   141,      # FR24
-            'H25B'                          :   142,      # FR24
+            'E135'                          :   139,      # FR24
+            'Cessna560'                     :   140,      # FR24
+            'H25B'                          :   141,      # FR24
+            'Cessna-Citation'               :    86,      # FR24
         },
         'very-fine-class':{
 			'Airbus_A330-300'					: 0,	# Rareplanes_synthetic
