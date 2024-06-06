@@ -8,7 +8,6 @@ from satellitepy.data.bbox import BBox
 
 logger = logging.getLogger('')
 
-
 def rescale_labels(labels,rescaling):
     '''
     Rescale the tasks obboxes, hbooxes and masks, if defined.
@@ -56,9 +55,7 @@ def read_img(img_path, module='cv2', rescaling=1.0, interpolation_method=cv2.INT
             img = np.transpose(img_array, axes=(1, 2, 0))
             img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
             lo, hi = np.percentile(img, (1, 99))
-
             img = (img.astype(float) - lo) * (255 / (hi - lo))
-
             img = np.clip(img, 0, 255).astype(np.uint8)
     else:
         logger.error(f'{module} is not a valid argument!')
