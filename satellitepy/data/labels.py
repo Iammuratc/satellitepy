@@ -716,6 +716,7 @@ def read_fr24_label(label_path):
         coords = annotation['geometry']['coordinates']
         diamond_corners = coords[:4][:]
         bbox = BBox(diamond_corners=diamond_corners)
+        bbox = BBox(params=bbox.params)
         labels['obboxes'].append(bbox.corners)
         labels['hbboxes'].append(bbox.get_hbb_from_obb(bbox.corners))
         fill_none_to_empty_keys(labels, not_available_tasks)

@@ -363,11 +363,6 @@ def show_labels_on_images(
                 task_keys = task.split('_')
                 task_text = task_keys[-1]
 
-                task_result = labels
-                for x in task_keys:
-                    task_result = task_result[x]
-                task_result = task_result[i]
-
                 task_result = get_satellitepy_dict_values(labels, task)[i]
 
                 if type(task_result) is float:
