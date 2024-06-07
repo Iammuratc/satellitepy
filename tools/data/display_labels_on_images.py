@@ -30,6 +30,11 @@ def get_args():
     parser.add_argument('--image-read-module', type=str, default='cv2', help='This module will be used to read the '
                                                                              'image. rasterio is suggested for large '
                                                                              'TIF images.')
+    parser.add_argument('--rescaling', type=float, default=1, help='Scale the images before creating patches. This is helpful to unify the spatial resolution over patches from different datasets. '
+                        'For example, fair1m (spatial resolution ~0.8) can be rescaled to the spatial resolution of 0.5, rescaling equals 0.8/0.5=1.6. The tasks will be rescaled by the factor of <rescaling>, too, if applicable.')
+    parser.add_argument('--interpolation-method', type=str, default='INTER_LINEAR', 
+        help='Interpolation method to scale the images before creating patches. This is used only if rescaling is different than 1.0.',
+        choices=['INTER_NEAREST','INTER_LINEAR','INTER_CUBIC','INTER_AREA'])
     return parser
 
 
@@ -57,11 +62,11 @@ def run(parser):
 
     in_label_folder = Path(args.in_label_folder) if args.in_label_folder else None
     if not in_label_folder:
-        logger.info('No label folder is given. Patches will have no ground truth labels.')
+        logger.info('No label folder is given. No label will be displayed.')
 
     in_mask_folder = Path(args.in_mask_folder) if args.in_mask_folder else None
     if not in_mask_folder:
-        logger.info('No mask folder is given. Patches will have no ground truth mask.')
+        logger.info('No mask folder is given. No mask will be displayed.')
 
     if args.image_read_module == 'rasterio':
         logger.info('Images will be normalized and clipped to [0,255].')
@@ -73,7 +78,10 @@ def run(parser):
         label_format=args.in_label_format,
         img_read_module=args.image_read_module,
         out_folder=out_folder,
-        tasks=args.tasks)
+        tasks=args.tasks,
+        rescaling=args.rescaling,
+        interpolation_method=args.interpolation_method
+        )
 
 
 if __name__ == '__main__':

@@ -28,17 +28,17 @@ class BBox:
             self.params = self.get_params()
 
         elif 'diamond_corners' in kwargs.keys():
-            diamond_corners = kwargs['diamond_corners']
-            if isinstance(diamond_corners, list):
-                diamond_corners = np.array(diamond_corners)
-            elif isinstance(diamond_corners, np.ndarray):
-                self.corners = diamond_corners
+            self.diamond_corners = kwargs['diamond_corners']
+            if isinstance(self.diamond_corners, list):
+                self.diamond_corners = np.array(self.diamond_corners)
+            elif isinstance(self.diamond_corners, np.ndarray):
+                pass
             else:
                 raise Exception('Diamond corners must be either list or numpy array.')
-            if np.shape(diamond_corners)[-2:] != (4, 2):
+            if np.shape(self.diamond_corners)[-2:] != (4, 2):
                 raise Exception('The diamond bbox in corner parametrization must end in shape (4,2) but has shape:',
-                                np.shape(diamond_corners))
-            self.corners = self.convert_diamond_corners_to_corners(diamond_corners)
+                                np.shape(self.diamond_corners))
+            self.corners = self.convert_diamond_corners_to_corners(self.diamond_corners)
             self.params = self.get_params()
 
         elif 'params' in kwargs.keys():
@@ -55,7 +55,7 @@ class BBox:
                 raise Exception('The bbox in parameter parametrization must end in shape (5) but has shape:',
                                 np.shape(params))
             self.params = params
-            self.corners = self.get_corners().tolist()
+            self.corners = self.get_corners()
 
         else:
             raise Exception('Either corners or params have to be defined to create a BBox instance')
