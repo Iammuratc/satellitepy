@@ -4,47 +4,51 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 import json
 
-from satellitepy.data.utils import get_vedai_classes, set_mask, parse_potsdam_labels, get_shipnet_categories
+from satellitepy.data.utils import get_vedai_classes, set_mask, parse_potsdam_labels, get_shipnet_categories, rescale_labels
 from satellitepy.data.bbox import BBox
 
 logger = logging.getLogger('')
 
 
-def read_label(label_path, label_format, mask_path=None):
+def read_label(label_path, label_format, mask_path=None, rescaling=1):
     if isinstance(label_path, Path):
         label_path = str(label_path)
     if label_path is None:
-        return None
+        labels = None
     elif label_format == 'dota' or label_format == 'DOTA':
-        return read_dota_label(label_path, mask_path)
+        labels = read_dota_label(label_path, mask_path)
     elif label_format == 'fair1m':
-        return read_fair1m_label(label_path)
+        labels = read_fair1m_label(label_path)
     elif label_format == 'satellitepy':
-        return read_satellitepy_label(label_path)
+        labels = read_satellitepy_label(label_path)
     elif label_format == "dior" or label_format == "DIOR":
-        return read_dior_label(label_path)
+        labels = read_dior_label(label_path)
     elif label_format == "vhr" or label_format == "VHR":
-        return read_VHR_label(label_path)
+        labels = read_VHR_label(label_path)
     elif label_format == 'rareplanes_real' or label_format == 'rarePlanes_real':
-        return read_rareplanes_real_label(label_path)
+        labels = read_rareplanes_real_label(label_path)
     elif label_format == 'rareplanes_synthetic' or label_format == 'rarePlanes_synthetic':
-        return read_rareplanes_synthetic_label(label_path, mask_path)
+        labels = read_rareplanes_synthetic_label(label_path, mask_path)
     elif label_format == 'ship_net':
-        return read_ship_net_label(label_path)
+        labels = read_ship_net_label(label_path)
     elif label_format == 'ucas':
-        return read_ucas_label(label_path)
+        labels = read_ucas_label(label_path)
     elif label_format == 'fr24':
-        return read_fr24_label(label_path)
+        labels = read_fr24_label(label_path)
     elif label_format == 'xview':
         logger.info('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
                     ' Then pass label_format as satellitepy for those labels.')
     elif label_format == 'isprs':
-        return read_isprs_label(label_path)
+        labels = read_isprs_label(label_path)
     elif label_format == "vedai":
-        return read_vedai_label(label_path)
+        labels = read_vedai_label(label_path)
     else:
         logger.error('Label format is not defined!')
-        return 0
+        labels = 0
+
+    if rescaling != 1:
+        labels = rescale_labels(labels, rescaling=rescaling)
+    return labels
 
 
 def get_all_satellitepy_keys():
@@ -301,7 +305,9 @@ def read_fair1m_label(label_path):
 
     root = ET.parse(label_path).getroot()
     instance_names = root.findall('./objects/object/possibleresult/name')
-    for instance_name in instance_names:
+
+    skip_list = []
+    for i, instance_name in enumerate(instance_names):
         if instance_name.text in ['Boeing747', 'Boeing787', 'A330', 'Boeing777', 'A350']:
             labels['coarse-class'].append('airplane')
             labels['fine-class'].append(instance_name.text)
@@ -341,12 +347,13 @@ def read_fair1m_label(label_path):
             labels['fine-class'].append(None)
             labels['role'].append(None)
         else:
-            labels['coarse-class'].append(None)
-            labels['fine-class'].append(None)
-            labels['role'].append(None)
+            skip_list.append(i)
+            continue
 
     point_spaces = root.findall('./objects/object/points')
-    for point_space in point_spaces:
+    for i, point_space in enumerate(point_spaces):
+        if i in skip_list:
+            continue
         my_points = point_space.findall('point')[:4]
         coords = []
         for my_point in my_points:
@@ -709,8 +716,10 @@ def read_fr24_label(label_path):
         labels['very-fine-class'].append(annotation['properties']['Subtype'])
         labels['source'].append(annotation['properties']['Source'])
         labels['role'].append(annotation['properties']['Role'])
-        coords = annotation['geometry']['coordinates'][:-1]
-        bbox = BBox(diamond_corners=coords)
+        coords = annotation['geometry']['coordinates']
+        diamond_corners = coords[:4][:]
+        bbox = BBox(diamond_corners=diamond_corners)
+        bbox = BBox(params=bbox.params)
         labels['obboxes'].append(bbox.corners)
         labels['hbboxes'].append(bbox.get_hbb_from_obb(bbox.corners))
         fill_none_to_empty_keys(labels, not_available_tasks)

@@ -141,9 +141,7 @@ def save_patches(
         label_name = label_path.name if label_path is not None else None
         logger.info(f"{img_path.name}, {label_name}, {mask_name}")
 
-        gt_labels = read_label(label_path, label_format, mask_path)
-        if rescaling != 1.0:
-            gt_labels = rescale_labels(gt_labels, rescaling=rescaling)
+        gt_labels = read_label(label_path, label_format, mask_path, rescaling)
 
         img = read_img(str(img_path), module=image_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
 
@@ -158,7 +156,7 @@ def save_patches(
         count_patches = len(patches['images'])
         logger.info(f'Number of patches: {count_patches}')
         count_skipped_patches = [0, 0]
-        for i in tqdm(range(count_patches), leave=True):
+        for i in tqdm(range(count_patches)):
 
             img_name = img_path.stem
 
@@ -187,6 +185,7 @@ def save_patches(
         logger.info(f"{count_skipped_patches[1]} patches are skipped because no bounding boxes are defined.")
         logger.info(f"{sum(count_skipped_patches)} patches are skipped in total.")
         logger.info(f"{count_patches - sum(count_skipped_patches)} patches are created in total.")
+        logger.info(f"Patch labels are created at: {out_label_folder}")
 
 
 def save_chips(
@@ -297,7 +296,9 @@ def show_labels_on_images(
         img_read_module,
         out_folder,
         tasks,
-):
+        rescaling,
+        interpolation_method,
+    ):
     """
     Images visualizing given tasks (e.g., bounding boxes in polygons, classification tasks in text, masks in contours)
     will be stored under out_folder/images
@@ -329,16 +330,24 @@ def show_labels_on_images(
 
     assert len(img_paths) == len(label_paths) == len(mask_paths)
 
-    requested_classes = [task for task in tasks if task not in ['obboxes', 'hbboxes', 'masks']]
+    requested_classes = [task for task in tasks if task not in ['dbboxes', 'obboxes', 'hbboxes', 'masks']]
+    # Force user to pass only one bbox type
+    requested_bbox_names = [task for task in tasks if task.endswith('bboxes')]
+    assert len(requested_bbox_names) == 1, logger.error('There has to be only type of bounding boxes in tasks!')
+    bbox_name = requested_bbox_names[0]
+
     for label_path, mask_path, img_path in tqdm(zip(label_paths, mask_paths, img_paths), total=len(label_paths)):
-        img = read_img(str(img_path), img_read_module)
-        labels = read_label(label_path, label_format)
+        img = read_img(str(img_path), img_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
+        labels = read_label(label_path, label_format, rescaling=rescaling)
 
-        bboxes = 'obboxes' if 'obboxes' in tasks and np.array(labels['obboxes']).any() else 'hbboxes'
 
-        for i, bbox_corners in enumerate(labels[bboxes]):
-            bbox = BBox(corners=bbox_corners)
-            img = bbox.draw_bbox_to_img(img, corners=[bbox.corners], thickness=1)
+        for i, bbox_corners in enumerate(labels[bbox_name]):
+            if bbox_name == 'dbboxes':
+                bbox = BBox(diamond_corners=bbox_corners)
+                img = bbox.draw_bbox_to_img(img, corners=[bbox.diamond_corners], thickness=1)
+            else:
+                bbox = BBox(corners=bbox_corners)
+                img = bbox.draw_bbox_to_img(img, corners=[bbox.corners], thickness=1)
 
             available_tasks = requested_classes.copy()
             if labels['coarse-class'][i] != 'airplane':
@@ -353,11 +362,6 @@ def show_labels_on_images(
             for j, task in enumerate(available_tasks):
                 task_keys = task.split('_')
                 task_text = task_keys[-1]
-
-                task_result = labels
-                for x in task_keys:
-                    task_result = task_result[x]
-                task_result = task_result[i]
 
                 task_result = get_satellitepy_dict_values(labels, task)[i]
 
@@ -382,7 +386,7 @@ def show_labels_on_images(
                     mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
 
                 img_mask = np.zeros(shape=(img.shape[0], img.shape[1]), dtype=np.uint8)
-                for i in range(len(labels[bboxes])):
+                for i in range(len(labels[bbox_name])):
                     x, y = mask[i]
                     img_mask[y, x] = 1
 
@@ -417,15 +421,13 @@ def show_results_on_image(img_dir,
         results0 = read_label(label_path, label_format='satellitepy')
 
         if len(results0['det_labels'][target_task]) == 0:
-            print('skipping0: No detections at all')
+            print('skipping: No detections at all')
             continue
 
         results1 = remove_low_conf_results(results0, target_task, conf_th)
         results = apply_nms(results1['det_labels'], nms_iou_threshold=iou_th, target_task=target_task)
 
         if satellitepy_labels_empty(results):
-            print(np.max(results0['det_labels'][target_task]))
-            print('skipping1')
             continue
 
         available_tasks = list(results.keys())
@@ -489,7 +491,6 @@ def show_results_on_image(img_dir,
             cv2.drawContours(img, contours, -1, (0, 0, 255), 1)
 
         cv2.imwrite(str(Path(out_dir) / f"{img_path.stem}.png"), img)
-
 
 
 def save_xview_in_satellitepy_format(out_folder, label_path):

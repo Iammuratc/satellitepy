@@ -58,53 +58,48 @@ def get_patches(
         'start_coords': patch_start_coords,
     }
 
+    bbox_names = ['hbboxes','obboxes']
     for i, patch_start_coord in enumerate(patch_start_coords):
         x_0, y_0 = patch_start_coord
         patch_dict['images'][i] = img_padded[y_0:y_0 + patch_size, x_0:x_0 + patch_size, :]
 
         if label_file_exist:
             for j, (hbbox, obbox) in enumerate(zip(gt_labels['hbboxes'], gt_labels['obboxes'])):
-                hbb_defined = np.array(hbbox).any()
-                obb_defined = np.array(obbox).any()
 
-                if hbb_defined and obb_defined:
-                    shift_bboxes(patch_dict, gt_labels, j, i, 'obboxes', patch_start_coord, obbox, patch_size,
-                                 truncated_object_thr, consider_additional=True)
+                all_bboxes = [hbbox,obbox]
 
-                elif hbb_defined:
-                    shift_bboxes(patch_dict, gt_labels, j, i, 'hbboxes', patch_start_coord, hbbox, patch_size,
-                                 truncated_object_thr)
-
-                elif obb_defined:
-                    shift_bboxes(patch_dict, gt_labels, j, i, 'obboxes', patch_start_coord, obbox, patch_size,
-                                 truncated_object_thr)
+                # Check if bboxes are defined at all
+                if any(all_bboxes):
+                    # All bboxes will be checked separately, if the bbox is in the patch.
+                    # If one bbox (e.g., dbbox) is in the patch, other bboxes will be added to patch_dict
+                    x_0, y_0 = patch_start_coord
+                    is_truncated_bbox = [is_truncated(bbox_corners=bbox, x_0=x_0, y_0=y_0, patch_size=patch_size,
+                                                    relative_area_threshold=truncated_object_thr) for bbox in all_bboxes]
+                    # Set all the tasks for the patch if the object bbox is not truncated
+                    if not any(is_truncated_bbox):
+                        patch_dict['labels'][i] = set_image_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
+                        # shift the defined bboxes
+                        patch_dict = shift_bboxes(patch_dict, i, bbox_names, patch_start_coord, patch_size)
                 else:
                     logger.error('No bounding boxes found!')
+                    continue
     return patch_dict
 
-
-def shift_bboxes(patch_dict, gt_labels, j, i, bboxes, patch_start_coord, bbox_corners, patch_size, truncated_object_thr,
-                 consider_additional=False, additional='hbboxes'):
+def shift_bboxes(patch_dict, i, bbox_names, patch_start_coord, patch_size):
     x_0, y_0 = patch_start_coord
-    is_truncated_bbox = is_truncated(bbox_corners=bbox_corners, x_0=x_0, y_0=y_0, patch_size=patch_size,
-                                     relative_area_threshold=truncated_object_thr)
-    if not is_truncated_bbox:
-        patch_dict['labels'][i] = set_image_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
-
-        bbox_corners_shifted = np.array(patch_dict['labels'][i][bboxes][-1]) - [x_0, y_0]
-        patch_dict['labels'][i][bboxes][-1] = bbox_corners_shifted.tolist()
-        if patch_dict['labels'][i]['masks'][-1] is not None:
-            mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2, 1)
-
-            mask_shifted[0][mask_shifted[0] >= patch_size] = patch_size - 1
-            mask_shifted[0][mask_shifted[0] < 0] = 0
-            mask_shifted[1][mask_shifted[1] >= patch_size] = patch_size - 1
-            mask_shifted[1][mask_shifted[1] < 0] = 0
-            patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
-        if consider_additional:
-            bbox_corners_shifted = np.array(patch_dict['labels'][i][additional][-1]) - [x_0, y_0]
-            patch_dict['labels'][i][additional][-1] = bbox_corners_shifted.tolist()
-
+    for bbox_name in bbox_names:
+        bbox = patch_dict['labels'][i][bbox_name][-1]
+        if bbox is None:
+            continue
+        patch_dict['labels'][i][bbox_name][-1] = (np.array(bbox) - [x_0, y_0]).tolist()
+    if patch_dict['labels'][i]['masks'][-1] is not None:
+        mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2, 1)
+        mask_shifted[0][mask_shifted[0] >= patch_size] = patch_size - 1
+        mask_shifted[0][mask_shifted[0] < 0] = 0
+        mask_shifted[1][mask_shifted[1] >= patch_size] = patch_size - 1
+        mask_shifted[1][mask_shifted[1] < 0] = 0
+        patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
+    return patch_dict
 
 def get_pad_size(coord_max, patch_size, patch_overlap):
     """
