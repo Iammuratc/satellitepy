@@ -59,6 +59,8 @@ def calculate_map(
     with np.printoptions(threshold=np.inf):
         logger.info('AP')
         ap = get_average_precision(precision, recall)
+        logger.info('Instance names')
+        logger.info(instance_names)
         logger.info(ap)
         logger.info('mAP')
         mAP = np.sum(np.transpose(np.transpose(ap)[:-1]), axis=1) / (len(ap[0]) - 1)
