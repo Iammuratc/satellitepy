@@ -28,7 +28,7 @@ def match_gt_and_det_bboxes(gt_labels, det_labels):
     if gt_labels is None:
         return matches
 
-    if 'obboxes' in det_labels:
+    if 'obboxes' in det_labels and any(gt_labels['obboxes']):
         ious = get_ious(det_labels['obboxes'], gt_labels['obboxes'])
     else:
         ious = get_ious(det_labels['hbboxes'], gt_labels['hbboxes'])
