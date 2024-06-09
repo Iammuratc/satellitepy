@@ -669,3 +669,20 @@ def split_rareplanes_labels(
 
         json.dump(annotations, file, ensure_ascii=False, indent=4)
         file.close()
+
+
+def copy_files(files, src_folder, dst_folder):
+    """
+        Copys a list of files from one directory to another one
+        Parameters
+        ----------
+        files : List of Paths
+            Files which should be copied
+        src_folder : Path
+            Path to source folder of the files
+        dst_folder : Path
+            Path to new destination folder
+    """
+    for file in files:
+        logger.info(f'Copying {src_folder / file.name} to {dst_folder / file.name}')
+        shutil.copy(src_folder / file.name, dst_folder / file.name)

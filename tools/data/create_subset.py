@@ -1,8 +1,8 @@
-import shutil
 import configargparse
 import random
 from pathlib import Path
 from satellitepy.utils.path_utils import create_folder
+from satellitepy.data.tools import copy_files
 
 def get_args():
     """Arguments parser."""
@@ -32,17 +32,12 @@ def get_args():
                         help='Which percantage of the split should be used for train. Default=0.7')
     return parser
 
-def copy_files(files, src_folder, dst_folder):
-    for file in files:
-        print(f'Copying {src_folder / file.name} to {dst_folder / file.name}')
-        shutil.copy(src_folder / file.name, dst_folder / file.name)
+
 
 def run(parser):
     args = parser.parse_args()
 
-    if args.val_split + args.test_split + args.train_split != 1:
-        print('Percentages of val, test and train splits are not equal to 1!')
-        exit(0)
+    assert args.val_split + args.test_split + args.train_split == 1, 'Percentages of val, test and train splits are not equal to 1!'
 
     src_image_folder = Path(args.in_image_folder)
     src_label_folder = Path(args.in_label_folder)
