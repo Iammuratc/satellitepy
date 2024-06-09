@@ -1,8 +1,10 @@
 import configargparse
 import random
 from pathlib import Path
-from satellitepy.utils.path_utils import create_folder
+from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config
 from satellitepy.data.tools import copy_files
+import logging
+import logging.config
 
 def get_args():
     """Arguments parser."""
@@ -30,12 +32,17 @@ def get_args():
                         help='Which percantage of the split should be used for test. Default=0.2')
     parser.add_argument('--train-split', type=float, required=False, default=0.7,
                         help='Which percantage of the split should be used for train. Default=0.7')
+    parser.add_argument('--log-config-path', default=None, type=Path, help='Log config file.')
+    parser.add_argument('--log-path', type=Path, default=None, help='Log path.')
+    
     return parser
-
 
 
 def run(parser):
     args = parser.parse_args()
+    log_config_path = get_default_log_config() if args.log_config_path == None else Path(args.log_config_path)
+    log_path = get_default_log_path(Path(__file__).resolve().stem) if args.log_path == None else Path(args.log_path)
+    init_logger(config_path=log_config_path, log_path=log_path)
 
     assert args.val_split + args.test_split + args.train_split == 1, 'Percentages of val, test and train splits are not equal to 1!'
 
