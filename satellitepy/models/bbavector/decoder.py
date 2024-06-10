@@ -120,14 +120,14 @@ class DecDecoder(object):
                 pr_decs["obboxes_theta"],
                 heat
             )
-            result["obboxes"] = obb_detections[:, idx_1d, :].squeeze(0).cpu().numpy()
+            result["obboxes"] = obb_detections[:, idx_1d, :].squeeze(0).cpu().numpy().tolist()
         if "hbboxes" in self.tasks:
             hbb_detections = self.decode_hbboxes(
                 pr_decs["hbboxes_params"],
                 pr_decs["hbboxes_offset"],
                 heat
             )
-            result["hbboxes"] = hbb_detections[:, idx_1d, :].squeeze(0).cpu().numpy()
+            result["hbboxes"] = hbb_detections[:, idx_1d, :].squeeze(0).cpu().numpy().tolist()
         
         for k, v in pr_decs.items():
             # ignore bounding boxes and coarse class (heatmap)
@@ -140,12 +140,12 @@ class DecDecoder(object):
             arr_val = self._tranpose_and_gather_feat(v, idx_2d)
             # classification -> we take class with highest prob
             if k == "masks":
-                result[k[:4]] = v.squeeze(0).squeeze(0).cpu().numpy()
+                result[k[:4]] = v.squeeze(0).squeeze(0).cpu().numpy().tolist()
             elif k[:3] == "cls":
-                result[k[4:]] = torch.argmax(arr_val[:, idx_1d, :], dim=2).squeeze(0).cpu().numpy()
+                result[k[4:]] = torch.argmax(arr_val[:, idx_1d, :], dim=2).squeeze(0).cpu().numpy().tolist()
             # regression -> there is only one value, we squeeze
             else:
                 det = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy()
-                result[k[4:]] = untorchify_continuous_values(k, det)
+                result[k[4:]] = untorchify_continuous_values(k, det).tolist()
 
         return result
