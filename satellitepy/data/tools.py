@@ -85,7 +85,8 @@ def save_patches(
         image_read_module,
         mask_folder=None,
         rescaling=1,
-        interpolation_method=cv2.INTER_LINEAR
+        interpolation_method=cv2.INTER_LINEAR,
+        keep_empty=False
     ):
     """
     Save patches from the original images
@@ -112,20 +113,24 @@ def save_patches(
     rescaling : float
         Images and the corresponding labels will be rescaled.
     interpolation_method : str
-        <interpolation-method> will be used to rescale images. 
+        <interpolation-method> will be used to rescale images.
+    keep_patches : bool
+        Empty patches are kept if true.
     Returns
     -------
     Save patches in <out-folder>/images and <out-folder>/labels
     """
     logger.info('Saving patches')
 
+    assert out_folder.exists(), 'Make sure the out-folder exists or is created before calling this function.'
+
     out_image_folder = Path(out_folder) / 'images'
     out_label_folder = Path(out_folder) / 'labels'
 
-    assert create_folder(out_image_folder)
+    assert create_folder(out_image_folder, ask_permission=False)
     img_paths = get_file_paths(image_folder)
     if label_folder:
-        assert create_folder(out_label_folder)
+        assert create_folder(out_label_folder, ask_permission=False)
         label_paths = get_file_paths(label_folder)
     else:
         label_paths = [None] * len(img_paths)
@@ -173,7 +178,7 @@ def save_patches(
             patch_label = patches['labels'][i]
             patch_label_path = Path(out_label_folder) / f"{patch_name}.json"
 
-            if not (any(patch_label['obboxes']) or any(patch_label['hbboxes'])):
+            if not keep_empty and not (any(patch_label['obboxes']) or any(patch_label['hbboxes'])):
                 count_skipped_patches[1] += 1
                 continue
 
@@ -182,7 +187,8 @@ def save_patches(
                 json.dump(patch_label, f, indent=4)
 
         logger.info(f"{count_skipped_patches[0]} patches are skipped because images consist of only zeros.")
-        logger.info(f"{count_skipped_patches[1]} patches are skipped because no bounding boxes are defined.")
+        if not keep_empty:
+            logger.info(f"{count_skipped_patches[1]} patches are skipped because no bounding boxes are defined.")
         logger.info(f"{sum(count_skipped_patches)} patches are skipped in total.")
         logger.info(f"{count_patches - sum(count_skipped_patches)} patches are created in total.")
         logger.info(f"Patch labels are created at: {out_label_folder}")
