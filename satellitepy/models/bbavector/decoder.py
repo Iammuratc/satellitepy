@@ -62,7 +62,7 @@ class DecDecoder(object):
         batch, c, height, width = heatmap.size()
         heat = self._nms(heatmap)
 
-        scores, _, inds, clses, ys, xs = self._topk(heat)
+        _, _, inds, _, ys, xs = self._topk(heat)
         reg = self._tranpose_and_gather_feat(box_offsets, inds)
         reg = reg.view(batch, self.K, 2)
         xs = xs.view(batch, self.K, 1) + reg[:, :, 0:1]
@@ -98,7 +98,7 @@ class DecDecoder(object):
         batch, c, height, width = heatmap.size()
         heat = self._nms(heatmap)
 
-        scores, _, inds, clses, ys, xs = self._topk(heat)
+        _, _, inds, _, ys, xs = self._topk(heat)
         reg = self._tranpose_and_gather_feat(box_offsets, inds)
         reg = reg.view(batch, self.K, 2)
         xs = xs.view(batch, self.K, 1) + reg[:, :, 0:1]
@@ -114,23 +114,14 @@ class DecDecoder(object):
     def ctdet_decode(self, pr_decs):
         heat = pr_decs['cls_' + self.target_task]
         scores, all_scores, idx_2d, target, _, _ = self._topk(heat)
-        # idx_1d = (scores > self.conf_thresh).squeeze(0).cpu().numpy()
 
-        scores_new = np.max(all_scores.cpu().numpy(), axis=1)
-        idx_1d_new = scores_new > self.conf_thresh
+        idx_1d = (scores > self.conf_thresh).squeeze(0).cpu().numpy()
 
-        # result_old = target[:, idx_1d].squeeze(0).cpu().numpy()
+        target_scores = self._tranpose_and_gather_feat(heat, idx_2d)[:, idx_1d, :].squeeze(0).cpu().numpy().tolist()
 
-        new_res = all_scores[idx_1d_new, :].cpu().numpy().tolist()
-        result_new = np.argmax(new_res, axis=1) if len(new_res) > 0 else []
-
-        # assert np.array_equal(result_old, result_new), f'{result_old - result_new} \n ' \
-        #                                                f'{new_res} \n ' \
-        #                                                f'{scores[:, idx_1d].squeeze(0).cpu().numpy()} \n ' \
-        #                                                f'{np.max(new_res, axis=1)}'
 
         result = {
-            self.target_task: all_scores[idx_1d_new, :].tolist()
+            self.target_task: target_scores
         }
 
         if 'obboxes' in self.tasks:
@@ -140,14 +131,14 @@ class DecDecoder(object):
                 pr_decs['obboxes_theta'],
                 heat
             )
-            result['obboxes'] = obb_detections[:, idx_1d_new, :].squeeze(0).cpu().numpy()
+            result['obboxes'] = obb_detections[:, idx_1d, :].squeeze(0).cpu().numpy()
         if 'hbboxes' in self.tasks:
             hbb_detections = self.decode_hbboxes(
                 pr_decs['hbboxes_params'],
                 pr_decs['hbboxes_offset'],
                 heat
             )
-            result['hbboxes'] = hbb_detections[:, idx_1d_new, :].squeeze(0).cpu().numpy()
+            result['hbboxes'] = hbb_detections[:, idx_1d, :].squeeze(0).cpu().numpy()
 
         for k, v in pr_decs.items():
             if (
@@ -161,9 +152,9 @@ class DecDecoder(object):
             if k == 'masks' and 'masks' in self.tasks:
                 result[k] = v.squeeze(0).squeeze(0).cpu().numpy()
             elif k[:3] == 'cls':
-                result[k[4:]] = arr_val[:, idx_1d_new, :].squeeze(0).cpu().numpy().tolist()
+                result[k[4:]] = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy().tolist()
             elif k != 'masks':
-                det = arr_val[:, idx_1d_new, :].squeeze(0).cpu().numpy()
+                det = arr_val[:, idx_1d, :].squeeze(0).cpu().numpy()
                 result[k[4:]] = untorchify_continuous_values(k, det).tolist()
 
         return result
