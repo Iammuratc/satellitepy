@@ -1,6 +1,5 @@
 import torch.nn.functional as F
 import torch
-import numpy as np
 
 from satellitepy.data.torchify import untorchify_continuous_values
 
@@ -18,11 +17,6 @@ class DecDecoder(object):
 
         scores = scores.view(batch, cat, -1)
 
-        max_scores, _ = torch.max(scores, dim=1)
-        _, max_topk_inds = torch.topk(max_scores, self.K, dim=-1)
-        max_topk_inds = max_topk_inds.unsqueeze(2).expand(-1, -1, cat).permute(0, 2, 1)
-        max_topk_scores = torch.gather(scores, -1, max_topk_inds)
-
         topk_scores, topk_inds = torch.topk(scores, self.K)
 
         topk_inds = topk_inds % (height * width)
@@ -30,12 +24,11 @@ class DecDecoder(object):
         topk_xs = (topk_inds % width).int().float()
 
         topk_score, topk_ind = torch.topk(topk_scores.view(batch, -1), self.K)
-        topk_clses = (topk_ind // self.K).int()
         topk_inds = self._gather_feat(topk_inds.view(batch, -1, 1), topk_ind).view(batch, self.K)
         topk_ys = self._gather_feat(topk_ys.view(batch, -1, 1), topk_ind).view(batch, self.K)
         topk_xs = self._gather_feat(topk_xs.view(batch, -1, 1), topk_ind).view(batch, self.K)
 
-        return topk_score, max_topk_scores[0, :, :].T, topk_inds, topk_clses, topk_ys, topk_xs
+        return topk_score, topk_inds, topk_ys, topk_xs
 
     def _nms(self, heat, kernel=3):
         hmax = F.max_pool2d(heat, (kernel, kernel), stride=1, padding=(kernel - 1) // 2)
@@ -62,7 +55,7 @@ class DecDecoder(object):
         batch, c, height, width = heatmap.size()
         heat = self._nms(heatmap)
 
-        _, _, inds, _, ys, xs = self._topk(heat)
+        _, inds, ys, xs = self._topk(heat)
         reg = self._tranpose_and_gather_feat(box_offsets, inds)
         reg = reg.view(batch, self.K, 2)
         xs = xs.view(batch, self.K, 1) + reg[:, :, 0:1]
@@ -98,7 +91,7 @@ class DecDecoder(object):
         batch, c, height, width = heatmap.size()
         heat = self._nms(heatmap)
 
-        _, _, inds, _, ys, xs = self._topk(heat)
+        _, inds, ys, xs = self._topk(heat)
         reg = self._tranpose_and_gather_feat(box_offsets, inds)
         reg = reg.view(batch, self.K, 2)
         xs = xs.view(batch, self.K, 1) + reg[:, :, 0:1]
@@ -113,7 +106,7 @@ class DecDecoder(object):
 
     def ctdet_decode(self, pr_decs):
         heat = pr_decs['cls_' + self.target_task]
-        scores, all_scores, idx_2d, target, _, _ = self._topk(heat)
+        scores, idx_2d, _, _ = self._topk(heat)
 
         idx_1d = (scores > self.conf_thresh).squeeze(0).cpu().numpy()
 
