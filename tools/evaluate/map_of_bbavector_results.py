@@ -8,6 +8,7 @@ from pathlib import Path
 import logging
 
 from satellitepy.evaluate.tools import calculate_map
+from satellitepy.evaluate.utils import get_instance_names
 from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config
 
 
@@ -64,7 +65,9 @@ def main(parser):
     logger.info(f'Configs will be stored at {config_path}')
 
     in_result_folder = Path(args.in_result_folder)
-    instance_names = [instance_name for instance_name in args.instance_names.split(',')]
+    task = args.task
+
+    instance_names = [instance_name for instance_name in args.instance_names.split(',')] if args.instance_names is not None else get_instance_names(in_result_folder, task)
     ignore_other_instances = args.ignore_other_instances
     iou_thresholds = [float(iou_threshold) for iou_threshold in
                       args.iou_thresholds.split(',')] if args.iou_thresholds is not None else [x / 100.0 for x in
@@ -75,7 +78,7 @@ def main(parser):
                                                                                              range(0, 96, 5)]
     plot_pr = args.plot_pr
     out_folder = Path(args.out_folder)
-    task = args.task
+
     assert create_folder(out_folder)
 
     nms_iou_thresh = args.nms_iou_thresh

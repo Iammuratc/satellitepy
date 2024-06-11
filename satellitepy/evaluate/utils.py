@@ -1,6 +1,11 @@
+import json
+import logging
+
 from shapely.geometry import Polygon
 import numpy as np
 from satellitepy.evaluate.bbavector.utils import apply_nms
+from satellitepy.utils.path_utils import get_file_paths
+from tqdm import tqdm
 
 from satellitepy.data.utils import get_task_dict, get_satellitepy_dict_values
 
@@ -270,3 +275,27 @@ def remove_low_conf_results(results, task, conf_score):
         filtered_results['matches']['iou']['indexes'] = np.array(results['matches']['iou']['indexes'])[idx]
 
     return filtered_results
+
+
+def get_instance_names(in_label_path, task):
+    logger = logging.getLogger('')
+    logger.info('Infering instances based on ground truth labels.')
+
+    label_paths = get_file_paths(in_label_path)
+
+    indices = get_task_dict(task)
+    idx2name = {v: k for k, v in indices.items()}
+
+    instances = set()
+
+    for label_path in tqdm(label_paths):
+        with open(label_path, 'r') as file:
+            labels = json.load(file)
+            for instance in get_satellitepy_dict_values(labels['gt_labels'], task):
+                if instance is None:
+                    continue
+                idx = indices[instance]
+                instances.add(idx2name[idx])
+
+    logger.info(f'Found instances: {list(instances)}')
+    return list(instances)
