@@ -188,6 +188,146 @@ def save_patches(
         logger.info(f"Patch labels are created at: {out_label_folder}")
 
 
+def save_class_chips(
+        label_format,
+        image_folder,
+        label_folder,
+        out_folder,
+        task,
+        mask_folder=None):
+    """
+    Save chips from the original images, sorted by classes and displaying additional information.
+    Parameters
+    ----------
+    label_format : str,
+        Resembles the label format (e.g. dota, fair1m, etc.)
+    image_folder : Path
+        Input image folder. Images in this folder will be processed.
+    label_folder : Path
+        Input label folder. Labels in this folder will be used to create patch labels.
+    out_folder : Path
+        Output folder. Patches and corresponding labels will be saved into <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
+    task : str
+        task by which the chips will be sorted
+    mask_folder : Path
+        Input mask folder. Masks in this folder will be used to create chip masks
+    Returns
+    -------
+    """
+
+    image_paths = get_file_paths(image_folder)
+    label_paths = get_file_paths(label_folder)
+    if mask_folder:
+        mask_paths = get_file_paths(mask_folder)
+    else:
+        mask_paths = [None] * len(image_paths)
+
+    assert len(image_paths) == len(label_paths) == len(mask_paths), 'image/label/mask folders do not match in size'
+
+    classes = []
+    class_cnt = []
+    class_lengths = []
+    class_widths = []
+
+    logger.info('Creating chips and writing individual image information:')
+    for img_path, label_path, mask_path in tqdm(zip(image_paths, label_paths, mask_paths), total=len(image_paths)):
+        img = cv2.imread(str(img_path))
+        label = read_label(label_path, label_format, mask_path)
+
+        chips = get_chips(
+            img,
+            label,
+            task
+        )
+
+        count_chips = len(chips['images'])
+        img_name = img_path.stem
+
+        for i in range(count_chips):
+            instance_name = chips['attributes']['task'][i]
+            instance_name = instance_name.replace(' ', '_') if instance_name else 'None'
+            if instance_name not in classes:
+                classes.append(instance_name)
+                class_cnt.append(0)
+                class_lengths.append(0)
+                class_widths.append(0)
+            instance_idx = classes.index(instance_name)
+            class_cnt[instance_idx] += 1
+            chip_height = chips['attributes']['lengths'][i]
+            class_lengths[instance_idx] += chip_height
+            chip_width = chips['attributes']['widths'][i]
+            class_widths[instance_idx] += chip_width
+
+            chip_img = chips['images'][i]
+            center = chips['attributes']['center'][i]
+            height, width, _ = chip_img.shape
+            chip_img = cv2.copyMakeBorder(chip_img, 0, 50, 0, 0, cv2.BORDER_CONSTANT, value=(255, 255, 255))
+
+            cv2.putText(chip_img,
+                        text=f'height={int(chip_height)}, width={int(chip_width)}',
+                        org=(3, height+13),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.4,
+                        color=(0, 0, 0),
+                        thickness=1,
+                        lineType=1)
+
+            cv2.putText(chip_img,
+                        text=f'x:{center[0]}',
+                        org=(width-40, height + 13),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.4,
+                        color=(0, 0, 0),
+                        thickness=1,
+                        lineType=1)
+
+            cv2.putText(chip_img,
+                        text=f'y:{center[1]}',
+                        org=(width-40, height + 30),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.4,
+                        color=(0, 0, 0),
+                        thickness=1,
+                        lineType=1)
+
+            cv2.line(chip_img, (0, height + 25), (width-45, height+25), (0, 0, 0), 1)
+            cv2.line(chip_img, (width-45, height), (width-45, height+50), (0, 0, 0), 1)
+
+            instance_folder = out_folder / instance_name
+            assert create_folder(instance_folder, ask_permission=False)
+
+            center = chips['attributes']['center'][i]
+            chip_img_path = instance_folder / f'{img_name}_x_{center[0]}_y_{center[1]}.png'
+
+            if not chip_img.size == 0:
+                cv2.imwrite(str(chip_img_path), chip_img)
+            else:
+                continue
+
+    class_lengths = np.array(class_lengths)/np.array(class_cnt)
+    class_widths = np.array(class_widths)/np.array(class_cnt)
+
+    logger.info('Adding average information for all classes:')
+    for i, instance_name in tqdm(enumerate(classes), total=len(classes)):
+        instance_folder = out_folder / instance_name
+        image_paths = get_file_paths(instance_folder)
+
+        for img_path in image_paths:
+            img = cv2.imread(str(img_path))
+            height, width, _ = img.shape
+
+            cv2.putText(img,
+                        text=f'avg_h={int(class_lengths[i])}, avg_w={int(class_widths[i])}',
+                        org=(3, height - 10),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.4,
+                        color=(0, 0, 0),
+                        thickness=1,
+                        lineType=1)
+
+            cv2.imwrite(str(img_path), img)
+
+
 def save_chips(
         label_format,
         image_folder,
@@ -240,9 +380,7 @@ def save_chips(
             chips = get_chips(
                 img,
                 label,
-                margin_size,
-                include_object_classes,
-                exclude_object_classes
+                margin_size
             )
 
             count_chips = len(chips['images'])

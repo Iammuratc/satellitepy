@@ -66,7 +66,7 @@ def init_logger(config_path, log_path):
     logging.config.fileConfig(config_path, defaults={'logfilename': log_path})
 
 
-def create_folder(folder):
+def create_folder(folder, ask_permission=True):
     """
     Create the given folder
     Parameters
@@ -79,9 +79,10 @@ def create_folder(folder):
     True if folder is confirmed to be created or if it already exists. Else, False.
     """
     if not folder.exists():
-        msg = f'The following folder will be created:\n{folder}\nDo you confirm?[y/n] '
-        ans = input(msg)
-        if ans == 'y':
+        if ask_permission:
+            msg = f'The following folder will be created:\n{folder}\nDo you confirm?[y/n] '
+            ans = input(msg)
+        if not ask_permission or ans == 'y':
             Path(folder).mkdir(parents=True, exist_ok=True)
             return 1
         raise AssertionError('Please confirm it.\n')
