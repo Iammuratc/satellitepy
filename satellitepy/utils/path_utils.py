@@ -79,16 +79,13 @@ def create_folder(folder, ask_permission=True):
     True if folder is confirmed to be created or if it already exists. Else, False.
     """
     if not folder.exists():
-        msg = f'The following folder will be created:\n{folder}\nDo you confirm?[y/n] '
         if ask_permission:
+            msg = f'The following folder will be created:\n{folder}\nDo you confirm?[y/n] '
             ans = input(msg)
-            if ans == 'y':
-                Path(folder).mkdir(parents=True, exist_ok=True)
-                return 1
-            raise AssertionError('Please confirm it.\n')
-        else:
+        if not ask_permission or ans == 'y':
             Path(folder).mkdir(parents=True, exist_ok=True)
             return 1
+        raise AssertionError('Please confirm it.\n')
     else:
         return 1
 
