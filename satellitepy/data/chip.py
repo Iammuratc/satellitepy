@@ -58,7 +58,8 @@ def get_chips(img, labels, task=None, margin_size=50):
             'center': [],
             'lengths': [],
             'widths': [],
-            'task': []
+            'task': [],
+            'id': []
         }
     }
 
@@ -86,7 +87,7 @@ def get_chips(img, labels, task=None, margin_size=50):
         chips_dict['attributes']['lengths'].append(o_length)
         chips_dict['attributes']['widths'].append(o_width)
         chips_dict['images'].append(chip_img)
-
+        chips_dict['ids'].append(labels['id'][i])
 
 
     return chips_dict

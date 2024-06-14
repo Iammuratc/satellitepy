@@ -203,6 +203,7 @@ def init_satellitepy_label():
                 fighter, bomber, transport, trainer
     """
     labels = {
+        'id': [],   # id only for checking fr24 annotations, should not be in any branch other than for fr24!
         'hbboxes': [],
         'obboxes': [],
         'masks': [],
@@ -711,6 +712,9 @@ def read_fr24_label(label_path):
         file = json.load(f)
 
     for annotation in file['features']:
+
+        labels['id'].append(annotation['properties']['id-or-smth'])
+
         labels['coarse-class'].append('airplane')
         labels['fine-class'].append(annotation['properties']['Type'])
         labels['very-fine-class'].append(annotation['properties']['Subtype'])
