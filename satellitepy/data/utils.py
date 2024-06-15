@@ -442,34 +442,34 @@ def get_satellitepy_table():
             'B767'                          :   76,      # FR24
             'A380'                          :   69,      # FR24
             'B757'                          :   75,      # FR24
-            'E170'                          :   120,      # FR24
-            'CRJ7'                          :   121,      # FR24
-            'E145'                          :   122,      # FR24
-            'CRJ2'                          :   123,      # FR24
-            'MD11'                          :   124,      # FR24
+            'E170'                          :   115,      # FR24
+            'CRJ7'                          :   116,      # FR24
+            'E145'                          :   117,      # FR24
+            'CRJ2'                          :   118,      # FR24
+            'MD11'                          :   119,      # FR24
             'B717'                          :   73,      # FR24
-            'A340'                          :   126,      # FR24
-            'CRJ9'                          :   127,      # FR24
-            'CRJ-900'                       :   128,      # FR24
-            'CRJ-701'                       :   129,      # FR24
-            'CRJ-700'                       :   130,      # FR24
-            'R175'                          :   131,      # FR24
-            'Beechcraft'                    :   132,      # FR24
-            'ERJ'                           :   133,      # FR24
-            'CRJ'                           :   134,      # FR24
-            'Falcon'                        :   135,      # FR24
-            'Sukhoi-100'                    :   136,      # FR24
-            'Embraer'                       :   137,      # FR24
-            'Bombardier-Global'             :   138,      # FR24
-            'E135'                          :   139,      # FR24
-            'Cessna560'                     :   140,      # FR24
-            'H25B'                          :   141,      # FR24
+            'A340'                          :   120,      # FR24
+            'CRJ9'                          :   121,      # FR24
+            'CRJ-900'                       :   122,      # FR24
+            'CRJ-701'                       :   123,      # FR24
+            'CRJ-700'                       :   124,      # FR24
+            'R175'                          :   125,      # FR24
+            'Beechcraft'                    :   126,      # FR24
+            'ERJ'                           :   127,      # FR24
+            'CRJ'                           :   128,      # FR24
+            'Falcon'                        :   129,      # FR24
+            'Sukhoi-100'                    :   130,      # FR24
+            'Embraer'                       :   131,      # FR24
+            'Bombardier-Global'             :   132,      # FR24
+            'E135'                          :   133,      # FR24
+            'Cessna560'                     :   134,      # FR24
+            'H25B'                          :   135,      # FR24
             'Cessna-Citation'               :    86,      # FR24
-            'Gulfstream'                    :   142,      # FR24  
-            'Gulfstream-Global'             :   143,      # FR24
-            'Embraer-Praetor'               :   144,      # FR24
-            'Embraer-Phenom'                :   145,      # FR24
-            'DeHavilland-Dash-8'            :   146,      # FR24
+            'Gulfstream'                    :   136,      # FR24  
+            'Gulfstream-Global'             :   137,      # FR24
+            'Embraer-Praetor'               :   138,      # FR24
+            'Embraer-Phenom'                :   139,      # FR24
+            'DeHavilland-Dash-8'            :   140,      # FR24
         },
         'very-fine-class':{
 			'Airbus_A330-300'					: 0,	# Rareplanes_synthetic
