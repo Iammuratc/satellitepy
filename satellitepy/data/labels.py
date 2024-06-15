@@ -713,7 +713,7 @@ def read_fr24_label(label_path):
 
     for annotation in file['features']:
 
-        labels['id'].append(annotation['properties']['id-or-smth'])
+        labels['id'].append(annotation['properties']['id'])
 
         labels['coarse-class'].append('airplane')
         labels['fine-class'].append(annotation['properties']['Type'])
