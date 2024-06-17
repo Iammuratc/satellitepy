@@ -108,9 +108,7 @@ def save_patch_results(
 
         if in_label_folder:
             gt_labels = read_label(data_dict['label_path'][0], in_label_format)
-            matches = match_gt_and_det_bboxes(gt_labels, save_dict)
             save_dict['gt_labels'] = gt_labels
-            save_dict['matches'] = matches
 
         if 'masks' in tasks:
             mask = save_dict['masks']
@@ -224,12 +222,9 @@ def save_original_image_results(
 
         merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
 
-        # matches = match_gt_and_det_bboxes(gt_labels, merged_det_labels)
-
         result = {
             'gt_labels': gt_labels,
-            'det_labels': merged_det_labels,
-            # 'matches': matches
+            'det_labels': merged_det_labels
         }
 
         json_path = Path(result_folder) / f'{img_name}.json'
