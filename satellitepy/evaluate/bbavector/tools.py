@@ -224,12 +224,12 @@ def save_original_image_results(
 
         merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, img.shape)
 
-        matches = match_gt_and_det_bboxes(gt_labels, merged_det_labels)
+        # matches = match_gt_and_det_bboxes(gt_labels, merged_det_labels)
 
         result = {
             'gt_labels': gt_labels,
             'det_labels': merged_det_labels,
-            'matches': matches
+            # 'matches': matches
         }
 
         json_path = Path(result_folder) / f'{img_name}.json'

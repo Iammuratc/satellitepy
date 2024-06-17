@@ -71,6 +71,8 @@ def set_conf_mat_from_result(
     det_inds = np.argmax(det_results[task], axis=1) if len(det_results[task]) > 0 else []
     conf_scores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
 
+    matches = match_gt_and_det_bboxes(result['gt_labels'], det_results)
+
     if len(task_result) == 0:
         return conf_mat, ignored_instances_ret, ignored_cnt
     for i_iou_th, iou_th in enumerate(iou_thresholds):
@@ -81,11 +83,11 @@ def set_conf_mat_from_result(
                 if conf_score < conf_score_th:
                     continue
 
-                iou_score = result['matches']['iou']['scores'][i_conf_score]
+                iou_score = matches['iou']['scores'][i_conf_score]
                 if iou_score < iou_th:
                     continue
 
-                gt_index = result['matches']['iou']['indexes'][i_conf_score]
+                gt_index = matches['iou']['indexes'][i_conf_score]
 
                 det_gt_instance_name = task_result[gt_index]
 
