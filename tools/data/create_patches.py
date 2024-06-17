@@ -35,6 +35,7 @@ def get_args():
     parser.add_argument('--patch-overlap', type=int, help='Overlapping size of neighboring patches. In CNN '
                                                           'terminology, stride = patch-size - patch-overlap. '
                                                           'If necessary, the original image will be padded with zeros to create full size patches.')
+    parser.add_argument('--keep-empty', type=bool, default=False, help='Keeps empty patches if True. All black patches are still discarded. Default is False.')
     parser.add_argument('--log-config-path', default=None, type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, default=None, help='Log path.')
     # Reading image
@@ -90,6 +91,7 @@ def run(parser):
         image_read_module=args.image_read_module,
         rescaling=args.rescaling,
         interpolation_method=args.interpolation_method,
+        keep_empty=args.keep_empty
     )
 
 
