@@ -665,17 +665,18 @@ def save_xview_in_satellitepy_format(out_folder, label_path):
     classes = get_xview_classes()
 
     img_name_for_log = list(image_dicts.keys())[0]
-    for feature in labels['features']:
+    for feature in tqdm(labels['features']):
         img_name = feature['properties']['image_id']
         if img_name != img_name_for_log:
             img_name_for_log = img_name
-            logger.info(f'Following image will be written: {img_name_for_log}')
+
 
         type_class = int(feature['properties']['type_id'])
 
         if type_class not in classes['vehicles'] and \
            type_class not in classes['ships'] and \
-           type_class not in classes['helicopter']:
+           type_class not in classes['helicopter'] and \
+           type_class not in classes['airplanes']:
             continue
 
         if type_class in classes['vehicles']:
