@@ -59,7 +59,8 @@ def get_chips(img, labels, task=None, margin_size=50):
             'lengths': [],
             'widths': [],
             'task': [],
-            'id': []
+            'id': [],
+            'nose': []
         }
     }
 
@@ -82,12 +83,13 @@ def get_chips(img, labels, task=None, margin_size=50):
 
         chips_dict['attributes']['center'].append(center)
         params = BBox(corners=bbox).get_params()
-        o_length = params[3]
-        o_width = params[2]
+        o_length = params[2]
+        o_width = params[3]
         chips_dict['attributes']['lengths'].append(o_length)
         chips_dict['attributes']['widths'].append(o_width)
         chips_dict['images'].append(chip_img)
         chips_dict['attributes']['id'].append(labels['id'][i])
+        chips_dict['attributes']['nose'].append(labels['nose'][i])
 
 
     return chips_dict

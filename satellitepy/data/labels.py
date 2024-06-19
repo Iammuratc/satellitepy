@@ -204,6 +204,7 @@ def init_satellitepy_label():
     """
     labels = {
         'id': [],   # id only for checking fr24 annotations, should not be in any branch other than for fr24!
+        'nose': [],     # nose (first) coordinate for checking dbbox orientation, should not be in any branch other than for fr24!
         'hbboxes': [],
         'obboxes': [],
         'masks': [],
@@ -705,7 +706,7 @@ def read_vedai_label(label_path):
 
 def read_fr24_label(label_path):
     labels = init_satellitepy_label()
-    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'role', 'source']
+    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'role', 'source', 'id', 'nose']
     all_tasks = get_all_satellitepy_keys()
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
     with open(label_path, 'r') as f:
@@ -724,6 +725,7 @@ def read_fr24_label(label_path):
         diamond_corners = coords[:4][:]
         bbox = BBox(diamond_corners=diamond_corners)
         bbox = BBox(params=bbox.params)
+        labels['nose'].append(diamond_corners[0])
         labels['obboxes'].append(bbox.corners)
         labels['hbboxes'].append(bbox.get_hbb_from_obb(bbox.corners))
         fill_none_to_empty_keys(labels, not_available_tasks)

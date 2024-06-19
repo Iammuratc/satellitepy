@@ -245,7 +245,8 @@ def save_class_chips(
 
         for i in range(count_chips):
             instance_name = chips['attributes']['task'][i]
-            id = chips['attributes']['id'][i]
+            annotation_id = chips['attributes']['id'][i]
+            nose = chips['attributes']['nose'][i]
             instance_name = instance_name.replace(' ', '_') if instance_name else 'None'
             if instance_name not in classes:
                 classes.append(instance_name)
@@ -292,13 +293,15 @@ def save_class_chips(
                         lineType=1)
 
             cv2.putText(chip_img,
-                        text=f'id:{id}',
+                        text=f'id:{annotation_id}',
                         org=(width - 40, height + 45),
                         fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=0.4,
                         color=(0, 0, 0),
                         thickness=1,
                         lineType=1)
+
+            cv2.circle(chip_img, (nose[0], nose[1]), 1, (255, 0, 0), 1)
 
             cv2.line(chip_img, (0, height + 25), (width-45, height+25), (0, 0, 0), 1)
             cv2.line(chip_img, (width-45, height), (width-45, height+50), (0, 0, 0), 1)
