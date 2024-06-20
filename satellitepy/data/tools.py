@@ -275,7 +275,7 @@ def save_class_chips(
 
             cv2.putText(chip_img,
                         text=f'x:{center[0]}',
-                        org=(width-40, height + 10),
+                        org=(width-45, height + 10),
                         fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=0.4,
                         color=(0, 0, 0),
@@ -284,7 +284,7 @@ def save_class_chips(
 
             cv2.putText(chip_img,
                         text=f'y:{center[1]}',
-                        org=(width-40, height + 25),
+                        org=(width-45, height + 25),
                         fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=0.4,
                         color=(0, 0, 0),
@@ -293,7 +293,7 @@ def save_class_chips(
 
             cv2.putText(chip_img,
                         text=f'id:{annotation_id}',
-                        org=(width - 40, height + 45),
+                        org=(width - 45, height + 45),
                         fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=0.4,
                         color=(0, 0, 0),
