@@ -10,7 +10,7 @@ from satellitepy.data.bbox import BBox
 from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
 
 
-def create_chip(img, bbox, margin=0, draw_corners=False):
+def create_chip(img, bbox, nose, margin=0, draw_corners=False):
     center_x = np.mean(bbox[:, 0])
     center_y = np.mean(bbox[:, 1])
     angle = BBox(corners=bbox).get_orth_angle()
@@ -20,6 +20,7 @@ def create_chip(img, bbox, margin=0, draw_corners=False):
         center_x += 200
         center_y += 200
         bbox += 200
+        cv2.circle(img, (int(nose[0])+200, int(nose[1])+200), 1, (255, 0, 0), 1)
         for coords in bbox:
             cv2.circle(img, (coords[0], coords[1]), 1, (0, 0, 255), 2)
 
@@ -59,8 +60,7 @@ def get_chips(img, labels, task=None, margin_size=50):
             'lengths': [],
             'widths': [],
             'task': [],
-            'id': [],
-            'nose': []
+            'id': []
         }
     }
 
@@ -74,7 +74,7 @@ def get_chips(img, labels, task=None, margin_size=50):
     for i, bbox in enumerate(bboxes):
         mbbox = np.array(bbox).astype(int)
 
-        chip_img, center = create_chip(img, mbbox, margin_size, draw_corners=True)
+        chip_img, center = create_chip(img, mbbox, labels['nose'][i], margin_size, draw_corners=True)
 
         set_image_keys(all_satellitepy_keys, chips_dict['labels'], labels, i)
 
@@ -89,7 +89,6 @@ def get_chips(img, labels, task=None, margin_size=50):
         chips_dict['attributes']['widths'].append(o_width)
         chips_dict['images'].append(chip_img)
         chips_dict['attributes']['id'].append(labels['id'][i])
-        chips_dict['attributes']['nose'].append(labels['nose'][i])
 
 
     return chips_dict

@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 import logging
 import shapely
@@ -39,6 +40,9 @@ def get_patches(
 
     y_max, x_max, ch = img.shape
 
+    for nose in gt_labels['nose']:
+        cv2.circle(img, (int(nose[0]), int(nose[1])), 1, (255, 0, 0), 2)
+
     x_pad_size = get_pad_size(x_max, patch_size, patch_overlap)
     y_pad_size = get_pad_size(y_max, patch_size, patch_overlap)
     img_padded = np.pad(img, pad_width=((0, y_pad_size), (0, x_pad_size), (0, 0)))
@@ -67,6 +71,7 @@ def get_patches(
             for j, (hbbox, obbox) in enumerate(zip(gt_labels['hbboxes'], gt_labels['obboxes'])):
 
                 all_bboxes = [hbbox,obbox]
+
 
                 # Check if bboxes are defined at all
                 if any(all_bboxes):
