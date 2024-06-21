@@ -7,7 +7,7 @@ from matplotlib.ticker import MultipleLocator
 
 from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, \
     get_default_log_config, get_file_paths
-from satellitepy.data.labels import read_label
+from satellitepy.data.labels import read_label, read_fineair_label
 from satellitepy.data.utils import get_satellitepy_dict_values, count_unique_values
 
 
@@ -45,7 +45,7 @@ def run(parser):
 
     init_logger(config_path=log_config_path, log_path=log_path)
     logger = logging.getLogger('')
-    logger.info('Saving patches from original images...')
+    logger.info('Analyzing label files...')
     logger.info(f'Log will be stored at: {log_path}')
 
     config_path = out_folder / f'{Path(__file__).resolve().stem}.ini'
@@ -78,6 +78,7 @@ def analyse_label_paths(label_folder,
     count_instances = {}
     for label_path in label_paths:
         label = read_label(label_path, label_format)
+        # label = read_fineair_label(label_path,include_fineair_class=False)
         # If task is very-fine-class, merge fine-class and very-fine-class first
         if task == 'very-fine-class':
             ftgc = get_satellitepy_dict_values(label,task='very-fine-class')
