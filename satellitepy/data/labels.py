@@ -33,8 +33,8 @@ def read_label(label_path, label_format, mask_path=None, rescaling=1):
         labels = read_ship_net_label(label_path)
     elif label_format == 'ucas':
         labels = read_ucas_label(label_path)
-    elif label_format == 'fr24':
-        labels = read_fr24_label(label_path)
+    elif label_format == 'fineair':
+        labels = read_fineair_label(label_path)
     elif label_format == 'xview':
         logger.info('Please run tools/data/split_xview_into_satellitepy_labels.py to get the satellitepy labels.'
                     ' Then pass label_format as satellitepy for those labels.')
@@ -177,7 +177,7 @@ def init_satellitepy_label():
             Detection difficulty of the object. Only DOTA provides this. 
             For example, clouds make the detection task difficult. 
         source: list of str
-            Source for FR24 annotations. Either FR24, Mask or None
+            Source for fineair annotations. Either FR24, Mask or None
         attributes : dict of str
             This value only serves for Rareplanes at the moment. 
             Please check the Rareplanes paper for details.
@@ -210,6 +210,7 @@ def init_satellitepy_label():
         'role': [],
         'fine-class': [],
         'very-fine-class': [],
+        'fineair-class': [],
         'difficulty': [],
         'source': [],
         'attributes': {
@@ -702,9 +703,11 @@ def read_vedai_label(label_path):
     return labels
 
 
-def read_fr24_label(label_path):
+def read_fineair_label(label_path,include_fineair_class=True):
     labels = init_satellitepy_label()
     available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'role', 'source']
+    if include_fineair_class:
+        available_tasks.append('fineair-class')
     all_tasks = get_all_satellitepy_keys()
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
     with open(label_path, 'r') as f:
@@ -714,6 +717,8 @@ def read_fr24_label(label_path):
         labels['coarse-class'].append('airplane')
         labels['fine-class'].append(annotation['properties']['Type'])
         labels['very-fine-class'].append(annotation['properties']['Subtype'])
+        if include_fineair_class:
+            labels['fineair-class'].append(annotation['properties']['fineairtype'])
         labels['source'].append(annotation['properties']['Source'])
         labels['role'].append(annotation['properties']['Role'])
         coords = annotation['geometry']['coordinates']
