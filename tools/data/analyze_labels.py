@@ -85,13 +85,14 @@ def analyse_label_paths(label_folder,
             values = [f"{fgc_i}--{ftgc_i}" for fgc_i, ftgc_i in zip(fgc,ftgc)]
         else:
             values = get_satellitepy_dict_values(label, task)
-        count_unique_values(satellitepy_values = values, instances=count_instances)
+        count_instances = count_unique_values(satellitepy_values = values, instances=count_instances)
 
     
 
     logger.info('The results from the analyzed labels:')
     for key, value in sorted(count_instances.items()):
         logger.info(f'{key}:{value}')
+    logger.info(f'There are {len(count_instances)} classes and {sum(count_instances.values())} instances in total.')
     
     # Adjust this to FtGC
     # if not print_none and 'None' in count_instances.keys():
