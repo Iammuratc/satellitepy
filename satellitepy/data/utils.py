@@ -540,6 +540,31 @@ def get_satellitepy_table():
             'Midway'                            : 64,   # ShipNet
 
         },
+        'fineair-class': {
+            'A220': 0,
+            'A319': 1,
+            'A320': 2,
+            'A321': 3,
+            'A330': 4,
+            'A340': 5,  
+            'A350': 6,  
+            'A380': 7,
+            'Airliner': 8,
+            'B737': 9,
+            'B747': 10,
+            'B757': 11,
+            'B767': 12,
+            'B777': 13,
+            'B787': 14,
+            'Bombardier-Global': 15,
+            'CRJ-200': 16,
+            'CRJ-900': 17,
+            'E145': 18,
+            'E175': 19,
+            'E190': 20,
+            'Private Jet': 21,
+            'Propeller': 22
+        },
         'difficulty': {
             '0': 0,
             '1': 1
