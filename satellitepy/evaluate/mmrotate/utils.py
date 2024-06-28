@@ -49,12 +49,10 @@ def get_result(
 
     result = {
         'gt_labels': gt_labels,
-        'matches': matches
+        'matches': matches,
+        'det_labels': det_labels
     }
-
-    for k in det_labels:
-        result[k] = det_labels[k]
-
+    
     return result
 
 
@@ -81,19 +79,16 @@ def get_det_labels(mmrotate_result, class_names, task_name, nms_on_multiclass_th
         task_name: [],
         'confidence-scores': []}
     for class_bboxes_ind, class_bboxes in enumerate(mmrotate_result):
-        if not class_bboxes:
+        if not class_bboxes.any():
             continue
-        if not isinstance(class_bboxes, np.ndarray):
-            class_bboxes = np.array(class_bboxes)
 
         for class_bbox in class_bboxes:
-            my_bbox = BBox(params=class_bbox[:5])
+            my_bbox = BBox(params=np.array(class_bbox)[:5])
             if class_names[class_bboxes_ind] == 'other':
                 continue
-            det_labels[task_name].append(
-                get_satellitepy_table()[task_name][class_names[class_bboxes_ind].replace('_', ' ')])
+            det_labels[task_name].append(get_satellitepy_table()[task_name][class_names[class_bboxes_ind]])
             det_labels['obboxes'].append(my_bbox.corners)
-            det_labels['confidence-scores'].append(class_bbox[-1])
+            det_labels['confidence-scores'].append(float(class_bbox[-1]))
     return det_labels
 
 

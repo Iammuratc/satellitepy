@@ -36,6 +36,10 @@ def get_args():
                                                                                       'is range(0,1.01,0.05)')
     parser.add_argument('--iou-thresholds', default=None, type=str, help='Iou thresholds. Default value is range(0.5,'
                                                                          '0.96,0.05)')
+    parser.add_argument('--no-probability', action='store_true', 
+        help='If True, results already consist of max values of probabilities,' 
+            'i.e., shape is [N,1], where, N number of instances.'
+            'By default, each instance will have a probability of each class, shape is [N,C], where C number of classes.')
     parser.add_argument('--plot-pr', default=False, type=bool, help='Plot the PR curve.')
     parser.add_argument('--nms-iou-thresh', type=float, default=0.3,
                         help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed '
@@ -92,7 +96,8 @@ def main(parser):
         out_folder,
         plot_pr,
         nms_iou_thresh,
-        ignore_other_instances
+        ignore_other_instances,
+        no_probability=args.no_probability
     )
 
 

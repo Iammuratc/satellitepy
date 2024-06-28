@@ -59,37 +59,47 @@ def nms(bboxes, scores, iou_th):
     ----------
     bboxes: np.ndarray
         Bounding box parameters. (N,5)
-    scores : np.ndarray
-        Scores to filter out the boxes. For example confidence scores. (N)
-    iou_th : float
-        IoU threshold.
+    scores (torch.Tensor)
+        Confidence scores for each bounding box/polygon, of shape (N,).
+    iou_threshold (float)
+        IoU threshold for NMS.
     Returns
     -------
-    inds : np.ndarray
-        Indices of bounding boxes after NMS (K).
+    torch.Tensor: Indices of the bounding boxes/polygons to keep.
     """
     if iou_th <= 0:
         logger.info('IoU threshold must be larger than 0!')
         return 0
-    iou = rbbox_overlaps(torch.FloatTensor(bboxes), torch.FloatTensor(bboxes))
-    n = iou.shape[0]
-    iou[range(n), range(n)] = 0
-    iou_upper_triangular = np.triu(iou, 1)
-    inds_bboxes = np.nonzero(iou_upper_triangular > iou_th)
+    iou_matrix = rbbox_overlaps(torch.FloatTensor(bboxes), torch.FloatTensor(bboxes))
+    assert iou_matrix.shape[0] == scores.shape[0]
 
-    scores_bboxes_0 = np.array([scores[ind] for ind in inds_bboxes[0]])
-    scores_bboxes_1 = np.array([scores[ind] for ind in inds_bboxes[1]])
+    # Get the indices of the boxes sorted by scores (highest to lowest)
+    _, indices = scores.sort(descending=True)
 
-    inds_to_remove = np.unique(inds_bboxes[1][scores_bboxes_0 >= scores_bboxes_1])
-    all_inds = np.arange(len(scores))
-    mask = np.ones_like(all_inds, dtype=bool)
-    mask[inds_to_remove] = False
-    inds = all_inds[mask]
+    keep_indices = []
 
-    return inds
+    while indices.numel() > 0:
+        # Select the index of the current best box
+        current = indices[0].item()
+        keep_indices.append(current)
+
+        if indices.numel() == 1:
+            break
+
+        # Compute IoU of the selected box with the rest
+        current_iou = iou_matrix[current, indices[1:]]
+
+        # Keep indices where IoU is below the threshold
+        remaining_indices = indices[1:][current_iou <= iou_th]
+
+        # Update the indices
+        indices = remaining_indices
+
+    # return torch.tensor(keep_indices, dtype=torch.long)
+    return keep_indices
 
 
-def apply_nms(det_labels, nms_iou_threshold=0.5, target_task="coarse-class"):
+def apply_nms(det_labels, nms_iou_threshold=0.5, target_task="coarse-class", no_probability=False):
     """
     Apply nms to labels, e.g., dec_pred, merged_det_labels
     Parameters
@@ -101,9 +111,12 @@ def apply_nms(det_labels, nms_iou_threshold=0.5, target_task="coarse-class"):
     save_dict = dict()
 
     bbox_params = [BBox(corners=corners).params for corners in det_labels['obboxes']]
-    conf_scores = np.max(det_labels[target_task], axis=1) if len(det_labels[target_task]) > 0 else []
-
-    nms_inds = nms(bbox_params, scores=conf_scores, iou_th=nms_iou_threshold)  # [0]
+    # bbox_params = [BBox(corners=corners.astype(np.float32)).get_params_cv2() for corners in det_labels['obboxes']]
+    if no_probability:
+        conf_scores = det_labels['confidence-scores']
+    else:
+        conf_scores = np.max(det_labels[target_task], axis=1) if len(det_labels[target_task]) > 0 else []
+    nms_inds = nms(bbox_params, scores=torch.Tensor(conf_scores), iou_th=nms_iou_threshold)  # [0]
 
     det_labels_keys = [key for key in list(det_labels.keys()) if key not in ['masks']]
     if nms_inds is not None:

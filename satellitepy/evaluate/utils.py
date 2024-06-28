@@ -57,7 +57,8 @@ def set_conf_mat_from_result(
         conf_score_thresholds,
         iou_thresholds,
         nms_iou_thresh,
-        ignore_other_instances):
+        ignore_other_instances,
+        no_probability):
     ignored_instances_ret = []
     ignored_cnt = 0
 
@@ -65,11 +66,15 @@ def set_conf_mat_from_result(
     idx2name = {v: k for k, v in task_dict.items()}
     task_result = get_satellitepy_dict_values(result['gt_labels'], task)
 
-    result = remove_low_conf_results(result, task, conf_score_thresholds[0])
-    det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=task)
+    result = remove_low_conf_results(result, task, conf_score_thresholds[0], no_probability)
+    det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=task, no_probability=no_probability)
 
-    det_inds = np.argmax(det_results[task], axis=1) if len(det_results[task]) > 0 else []
-    conf_scores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
+    if no_probability:
+        det_inds = det_results[task]
+        conf_scores = det_results['confidence-scores']
+    else:
+        det_inds = np.argmax(det_results[task], axis=1) if len(det_results[task]) > 0 else []
+        conf_scores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
 
     matches = match_gt_and_det_bboxes(result['gt_labels'], det_results)
 
@@ -252,11 +257,14 @@ def get_ious(bboxes_1, bboxes_2):
     return ious
 
 
-def remove_low_conf_results(results, task, conf_score):
+def remove_low_conf_results(results, task, conf_score, no_probability):
     if conf_score == 0:
         return results
 
-    conf_scores = np.max(results['det_labels'][task], axis=1) if len(results['det_labels'][task]) > 0 else []
+    if no_probability:
+        conf_scores = np.array(results['det_labels'][task])
+    else:
+        conf_scores = np.max(results['det_labels'][task], axis=1) if len(results['det_labels'][task]) > 0 else []
     idx = np.argwhere(conf_scores > conf_score).flatten() if len(results['det_labels'][task]) > 0 else []
 
     filtered_results = {
