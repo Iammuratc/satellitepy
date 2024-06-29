@@ -103,7 +103,9 @@ def train_bbavector(args):
         f'No log path is given, the default log path will be used: {log_path}')
     logger.info('Initiating the training of the BBAVector model...')
 
-    model = get_model(tasks, down_ratio)
+    resnet_type = '34'
+
+    model = get_model(tasks, down_ratio, resnet_type)
 
     train_dataset = BBAVectorDataset(
         train_image_folder,
