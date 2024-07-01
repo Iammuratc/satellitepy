@@ -551,7 +551,8 @@ def show_results_on_image(img_dir,
                           target_task,
                           all_tasks_flag,
                           iou_th=0.5,
-                          conf_th=0.5):
+                          conf_th=0.5,
+                          no_probability=False):
     """
     Visualize results on images
     """
@@ -562,44 +563,38 @@ def show_results_on_image(img_dir,
     assert len(img_paths) == len(label_paths) == len(mask_paths)
     for img_path, label_path, mask_path in tqdm(zip(img_paths, label_paths, mask_paths), total=len(img_paths)):
         img = cv2.imread(str(img_path))
-        results0 = read_label(label_path, label_format='satellitepy')
+        results = read_label(label_path, label_format='satellitepy')
 
-        if len(results0['det_labels'][target_task]) == 0:
-            print('skipping: No detections at all')
+        if len(results['det_labels'][target_task]) == 0:
+            logger.info(f'Skipping {label_path.stem}: No detections!')
             continue
 
-        results1 = remove_low_conf_results(results0, target_task, conf_th)
-        results = apply_nms(results1['det_labels'], nms_iou_threshold=iou_th, target_task=target_task)
+        results = remove_low_conf_results(results, target_task, conf_th, no_probability)
+        results['det_labels'] = apply_nms(results['det_labels'], nms_iou_threshold=iou_th, target_task=target_task, no_probability=no_probability)
 
         if satellitepy_labels_empty(results):
             continue
 
-        available_tasks = list(results.keys())
+        available_tasks = list(results['det_labels'].keys())
 
         if not all_tasks_flag:
             available_tasks = tasks.copy()
 
-        if 'masks' in tasks:
-            available_tasks.remove('masks')
+        available_tasks = [task for task in available_tasks if task not in ['obboxes','hbboxes','masks','confidence-scores']]
 
-        if 'obboxes' in available_tasks:
-            available_tasks.remove('obboxes')
-        if 'hbboxes' in available_tasks:
-            available_tasks.remove('hbboxes')
-
-        if results['obboxes'][0] is None:
+        if results['det_labels']['obboxes'][0] is None:
             bboxes = 'hbboxes'
         else:
             bboxes = 'obboxes'
 
-        for i, bbox_corners in enumerate(results[bboxes]):
+        for i, bbox_corners in enumerate(results['det_labels'][bboxes]):
             bbox_corners = np.array(bbox_corners, np.int32)
             x_min, x_max, y_min, y_max = BBox.get_bbox_limits(bbox_corners)
             cv2.polylines(img, [bbox_corners], True, color=(255, 0, 0))
 
             for j, task in enumerate(available_tasks):
 
-                task_result = np.argmax(results[task][i])
+                task_result = np.argmax(results['det_labels'][task][i])
 
                 task_text = task.split('_')[-1]
                 task_dict = get_task_dict(task)

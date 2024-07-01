@@ -22,7 +22,8 @@ def calculate_map(
         out_folder,
         plot_pr,
         nms_iou_thresh,
-        ignore_other_instances=False):
+        ignore_other_instances=False,
+        no_probability=False):
 
     logger = logging.getLogger('')
 
@@ -49,7 +50,8 @@ def calculate_map(
             conf_score_thresholds,
             iou_thresholds,
             nms_iou_thresh,
-            ignore_other_instances)
+            ignore_other_instances,
+            no_probability)
 
         ignored_instances += ignored_instances_ret
         ignored_cnt += ignored_cnt_ret
@@ -68,17 +70,33 @@ def calculate_map(
         if ignore_other_instances:
             logger.info(f'ignored {ignored_cnt} other instances. Ignored instance names: {set(ignored_instances)}')
 
+        # Print AP_50 with the sorted instance names for articles/papers by assuming that iou_thresholds[0]=0.5
+        logger.info(f'AP results at {iou_thresholds[0]}')
+        sorted_instance_names,ap_50 = expand_sort_lists(instance_names,ap[0])
+
+        logger.info(sorted_instance_names)
+        logger.info(ap_50)
         evaluation_file_path = out_folder / 'mAP_values.txt'
         with open(evaluation_file_path, 'w') as file:
             np.savetxt(file, ap, fmt='%.2f', delimiter=',',
                        header=f'AP (Columns: {instance_names}, Rows: IoUs {iou_thresholds}):')
-            np.savetxt(file, mAP, fmt='%.2f', delimiter=',', header=f'mAP (Columns: {iou_thresholds}):')
+            np.savetxt(file, [mAP], fmt='%.2f', delimiter='\t', header=f'mAP (Columns: {iou_thresholds}):')
+            np.savetxt(file, [sorted_instance_names], fmt='%s', delimiter='\t',header=f'AP{iou_thresholds[0]}):')
+            np.savetxt(file, [ap_50], fmt='%.2f', delimiter='\t')
+        logger.info(f'AP calculations are saved into: {evaluation_file_path}')
 
     if plot_pr:
         precision_recall_curve(out_folder, precision[pr_threshold_ind, :], recall[pr_threshold_ind, :])
 
     return mAP
 
+def expand_sort_lists(*lists):
+    # Combine the lists into a list of tuples and sort by the first list
+    combined = sorted(zip(*lists))
+    # Unzip the sorted list of tuples back into two lists
+    sorted_lists = [list(my_list) for my_list in zip(*combined)]
+    # Convert them back to lists if needed
+    return sorted_lists
 
 def precision_recall_curve(out_folder, precision, recall):
     rec_values = [np.ones(recall.shape[1])]

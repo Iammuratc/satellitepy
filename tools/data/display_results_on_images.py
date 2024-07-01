@@ -31,6 +31,10 @@ def get_args():
                         help='Which information to show on generated images. E.g.: bboxes, masks, labels. Default is '
                              'all, which shows all available information.',
                         default='all')
+    parser.add_argument('--no-probability', action='store_true', 
+        help='If True, results already consist of max values of probabilities,' 
+            'i.e., shape is [N,1], where, N number of instances.'
+            'By default, each instance will have a probability of each class, shape is [N,C], where C number of classes.')
     parser.add_argument('--target-task', type=str, default='coarse-class', help='Target task used for drawing bboxes and nms. Default is coarse-class.')
     parser.add_argument('--conf-score-threshold', type=float, default=0.5,
                         help='Confidence score threshold')
@@ -82,7 +86,8 @@ def run(args):
         target_task=target_task,
         all_tasks_flag=all_tasks_flag,
         iou_th=iou_th,
-        conf_th=conf_th)
+        conf_th=conf_th,
+        no_probability=args.no_probability)
 
 
 if __name__ == '__main__':
