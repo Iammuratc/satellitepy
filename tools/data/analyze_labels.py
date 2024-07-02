@@ -92,7 +92,8 @@ def analyse_label_paths(label_folder,
 
     logger.info('The results from the analyzed labels:')
     for key, value in sorted(count_instances.items()):
-        logger.info(f'{key}:{value}')
+        key_ratio = value / sum(count_instances.values())
+        logger.info(f'{key}:{value} ({key_ratio:.2f})')
     logger.info(f'There are {len(count_instances)} classes and {sum(count_instances.values())} instances in total.')
     
     # Adjust this to FtGC
@@ -101,7 +102,6 @@ def analyse_label_paths(label_folder,
         count_instances = remove_none_keys(count_instances)
 
     if group_into_other_threshold > 0:
-
         others,count_instances = group_into_other(count_instances,group_into_other_threshold)
         logger.info(f"Following classes are grouped into other: {','.join(others)}")
 

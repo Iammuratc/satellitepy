@@ -26,8 +26,7 @@ def get_args():
                                                            'added automatically. All other instance names (e.g., '
                                                            'bridge), that are not defined here but in the result '
                                                            'files, will be treated as Background.')
-    parser.add_argument('--ignore-other-instances', default=False, type=bool,
-                        help='Ignores instances not in instance names if set. Default is False.')
+    parser.add_argument('--ignore-other-instances', action='store_true', help='If True, ignore instances not in instance names.')
     parser.add_argument('--confidence-score-thresholds', default=None, type=str, help='Confidence score threshold. If '
                                                                                       'the detected object has a '
                                                                                       'lower confidence score than '
@@ -40,10 +39,11 @@ def get_args():
         help='If True, results already consist of max values of probabilities,' 
             'i.e., shape is [N,1], where, N number of instances.'
             'By default, each instance will have a probability of each class, shape is [N,C], where C number of classes.')
-    parser.add_argument('--plot-pr', default=False, type=bool, help='Plot the PR curve.')
+    parser.add_argument('--plot-pr', action='store_true', help='Plot the PR curve.')
     parser.add_argument('--nms-iou-thresh', type=float, default=0.3,
                         help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed '
                              'according to this value.')
+    parser.add_argument('--by-source', action='store_true', help='If True, the calculations will be done for each annotation source.')
     parser.add_argument('--log-config-path', default=None, help='Log config file.')
     parser.add_argument('--log-path', default=None, help='Log will be saved here.')
     return parser
@@ -97,7 +97,8 @@ def main(parser):
         plot_pr,
         nms_iou_thresh,
         ignore_other_instances,
-        no_probability=args.no_probability
+        no_probability=args.no_probability,
+        by_source=args.by_source
     )
 
 

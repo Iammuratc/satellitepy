@@ -10,7 +10,7 @@ from tqdm import tqdm
 from satellitepy.data.utils import get_task_dict, get_satellitepy_dict_values
 
 
-def match_gt_and_det_bboxes(gt_labels, det_labels):
+def match_gt_and_det_bboxes(gt_labels, det_labels, by_source=False):
     """
     Match ground truth and detected bboxes
     Get the matching indexes and store iou scores
@@ -27,8 +27,9 @@ def match_gt_and_det_bboxes(gt_labels, det_labels):
             'scores' :  Highest value of matching bboxes of gt and det
             'indexes' : Matching index of det label. The order of the labels in 'indexes' is the same as
                         the det_labels['bboxes'] order, and the value is the index in gt_labels['bboxes'].
+            'sources' : Annotation sources
     """
-    matches = {'iou': {'scores': [], 'indexes': []}}
+    matches = {'iou': {'scores': [], 'indexes': [], 'sources': []}}
 
     if gt_labels is None:
         return matches
@@ -46,6 +47,7 @@ def match_gt_and_det_bboxes(gt_labels, det_labels):
 
         matches['iou']['scores'].append(iou_score.item())
         matches['iou']['indexes'].append(bbox_ind_gt.item())
+        matches['iou']['sources'].append(gt_labels['source'][bbox_ind_gt.item()])
     return matches
 
 
@@ -58,7 +60,8 @@ def set_conf_mat_from_result(
         iou_thresholds,
         nms_iou_thresh,
         ignore_other_instances,
-        no_probability):
+        no_probability,
+        by_source):
     ignored_instances_ret = []
     ignored_cnt = 0
 
@@ -77,7 +80,7 @@ def set_conf_mat_from_result(
         conf_scores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
 
     matches = match_gt_and_det_bboxes(result['gt_labels'], det_results)
-
+    print(matches['iou'])
     if len(task_result) == 0:
         return conf_mat, ignored_instances_ret, ignored_cnt
     for i_iou_th, iou_th in enumerate(iou_thresholds):

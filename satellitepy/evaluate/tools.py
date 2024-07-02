@@ -23,7 +23,8 @@ def calculate_map(
         plot_pr,
         nms_iou_thresh,
         ignore_other_instances=False,
-        no_probability=False):
+        no_probability=False,
+        by_source=False):
 
     logger = logging.getLogger('')
 
@@ -51,7 +52,8 @@ def calculate_map(
             iou_thresholds,
             nms_iou_thresh,
             ignore_other_instances,
-            no_probability)
+            no_probability,
+            by_source)
 
         ignored_instances += ignored_instances_ret
         ignored_cnt += ignored_cnt_ret
