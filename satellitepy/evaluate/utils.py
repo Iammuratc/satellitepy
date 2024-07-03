@@ -10,7 +10,10 @@ from tqdm import tqdm
 from satellitepy.data.utils import get_task_dict, get_satellitepy_dict_values
 
 
-def match_gt_and_det_bboxes(gt_labels, det_labels):
+logger = logging.getLogger('')
+
+
+def match_gt_and_det_bboxes(gt_labels, det_labels, by_source=False):
     """
     Match ground truth and detected bboxes
     Get the matching indexes and store iou scores
@@ -27,8 +30,9 @@ def match_gt_and_det_bboxes(gt_labels, det_labels):
             'scores' :  Highest value of matching bboxes of gt and det
             'indexes' : Matching index of det label. The order of the labels in 'indexes' is the same as
                         the det_labels['bboxes'] order, and the value is the index in gt_labels['bboxes'].
+            'sources' : Annotation sources
     """
-    matches = {'iou': {'scores': [], 'indexes': []}}
+    matches = {'iou': {'scores': [], 'indexes': [], 'sources': []}}
 
     if gt_labels is None:
         return matches
@@ -46,6 +50,7 @@ def match_gt_and_det_bboxes(gt_labels, det_labels):
 
         matches['iou']['scores'].append(iou_score.item())
         matches['iou']['indexes'].append(bbox_ind_gt.item())
+        matches['iou']['sources'].append(gt_labels['source'][bbox_ind_gt.item()])
     return matches
 
 
@@ -53,20 +58,26 @@ def set_conf_mat_from_result(
         conf_mat,
         task,
         result,
-        instance_names,
+        instance_dict,
         conf_score_thresholds,
         iou_thresholds,
         nms_iou_thresh,
         ignore_other_instances,
-        no_probability):
+        no_probability,
+        by_source):
+    
+
+    instance_names = list(instance_dict.keys())
+
     ignored_instances_ret = []
     ignored_cnt = 0
 
-    task_dict = get_task_dict(task)
-    idx2name = {v: k for k, v in task_dict.items()}
+    # task_dict = get_task_dict(task)
+    idx2name = {v: k for k, v in instance_dict.items()}
     task_result = get_satellitepy_dict_values(result['gt_labels'], task)
 
     result = remove_low_conf_results(result, task, conf_score_thresholds[0], no_probability)
+
     det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=task, no_probability=no_probability)
 
     if no_probability:
@@ -77,7 +88,6 @@ def set_conf_mat_from_result(
         conf_scores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
 
     matches = match_gt_and_det_bboxes(result['gt_labels'], det_results)
-
     if len(task_result) == 0:
         return conf_mat, ignored_instances_ret, ignored_cnt
     for i_iou_th, iou_th in enumerate(iou_thresholds):
@@ -100,7 +110,6 @@ def set_conf_mat_from_result(
                     continue
 
                 det_name = str(idx2name[det_inds[i_conf_score]])
-
                 if ignore_other_instances and det_name not in instance_names:
                     ignored_cnt += 1
                     ignored_instances_ret.append(det_name)
@@ -110,21 +119,19 @@ def set_conf_mat_from_result(
 
                 det_gt_instance_name = 'Background' if str(
                     det_gt_instance_name) not in instance_names else det_gt_instance_name
-                det_gt_index = instance_names.index(str(det_gt_instance_name))
+                det_gt_index = instance_dict[str(det_gt_instance_name)]
 
-                det_index = instance_names.index(det_name)
+                det_index = instance_dict[det_name]
                 conf_mat[i_iou_th, i_conf_score_th, det_gt_index, det_index] += 1
 
-            undet_gt_bbox_indices = set(range(len(task_result))) - set(det_gt_bbox_indices)
+            undet_gt_bbox_indices = set(range(len(result['gt_labels'][task]))) - set(det_gt_bbox_indices)
+            for undet_gt_bbox_ind in list(undet_gt_bbox_indices):
+                undet_gt_instance_name = result['gt_labels'][task][undet_gt_bbox_ind]
+                if undet_gt_instance_name not in instance_names:
+                    undet_gt_instance_name = 'Background'
+                undet_gt_index = instance_dict[undet_gt_instance_name]
 
-            for undet_gt_bbox_ind in undet_gt_bbox_indices:
-                undet_gt_instance_name = task_result[undet_gt_bbox_ind]
-
-                undet_gt_instance_name = 'Background' if str(
-                    undet_gt_instance_name) not in instance_names else undet_gt_instance_name
-                undet_gt_index = instance_names.index(str(undet_gt_instance_name))
-
-                conf_mat[i_iou_th, i_conf_score_th, undet_gt_index, instance_names.index('Background')] += 1
+                conf_mat[i_iou_th, i_conf_score_th, undet_gt_index, instance_dict['Background']] += 1
 
     return conf_mat, ignored_instances_ret, ignored_cnt
 
@@ -288,7 +295,6 @@ def remove_low_conf_results(results, task, conf_score, no_probability):
 
 
 def get_instance_names(in_label_path, task):
-    logger = logging.getLogger('')
     logger.info('Infering instances based on ground truth labels.')
 
     label_paths = get_file_paths(in_label_path)

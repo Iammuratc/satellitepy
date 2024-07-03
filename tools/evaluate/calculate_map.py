@@ -10,7 +10,7 @@ import logging
 from satellitepy.evaluate.tools import calculate_map
 from satellitepy.evaluate.utils import get_instance_names
 from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config
-
+from satellitepy.data.utils import get_satellitepy_table
 
 def get_args():
     """Arguments parser."""
@@ -26,8 +26,7 @@ def get_args():
                                                            'added automatically. All other instance names (e.g., '
                                                            'bridge), that are not defined here but in the result '
                                                            'files, will be treated as Background.')
-    parser.add_argument('--ignore-other-instances', default=False, type=bool,
-                        help='Ignores instances not in instance names if set. Default is False.')
+    parser.add_argument('--ignore-other-instances', action='store_true', help='If True, ignore instances not in instance names.')
     parser.add_argument('--confidence-score-thresholds', default=None, type=str, help='Confidence score threshold. If '
                                                                                       'the detected object has a '
                                                                                       'lower confidence score than '
@@ -40,10 +39,11 @@ def get_args():
         help='If True, results already consist of max values of probabilities,' 
             'i.e., shape is [N,1], where, N number of instances.'
             'By default, each instance will have a probability of each class, shape is [N,C], where C number of classes.')
-    parser.add_argument('--plot-pr', default=False, type=bool, help='Plot the PR curve.')
+    parser.add_argument('--plot-pr', action='store_true', help='Plot the PR curve.')
     parser.add_argument('--nms-iou-thresh', type=float, default=0.3,
                         help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed '
                              'according to this value.')
+    parser.add_argument('--by-source', action='store_true', help='If True, the calculations will be done for each annotation source.')
     parser.add_argument('--log-config-path', default=None, help='Log config file.')
     parser.add_argument('--log-path', default=None, help='Log will be saved here.')
     return parser
@@ -71,7 +71,9 @@ def main(parser):
     in_result_folder = Path(args.in_result_folder)
     task = args.task
 
-    instance_names = [instance_name for instance_name in args.instance_names.split(',')] if args.instance_names is not None else get_instance_names(in_result_folder, task)
+    # instance_names = [instance_name for instance_name in args.instance_names.split(',')] if args.instance_names is not None else get_instance_names(in_result_folder, task)
+    instance_dict = get_satellitepy_table()[task]
+    # print(instance_names)
     ignore_other_instances = args.ignore_other_instances
     iou_thresholds = [float(iou_threshold) for iou_threshold in
                       args.iou_thresholds.split(',')] if args.iou_thresholds is not None else [x / 100.0 for x in
@@ -90,14 +92,15 @@ def main(parser):
     calculate_map(
         in_result_folder,
         task,
-        instance_names,
+        instance_dict,
         conf_score_thresholds,
         iou_thresholds,
         out_folder,
         plot_pr,
         nms_iou_thresh,
         ignore_other_instances,
-        no_probability=args.no_probability
+        no_probability=args.no_probability,
+        by_source=args.by_source
     )
 
 

@@ -67,78 +67,91 @@ def fix_naming(in_label_folder,logger,out_label_folder):
             # List the naming changes here:
             if fgc=='CRJ' and ftgc=='900LR':
                 label["properties"]["Type"] = 'CRJ-900'
-                label["properties"]["SubType"] = 'LR'
+                label["properties"]["Subtype"] = 'LR'
             elif fgc=='CRJ' and ftgc=='900ER':
                 label["properties"]["Type"] = 'CRJ-900'
-                label["properties"]["SubType"] = 'ER'
+                label["properties"]["Subtype"] = 'ER'
             elif fgc=='CRJ' and ftgc=='900':
                 label["properties"]["Type"] = 'CRJ-900'
-                label["properties"]["SubType"] = None
+                label["properties"]["Subtype"] = None
             elif fgc=='CRJ9' and ftgc=='LR':
                 label["properties"]["Type"] = 'CRJ-900'
-                label["properties"]["SubType"] = 'LR'
+                label["properties"]["Subtype"] = 'LR'
             elif fgc=='CRJ9' and ftgc==None:
                 label["properties"]["Type"] = 'CRJ-900'
-                label["properties"]["SubType"] = None
+                label["properties"]["Subtype"] = None
             elif fgc=='CRJ' and ftgc=='701ER':
                 label["properties"]["Type"] = 'CRJ-700'
-                label["properties"]["SubType"] = '701ER'
+                label["properties"]["Subtype"] = '701ER'
             elif fgc=='CRJ7' and ftgc=='500':
                 label["properties"]["Type"] = 'CRJ-700'
-                label["properties"]["SubType"] = '500'
+                label["properties"]["Subtype"] = '500'
             elif fgc=='CRJ7' and ftgc=='SE':
                 label["properties"]["Type"] = 'CRJ-700'
-                label["properties"]["SubType"] = 'SE'
+                label["properties"]["Subtype"] = 'SE'
             elif fgc=='CRJ' and ftgc=='550':
                 label["properties"]["Type"] = 'CRJ-550'
-                label["properties"]["SubType"] = None
+                label["properties"]["Subtype"] = None
             elif fgc=='CRJ' and ftgc=='200LR':
                 label["properties"]["Type"] = 'CRJ-200'
-                label["properties"]["SubType"] = 'LR'
+                label["properties"]["Subtype"] = 'LR'
             elif fgc=='CRJ' and ftgc=='200ER':
                 label["properties"]["Type"] = 'CRJ-200'
-                label["properties"]["SubType"] = 'ER'
+                label["properties"]["Subtype"] = 'ER'
             elif fgc=='CRJ' and ftgc=='200':
                 label["properties"]["Type"] = 'CRJ-200'
-                label["properties"]["SubType"] = None
+                label["properties"]["Subtype"] = None
             elif fgc=='CRJ2' and ftgc=='200LR':
                 label["properties"]["Type"] = 'CRJ-200'
-                label["properties"]["SubType"] = 'LR'
+                label["properties"]["Subtype"] = 'LR'
             elif fgc=='CRJ2' and ftgc==None:
                 label["properties"]["Type"] = 'CRJ-200'
-                label["properties"]["SubType"] = None
+                label["properties"]["Subtype"] = None
             elif fgc=='CRJ' and ftgc=='1000':
                 label["properties"]["Type"] = 'CRJ-1000'
-                label["properties"]["SubType"] = None
+                label["properties"]["Subtype"] = None
             ############
+            elif fgc=='ERJ' and ftgc=='135':
+                label["properties"]["Type"] = 'E135'
+                label["properties"]["Subtype"] = None
             elif fgc=='ERJ' and ftgc=='145XR':
                 label["properties"]["Type"] = 'E145'
-                label["properties"]["SubType"] = 'XR'
+                label["properties"]["Subtype"] = 'XR'
             elif fgc=='ERJ' and ftgc=='145':
                 label["properties"]["Type"] = 'E145'
-                label["properties"]["SubType"] = None
+                label["properties"]["Subtype"] = None
             elif fgc=='ERJ' and ftgc==None:
                 logger.error('FIX THIS LATER!')  
                 label["properties"]["Type"] = 'E145'
-                label["properties"]["SubType"] = None
+                label["properties"]["Subtype"] = None
             elif fgc=='R175' and ftgc=='LR':
                 label["properties"]["Type"] = 'E175'
-                label["properties"]["SubType"] = 'LR'
+                label["properties"]["Subtype"] = 'LR'
             ############
             elif fgc=='Cessna' and ftgc=='560':
                 label["properties"]["Type"] = 'Cessna560'
-                label["properties"]["SubType"] = None
+                label["properties"]["Subtype"] = None
             ###########
             elif fgc=='B752' and ftgc=='232':
                 label["properties"]["Type"] = 'B757'
-                label["properties"]["SubType"] = '232'
+                label["properties"]["Subtype"] = '232'
             ###########
             elif fgc=='Beechcraft' and ftgc=='400XP':
                 label["properties"]["Type"] = 'BE40'
-                label["properties"]["SubType"] = '400XP'
+                label["properties"]["Subtype"] = '400XP'
+            ###########
             elif fgc=='Bombardier Global' and ftgc=='6000':
                 label["properties"]["Type"] = 'Bombardier-Global'
-                label["properties"]["SubType"] = '6000'
+                label["properties"]["Subtype"] = '6000'
+            elif fgc=='GLEX' and ftgc=='6000':
+                label["properties"]["Type"] = 'Bombardier-Global'
+                label["properties"]["Subtype"] = '6000'
+            elif fgc=='Global' and ftgc=='5500':
+                label["properties"]["Type"] = 'Bombardier-Global'
+                label["properties"]["Subtype"] = '5500'
+            elif fgc=='Global' and ftgc=='6500':
+                label["properties"]["Type"] = 'Bombardier-Global'
+                label["properties"]["Subtype"] = '6500'
                 
 
         ## Save the new labels

@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-from satellitepy.data.utils import get_satellitepy_dict_values
+from satellitepy.data.utils import get_satellitepy_dict_values, remove_repetitive_values
 from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import get_file_paths
 import logging
@@ -12,30 +12,43 @@ from satellitepy.evaluate.utils import set_conf_mat_from_result, get_precision_r
 from tqdm import tqdm
 from satellitepy.evaluate.bbavector.utils import apply_nms
 
+logger = logging.getLogger('')
 
 def calculate_map(
         in_result_folder,
         task,
-        instance_names,
+        instance_dict,
         conf_score_thresholds,
         iou_thresholds,
         out_folder,
         plot_pr,
         nms_iou_thresh,
         ignore_other_instances=False,
-        no_probability=False):
+        no_probability=False,
+        by_source=False):
+    '''
+    instance_dict : dict
+        Dictionary of class names with indices.
+    '''
 
-    logger = logging.getLogger('')
 
-    instance_names = instance_names + ['Background']
+    instance_dict['Background'] = len(set(instance_dict.values())) # Set background an index
+    background_index = instance_dict['Background']
+    logger.info(f'Background added to the index {background_index}')
+
+    instance_names = list(instance_dict.keys())
+    instance_indices = set(instance_dict.values()) 
+    
 
     conf_mat = np.zeros(
-        shape=(len(iou_thresholds), len(conf_score_thresholds), len(instance_names), len(instance_names)))
+        shape=(len(iou_thresholds), len(conf_score_thresholds), len(instance_indices), len(instance_indices)))
 
     result_paths = get_file_paths(in_result_folder)
 
     ignored_instances = []
     ignored_cnt = 0
+
+    gt_instance_names = [] # Store all instance names in ground truth to filter the AP values later
 
     for result_path in tqdm(result_paths):
         if result_path.suffix != '.json':
@@ -46,33 +59,46 @@ def calculate_map(
             conf_mat,
             task,
             result,
-            instance_names,
+            instance_dict,
             conf_score_thresholds,
             iou_thresholds,
             nms_iou_thresh,
             ignore_other_instances,
-            no_probability)
-
+            no_probability,
+            by_source)
+        for instance_name in result['gt_labels'][task]:
+            gt_instance_names.append(instance_name)
         ignored_instances += ignored_instances_ret
         ignored_cnt += ignored_cnt_ret
 
+    gt_instance_names = list(set(gt_instance_names))
     pr_threshold_ind = 0
     precision, recall = get_precision_recall(conf_mat, sort_values=True)
+    ap = get_average_precision(precision, recall)
+    mAP = np.sum(np.transpose(np.transpose(ap)[:-1]), axis=1) / (len(ap[0]) - 1)
+
+    if plot_pr:
+        precision_recall_curve(out_folder, precision[pr_threshold_ind, :], recall[pr_threshold_ind, :])
+
     with np.printoptions(threshold=np.inf):
         logger.info('AP')
-        ap = get_average_precision(precision, recall)
         logger.info('Instance names')
         logger.info(instance_names)
         logger.info(ap)
         logger.info('mAP')
-        mAP = np.sum(np.transpose(np.transpose(ap)[:-1]), axis=1) / (len(ap[0]) - 1)
         logger.info(mAP)
         if ignore_other_instances:
             logger.info(f'ignored {ignored_cnt} other instances. Ignored instance names: {set(ignored_instances)}')
 
+        # Remove the instances that are not in ground truth
+        instance_dict = {key:value for key,value in instance_dict.items() if key in gt_instance_names+ ['Background']}
+        ## Remove repetitive indices for printing
+        instance_dict = remove_repetitive_values(instance_dict)
+        instance_names = list(instance_dict.keys())
+        ap_50_filtered = [ap[0][ind] for ind in instance_dict.values()]
         # Print AP_50 with the sorted instance names for articles/papers by assuming that iou_thresholds[0]=0.5
         logger.info(f'AP results at {iou_thresholds[0]}')
-        sorted_instance_names,ap_50 = expand_sort_lists(instance_names,ap[0])
+        sorted_instance_names,ap_50 = expand_sort_lists(instance_names,ap_50_filtered)
 
         logger.info(sorted_instance_names)
         logger.info(ap_50)
@@ -81,12 +107,17 @@ def calculate_map(
             np.savetxt(file, ap, fmt='%.2f', delimiter=',',
                        header=f'AP (Columns: {instance_names}, Rows: IoUs {iou_thresholds}):')
             np.savetxt(file, [mAP], fmt='%.2f', delimiter='\t', header=f'mAP (Columns: {iou_thresholds}):')
-            np.savetxt(file, [sorted_instance_names], fmt='%s', delimiter='\t',header=f'AP{iou_thresholds[0]}):')
-            np.savetxt(file, [ap_50], fmt='%.2f', delimiter='\t')
+            np.savetxt(file, [sorted_instance_names], fmt='%s', delimiter=',',header=f'AP{iou_thresholds[0]}):')
+            np.savetxt(file, [ap_50], fmt='%.2f', delimiter=',')
+            conf_mat_iou_th = 0.5
+            conf_mat_conf_sc_th = 0
+
+            conf_mat_iou_th_ind = iou_thresholds.index(conf_mat_iou_th)
+            conf_mat_conf_sc_ind = conf_score_thresholds.index(conf_mat_conf_sc_th)
+
+            np.savetxt(file, conf_mat[conf_mat_iou_th_ind][conf_mat_conf_sc_ind], fmt='%.2f', delimiter=',',header=f'Confusion matrix (IoU={conf_mat_iou_th}, Conf. Score={conf_mat_conf_sc_th})')
         logger.info(f'AP calculations are saved into: {evaluation_file_path}')
 
-    if plot_pr:
-        precision_recall_curve(out_folder, precision[pr_threshold_ind, :], recall[pr_threshold_ind, :])
 
     return mAP
 
