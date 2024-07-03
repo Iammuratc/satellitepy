@@ -9,6 +9,7 @@ from satellitepy.evaluate.utils import get_ious
 from mmdet.apis.inference import init_detector, inference_detector
 from mmcv.ops import nms_rotated
 
+logger = logging.getLogger('')
 
 def get_result(
         img,
@@ -40,7 +41,6 @@ def get_result(
         result : dict
             Detected bounding box with their corresponding ground truth and IOU values 
     """
-    logger = logging.getLogger('')
 
     mmrotate_result = inference_detector(mmrotate_model, img)
 

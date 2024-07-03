@@ -8,6 +8,23 @@ from satellitepy.data.bbox import BBox
 
 logger = logging.getLogger('')
 
+
+def remove_repetitive_values(dict_with_indices):
+    '''
+    Remove the items from the dict with repetitive values
+    {'a':1,'b':2,'c':1} >> {'a': 1, 'b': 2} 
+    '''
+    seen_values = set()
+    filtered_dict = {}
+
+    for key, value in dict_with_indices.items():
+        if value not in seen_values:
+            filtered_dict[key] = value
+            seen_values.add(value)
+
+    return filtered_dict
+
+
 def rescale_labels(labels,rescaling):
     '''
     Rescale the tasks obboxes, hbooxes and masks, if defined.
