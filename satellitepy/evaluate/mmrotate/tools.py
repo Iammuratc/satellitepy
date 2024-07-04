@@ -6,6 +6,8 @@ from satellitepy.data.labels import read_label
 from satellitepy.evaluate.mmrotate.utils import *
 from satellitepy.utils.path_utils import create_folder, get_file_paths, is_file_names_match
 from satellitepy.data.patch import get_patches, merge_patch_results
+from satellitepy.data.utils import read_img
+
 
 
 def save_mmrotate_patch_results(
@@ -93,8 +95,8 @@ def save_mmrotate_original_results(
         patch_overlap,
         truncated_object_thr,
         class_names,
-        task_name
-):
+        task_name,
+        image_read_module):
     """
     Pass original images to a mmrotate model and save the detected bounding boxes in satellitepy dict format
     Parameters
@@ -143,7 +145,8 @@ def save_mmrotate_original_results(
             logger.error('Label and image names do not match!')
             exit(1)
 
-        img = mmcv.imread(img_path)
+        img = read_img(str(img_path), module=image_read_module)
+
         gt_labels = read_label(label_path, in_label_format)
 
         patch_dict = get_patches(
@@ -163,7 +166,7 @@ def save_mmrotate_original_results(
             patch_dict['det_labels'].append(det_label)
 
         merged_det_labels, mask = merge_patch_results(patch_dict, patch_size, shape=img.shape[0:2])
-        matches = match_gt_and_det_bboxes(gt_labels, merged_det_labels)
+        matches = mmrotate_match_gt_and_det_bboxes(gt_labels, merged_det_labels)
 
         result = {
             'gt_labels': gt_labels,

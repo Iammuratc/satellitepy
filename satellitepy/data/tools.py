@@ -550,9 +550,11 @@ def show_results_on_image(img_dir,
                           tasks,
                           target_task,
                           all_tasks_flag,
+                          image_read_module,
                           iou_th=0.5,
                           conf_th=0.5,
-                          no_probability=False):
+                          no_probability=False,
+):
     """
     Visualize results on images
     """
@@ -562,7 +564,7 @@ def show_results_on_image(img_dir,
     mask_paths = get_file_paths(mask_dir) if mask_dir else [None] * len(img_paths)
     assert len(img_paths) == len(label_paths) == len(mask_paths)
     for img_path, label_path, mask_path in tqdm(zip(img_paths, label_paths, mask_paths), total=len(img_paths)):
-        img = cv2.imread(str(img_path))
+        img = read_img(str(img_path), module=image_read_module)
         results = read_label(label_path, label_format='satellitepy')
 
         if len(results['det_labels'][target_task]) == 0:

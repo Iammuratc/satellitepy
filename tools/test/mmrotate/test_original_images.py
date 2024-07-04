@@ -52,6 +52,8 @@ def get_args():
                         required=True,
                         help='Save folder of detected bounding boxes. Bounding box labels will be saved into '
                              '<out-folder>/results/original_labels.')
+    parser.add_argument('--image-read-module', type=str, default='cv2',
+                        help='This module will be used to read the image. rasterio is suggested for large TIF images.')
     args = parser.parse_args()
     return args
 
@@ -73,12 +75,13 @@ def main(args):
     truncated_object_thr = args.truncated_object_thr
     class_names = [class_name for class_name in args.class_names.split(',')]
     task_name = args.task_name
+    image_read_module=args.image_read_module
 
     assert create_folder(out_folder)
 
-    init_logger(config_path=log_config_path, log_path=get_default_log_path('original_results'))
-    logger = logging.getLogger('')
-    logger.info('MMRotate model will process the images...')
+    # init_logger(config_path=log_config_path, log_path=get_default_log_path('original_results'))
+    # logger = logging.getLogger('')
+    # logger.info('MMRotate model will process the images...')
 
     save_mmrotate_original_results(
         in_image_folder=in_image_folder,
@@ -93,7 +96,8 @@ def main(args):
         patch_overlap=patch_overlap,
         truncated_object_thr=truncated_object_thr,
         class_names=class_names,
-        task_name=task_name)
+        task_name=task_name,
+        image_read_module=image_read_module)
 
 
 if __name__ == '__main__':
