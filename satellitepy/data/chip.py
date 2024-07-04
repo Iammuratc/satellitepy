@@ -82,7 +82,7 @@ def get_chips(img, labels, task=None, margin_size=50):
     for i, bbox in enumerate(bboxes):
         mbbox = np.array(bbox).astype(int)
 
-        chip_img, center = create_chip(img, mbbox, margin_size, draw_corners=True)
+        chip_img, center = create_chip(img, mbbox, margin_size, draw_corners=False)
 
         set_image_keys(all_satellitepy_keys, chips_dict['labels'], labels, i)
 
