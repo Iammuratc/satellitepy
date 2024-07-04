@@ -401,7 +401,7 @@ def save_chips(
                     continue
 
                 chip_label = get_label_by_idx(chips['labels'], i)
-                chip_label_path = out_folder_labels / f'{img_name}_{i}.txt'
+                chip_label_path = out_folder_labels / f'{img_name}_{i}.json'
 
                 with open(str(chip_label_path), 'w') as f:
                     json.dump(chip_label, f, indent=4)
