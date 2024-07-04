@@ -20,16 +20,10 @@ def get_args():
     parser.add_argument('--out-folder', type=Path, required=True,
                         help='Save folder for chips. Images will be saved in <output-folder>/images and corresponding '
                              'labels in <output-folder>/labels')
-    parser.add_argument('--margin-size', type=int, required=True,
+    parser.add_argument('--margin-size', type=int, required=False, default=50,
                         help='Margin size of the chip to be created.')
     parser.add_argument('--log-config-path', default=project_folder /
                         Path("configs/log.config"), type=Path, help='Log config file.')
-    parser.add_argument('--include-object-classes', nargs="*", type=str, default=None,
-                        help='A list of object class names that shall be included. Ignores all other object classes '
-                             'if not None. Takes precedence over --exclude-object-classes.')
-    parser.add_argument('--exclude-object-classes', nargs="*", type=str, default=None,
-                        help='A list of object class names that shall be excluded. Includes all other object classes. '
-                             'Overriden by --include-object-classes if set.')
     parser.add_argument('--in-mask-folder', type=Path, required=False,
                         help='Folder of original mask images. The mask images in this folder will be used to set mask '
                              'pixel coordinates in out labels.')
@@ -50,9 +44,6 @@ def run(args):
 
     out_folder = Path(args.out_folder)
 
-    include_object_classes = list(args.include_object_classes) if args.include_object_classes is not None else None
-    exclude_object_classes = list(args.exclude_object_classes) if args.exclude_object_classes is not None else None
-
     margin_size = int(args.margin_size)
 
     assert create_folder(out_folder)
@@ -71,8 +62,6 @@ def run(args):
         label_folder=in_label_folder,
         out_folder=out_folder,
         margin_size=margin_size,
-        include_object_classes=include_object_classes,
-        exclude_object_classes=exclude_object_classes,
         mask_folder=in_mask_folder
     )
 

@@ -4,7 +4,6 @@ Toolset for creating chips
 import math
 
 import cv2
-import numpy
 import numpy as np
 from satellitepy.data.bbox import BBox
 from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
@@ -28,7 +27,6 @@ def create_chip(img, bbox, margin=0, draw_corners=False):
     M = cv2.getRotationMatrix2D(center, math.degrees(angle)-90, 1.0)
     rotated = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]))
     width, height, _ = rotated.shape
-
     rot_bbox = np.array(BBox(corners=bbox).rotate_corners(-angle), dtype=int)
     rot_hbbox = BBox.get_bbox_limits(rot_bbox)
 
@@ -45,8 +43,20 @@ def apply_margin(hbbox, margin_size, max_y, max_x):
     y_0 = min(max(hbbox[2] - margin_size, 0), max_y)
     y_1 = min(max(hbbox[3] + margin_size, 0), max_y)
 
+    x_0, x_1 = adjust_line_length(x_0, x_1, 128)
+    y_0, y_1 = adjust_line_length(y_0, y_1, 128)
+    
     return np.array([x_0, x_1, y_0, y_1])
 
+def adjust_line_length(x1, x2, desired_length): 
+    center = (x1 + x2) / 2
+    half_desired_length = desired_length / 2
+    
+    # Calculate the new points while keeping the center fixed
+    new_x1 = center - half_desired_length
+    new_x2 = center + half_desired_length
+    
+    return int(new_x1), int(new_x2)
 
 def get_chips(img, labels, task=None, margin_size=50):
     all_satellitepy_keys = get_all_satellitepy_keys()

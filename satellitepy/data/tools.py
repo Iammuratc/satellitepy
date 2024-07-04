@@ -340,8 +340,6 @@ def save_chips(
         label_folder,
         out_folder,
         margin_size,
-        include_object_classes,
-        exclude_object_classes,
         mask_folder=None
 ):
     """
@@ -382,16 +380,16 @@ def save_chips(
         for img_path, label_path, mask_path in zip(image_paths, label_paths, mask_paths):
             img = cv2.imread(str(img_path))
             label = read_label(label_path, label_format, mask_path)
-
+           
             chips = get_chips(
                 img,
                 label,
-                margin_size
+                margin_size=margin_size
             )
-
+            
             count_chips = len(chips['images'])
             img_name = img_path.stem
-
+            
             for i in range(count_chips):
 
                 chip_img_path = out_folder_images / f'{img_name}_{i}.png'
