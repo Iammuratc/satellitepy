@@ -340,7 +340,11 @@ def save_chips(
         label_folder,
         out_folder,
         margin_size,
-        mask_folder=None
+        chip_size,
+        mask_folder,
+        img_read_module,
+        rescaling,
+        interpolation_method
 ):
     """
     Save chips from the original images
@@ -354,10 +358,8 @@ def save_chips(
         Input label folder. Labels in this folder will be used to create patch labels.
     out_folder : Path
         Output folder. Patches and corresponding labels will be saved into <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
-    include_object_classes : list
-        Classes that will be saved,
-    exclude_object_classes : list
-        Classes that wont be saved
+    chip_size : int
+        Chip size of chip_size * chip_size will be created.
     mask_folder : Path
         Input mask folder. Masks in this folder will be used to create chip masks
     Returns
@@ -376,27 +378,33 @@ def save_chips(
     else:
         mask_paths = [None] * len(image_paths)
 
+    chip_counter = [0,0] # per folder, per image
     if len(image_paths) == len(label_paths) == len(mask_paths):
         for img_path, label_path, mask_path in zip(image_paths, label_paths, mask_paths):
-            img = cv2.imread(str(img_path))
+            chip_counter[1] = 0
+            logger.info(f"Reading the image: {img_path}")
+            img = read_img(str(img_path), img_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
+            logger.info(f"Image read successfull!")
             label = read_label(label_path, label_format, mask_path)
            
             chips = get_chips(
                 img,
                 label,
-                margin_size=margin_size
+                margin_size=margin_size,
+                chip_size=chip_size
             )
             
             count_chips = len(chips['images'])
             img_name = img_path.stem
-            
             for i in range(count_chips):
 
-                chip_img_path = out_folder_images / f'{img_name}_{i}.png'
                 chip_img = chips['images'][i]
 
                 if not chip_img.size == 0:
+                    chip_img_path = out_folder_images / f'{img_name}_{i}.png'
                     cv2.imwrite(str(chip_img_path), chip_img)
+                    chip_counter[0] += 1
+                    chip_counter[1] += 1
                 else:
                     continue
 
@@ -405,8 +413,8 @@ def save_chips(
 
                 with open(str(chip_label_path), 'w') as f:
                     json.dump(chip_label, f, indent=4)
-
-
+            logger.info(f"{img_path.stem} has {chip_counter[1]} chips.")
+        logger.info(f"{chip_counter[0]} chips are saved in total!")
 def get_label_by_idx(satpy_labels: dict, i: int):
     """
     Creates a copy of the satpy_labels dict by doing the following:

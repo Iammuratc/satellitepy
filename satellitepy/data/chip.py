@@ -9,7 +9,7 @@ from satellitepy.data.bbox import BBox
 from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
 
 
-def create_chip(img, bbox, margin=0, draw_corners=False):
+def create_chip(img, bbox, chip_size, margin=0, draw_corners=False):
     center_x = np.mean(bbox[:, 0])
     center_y = np.mean(bbox[:, 1])
     angle = BBox(corners=bbox).get_orth_angle()
@@ -30,21 +30,21 @@ def create_chip(img, bbox, margin=0, draw_corners=False):
     rot_bbox = np.array(BBox(corners=bbox).rotate_corners(-angle), dtype=int)
     rot_hbbox = BBox.get_bbox_limits(rot_bbox)
 
-    rot_hbbox = apply_margin(rot_hbbox, margin, height, width)
+    rot_hbbox = apply_margin(rot_hbbox, margin, height, width, chip_size)
 
     chip_img = rotated[rot_hbbox[2]:rot_hbbox[3], rot_hbbox[0]:rot_hbbox[1], :]
 
     return chip_img, (int(center_x), int(center_y))
 
 
-def apply_margin(hbbox, margin_size, max_y, max_x):
+def apply_margin(hbbox, margin_size, max_y, max_x, chip_size):
     x_0 = min(max(hbbox[0] - margin_size, 0), max_x)
     x_1 = min(max(hbbox[1] + margin_size, 0), max_x)
     y_0 = min(max(hbbox[2] - margin_size, 0), max_y)
     y_1 = min(max(hbbox[3] + margin_size, 0), max_y)
 
-    x_0, x_1 = adjust_line_length(x_0, x_1, 128)
-    y_0, y_1 = adjust_line_length(y_0, y_1, 128)
+    x_0, x_1 = adjust_line_length(x_0, x_1, chip_size)
+    y_0, y_1 = adjust_line_length(y_0, y_1, chip_size)
     
     return np.array([x_0, x_1, y_0, y_1])
 
@@ -58,7 +58,7 @@ def adjust_line_length(x1, x2, desired_length):
     
     return int(new_x1), int(new_x2)
 
-def get_chips(img, labels, task=None, margin_size=50):
+def get_chips(img, labels, task=None, margin_size=50, chip_size=128):
     all_satellitepy_keys = get_all_satellitepy_keys()
 
     chips_dict = {
@@ -80,9 +80,8 @@ def get_chips(img, labels, task=None, margin_size=50):
     bboxes = labels[bbox_type]
 
     for i, bbox in enumerate(bboxes):
-        mbbox = np.array(bbox).astype(int)
 
-        chip_img, center = create_chip(img, mbbox, margin_size, draw_corners=False)
+        chip_img, center = create_chip(img=img, bbox=np.array(bbox).astype(int), chip_size=chip_size, margin=margin_size, draw_corners=False)
 
         set_image_keys(all_satellitepy_keys, chips_dict['labels'], labels, i)
 
