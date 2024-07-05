@@ -95,8 +95,5 @@ def get_chips(img, labels, task=None, margin_size=50, chip_size=128):
         chips_dict['attributes']['lengths'].append(o_length)
         chips_dict['attributes']['widths'].append(o_width)
         chips_dict['images'].append(chip_img)
-
-
-
     return chips_dict
 

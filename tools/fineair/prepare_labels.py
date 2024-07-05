@@ -74,6 +74,8 @@ def set_roles(in_label_folder,role_merge_threshold,logger,out_label_folder):
         for label in labels["features"]:
             label["properties"]["fineairtype"] = None
             fgc = label["properties"]["Type"]
+            role = label["properties"]["Role"]
+
             # ftgc = label["properties"]["Subtype"]
             # print(fgc)
             if fgc is None:
@@ -82,10 +84,20 @@ def set_roles(in_label_folder,role_merge_threshold,logger,out_label_folder):
                 for role, fg_classes in roles.items():
                     if fgc in fg_classes:
                         label["properties"]["fineairtype"] = role
+                        label["properties"]["Role"] = role
                         continue
             else:
                 label["properties"]["fineairtype"] = fgc
+                for role, fg_classes in roles.items():
+                    if fgc in fg_classes:
+                        label["properties"]["Role"] = role
 
+            # if role is None:
+                
+            #         fac = label["properties"]["fineairtype"]
+            #         if fac in fg_classes:
+            #             label["properties"]["Role"] = role
+            #             continue
             ## Check if a fineair class is really assigned
             fineair_class = label["properties"]["fineairtype"] 
             if fineair_class == 'None' or fineair_class is None:
