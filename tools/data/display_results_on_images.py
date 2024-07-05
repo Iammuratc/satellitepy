@@ -43,6 +43,8 @@ def get_args():
     parser.add_argument('--log-config-path', default=project_folder /
                                                      Path("configs/log.config"), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, default=None, help='Log file path.')
+    parser.add_argument('--image-read-module', type=str, default='cv2',
+                        help='This module will be used to read the image. rasterio is suggested for large TIF images.')
     args = parser.parse_args()
     return args
 
@@ -56,6 +58,7 @@ def run(args):
     output_dir = Path(args.out_folder)
     iou_th = args.iou_threshold
     conf_th = args.conf_score_threshold
+    image_read_module = args.image_read_module
 
     assert create_folder(output_dir)
 
@@ -87,7 +90,9 @@ def run(args):
         all_tasks_flag=all_tasks_flag,
         iou_th=iou_th,
         conf_th=conf_th,
-        no_probability=args.no_probability)
+        image_read_module = image_read_module,
+        no_probability=args.no_probability,
+        )
 
 
 if __name__ == '__main__':
