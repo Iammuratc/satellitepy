@@ -36,6 +36,8 @@ def get_args():
     parser.add_argument('--interpolation-method', type=str, default='INTER_LINEAR', 
         help='Interpolation method to scale the images before creating patches. This is used only if rescaling is different than 1.0.',
         choices=['INTER_NEAREST','INTER_LINEAR','INTER_CUBIC','INTER_AREA'])
+    parser.add_argument('--orient-objects',action='store_true', help='Orient the objects in chips')
+    parser.add_argument('--mask-objects',action='store_true', help='Mask the objects in chips. If true, background will be removed in the chips')
     args = parser.parse_args()
     return args
 
@@ -70,7 +72,9 @@ def run(args):
         mask_folder=in_mask_folder,
         img_read_module=args.image_read_module,
         rescaling=args.rescaling,
-        interpolation_method=args.interpolation_method
+        interpolation_method=args.interpolation_method,
+        orient_objects=args.orient_objects,
+        mask_objects=args.mask_objects
     )
 
 

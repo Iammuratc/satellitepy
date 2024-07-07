@@ -344,7 +344,9 @@ def save_chips(
         mask_folder,
         img_read_module,
         rescaling,
-        interpolation_method
+        interpolation_method,
+        orient_objects=False,
+        mask_objects=False,
 ):
     """
     Save chips from the original images
@@ -362,6 +364,8 @@ def save_chips(
         Chip size of chip_size * chip_size will be created.
     mask_folder : Path
         Input mask folder. Masks in this folder will be used to create chip masks
+    orient_objects : boolean
+        If True, Objects in chips will be oriented facing upwards
     Returns
     -------
     """
@@ -386,12 +390,14 @@ def save_chips(
             img = read_img(str(img_path), img_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
             logger.info(f"Image read successfull!")
             label = read_label(label_path, label_format, mask_path)
-           
+
             chips = get_chips(
                 img,
                 label,
                 margin_size=margin_size,
-                chip_size=chip_size
+                chip_size=chip_size,
+                orient_objects=orient_objects,
+                mask_objects=mask_objects
             )
             
             count_chips = len(chips['images'])

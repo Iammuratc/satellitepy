@@ -7,12 +7,15 @@ import cv2
 import numpy as np
 from satellitepy.data.bbox import BBox
 from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
+import logging
+
+logger = logging.getLogger('')
 
 
-def create_chip(img, bbox, chip_size, margin=0, draw_corners=False):
+def create_chip(img, bbox, chip_size, margin=0, draw_corners=False, orient_objects=False, mask_objects=False):
     center_x = np.mean(bbox[:, 0])
     center_y = np.mean(bbox[:, 1])
-    angle = BBox(corners=bbox).get_orth_angle()
+    center = (center_x, center_y)
 
     if draw_corners:
         img = cv2.copyMakeBorder(img, 200, 200, 200, 200, cv2.BORDER_CONSTANT, value=0)
@@ -22,17 +25,20 @@ def create_chip(img, bbox, chip_size, margin=0, draw_corners=False):
         for coords in bbox:
             cv2.circle(img, (coords[0], coords[1]), 1, (0, 0, 255), 2)
 
-    center = (center_x, center_y)
-
-    M = cv2.getRotationMatrix2D(center, math.degrees(angle)-90, 1.0)
-    rotated = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]))
-    width, height, _ = rotated.shape
-    rot_bbox = np.array(BBox(corners=bbox).rotate_corners(-angle), dtype=int)
-    rot_hbbox = BBox.get_bbox_limits(rot_bbox)
-
-    rot_hbbox = apply_margin(rot_hbbox, margin, height, width, chip_size)
-
-    chip_img = rotated[rot_hbbox[2]:rot_hbbox[3], rot_hbbox[0]:rot_hbbox[1], :]
+    if orient_objects:
+        angle = BBox(corners=bbox).get_orth_angle()
+        M = cv2.getRotationMatrix2D(center, math.degrees(angle)-90, 1.0)
+        rotated = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]))
+        width, height, _ = rotated.shape
+        rot_bbox = np.array(BBox(corners=bbox).rotate_corners(-angle), dtype=int)
+        rot_hbbox = BBox.get_bbox_limits(rot_bbox)
+        rot_hbbox = apply_margin(rot_hbbox, margin, height, width, chip_size)
+        chip_img = rotated[rot_hbbox[2]:rot_hbbox[3], rot_hbbox[0]:rot_hbbox[1], :]
+    else:
+        height, width, _ = img.shape
+        bbox_limits = BBox.get_bbox_limits(bbox)
+        hbbox = apply_margin(bbox_limits, margin, height, width, chip_size)
+        chip_img = img[hbbox[2]:hbbox[3], hbbox[0]:hbbox[1], :]
 
     return chip_img, (int(center_x), int(center_y))
 
@@ -58,7 +64,14 @@ def adjust_line_length(x1, x2, desired_length):
     
     return int(new_x1), int(new_x2)
 
-def get_chips(img, labels, task=None, margin_size=50, chip_size=128):
+def get_chips(img, 
+    labels, 
+    task=None, 
+    margin_size=50, 
+    chip_size=128,
+    orient_objects=False,
+    mask_objects=False):
+    
     all_satellitepy_keys = get_all_satellitepy_keys()
 
     chips_dict = {
@@ -78,11 +91,40 @@ def get_chips(img, labels, task=None, margin_size=50, chip_size=128):
         bbox_type = "hbboxes"
 
     bboxes = labels[bbox_type]
-
+    if mask_objects:
+        logger.info("Mask will be applied to the image")
+        mask = np.zeros(shape=(img.shape[0],img.shape[1])).astype(np.uint8)
+        for i, bbox in enumerate(bboxes):
+            cv2.fillPoly(mask, np.array([bbox], dtype=int), 255)
+        img = cv2.bitwise_and(img,img,mask=mask)
+        logger.info("Mask applied successfully!")
+        
     for i, bbox in enumerate(bboxes):
+        chip_img, center = create_chip(img=img, 
+            bbox=np.array(bbox).astype(int), 
+            chip_size=chip_size, 
+            margin=margin_size, 
+            draw_corners=False,
+            orient_objects=orient_objects,
+            mask_objects=mask_objects)
 
-        chip_img, center = create_chip(img=img, bbox=np.array(bbox).astype(int), chip_size=chip_size, margin=margin_size, draw_corners=False)
+        if mask_objects:
+            mask = np.zeros(shape=(chip_img.shape[0],chip_img.shape[1])).astype(np.uint8)
+            mask[chip_img[:,:,0]!=0] = 1
+            # Find all connected components
+            num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
 
+            # Get the image center
+            image_center = (mask.shape[1] // 2, mask.shape[0] // 2)
+
+            # Get the label of the component that includes the center of the image
+            central_label = labels[image_center[1], image_center[0]]
+
+            # Create a mask to keep only the central component
+            mask_middle = (labels == central_label).astype(np.uint8) * 255
+
+            # Zero out other components
+            chip_img = cv2.bitwise_and(chip_img, chip_img, mask=mask_middle)
         set_image_keys(all_satellitepy_keys, chips_dict['labels'], labels, i)
 
         if task:
@@ -95,5 +137,6 @@ def get_chips(img, labels, task=None, margin_size=50, chip_size=128):
         chips_dict['attributes']['lengths'].append(o_length)
         chips_dict['attributes']['widths'].append(o_width)
         chips_dict['images'].append(chip_img)
+    
     return chips_dict
 
