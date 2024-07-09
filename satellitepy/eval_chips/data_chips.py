@@ -1,0 +1,75 @@
+import json
+from glob import glob
+
+import cv2
+import numpy as np
+from torch.utils.data import Dataset, random_split, DataLoader
+from torchvision.transforms.v2 import Compose, ToTensor, Normalize
+from tqdm import tqdm
+
+
+def compute_mean_and_std(chip_paths):
+    mean = np.zeros(3)
+    std = np.zeros(3)
+    num_images = len(chip_paths)
+
+    for path in tqdm(chip_paths, desc='Computing mean and std'):
+        # Load image
+        image = cv2.imread(path, cv2.IMREAD_COLOR)
+        image = np.array(image) / 255.0  # Normalize to [0, 1]
+
+        # Calculate mean and std per channel
+        for i in range(3):
+            mean[i] += image[:, :, i].mean()
+            std[i] += image[:, :, i].std()
+
+    # Calculate the mean and std over all images
+    mean /= num_images
+    std /= num_images
+
+    return mean, std
+
+
+def get_train_val_dataloaders(chip_path, label_path, classes, batch_size, shuffle=True, num_workers=4):
+    dataset = ChipDataset(chip_path, label_path, classes)
+
+    train_dataset, val_dataset = random_split(dataset, [0.8, 0.2])
+
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+
+    return train_dataloader, val_dataloader
+
+
+class ChipDataset(Dataset):
+    def __init__(self, chip_path, label_path, classes, transform=[]):
+        chip_paths = [f for f in sorted(glob(str(chip_path) + "/*.png"))]
+        label_paths = [f for f in sorted(glob(str(label_path) + "/*.json"))]
+
+        self.mean, self.std = compute_mean_and_std(chip_paths)
+
+        self.transform = Compose([ToTensor(), Normalize(self.mean, self.std)] + transform)
+
+        self.classes = classes
+        self.items = list(zip(chip_paths, label_paths))
+
+    def __len__(self):
+        return len(self.items)
+
+    def _preprocess(self, img):
+        return self.transform(img)
+
+    def __getitem__(self, idx):
+        chip_path, label_path = self.items[idx]
+
+        chip = cv2.imread(chip_path, cv2.IMREAD_COLOR)
+        with open(label_path, 'r') as f:
+            file = json.load(f)
+        label_idx = self.classes.index(file['fineair-class'][0])
+
+        label = np.zeros([len(self.classes)])
+        label[label_idx] = 1
+
+        chip = self._preprocess(chip)
+
+        return chip, label
