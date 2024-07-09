@@ -17,8 +17,10 @@ from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, get_file_paths
 from satellitepy.data.bbox import BBox
 from satellitepy.data.utils import get_satellitepy_dict_values
-from satellitepy.evaluate.utils import remove_low_conf_results
+from satellitepy.evaluate.utils import remove_low_conf_results, match_gt_and_det_bboxes
 from satellitepy.evaluate.bbavector.utils import apply_nms
+
+
 
 logger = logging.getLogger('')
 
@@ -339,7 +341,6 @@ def save_chips(
         image_folder,
         label_folder,
         out_folder,
-        margin_size,
         chip_size,
         mask_folder,
         img_read_module,
@@ -394,7 +395,6 @@ def save_chips(
             chips = get_chips(
                 img,
                 label,
-                margin_size=margin_size,
                 chip_size=chip_size,
                 orient_objects=orient_objects,
                 mask_objects=mask_objects
@@ -421,6 +421,7 @@ def save_chips(
                     json.dump(chip_label, f, indent=4)
             logger.info(f"{img_path.stem} has {chip_counter[1]} chips.")
         logger.info(f"{chip_counter[0]} chips are saved in total!")
+        logger.info(f"Chips are saved at: {out_folder}")
 def get_label_by_idx(satpy_labels: dict, i: int):
     """
     Creates a copy of the satpy_labels dict by doing the following:
@@ -585,6 +586,8 @@ def show_results_on_image(img_dir,
 
         results = remove_low_conf_results(results, target_task, conf_th, no_probability)
         results['det_labels'] = apply_nms(results['det_labels'], nms_iou_threshold=iou_th, target_task=target_task, no_probability=no_probability)
+        results['matches'] = match_gt_and_det_bboxes(results['gt_labels'], results['det_labels'])
+
 
         if satellitepy_labels_empty(results):
             continue

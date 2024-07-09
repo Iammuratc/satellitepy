@@ -12,11 +12,47 @@ import logging
 logger = logging.getLogger('')
 
 
-def create_chip(img, bbox, chip_size, margin=0, draw_corners=False, orient_objects=False, mask_objects=False):
+def remove_neighbor_masks(mask):
+    '''
+    Remove the neighboring masks from the mask images.
+    11----1111----1 >> ------1111-----
+    Parameters
+    -----------
+    mask : np.ndarray
+        Binary mask image
+    Returns
+    -------
+    mask_middle : np.ndarray
+        Mask image only with the mask in the center
+    '''
+    # Find all connected components
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    if labels is None:
+        return mask
+    # Get the image center
+    image_center = (mask.shape[1] // 2, mask.shape[0] // 2)
+
+    # Get the label of the component that includes the center of the image
+    central_label = labels[image_center[1], image_center[0]]
+
+    # Create a mask to keep only the central component
+    mask_middle = (labels == central_label).astype(np.uint8) * 255
+
+    # Zero out other components
+    # chip_img = cv2.bitwise_and(chip_img, chip_img, mask=mask_middle)
+    return mask_middle
+
+
+def create_chip(img, mask, bbox, chip_size, draw_corners=False, orient_objects=False):
     center_x = np.mean(bbox[:, 0])
     center_y = np.mean(bbox[:, 1])
     center = (center_x, center_y)
 
+    if (mask is None) or (not np.any(mask)):
+        mask_objects = False
+    else:
+        mask_objects = True
+    # Set chip mask to None
     if draw_corners:
         img = cv2.copyMakeBorder(img, 200, 200, 200, 200, cv2.BORDER_CONSTANT, value=0)
         center_x += 200
@@ -29,30 +65,35 @@ def create_chip(img, bbox, chip_size, margin=0, draw_corners=False, orient_objec
         angle = BBox(corners=bbox).get_orth_angle()
         M = cv2.getRotationMatrix2D(center, math.degrees(angle)-90, 1.0)
         rotated = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]))
-        width, height, _ = rotated.shape
+        max_y, max_x, _ = rotated.shape
         rot_bbox = np.array(BBox(corners=bbox).rotate_corners(-angle), dtype=int)
         rot_hbbox = BBox.get_bbox_limits(rot_bbox)
-        rot_hbbox = apply_margin(rot_hbbox, margin, height, width, chip_size)
+        rot_hbbox = get_chip_coords(rot_hbbox, max_x, max_y, chip_size)
         chip_img = rotated[rot_hbbox[2]:rot_hbbox[3], rot_hbbox[0]:rot_hbbox[1], :]
+        
+        if mask_objects:
+            rotated_mask = cv2.warpAffine(mask, M, (img.shape[1], img.shape[0]))
+            chip_mask = rotated_mask[rot_hbbox[2]:rot_hbbox[3], rot_hbbox[0]:rot_hbbox[1]]
+            chip_mask = remove_neighbor_masks(chip_mask)
+            chip_img = cv2.bitwise_and(chip_img, chip_img, mask=chip_mask)
+
     else:
-        height, width, _ = img.shape
-        bbox_limits = BBox.get_bbox_limits(bbox)
-        hbbox = apply_margin(bbox_limits, margin, height, width, chip_size)
-        chip_img = img[hbbox[2]:hbbox[3], hbbox[0]:hbbox[1], :]
+        max_x, max_y, _ = img.shape
+        chip_coords = get_chip_coords(bbox, max_x, max_y, chip_size)
+        chip_img = img[chip_coords[2]:chip_coords[3], chip_coords[0]:chip_coords[1], :]
+        if mask_objects:
+            chip_mask = mask[chip_coords[2]:chip_coords[3], chip_coords[0]:chip_coords[1]]
+            chip_mask = remove_neighbor_masks(chip_mask)
+            chip_img = cv2.bitwise_and(chip_img, chip_img, mask=chip_mask)
 
     return chip_img, (int(center_x), int(center_y))
 
 
-def apply_margin(hbbox, margin_size, max_y, max_x, chip_size):
-    x_0 = min(max(hbbox[0] - margin_size, 0), max_x)
-    x_1 = min(max(hbbox[1] + margin_size, 0), max_x)
-    y_0 = min(max(hbbox[2] - margin_size, 0), max_y)
-    y_1 = min(max(hbbox[3] + margin_size, 0), max_y)
-
-    x_0, x_1 = adjust_line_length(x_0, x_1, chip_size)
-    y_0, y_1 = adjust_line_length(y_0, y_1, chip_size)
-    
-    return np.array([x_0, x_1, y_0, y_1])
+def get_chip_coords(bbox, max_y, max_x, chip_size):
+    x_c, y_c, _, _, _ = BBox(corners=bbox).params
+    chip_coords = np.array([x_c-chip_size/2, x_c+chip_size/2, y_c-chip_size/2, y_c+chip_size/2]).astype(int)
+    assert any(chip_coords) > 0, "Chip coordinates can not be less than 0."
+    return chip_coords
 
 def adjust_line_length(x1, x2, desired_length): 
     center = (x1 + x2) / 2
@@ -67,7 +108,6 @@ def adjust_line_length(x1, x2, desired_length):
 def get_chips(img, 
     labels, 
     task=None, 
-    margin_size=50, 
     chip_size=128,
     orient_objects=False,
     mask_objects=False):
@@ -85,6 +125,10 @@ def get_chips(img,
         }
     }
 
+    # Pad images, masks and labels to avoid minus values in bbox limits
+    pad_size = int(chip_size/2)
+    pad_width = ((pad_size, pad_size), (pad_size, pad_size), (0, 0)) # y,x,ch
+
     if any(labels['obboxes']):
         bbox_type = "obboxes"
     else:
@@ -96,35 +140,23 @@ def get_chips(img,
         mask = np.zeros(shape=(img.shape[0],img.shape[1])).astype(np.uint8)
         for i, bbox in enumerate(bboxes):
             cv2.fillPoly(mask, np.array([bbox], dtype=int), 255)
-        img = cv2.bitwise_and(img,img,mask=mask)
-        logger.info("Mask applied successfully!")
-        
+        ## Pad mask
+        mask = np.pad(mask, pad_width[:2], mode='constant', constant_values=0)
+    else:
+        mask = None
+    ## Pad image
+    img = np.pad(img, pad_width, mode='constant', constant_values=0)
+
+    ## Pad bboxes
+    bboxes = np.array(bboxes) + np.array([pad_width[1][0], pad_width[0][0]])
     for i, bbox in enumerate(bboxes):
-        chip_img, center = create_chip(img=img, 
+        chip_img, center = create_chip(img=img,
+            mask = mask,
             bbox=np.array(bbox).astype(int), 
             chip_size=chip_size, 
-            margin=margin_size, 
             draw_corners=False,
-            orient_objects=orient_objects,
-            mask_objects=mask_objects)
+            orient_objects=orient_objects)
 
-        if mask_objects:
-            mask = np.zeros(shape=(chip_img.shape[0],chip_img.shape[1])).astype(np.uint8)
-            mask[chip_img[:,:,0]!=0] = 1
-            # Find all connected components
-            num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
-
-            # Get the image center
-            image_center = (mask.shape[1] // 2, mask.shape[0] // 2)
-
-            # Get the label of the component that includes the center of the image
-            central_label = labels[image_center[1], image_center[0]]
-
-            # Create a mask to keep only the central component
-            mask_middle = (labels == central_label).astype(np.uint8) * 255
-
-            # Zero out other components
-            chip_img = cv2.bitwise_and(chip_img, chip_img, mask=mask_middle)
         set_image_keys(all_satellitepy_keys, chips_dict['labels'], labels, i)
 
         if task:

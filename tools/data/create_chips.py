@@ -20,8 +20,6 @@ def get_args():
     parser.add_argument('--out-folder', type=Path, required=True,
                         help='Save folder for chips. Images will be saved in <output-folder>/images and corresponding '
                              'labels in <output-folder>/labels')
-    parser.add_argument('--margin-size', type=int, required=False, default=50,
-                        help='Margin size of the chip to be created.')
     parser.add_argument('--chip-size', type=int, required=False, default=128,
                         help='Chip size.')
     parser.add_argument('--log-config-path', default=project_folder /
@@ -50,7 +48,6 @@ def run(args):
 
     out_folder = Path(args.out_folder)
 
-    margin_size = int(args.margin_size)
 
     assert create_folder(out_folder)
 
@@ -60,14 +57,12 @@ def run(args):
 
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
-    logger.info(f'Saving chips with margin-size: {margin_size}')
 
     save_chips(
         label_format=args.in_label_format,
         image_folder=Path(args.in_image_folder),
         label_folder=Path(args.in_label_folder),
         out_folder=out_folder,
-        margin_size=margin_size,
         chip_size=args.chip_size,
         mask_folder=in_mask_folder,
         img_read_module=args.image_read_module,
