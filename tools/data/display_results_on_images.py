@@ -1,7 +1,7 @@
 import configargparse
 from pathlib import Path
 from satellitepy.data.tools import show_results_on_image
-from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder, get_default_log_path
+from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config, get_project_folder
 import logging
 
 """

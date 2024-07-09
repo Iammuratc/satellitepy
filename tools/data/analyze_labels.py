@@ -4,6 +4,10 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
+import plotly.express as px
+import pandas as pd
+
+
 
 from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, \
     get_default_log_config, get_file_paths
@@ -24,6 +28,7 @@ def get_args():
     parser.add_argument('--log-config-path', default=None, type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, default=None, help='Log file path.')
     parser.add_argument('--plot-bar', action='store_true', help='Bar chart will be displayed')
+    parser.add_argument('--plot-sunburst-bar', action='store_true', help='Sunburst bar chart will be displayed.')
     parser.add_argument('--remove-other', action='store_true', help='If set True, Other will be removed in the bar chart.')
     parser.add_argument('--print-none', action='store_true', help='If True, None values in dict values (e.g., none as the annotation source) will be included.')
     parser.add_argument('--group-into-other', type=int, default=0, help='If larger than 0, the classes, that have less'
@@ -57,6 +62,7 @@ def run(parser):
                         task=args.task,
                         logger=logger,
                         plot_bar=args.plot_bar,
+                        plot_sunburst_bar=args.plot_sunburst_bar,
                         out_folder=out_folder,
                         max_class_name_length=args.max_class_name_length,
                         print_none=args.print_none,
@@ -68,7 +74,8 @@ def analyse_label_paths(label_folder,
     label_format, 
     task, 
     logger, 
-    plot_bar, 
+    plot_bar,
+    plot_sunburst_bar,
     out_folder, 
     max_class_name_length, 
     print_none, 
@@ -78,7 +85,6 @@ def analyse_label_paths(label_folder,
     count_instances = {}
     for label_path in label_paths:
         label = read_label(label_path, label_format)
-        # label = read_fineair_label(label_path,include_fineair_class=False)
         # If task is very-fine-class, merge fine-class and very-fine-class first
         if task == 'very-fine-class':
             ftgc = get_satellitepy_dict_values(label,task='very-fine-class')
@@ -87,8 +93,6 @@ def analyse_label_paths(label_folder,
         else:
             values = get_satellitepy_dict_values(label, task)
         count_instances = count_unique_values(satellitepy_values = values, instances=count_instances)
-
-    
 
     logger.info('The results from the analyzed labels:')
     for key, value in sorted(count_instances.items()):
@@ -137,6 +141,46 @@ def analyse_label_paths(label_folder,
         plt.savefig(plot_bar_path)
         logger.info(f"Plot bar is saved at: {plot_bar_path}")
         # plt.show()
+
+    if plot_sunburst_bar:
+        logger.info("3 levels will be plotted: role, fineair-class, fine-class")
+        count_instances = {
+            'role':[],
+            'fineair-class':[],
+            'fine-class':[]}
+        tasks = count_instances.keys()
+        for label_path in label_paths:
+            label = read_label(label_path, label_format)
+            for task in tasks:
+                # If task is very-fine-class, merge fine-class and very-fine-class first
+                if task == 'very-fine-class':
+                    ftgc = get_satellitepy_dict_values(label,task='very-fine-class')
+                    fgc = get_satellitepy_dict_values(label,task='fine-class')
+                    values = [f"{fgc_i}--{ftgc_i}" for fgc_i, ftgc_i in zip(fgc,ftgc)]
+                else:
+                    values = get_satellitepy_dict_values(label, task)
+                # count_instances[task] = count_unique_values(satellitepy_values = values, instances=count_instances[task])
+                for value in values:
+                    if value is not None:
+                        if value.endswith('Military'):
+                            value_civilian = value.split('-')[0]
+                            count_instances[task].append(value_civilian)
+                        else:
+                            count_instances[task].append(value)
+                    else:
+                        count_instances[task].append('-')
+
+
+        # print(count_instances)
+        df = pd.DataFrame(count_instances)
+        fig = px.sunburst(df, path=list(count_instances.keys()), title='Distribution of Classes at Three Levels')
+        fig.update_layout(
+            title_font_size=36,
+            sunburstcolorway=["#636efa","#ef553b","#00cc96"],
+            margin=dict(t=0, l=0, r=0, b=0),
+            uniformtext=dict(minsize=14, mode='hide')
+            )
+        fig.show()
 
 
 def remove_none_keys(input_dict):

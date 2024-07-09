@@ -3,6 +3,7 @@ import numpy as np
 import rasterio
 from scipy.ndimage import generate_binary_structure, label, find_objects
 import logging
+import rasterio
 
 from satellitepy.data.bbox import BBox
 

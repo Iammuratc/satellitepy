@@ -151,6 +151,7 @@ def save_original_image_results(
         mask_folder = Path(out_folder) / 'results' / 'masks'
         assert create_folder(mask_folder)
 
+    # Model
     model, optimizer, epoch, valid_loss = load_checkpoint(checkpoint_path, down_ratio)
     model.to(device)
     model.eval()

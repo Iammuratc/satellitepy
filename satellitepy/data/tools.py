@@ -17,8 +17,10 @@ from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, get_file_paths
 from satellitepy.data.bbox import BBox
 from satellitepy.data.utils import get_satellitepy_dict_values
-from satellitepy.evaluate.utils import remove_low_conf_results
+from satellitepy.evaluate.utils import remove_low_conf_results, match_gt_and_det_bboxes
 from satellitepy.evaluate.bbavector.utils import apply_nms
+
+
 
 logger = logging.getLogger('')
 
@@ -339,8 +341,13 @@ def save_chips(
         image_folder,
         label_folder,
         out_folder,
-        margin_size,
-        mask_folder=None
+        chip_size,
+        mask_folder,
+        img_read_module,
+        rescaling,
+        interpolation_method,
+        orient_objects=False,
+        mask_objects=False,
 ):
     """
     Save chips from the original images
@@ -354,12 +361,12 @@ def save_chips(
         Input label folder. Labels in this folder will be used to create patch labels.
     out_folder : Path
         Output folder. Patches and corresponding labels will be saved into <out-folder>/patch_<patch-size>/images and <out-folder>/patch_<patch-size>/labels
-    include_object_classes : list
-        Classes that will be saved,
-    exclude_object_classes : list
-        Classes that wont be saved
+    chip_size : int
+        Chip size of chip_size * chip_size will be created.
     mask_folder : Path
         Input mask folder. Masks in this folder will be used to create chip masks
+    orient_objects : boolean
+        If True, Objects in chips will be oriented facing upwards
     Returns
     -------
     """
@@ -376,27 +383,34 @@ def save_chips(
     else:
         mask_paths = [None] * len(image_paths)
 
+    chip_counter = [0,0] # per folder, per image
     if len(image_paths) == len(label_paths) == len(mask_paths):
         for img_path, label_path, mask_path in zip(image_paths, label_paths, mask_paths):
-            img = cv2.imread(str(img_path))
+            chip_counter[1] = 0
+            logger.info(f"Reading the image: {img_path}")
+            img = read_img(str(img_path), img_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
+            logger.info(f"Image read successfull!")
             label = read_label(label_path, label_format, mask_path)
-           
+
             chips = get_chips(
                 img,
                 label,
-                margin_size=margin_size
+                chip_size=chip_size,
+                orient_objects=orient_objects,
+                mask_objects=mask_objects
             )
             
             count_chips = len(chips['images'])
             img_name = img_path.stem
-            
             for i in range(count_chips):
 
-                chip_img_path = out_folder_images / f'{img_name}_{i}.png'
                 chip_img = chips['images'][i]
 
                 if not chip_img.size == 0:
+                    chip_img_path = out_folder_images / f'{img_name}_{i}.png'
                     cv2.imwrite(str(chip_img_path), chip_img)
+                    chip_counter[0] += 1
+                    chip_counter[1] += 1
                 else:
                     continue
 
@@ -405,8 +419,9 @@ def save_chips(
 
                 with open(str(chip_label_path), 'w') as f:
                     json.dump(chip_label, f, indent=4)
-
-
+            logger.info(f"{img_path.stem} has {chip_counter[1]} chips.")
+        logger.info(f"{chip_counter[0]} chips are saved in total!")
+        logger.info(f"Chips are saved at: {out_folder}")
 def get_label_by_idx(satpy_labels: dict, i: int):
     """
     Creates a copy of the satpy_labels dict by doing the following:
@@ -571,6 +586,8 @@ def show_results_on_image(img_dir,
 
         results = remove_low_conf_results(results, target_task, conf_th, no_probability)
         results['det_labels'] = apply_nms(results['det_labels'], nms_iou_threshold=iou_th, target_task=target_task, no_probability=no_probability)
+        results['matches'] = match_gt_and_det_bboxes(results['gt_labels'], results['det_labels'])
+
 
         if satellitepy_labels_empty(results):
             continue
