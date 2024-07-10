@@ -10,7 +10,7 @@ from satellitepy.eval_chips.models_chips import get_model, get_head
 from satellitepy.models.utils import EarlyStopping
 
 
-def train(model, head, device, train_loader, val_dataloader, optimizer, loss_fn, n_epochs, save_path, patience=10):
+def train(model, head, device, train_loader, val_dataloader, optimizer, scheduler, loss_fn, n_epochs, save_path, patience=10):
 
     early_stopping = EarlyStopping(
         patience=patience,
@@ -64,6 +64,7 @@ def train(model, head, device, train_loader, val_dataloader, optimizer, loss_fn,
             if early_stopping.early_stop:
                 print("Early stopping")
                 break
+        scheduler.step()
 
     print('Finished Training')
 
@@ -77,12 +78,13 @@ if __name__ == '__main__':
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    model = get_model('resnet34')
+    model = get_model('efficientnet_b3')
     head = get_head(model, len(classes))
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
+    optimizer = torch.optim.SGD(model.parameters(), lr=1e-2, momentum=0.9)       # try SGD
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.3)
     loss = torch.nn.CrossEntropyLoss()
 
     model.to(device)
     head.to(device)
 
-    train(model, head, device, train_dataloader, val_dataloader, optimizer, loss, 50, 'S:\\UniBw\\temp', patience=10)
+    train(model, head, device, train_dataloader, val_dataloader, optimizer, scheduler, loss, 50, 'S:\\UniBw\\temp', patience=10)

@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torchvision.models import ResNet18_Weights, ResNet34_Weights, resnet18, resnet34, EfficientNet_B3_Weights, \
-    efficientnet_b3
+    efficientnet_b3, ResNet50_Weights, resnet50
 
 
 def get_model(model_name):
@@ -14,6 +14,9 @@ def get_model(model_name):
     elif model_name == 'resnet34':
         weights = ResNet34_Weights.DEFAULT
         model = resnet34(weights=weights)
+    elif model_name == 'resnet50':
+        weights = ResNet50_Weights.DEFAULT
+        model = resnet50(weights=weights)
     else:
         print(f'Model {model_name} not supported')
 
