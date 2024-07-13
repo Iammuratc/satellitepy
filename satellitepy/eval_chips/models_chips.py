@@ -1,7 +1,8 @@
 import torch
 from torch import nn
 from torchvision.models import ResNet18_Weights, ResNet34_Weights, resnet18, resnet34, EfficientNet_B3_Weights, \
-    efficientnet_b3, ResNet50_Weights, resnet50
+    efficientnet_b3, ResNet50_Weights, resnet50, Swin_T_Weights, swin_t, ConvNeXt_Small_Weights, convnext_small, \
+    ShuffleNet_V2_X1_5_Weights, shufflenet_v2_x1_5
 
 
 def get_model(model_name):
@@ -17,6 +18,15 @@ def get_model(model_name):
     elif model_name == 'resnet50':
         weights = ResNet50_Weights.DEFAULT
         model = resnet50(weights=weights)
+    elif model_name == 'swin_t':
+        weights = Swin_T_Weights.DEFAULT
+        model = swin_t(weights=weights)
+    elif model_name == 'convnext_small':
+        weights = ConvNeXt_Small_Weights.DEFAULT
+        model = convnext_small(weights=weights)
+    elif model_name == 'shufflenet_v2_x1_5':
+        weights = ShuffleNet_V2_X1_5_Weights.DEFAULT
+        model = shufflenet_v2_x1_5(weights=weights)
     else:
         print(f'Model {model_name} not supported')
 
