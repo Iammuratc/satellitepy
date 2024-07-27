@@ -31,14 +31,13 @@ def calculate_map(
         Dictionary of class names with indices.
     '''
 
-
+    instance_dict = {'airplane': 0} #, 'Backgorund': 1}
     instance_dict['Background'] = len(set(instance_dict.values())) # Set background an index
     background_index = instance_dict['Background']
     logger.info(f'Background added to the index {background_index}')
 
     instance_names = list(instance_dict.keys())
-    instance_indices = set(instance_dict.values()) 
-    
+    instance_indices = set(instance_dict.values())
 
     conf_mat = np.zeros(
         shape=(len(iou_thresholds), len(conf_score_thresholds), len(instance_indices), len(instance_indices)))

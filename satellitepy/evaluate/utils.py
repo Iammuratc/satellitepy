@@ -115,7 +115,11 @@ def set_conf_mat_from_result(
                 if det_gt_instance_name is None:
                     continue
 
-                det_name = str(idx2name[det_inds[i_conf_score]])
+            #    det_name = str(idx2name[det_inds[i_conf_score]])
+
+                det_gt_instance_name = 'airplane'
+                det_name = 'airplane'
+
                 if ignore_other_instances and det_name not in instance_names:
                     ignored_cnt += 1
                     ignored_instances_ret.append(det_name)
@@ -133,6 +137,7 @@ def set_conf_mat_from_result(
             undet_gt_bbox_indices = set(range(len(result['gt_labels'][task]))) - set(det_gt_bbox_indices)
             for undet_gt_bbox_ind in list(undet_gt_bbox_indices):
                 undet_gt_instance_name = result['gt_labels'][task][undet_gt_bbox_ind]
+                undet_gt_instance_name = 'airplane'
                 if undet_gt_instance_name not in instance_names:
                     undet_gt_instance_name = 'Background'
                 undet_gt_index = instance_dict[undet_gt_instance_name]
