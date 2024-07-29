@@ -32,10 +32,11 @@ def compute_mean_and_std(chip_paths):
     return mean, std
 
 
-def get_train_val_dataloaders(chip_path, label_path, classes, train_batch_size, val_batch_size, transform=[], get_source=False, shuffle=True, num_workers=4):
+def get_train_val_dataloaders(chip_path, label_path, classes, train_batch_size, val_batch_size, transform=[], get_source=False, shuffle=True, num_workers=4, manual_seed=42424242):
     dataset = ChipDataset(chip_path, label_path, classes, transform)
 
-    train_dataset, val_dataset = random_split(dataset, [0.8, 0.2])
+    generator = torch.Generator.manual_seed(manual_seed)
+    train_dataset, val_dataset = random_split(dataset, [0.8, 0.2], generator)
 
     train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=shuffle, num_workers=num_workers)
     val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, shuffle=False, num_workers=num_workers)

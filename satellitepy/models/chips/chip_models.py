@@ -5,7 +5,7 @@ from torchvision.models import ResNet18_Weights, ResNet34_Weights, resnet18, res
     ShuffleNet_V2_X1_5_Weights, shufflenet_v2_x1_5
 
 
-def get_model(model_name):
+def get_backbone(model_name):
     if model_name == 'efficientnet_b3':
         weights = EfficientNet_B3_Weights.DEFAULT
         model = efficientnet_b3(weights=weights)
@@ -33,9 +33,9 @@ def get_model(model_name):
     return model
 
 
-class Head(torch.nn.Module):
-    def __init__(self, num_classes, model):
-        super(Head, self).__init__()
+class Classifier(torch.nn.Module):
+    def __init__(self, num_classes):
+        super(Classifier, self).__init__()
 
         self.num_classes = num_classes
         self.linear = nn.Linear(1000, num_classes)
@@ -46,6 +46,8 @@ class Head(torch.nn.Module):
 
         return x
 
-
-def get_head(model, num_classes):
-    return Head(num_classes=num_classes, model=model)
+def get_model(backbone_name, num_classes):
+    backbone = get_backbone(backbone_name)
+    classifier = Classifier(num_classes=num_classes)
+    model = torch.nn.Sequential(backbone, classifier)
+    return model
