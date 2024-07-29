@@ -1,4 +1,5 @@
 import logging
+import os
 
 import numpy as np
 import torch
@@ -42,13 +43,13 @@ class TrainModule(object):
         early_stopping = EarlyStopping(
             patience=self.patience,
             verbose=True,
-            path=self.save_path
+            path=os.path.join(self.save_path, 'model_best.pth')
         )
 
         logger.info('Starting training...')
-        for epoch in range(0, self.n_epoch):
+        for epoch in range(0, self.n_epochs):
             logger.info('-' * 10)
-            logger.info(f'Epoch: {epoch}/{self.n_epoch}')
+            logger.info(f'Epoch: {epoch}/{self.n_epochs}')
             train_loss = self.train()
             self.scheduler.step()
 
@@ -74,7 +75,7 @@ class TrainModule(object):
             if self.verbose_output:
                 verbose_msg = (f'class names: \n{self.classes} ' +
                                f'accuracy by class: \n{val_accs}')
-                logger.info=verbose_msg
+                logger.info(verbose_msg)
 
             logger.info(msg)
 
