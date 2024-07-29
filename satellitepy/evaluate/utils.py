@@ -95,6 +95,7 @@ def set_conf_mat_from_result(
             det_gt_bbox_indices = []
 
             for i_conf_score, conf_score in enumerate(conf_scores):
+
                 if conf_score < conf_score_th:
                     continue
 
@@ -105,7 +106,12 @@ def set_conf_mat_from_result(
                 gt_index = matches['iou']['indexes'][i_conf_score]
 
                 det_gt_instance_name = task_result[gt_index]
-
+                # #####
+                # annotation_source = matches['iou']['sources'][i_conf_score]
+                # if annotation_source != 'FR24':
+                #     det_gt_bbox_indices.append(gt_index)
+                #     continue
+                # #####
                 if det_gt_instance_name is None:
                     continue
 

@@ -49,10 +49,9 @@ def save_model(path, epoch, model, optimizer):
         'optimizer_state_dict': optimizer.state_dict()
     }, path)
 
-
 def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3):
     checkpoint = torch.load(checkpoint_path)
-    logger.info(f'loaded weights from {checkpoint_path}, epoch {checkpoint["epoch"]}')
+    logger.info('loaded weights from {}, epoch {}'.format(checkpoint_path, checkpoint['epoch']))
 
     keys = checkpoint['model_state_dict'].keys()
     bbox_keys = list(set([key[:7] for key in keys if 'bboxes' in key]))
@@ -61,7 +60,7 @@ def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3):
     mask_key = list(set([key.split('.')[0] for key in keys if 'masks' in key]))
     all_keys = bbox_keys + cls_keys + reg_keys + mask_key
 
-    model = get_model(all_keys, down_ratio)
+    model = get_model(all_keys,down_ratio)
 
     if isinstance(model, torch.nn.DataParallel):
         model.module.load_state_dict(checkpoint['model_state_dict'])

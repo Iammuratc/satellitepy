@@ -3,10 +3,34 @@ import numpy as np
 import rasterio
 from scipy.ndimage import generate_binary_structure, label, find_objects
 import logging
+import rasterio
 
 from satellitepy.data.bbox import BBox
 
 logger = logging.getLogger('')
+
+
+def get_fineair_roles():
+    # Role FGC matches
+    roles = {
+        'Airliner':[
+            # Airbus
+            'A220','A300F4','A319','A320','A321','A330','A340','A350','A380',
+            # Boeing
+            'B717','B737','B747','B752','B757','B767','B777','B787',
+            # Embraer
+            'E170','E175','E190','E195',
+            # Others
+            'DeHavilland-Dash-8','Sukhoi-100'],
+        'Private Jet':[
+            # Canadair
+            'BE40','Bombardier-Challenger','Bombardier-Global','CRJ','CRJ-1000','CRJ-200','CRJ-550','CRJ-700','CRJ-701','CRJ-900','Cessna','Cessna-Citation','Cessna560',
+            # Embraer
+            'E135','E145','Embraer','Embraer-Phenom','Embreaer-Legacy', 'Embraer-Praetor',
+            # Others
+            'Falcon','Gulfstream','Gulfstream-Global','H25B','MD11',],
+        'Propeller':[]}
+    return roles
 
 
 def remove_repetitive_values(dict_with_indices):
@@ -711,9 +735,15 @@ def get_task_dict(task):
     task_dict = get_satellitepy_dict_values(satellitepy_table, task)
     return task_dict
 
-def count_unique_values(satellitepy_values, instances={}):
+def count_unique_values(satellitepy_values, instances={}, merge_military=False):
     for value in satellitepy_values:
-        if isinstance(value, str) or isinstance(value, int):
+        if isinstance(value, str):
+            if value.endswith('Military') and merge_military:
+                value = value.split('-')[0]
+            if value not in instances.keys():
+                instances[value] = 0
+            instances[value] += 1
+        elif isinstance(value, int):
             if value not in instances.keys():
                 instances[value] = 0
             instances[value] += 1

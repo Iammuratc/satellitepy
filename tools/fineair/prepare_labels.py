@@ -10,7 +10,7 @@ import logging
 
 from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config, get_file_paths
 from satellitepy.data.labels import read_label, read_fineair_label
-from satellitepy.data.utils import get_satellitepy_dict_values, count_unique_values
+from satellitepy.data.utils import get_satellitepy_dict_values, count_unique_values, get_fineair_roles
 
 
 def get_args():
@@ -61,7 +61,7 @@ def set_roles(in_label_folder,role_merge_threshold,logger,out_label_folder):
 
     label_paths = get_file_paths(in_label_folder)
 
-    roles = get_roles()
+    roles = get_fineair_roles()
 
     # Count instances
     count_instances = get_instances_per_task(in_label_folder,task='fine-class')
@@ -74,6 +74,8 @@ def set_roles(in_label_folder,role_merge_threshold,logger,out_label_folder):
         for label in labels["features"]:
             label["properties"]["fineairtype"] = None
             fgc = label["properties"]["Type"]
+            role = label["properties"]["Role"]
+
             # ftgc = label["properties"]["Subtype"]
             # print(fgc)
             if fgc is None:
@@ -82,10 +84,20 @@ def set_roles(in_label_folder,role_merge_threshold,logger,out_label_folder):
                 for role, fg_classes in roles.items():
                     if fgc in fg_classes:
                         label["properties"]["fineairtype"] = role
+                        label["properties"]["Role"] = role
                         continue
             else:
                 label["properties"]["fineairtype"] = fgc
+                for role, fg_classes in roles.items():
+                    if fgc in fg_classes:
+                        label["properties"]["Role"] = role
 
+            # if role is None:
+                
+            #         fac = label["properties"]["fineairtype"]
+            #         if fac in fg_classes:
+            #             label["properties"]["Role"] = role
+            #             continue
             ## Check if a fineair class is really assigned
             fineair_class = label["properties"]["fineairtype"] 
             if fineair_class == 'None' or fineair_class is None:
@@ -110,29 +122,6 @@ def get_instances_per_task(label_folder,task):
         count_instances = count_unique_values(satellitepy_values = values, instances=count_instances)
     return count_instances
 
-
-
-def get_roles():
-    # Role FGC matches
-    roles = {
-        'Airliner':[
-            # Airbus
-            'A220','A300F4','A319','A320','A321','A330','A340','A350','A380',
-            # Boeing
-            'B717','B737','B747','B752','B757','B767','B777','B787',
-            # Embraer
-            'E170','E175','E190','E195',
-            # Others
-            'DeHavilland-Dash-8','Sukhoi-100'],
-        'Private Jet':[
-            # Canadair
-            'BE40','Bombardier-Challenger','Bombardier-Global','CRJ','CRJ-1000','CRJ-200','CRJ-550','CRJ-700','CRJ-701','CRJ-900','Cessna','Cessna-Citation','Cessna560',
-            # Embraer
-            'E135','E145','Embraer','Embraer-Phenom','Embreaer-Legacy', 'Embraer-Praetor',
-            # Others
-            'Falcon','Gulfstream','Gulfstream-Global','H25B','MD11',],
-        'Propeller':[]}
-    return roles
 
 # def count_unique_strings(strings):
 #     # Count occurrences of each string in the list

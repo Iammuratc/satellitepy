@@ -4,11 +4,16 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
+import plotly.express as px
+import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 
 from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, \
     get_default_log_config, get_file_paths
 from satellitepy.data.labels import read_label, read_fineair_label
-from satellitepy.data.utils import get_satellitepy_dict_values, count_unique_values
+from satellitepy.data.utils import get_satellitepy_dict_values, count_unique_values, get_fineair_roles
 
 
 def get_args():
@@ -24,6 +29,8 @@ def get_args():
     parser.add_argument('--log-config-path', default=None, type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, default=None, help='Log file path.')
     parser.add_argument('--plot-bar', action='store_true', help='Bar chart will be displayed')
+    parser.add_argument('--plot-sunburst-bar', action='store_true', help='Sunburst bar chart will be displayed.')
+    parser.add_argument('--plot-horizontal-bar', action='store_true', help='Horizontal bar chart will be displayed.')
     parser.add_argument('--remove-other', action='store_true', help='If set True, Other will be removed in the bar chart.')
     parser.add_argument('--print-none', action='store_true', help='If True, None values in dict values (e.g., none as the annotation source) will be included.')
     parser.add_argument('--group-into-other', type=int, default=0, help='If larger than 0, the classes, that have less'
@@ -57,6 +64,8 @@ def run(parser):
                         task=args.task,
                         logger=logger,
                         plot_bar=args.plot_bar,
+                        plot_sunburst_bar=args.plot_sunburst_bar,
+                        plot_horizontal_bar=args.plot_horizontal_bar,
                         out_folder=out_folder,
                         max_class_name_length=args.max_class_name_length,
                         print_none=args.print_none,
@@ -68,27 +77,22 @@ def analyse_label_paths(label_folder,
     label_format, 
     task, 
     logger, 
-    plot_bar, 
+    plot_bar,
+    plot_sunburst_bar,
+    plot_horizontal_bar,
     out_folder, 
     max_class_name_length, 
     print_none, 
     group_into_other_threshold,
     remove_other):
+
+
     label_paths = get_file_paths(label_folder)
     count_instances = {}
     for label_path in label_paths:
         label = read_label(label_path, label_format)
-        # label = read_fineair_label(label_path,include_fineair_class=False)
-        # If task is very-fine-class, merge fine-class and very-fine-class first
-        if task == 'very-fine-class':
-            ftgc = get_satellitepy_dict_values(label,task='very-fine-class')
-            fgc = get_satellitepy_dict_values(label,task='fine-class')
-            values = [f"{fgc_i}--{ftgc_i}" for fgc_i, ftgc_i in zip(fgc,ftgc)]
-        else:
-            values = get_satellitepy_dict_values(label, task)
+        values = get_satellitepy_dict_values(label, task)
         count_instances = count_unique_values(satellitepy_values = values, instances=count_instances)
-
-    
 
     logger.info('The results from the analyzed labels:')
     for key, value in sorted(count_instances.items()):
@@ -138,6 +142,181 @@ def analyse_label_paths(label_folder,
         logger.info(f"Plot bar is saved at: {plot_bar_path}")
         # plt.show()
 
+    if plot_sunburst_bar:
+        instance_names = get_instance_names(label_paths,label_format)
+
+        # print(instance_names)
+        df = pd.DataFrame(instance_names)
+        df = df.dropna()
+        fig = px.sunburst(df, 
+            path=list(instance_names.keys()), 
+            title='Distribution of Classes at Three Levels')
+        fig.update_layout(
+            title_font_size=36,
+            sunburstcolorway=["#636efa","#ef553b","#00cc96"],
+            margin=dict(t=0, l=0, r=0, b=0),
+            uniformtext=dict(minsize=20, mode='hide')
+            )
+        fig.show()
+
+
+    if plot_horizontal_bar:
+
+        roles = get_fineair_roles()
+        label_paths = get_file_paths(label_folder)
+        count_instances_by_task = {
+            'role':{},
+            'fineair-class':{},
+            'very-fine-class':{}}
+        tasks = count_instances_by_task.keys()
+        for label_path in label_paths:
+            label = read_label(label_path, label_format)
+            for task in tasks:
+                values = get_satellitepy_dict_values(label, task)
+                count_instances_by_task[task] = count_unique_values(satellitepy_values = values, instances=count_instances_by_task[task], merge_military=True)
+        
+        ## Drop None--None from very-fine-class
+        very_fine_class_without_none = {}
+        for class_name, class_count in count_instances_by_task['very-fine-class'].items():
+            if not (class_name.startswith('None') or class_name.endswith('None')):
+                very_fine_class_without_none[class_name] = class_count
+        count_instances_by_task['very-fine-class'] = very_fine_class_without_none
+
+        ## Merge classes with low instance numbers to the role
+        count_instances_by_task = merge_into_role(count_instances_by_task,th=8,roles=roles)
+
+
+        # Create the bar chart
+        ## Color map
+        ## Three roles are assigned to three colors
+        instance_names = get_instance_names(label_paths, label_format)
+        levels = ', '.join(instance_names.keys())
+        logger.info(f"3 levels will be plotted: {levels}")
+
+
+
+
+
+        ## Color role dict
+        colors_role_dict = {role:color for role, color in zip(roles.keys(),['blue','orange','green'])}
+        colors = []
+        for class_name in instance_names['role']:
+            colors.append(colors_role_dict[class_name])
+        # instance_names['colors'] = colors
+
+        ## Color dict
+        color_dict = {task:{} for task in tasks}
+        
+        for task in tasks:
+            for class_name in sorted(count_instances_by_task[task].keys()):
+                if task == 'very-fine-class':
+                    class_name_to_ind = class_name.split('--')[0]
+                    # if class_name_to_ind.startswith('None') or class_name_to_ind.endswith('None'):
+                    #     continue
+                    if class_name_to_ind in instance_names['fine-class']:
+                        class_name_ind = instance_names['fine-class'].index(class_name_to_ind)
+                    elif class_name_to_ind in instance_names['role']:
+                        class_name_ind = instance_names['role'].index(class_name_to_ind)
+                    else:
+                        print('MISTAKE!')
+                        return 0
+                else:
+                    class_name_ind = instance_names[task].index(class_name)
+                # Get the item from the second list at that index
+                color = colors[class_name_ind]
+                color_dict[task][class_name] = color
+
+        ### Merge small very-fine-class into the parent role
+
+        
+
+        fig = make_subplots(
+            rows=len(list(tasks)), cols=1,
+            subplot_titles=['Role', 'FineAir30 Class', 'Finest-grained Class'],
+            shared_xaxes=False,
+            vertical_spacing=0.1
+            )
+        for i, task in enumerate(list(tasks)):
+            # fig = go.Figure()
+            for class_name, class_count in count_instances_by_task[task].items():
+                fig.add_trace(
+                    go.Bar(
+                        y=[task],
+                        x=[class_count],
+                        text=class_name,
+                        marker_line=dict(width=2, color='black'),
+                        textposition='inside',
+                        insidetextanchor='middle',
+                        orientation='h',
+                        marker=dict(color=color_dict[task][class_name],opacity=0.5)
+                    ),
+                    row=i+1,
+                    col=1,
+                )
+            # Update layout
+        fig.update_annotations(font_size=36)
+        fig.update_layout(
+            barmode='stack',
+            # title='Distribution of Classes A, B, and C',
+            # xaxis_title='Size',
+            # yaxis_title=task,
+            # yaxis=dict(tickvals=['Distribution'], ticktext=['Classes A, B, and C']),
+            # legend_title='Classes'
+            showlegend=False,
+            polar = dict(angularaxis = dict(showticklabels = False)),
+            # tickfont = dict(size=24),
+            xaxis=dict(tickfont=dict(size=36)),  # First subplot
+            xaxis2=dict(tickfont=dict(size=36)),  # Second subplot
+            xaxis3=dict(tickfont=dict(size=36)),  # Third subplot
+            font=dict(size=24)
+        )
+        # fig.update_xaxes(title_font=dict(size=24))
+        fig.update_yaxes(title='y', visible=False, showticklabels=False)
+        fig.show()
+
+def merge_into_role(count_instances_by_task,th,roles):
+    result_dict = {role:0 for role in roles.keys()}
+    for class_name, class_count in count_instances_by_task['very-fine-class'].items():
+        if class_count < th:
+            role_defined = False
+            for role, values in roles.items():
+                if class_name.split('--')[0] in values:
+
+                    role_defined = True
+                    result_dict[role] += class_count
+                    print(f"Class {class_name} is merged to {role}!")
+                    continue
+            if not role_defined:
+                print(f"No role for {class_name.split('--')[0]}!")
+        else:
+            result_dict[class_name] = class_count
+    count_instances_by_task['very-fine-class'] = result_dict
+    return count_instances_by_task
+             
+
+
+def get_instance_names(label_paths, label_format):
+    instance_names = {
+        'role':[],
+        'fineair-class':[],
+        'fine-class':[],
+        'very-fine-class':[]}
+    tasks = instance_names.keys()
+    for label_path in label_paths:
+        label = read_label(label_path, label_format)
+        for task in tasks:
+            values = get_satellitepy_dict_values(label, task)
+            for value in values:
+                if value is None:
+                    instance_names[task].append(None)
+                elif value.endswith('Military'):
+                    value_civilian = value.split('-')[0]
+                    instance_names[task].append(value_civilian)
+                elif value.endswith('None'):
+                    instance_names[task].append(None)
+                else:
+                    instance_names[task].append(value)
+    return instance_names
 
 def remove_none_keys(input_dict):
     result_dict = {}
