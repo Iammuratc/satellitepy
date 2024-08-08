@@ -24,12 +24,12 @@ def get_fineair_roles():
             'DeHavilland-Dash-8','Sukhoi-100'],
         'Private Jet':[
             # Canadair
-            'BE40','Bombardier-Challenger','Bombardier-Global','CRJ','CRJ-1000','CRJ-200','CRJ-550','CRJ-700','CRJ-701','CRJ-900','Cessna','Cessna-Citation','Cessna560',
+            'BE40','Bombardier-Challenger','Bombardier-Global','CRJ','CRJ-100','CRJ-1000','CRJ-200','CRJ-550','CRJ-700','CRJ-701','CRJ-900','Cessna','Cessna-Citation','Cessna560',
             # Embraer
-            'E135','E145','Embraer','Embraer-Phenom','Embreaer-Legacy', 'Embraer-Praetor',
+            'E135','E140','E145','E600','E650','Embraer','Embraer-Phenom','Embraer-Legacy', 'Embraer-Praetor',
             # Others
-            'Falcon','Gulfstream','Gulfstream-Global','H25B','MD11',],
-        'Propeller':[]}
+            'Falcon','Gulfstream','Gulfstream-Global','H25B','MD11','Hawker'],
+        'Propeller':['ATR42','Beechcraft99','Pilatus']}
     return roles
 
 
