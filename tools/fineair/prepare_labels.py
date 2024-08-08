@@ -79,7 +79,12 @@ def set_roles(in_label_folder,role_merge_threshold,logger,out_label_folder):
             # ftgc = label["properties"]["Subtype"]
             # print(fgc)
             if fgc is None:
-                label["properties"]["fineairtype"] = label["properties"]["Role"].split('-')[0]
+                try:
+                    label["properties"]["fineairtype"] = label["properties"]["Role"].split('-')[0]
+                except AttributeError:
+                    id = label["properties"]["id"]
+                    logger.error(f"{id} has no Role!")
+                    break
             elif count_instances[fgc] < role_merge_threshold:
                 for role, fg_classes in roles.items():
                     if fgc in fg_classes:

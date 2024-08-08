@@ -95,9 +95,30 @@ def fix_fgc(labels,logger):
         elif fgc=='CRJ9' and ftgc==None:
             label["properties"]["Type"] = 'CRJ-900'
             label["properties"]["Subtype"] = None
+        elif fgc=='CRJ' and ftgc=='700':
+            label["properties"]["Type"] = 'CRJ'
+            label["properties"]["Subtype"] = '700'
         elif fgc=='CRJ' and ftgc=='701ER':
             label["properties"]["Type"] = 'CRJ-701'
             label["properties"]["Subtype"] = 'ER'
+        elif fgc=='CRJ100':
+            label["properties"]["Type"] = 'CRJ-100'
+            label["properties"]["Subtype"] = ftgc
+        elif fgc=='CRJ200':
+            label["properties"]["Type"] = 'CRJ-200'
+            label["properties"]["Subtype"] = ftgc
+        elif fgc=='CRJ550':
+            label["properties"]["Type"] = 'CRJ-550'
+            label["properties"]["Subtype"] = ftgc
+        elif fgc=='CRJ700':
+            label["properties"]["Type"] = 'CRJ-700'
+            label["properties"]["Subtype"] = ftgc
+        elif fgc=='CRJ701':
+            label["properties"]["Type"] = 'CRJ-701'
+            label["properties"]["Subtype"] = '701'
+        elif fgc=='CRJ900':
+            label["properties"]["Type"] = 'CRJ-900'
+            label["properties"]["Subtype"] = ftgc
         elif fgc=='CRJ7' and ftgc=='500':
             label["properties"]["Type"] = 'CRJ-700'
             label["properties"]["Subtype"] = '500'
@@ -132,20 +153,38 @@ def fix_fgc(labels,logger):
         elif fgc=='Cessna' and ftgc=='560':
             label["properties"]["Type"] = 'Cessna-Citation'
             label["properties"]["Subtype"] = '560'
+        elif fgc=='Cessna' and ftgc=='560 Citation Ultra':
+            label["properties"]["Type"] = 'Cessna-Citation'
+            label["properties"]["Subtype"] = '560'
+        elif fgc=='C680':
+            label["properties"]["Type"] = 'Cessna-Citation'
+            label["properties"]["Subtype"] = '680'
+        elif fgc=='Cessna' and ftgc=='Citation':
+            label["properties"]["Type"] = 'Cessna-Citation'
+            label["properties"]["Subtype"] = None
         ###########
   
         ############
         elif fgc=='ERJ' and ftgc=='135':
             label["properties"]["Type"] = 'E135'
             label["properties"]["Subtype"] = None
+        elif fgc=='ERJ135':
+            label["properties"]["Type"] = 'E135'
+            label["properties"]["Subtype"] = ftgc
         elif fgc=='ERJ' and ftgc=='145XR':
             label["properties"]["Type"] = 'E145'
             label["properties"]["Subtype"] = 'XR'
+        elif fgc=='ERJ145':
+            label["properties"]["Type"] = 'E145'
+            label["properties"]["Subtype"] = ftgc
+        elif fgc=='ERJ140':
+            label["properties"]["Type"] = 'E140'
+            label["properties"]["Subtype"] = None
         elif fgc=='ERJ' and ftgc=='145':
             label["properties"]["Type"] = 'E145'
             label["properties"]["Subtype"] = None
         elif fgc=='ERJ' and ftgc==None:
-            logger.error('FIX THIS LATER!')  
+            logger.error('FIX THIS LATER!')
             label["properties"]["Type"] = 'E145'
             label["properties"]["Subtype"] = None
         elif fgc=='R175' and ftgc=='LR':
@@ -154,6 +193,23 @@ def fix_fgc(labels,logger):
         elif fgc=='Embraer' and ftgc=='Praetor 500':
             label["properties"]["Type"] = 'Embraer-Praetor'
             label["properties"]["Subtype"] = '500'
+        elif fgc=='Legacy650E':
+            label["properties"]["Type"] = 'Embraer-Legacy'
+            label["properties"]["Subtype"] = '650'
+        elif fgc=='EL600':
+            label["properties"]["Type"] = 'Embraer-Legacy'
+            label["properties"]["Subtype"] = '600'
+        elif fgc=='Embreaer-Legacy':
+            label["properties"]["Type"] = 'Embraer-Legacy'
+            label["properties"]["Subtype"] = ftgc
+
+        elif fgc=='Embraer' and ftgc=='Phenom 300':
+            label["properties"]["Type"] = 'Embraer-Phenom'
+            label["properties"]["Subtype"] = '300'
+        elif fgc=='Phenom300E':
+            label["properties"]["Type"] = 'Embraer-Phenom'
+            label["properties"]["Subtype"] = '300'
+
         ############
         elif fgc=='B752' and ftgc=='232':
             label["properties"]["Type"] = 'B757'
@@ -163,6 +219,22 @@ def fix_fgc(labels,logger):
             label["properties"]["Type"] = 'BE40'
             label["properties"]["Subtype"] = '400XP'
         ###########
+        elif fgc=='BCL' and ftgc=='300':
+            label["properties"]["Type"] = 'Bombardier-Challenger'
+            label["properties"]["Subtype"] = '300'
+        elif fgc=='Bombardier' and ftgc=='Challenger 350':
+            label["properties"]["Type"] = 'Bombardier-Challenger'
+            label["properties"]["Subtype"] = '3500'
+        elif fgc=='Bombardier-Challenger ':
+            label["properties"]["Type"] = 'Bombardier-Challenger'
+            label["properties"]["Subtype"] = ftgc
+        elif fgc=='Bombardier' and ftgc=='Challenger 350':
+            label["properties"]["Type"] = 'Bombardier-Challenger'
+            label["properties"]["Subtype"] = '3500'
+        elif fgc=='Global Bombadier' and ftgc=='Challenger 350':
+            label["properties"]["Type"] = 'Bombardier-Challenger'
+            label["properties"]["Subtype"] = '3500'
+
         elif fgc=='Bombardier Global' and ftgc=='6000':
             label["properties"]["Type"] = 'Bombardier-Global'
             label["properties"]["Subtype"] = '6000'
