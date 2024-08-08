@@ -1,5 +1,7 @@
 import configargparse
 from pathlib import Path
+
+import pandas as pd
 from satellitepy.data.tools import save_patches
 from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config
 import logging
@@ -46,6 +48,7 @@ def get_args():
     parser.add_argument('--interpolation-method', type=str, default='INTER_LINEAR', 
         help='Interpolation method to scale the images before creating patches. This is used only if rescaling is different than 1.0.',
         choices=['INTER_NEAREST','INTER_LINEAR','INTER_CUBIC','INTER_AREA'])
+    parser.add_argument('--subset-file-path', type=str, default="", help='Move patches to the specified subset folder in the csv. Leave empty to not move patches to a subset folder.')
     return parser
 
 
@@ -55,6 +58,11 @@ def run(parser):
 
     out_folder = Path(args.out_folder)
     assert create_folder(out_folder)
+
+    subset_data = None
+    if args.subset_file_path != "":
+        subset_data = pd.read_csv(Path(args.subset_file_path))
+
 
     log_config_path = get_default_log_config() if args.log_config_path == None else Path(args.log_config_path)
     log_path = get_default_log_path(Path(__file__).resolve().stem) if args.log_path == None else Path(args.log_path)
@@ -91,7 +99,8 @@ def run(parser):
         image_read_module=args.image_read_module,
         rescaling=args.rescaling,
         interpolation_method=args.interpolation_method,
-        keep_empty=args.keep_empty
+        keep_empty=args.keep_empty,
+        subset_data=subset_data
     )
 
 
