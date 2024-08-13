@@ -10,7 +10,7 @@ from satellitepy.data.bbox import BBox
 logger = logging.getLogger('')
 
 
-def get_model(tasks, down_ratio):
+def get_model(tasks, down_ratio, resnet_type=101):
     heads = {}
 
     for task in tasks:
@@ -34,7 +34,8 @@ def get_model(tasks, down_ratio):
                               pretrained=True,
                               down_ratio=down_ratio,
                               final_kernel=1,
-                              head_conv=256)
+                              head_conv=256,
+                              resnet_type=resnet_type)
     return model
 
 
