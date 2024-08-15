@@ -155,11 +155,15 @@ def save_patches(
 
         # Change output directory to patches if subset_data is not None
         if subset_data is not None:
-            subset = subset_data.loc[subset_data['image'] == '/mnt/2tb-1/satellitepy/data/FR24_dataset/images/' + img_path.name]
-            if not subset.empty:
-                out_image_folder = Path(out_image_folder) / subset.values[0][2] / 'images'
+            subset_type = ""
+            for col in subset_data.values:
+                if img_path.name in col[0]:
+                    subset_type = col[2]
+
+            if subset_type != "":
+                out_image_folder = Path(out_image_folder) / subset_type / 'images'
                 assert create_folder(out_image_folder)
-                out_label_folder = Path(out_label_folder) / subset.values[0][2] / 'labels'
+                out_label_folder = Path(out_label_folder) / subset_type / 'labels'
                 assert create_folder(out_label_folder)
 
         gt_labels = read_label(label_path, label_format, mask_path, rescaling)
