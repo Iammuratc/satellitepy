@@ -25,13 +25,15 @@ def calculate_map(
         nms_iou_thresh,
         ignore_other_instances=False,
         no_probability=False,
-        by_source=False):
+        by_source=False,
+        wandb_run=None):
     '''
     instance_dict : dict
         Dictionary of class names with indices.
     '''
 
-
+    test_set = set(instance_dict.values())
+    print(test_set)
     instance_dict['Background'] = len(set(instance_dict.values())) # Set background an index
     background_index = instance_dict['Background']
     logger.info(f'Background added to the index {background_index}')
@@ -117,6 +119,9 @@ def calculate_map(
 
             np.savetxt(file, conf_mat[conf_mat_iou_th_ind][conf_mat_conf_sc_ind], fmt='%.2f', delimiter=',',header=f'Confusion matrix (IoU={conf_mat_iou_th}, Conf. Score={conf_mat_conf_sc_th})')
         logger.info(f'AP calculations are saved into: {evaluation_file_path}')
+        if wandb_run:
+            wandb_run.log({task+'-mAP': mAP[0]})
+            wandb_run.save(evaluation_file_path)
 
 
     return mAP

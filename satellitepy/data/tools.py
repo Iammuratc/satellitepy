@@ -165,17 +165,21 @@ def save_patches(
         count_skipped_patches = [0, 0]
         for i in tqdm(range(count_patches)):
 
-            img_name = img_path.stem
+            img_name = img_path.stem[:-5]
 
             patch_x0, patch_y0 = patches['start_coords'][i]
             patch_name = f"{img_name}_x_{patch_x0}_y_{patch_y0}"
 
             patch_img = patches['images'][i]
+
+            if patch_x0 > 624 or patch_y0 > 624:
+                continue
+
             patch_image_path = Path(out_image_folder) / f"{patch_name}.png"
 
-            if len(np.unique(patch_img)) == 1:
-                count_skipped_patches[0] += 1
-                continue
+            # if len(np.unique(patch_img)) == 1:
+            #     count_skipped_patches[0] += 1
+            #     continue
 
             patch_label = patches['labels'][i]
             patch_label_path = Path(out_label_folder) / f"{patch_name}.json"

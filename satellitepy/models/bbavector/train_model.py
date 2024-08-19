@@ -28,7 +28,8 @@ class TrainModule(object):
                  ngpus,
                  resume_train,
                  patience,
-                 target_task='coarse-class'):
+                 target_task='coarse-class',
+                 wandb_run=None):
         torch.manual_seed(317)
         self.train_dataset = train_dataset
         self.valid_dataset = valid_dataset
@@ -46,6 +47,7 @@ class TrainModule(object):
         self.patience = patience
         self.tasks = tasks
         self.target_task = target_task
+        self.wandb_run = wandb_run
 
     def train_network(self):
         logger = logging.getLogger('')
@@ -92,10 +94,11 @@ class TrainModule(object):
                                                        pin_memory=True,
                                                        drop_last=True, )
 
+        weights_path = os.path.join(save_path, 'model_best.pth')
         early_stopping = EarlyStopping(
             patience=self.patience,
             verbose=True,
-            path=os.path.join(save_path, 'model_best.pth'),
+            path=weights_path,
             val_loss_min=valid_loss,
             trace_func=print)
         logger.info('Starting training...')
@@ -114,8 +117,15 @@ class TrainModule(object):
                 early_stopping(total_val_loss, self.model, self.optimizer, epoch)
                 if early_stopping.early_stop:
                     logger.info("Early stopping")
+                    if self.wandb_run:
+                        self.wandb_run.save(weights_path)
                     break
 
+            if self.wandb_run:
+                self.wandb_run.log({
+                    'train_loss': train_loss,
+                    'valid_loss': valid_loss,
+                })
             else:
                 save_model(os.path.join(save_path, f'model_no_valid_{epoch}.pth'),
                            epoch,
@@ -140,6 +150,9 @@ class TrainModule(object):
                    '----------------------------')
 
             logger.info(msg)
+
+        if self.wandb_run:
+            self.wandb_run.save(weights_path)
 
     def run_train(self, data_loader, criterion):
         self.model.train()
