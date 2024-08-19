@@ -88,7 +88,8 @@ def save_patches(
         mask_folder=None,
         rescaling=1,
         interpolation_method=cv2.INTER_LINEAR,
-        keep_empty=False
+        keep_empty=False,
+        subset_data=None
     ):
     """
     Save patches from the original images
@@ -126,8 +127,12 @@ def save_patches(
 
     assert out_folder.exists(), 'Make sure the out-folder exists or is created before calling this function.'
 
-    out_image_folder = Path(out_folder) / 'images'
-    out_label_folder = Path(out_folder) / 'labels'
+    if subset_data is not None:
+        out_image_folder = Path(out_folder)
+        out_label_folder = Path(out_folder)
+    else:
+        out_image_folder = Path(out_folder) / 'images'
+        out_label_folder = Path(out_folder) / 'labels'
 
     assert create_folder(out_image_folder, ask_permission=False)
     img_paths = get_file_paths(image_folder)
@@ -147,6 +152,19 @@ def save_patches(
         mask_name = mask_path.name if mask_path != None else None
         label_name = label_path.name if label_path is not None else None
         logger.info(f"{img_path.name}, {label_name}, {mask_name}")
+
+        # Change output directory to patches if subset_data is not None
+        if subset_data is not None:
+            subset_type = ""
+            for col in subset_data.values:
+                if img_path.name in col[0]:
+                    subset_type = col[2]
+
+            if subset_type != "":
+                out_image_folder = Path(out_image_folder) / subset_type / 'images'
+                assert create_folder(out_image_folder)
+                out_label_folder = Path(out_label_folder) / subset_type / 'labels'
+                assert create_folder(out_label_folder)
 
         gt_labels = read_label(label_path, label_format, mask_path, rescaling)
 
