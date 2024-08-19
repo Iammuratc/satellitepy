@@ -507,10 +507,10 @@ def get_satellitepy_table():
             'H25B'                          :   135,      # FR24
             'Cessna-Citation'               :    86,      # FR24
             'Gulfstream'                    :   136,      # FR24
-            'Gulfstream-Global'             :   137,      # FR24
-            'Embraer-Praetor'               :   138,      # FR24
-            'Embraer-Phenom'                :   139,      # FR24
-            'DeHavilland-Dash-8'            :   140,      # FR24
+            'Gulfstream-Global'             :   113,      # FR24 137
+            'Embraer-Praetor'               :   112,      # FR24 138
+            'Embraer-Phenom'                :   109,      # FR24 139
+            'DeHavilland-Dash-8'            :   108,      # FR24 140
         },
         'very-fine-class':{
 			'Airbus_A330-300'					: 0,	# Rareplanes_synthetic
