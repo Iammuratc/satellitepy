@@ -45,7 +45,7 @@ default_config = {
     'model': {
         'resnet_type': 101,
         'down_ratio': 4,
-        'tasks': ['hbboxes', 'obboxes', 'coarse-class', 'role'],
+        'tasks': ['hbboxes', 'obboxes', 'coarse-class', 'fine-class'],
         'target_task': 'coarse-class',
         'K': 500,
         'random_seed': 42424242,

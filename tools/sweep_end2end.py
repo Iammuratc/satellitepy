@@ -7,20 +7,20 @@ from satellitepy.utils.wandb.wandb_utils import get_sweep_config, init_sweep, ru
 default_config = {
     'data': {
         'train': {
-            'image_folder': 'M:\miniFair1M\images',
-            'label_folder': 'M:\miniFair1M\labels',
+            'image_folder': '/raid/userdata/j0nl0060/data/dotView1M_patches/combined/train/images/',
+            'label_folder': '/raid/userdata/j0nl0060/data/dotView1M_patches/combined/train/labels/',
             'mask_folder:': None,    # Not implemented, use satpy labels
             'label_format': 'satellitepy'
         },
         'val': {
-            'image_folder': 'M:\miniFair1M\images',
-            'label_folder': 'M:\miniFair1M\labels',
+            'image_folder': '/raid/userdata/j0nl0060/data/dotView1M_patches/combined/val/images/',
+            'label_folder': '/raid/userdata/j0nl0060/data/dotView1M_patches/combined/val/labels/',
             'mask_folder:': None,   # Not implemented, use satpy labels
             'label_format': 'satellitepy'
         },
         'test': {
-            'image_folder': 'M:\miniFair1M\images',
-            'label_folder': 'M:\miniFair1M\labels',
+            'image_folder': '/raid/userdata/j0nl0060/data/dotView1M_patches/combined/test/images/',
+            'label_folder': '/raid/userdata/j0nl0060/data/dotView1M_patches/combined/test/labels/',
             'mask_folder': None,
             'label_format': 'satellitepy',
             'image_read_module': 'cv2',
@@ -36,23 +36,24 @@ default_config = {
     'model': {
         'resnet_type': 101,
         'down_ratio': 4,
-        'tasks': ['hbboxes', 'obboxes', 'coarse-class', 'role'],
+        'tasks': ['hbboxes', 'obboxes', 'coarse-class', 'fine-class'],
         'SWEEP_target_task': {
-            'values': ['coarse-class', 'role']
+            'values': ['coarse-class', 'fine-class']
         },
         'K': 500,
         'random_seed': 42424242,
-        "SWEEP_init_lr": {  # a distribution of possible values for a sweep
-                        'distribution': 'uniform',
-                        'min': 1.0e-4,
-                        'max': 1.0e-3
-                },
-        'num_epoch': 5,
-        'num_workers': 1,
-        'ngpus': 0,
+        # "SWEEP_init_lr": {  # a distribution of possible values for a sweep
+        #                 'distribution': 'uniform',
+        #                 'min': 1.0e-4,
+        #                 'max': 1.0e-3
+        #         },
+        'init_lr': 1.25e-4,
+        'num_epoch': 100,
+        'num_workers': 4,
+        'ngpus': 2,
         'conf_thresh': 0.1, # Not used??
         'checkpoint_path': None,
-        'patience': 10
+        'patience': 5
     },
     'testing': {
         'truncated_object_thresh': 0.5,
@@ -65,10 +66,10 @@ default_config = {
         'mask_threshold': 10,
         'mask_adaptive_size': 51
     },
-    'out_folder': 'M:\miniFair1M\out',
+    'out_folder': '/raid/userdata/j0nl0060/data/experiments/dotView1M/sweep_org-size',
     'wandb': True,
-    'wandb_project': 'test',
-    'wandb_run_name': 'test_name'
+    'wandb_project': 'dotView1M',
+    'wandb_run_name': ''
 }
 
 if __name__ == '__main__':
@@ -79,9 +80,8 @@ if __name__ == '__main__':
     out_folder = Path(default_config['out_folder'])
     assert create_folder(out_folder)
 
-    # log_path = Path(
-    #     out_folder) / 'train_bbavector.log'
-    log_path = Path('M:\log.log')
+    log_path = Path(
+        out_folder) / 'train_bbavector.log'
     init_logger(config_path=project_folder / Path('configs/log.config'), log_path=log_path)
     logger = logging.getLogger('')
 
