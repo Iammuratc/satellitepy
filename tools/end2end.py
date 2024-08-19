@@ -68,7 +68,7 @@ default_config = {
         'mask_threshold': 10,
         'mask_adaptive_size': 51
     },
-    'out_folder': 'M:\miniFair1M\out',
+    'out_folder': None,
     'wandb': True,
     'wandb_name': 'test'
 }
@@ -230,31 +230,30 @@ def config_eval(config, wandb_run=None):
 
 def run_end2end(config):
     project_folder = get_project_folder()
-    out_folder = Path(default_config['out_folder'])
+    out_folder = Path(config['out_folder'])
 
     with open(out_folder / 'config.json', 'w') as file:
-        json.dump(default_config, file, indent=4)
+        json.dump(config, file, indent=4)
 
     wandb_run = None
-    if default_config['wandb']:
+    if config['wandb']:
         wandb.login()
-        wandb_run = wandb.init(project=default_config['wandb_name'], entity='satellitepy', config=default_config)
+        wandb_run = wandb.init(project=config['wandb_name'], entity='satellitepy', config=config)
         wandb_run.save(out_folder / 'config.json')
 
-    config_training(default_config, wandb_run)
+    config_training(config, wandb_run)
 
-    config_test(default_config, wandb_run)
+    config_test(config, wandb_run)
 
-    config_eval(default_config, wandb_run)
+    config_eval(config, wandb_run)
 
 if __name__ == '__main__':
     project_folder = get_project_folder()
     out_folder = Path(default_config['out_folder'])
     assert create_folder(out_folder)
 
-    # log_path = Path(
-    #     out_folder) / 'train_bbavector.log'
-    log_path = 'M:\log.log'
+    log_path = Path(
+        out_folder) / 'train_bbavector.log'
     init_logger(config_path=project_folder / Path('configs/log.config'), log_path=log_path)
     logger = logging.getLogger('')
     logger.info(f'The default log path will be used: {log_path}')

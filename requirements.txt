@@ -6,3 +6,4 @@ tqdm
 scipy
 shapely
 rasterio
+wandb
