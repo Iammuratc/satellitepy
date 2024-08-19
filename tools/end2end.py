@@ -238,7 +238,7 @@ def run_end2end(config):
     wandb_run = None
     if config['wandb']:
         wandb.login()
-        wandb_run = wandb.init(project=config['wandb_name'], entity='satellitepy', config=config)
+        wandb_run = wandb.init(project=config['wandb_run_name'], entity='satellitepy', config=config)
         wandb_run.save(out_folder / 'config.json')
 
     config_training(config, wandb_run)
