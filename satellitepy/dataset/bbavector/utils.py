@@ -1,3 +1,5 @@
+import logging
+
 import cv2
 import torch
 import numpy as np
@@ -9,6 +11,7 @@ from satellitepy.dataset.bbavector import data_augment
 from satellitepy.data.utils import get_satellitepy_dict_values, get_task_dict
 from satellitepy.data.labels import read_label
 
+logger = logging.getLogger('')
 
 class Utils:
     def __init__(self, tasks, input_h=None, input_w=None, down_ratio=None, K=1000, augmentation=False):
@@ -35,7 +38,7 @@ class Utils:
         labels = read_label(label_path, label_format)
         annotation = self.prepare_annotations(labels, image_w, image_h)
         image, annotation = self.data_transform(image, annotation, self.augmentation)
-        data_dict = self.generate_ground_truth(image, annotation, target_task)
+        data_dict = self.generate_ground_truth(image, annotation, target_task, image_path)
         data_dict['img_path'] = str(image_path)
         data_dict['label_path'] = str(label_path)
         data_dict['img_w'] = image_w
@@ -225,7 +228,7 @@ class Utils:
         ll_new = pts[l_ind, :]
         return tt_new, rr_new, bb_new, ll_new
 
-    def generate_ground_truth(self, image, annotation, target_task):
+    def generate_ground_truth(self, image, annotation, target_task, image_path=''):
         image = np.asarray(np.clip(image, a_min=0., a_max=255.), np.float32)
         image = self.image_distort(np.asarray(image, np.float32))
         image = np.asarray(np.clip(image, a_min=0., a_max=255.), np.float32)
@@ -243,6 +246,9 @@ class Utils:
 
                 ret[k] = np.zeros(self.max_objs, dtype=np.float32)
                 for idx, v in enumerate(annotation[k]):
+                    if idx >= self.max_objs:
+                        logger.info(f'Image {image_path} has more than {self.max_objs} objects. Ignoring remaining objects.')
+                        break
                     ret[k][idx] = v
 
         td = get_task_dict(target_task)

@@ -68,8 +68,8 @@ default_config = {
         'mask_threshold': 10,
         'mask_adaptive_size': 51
     },
-    'out_folder': None,
-    'wandb': True,
+    'out_folder': '/mnt/2tb-0/satellitepy/temp/test_xview_K',
+    'wandb': False,
     'wandb_name': 'test'
 }
 
