@@ -31,7 +31,7 @@ default_config = {
         'patch_overlap': 100,
         'augmentation': None,
         'validate_datasets': False,
-        'batch_size': 2
+        'batch_size': 8
     },
     'model': {
         'resnet_type': 101,
@@ -57,7 +57,7 @@ default_config = {
     },
     'testing': {
         'truncated_object_thresh': 0.5,
-        'conf_thresh': 0.25,
+        'conf_thresh': 0.3,
     },
     'evaluation': {
         'nms_iou_threshold': 0.3,

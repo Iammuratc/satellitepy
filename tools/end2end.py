@@ -16,20 +16,20 @@ from satellitepy.utils.path_utils import create_folder, init_logger, get_project
 default_config = {
     'data': {
         'train': {
-            'image_folder': 'M:\miniFair1M\images',
-            'label_folder': 'M:\miniFair1M\labels',
+            'image_folder': '/mnt/2tb-0/satellitepy/dotView1M/patches/xview/train/images',
+            'label_folder': '/mnt/2tb-0/satellitepy/dotView1M/patches/xview/train/labels',
             'mask_folder:': None,    # Not implemented, use satpy labels
             'label_format': 'satellitepy'
         },
         'val': {
-            'image_folder': 'M:\miniFair1M\images',
-            'label_folder': 'M:\miniFair1M\labels',
+            'image_folder': '/mnt/2tb-0/satellitepy/dotView1M/patches/xview/val/images',
+            'label_folder': '/mnt/2tb-0/satellitepy/dotView1M/patches/xview/val/labels',
             'mask_folder:': None,   # Not implemented, use satpy labels
             'label_format': 'satellitepy'
         },
         'test': {
-            'image_folder': 'M:\miniFair1M\images',
-            'label_folder': 'M:\miniFair1M\labels',
+            'image_folder': '/mnt/2tb-0/satellitepy/dotView1M/patches/xview/test/images',
+            'label_folder': '/mnt/2tb-0/satellitepy/dotView1M/patches/xview/test/labels',
             'mask_folder': None,
             'label_format': 'satellitepy',
             'image_read_module': 'cv2',
@@ -50,16 +50,16 @@ default_config = {
         'K': 500,
         'random_seed': 42424242,
         'init_lr': 1.25e-4,
-        'num_epoch': 5,
+        'num_epoch': 100,
         'num_workers': 1,
-        'ngpus': 0,
+        'ngpus': 2,
         'conf_thresh': 0.1, # Not used??
         'checkpoint_path': None,
         'patience': 10
     },
     'testing': {
         'truncated_object_thresh': 0.5,
-        'conf_thresh': 0.25,
+        'conf_thresh': 0.3,
     },
     'evaluation': {
         'nms_iou_threshold': 0.3,

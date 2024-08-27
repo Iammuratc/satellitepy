@@ -1,5 +1,5 @@
-import cv2
 import numpy as np
+import cv2
 import rasterio
 from scipy.ndimage import generate_binary_structure, label, find_objects
 import logging

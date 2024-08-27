@@ -64,7 +64,7 @@ class BBAVectorDataset(Dataset):
                     image = cv2.imread(img_path.absolute().as_posix())
                     labels = read_label(label_path, in_label_format)
                     image_h, image_w, c = image.shape
-                    annotation = self.utils.preapare_annotations(labels, image_w, image_h)  # , img_path)
+                    annotation = self.utils.prepare_annotations(labels, image_w, image_h)  # , img_path)
                     image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
 
                     if self.all_tasks_available(annotation):

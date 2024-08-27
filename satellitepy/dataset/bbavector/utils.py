@@ -20,6 +20,15 @@ class Utils:
         self.augmentation = augmentation
         self.image_distort = data_augment.PhotometricDistort()
 
+    def get_num_objs(self, label_path, label_format):
+        labels = read_label(label_path, label_format)
+        if 'obboxes' in labels:
+            return len(labels['obboxes'])
+        elif 'hbboxes' in labels:
+            return len(labels['hbboxes'])
+        else:
+            return 0
+
     def get_data_dict(self, image_path, label_path, label_format, target_task):
         image = cv2.imread(image_path.absolute().as_posix())
         image_h, image_w, c = image.shape
