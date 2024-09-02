@@ -79,6 +79,8 @@ class TrainModule(object):
 
             logger.info(msg)
 
+            logger.info(nums)
+
             early_stopping(val_loss, self.model, self.optimizer, epoch)
             if early_stopping.early_stop:
                 logger.info("Early stopping")

@@ -1,5 +1,8 @@
 import logging
 from pathlib import Path
+import pandas as pd
+from fontTools.subset import subset
+
 from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
 from satellitepy.data.tools import save_chips
 import configargparse
@@ -36,6 +39,8 @@ def get_args():
         choices=['INTER_NEAREST','INTER_LINEAR','INTER_CUBIC','INTER_AREA'])
     parser.add_argument('--orient-objects',action='store_true', help='Orient the objects in chips')
     parser.add_argument('--mask-objects',action='store_true', help='Mask the objects in chips. If true, background will be removed in the chips')
+    parser.add_argument('--subset-file-path', type=str, default="",
+                        help='Move patches to the specified subset folder in the csv. Leave empty to not move patches to a subset folder.')
     args = parser.parse_args()
     return args
 
@@ -48,6 +53,9 @@ def run(args):
 
     out_folder = Path(args.out_folder)
 
+    subset_data = None
+    if args.subset_file_path != "":
+        subset_data = pd.read_csv(Path(args.subset_file_path))
 
     assert create_folder(out_folder)
 
@@ -69,7 +77,8 @@ def run(args):
         rescaling=args.rescaling,
         interpolation_method=args.interpolation_method,
         orient_objects=args.orient_objects,
-        mask_objects=args.mask_objects
+        mask_objects=args.mask_objects,
+        subset_data=subset_data
     )
 
 

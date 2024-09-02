@@ -6,15 +6,11 @@ import numpy as np
 
 import torch
 import torchvision
-from torch import manual_seed
-
-from tqdm import tqdm
 
 from satellitepy.data.utils import get_satellitepy_table
 from satellitepy.dataset.chip_dataset import get_train_val_dataloaders
-from satellitepy.models.chips.chip_models import get_model, Classifier
+from satellitepy.models.chips.chip_models import get_model
 from satellitepy.models.chips.train_model import TrainModule
-from satellitepy.models.utils import EarlyStopping
 from satellitepy.utils.path_utils import get_project_folder, init_logger, create_folder
 
 
@@ -30,9 +26,13 @@ def parse_args():
     parser.add_argument('--patience', type=int, default=10,
                         help='Number of Patience epochs. If the valid loss does not improve for <patience> times, '
                              'the training will stop. ')
-    parser.add_argument('--image-folder', type=Path,
+    parser.add_argument('--train-image-folder', type=Path,
                         help='Image folder. The images in this folder will be used to train the model.')
-    parser.add_argument('--label-folder', type=Path,
+    parser.add_argument('--train-label-folder', type=Path,
+                        help='Label folder. The labels in this folder will be used to train the model.')
+    parser.add_argument('--val-image-folder', type=Path,
+                        help='Image folder. The images in this folder will be used to train the model.')
+    parser.add_argument('--val-label-folder', type=Path,
                         help='Label folder. The labels in this folder will be used to train the model.')
     parser.add_argument('--eval-by-source', type=bool, default=False, required=False)
     parser.add_argument('--verbose-output', type=bool, default=False, required=False)
@@ -43,14 +43,16 @@ def parse_args():
     parser.add_argument('--out-folder',
                         type=Path,
                         help='Save folder of experiments. The trained weights will be saved under this folder.')
-    parser.add_argument('--manual-seed', type=int, help='Seed for splitting data in train and val sets')
 
     args = parser.parse_args()
     return args
 
 def train_chips(args):
-    in_image_path = Path(args.image_folder)
-    in_labels_path =Path(args.label_folder)
+    train_image_path = Path(args.train_image_folder)
+    train_label_path = Path(args.train_label_folder)
+
+    val_image_path = Path(args.val_image_folder)
+    val_label_path = Path(args.val_label_folder)
 
     out_folder = Path(args.out_folder)
     assert create_folder(out_folder)
@@ -67,7 +69,6 @@ def train_chips(args):
     transform = [torchvision.transforms.RandomHorizontalFlip(), torchvision.transforms.RandomRotation(180),
                  torchvision.transforms.RandomVerticalFlip()]
 
-    seed = args.manual_seed if args.manual_seed else np.random.randint(4242)
     batch_size = args.batch_size
     num_workers = args.num_workers
     num_epochs = args.num_epoch
@@ -76,15 +77,17 @@ def train_chips(args):
     verbose_output = args.verbose_output
 
     train_dataloader, val_dataloader = get_train_val_dataloaders(
-        in_image_path, in_labels_path, classes, train_batch_size=batch_size, val_batch_size=1, num_workers=num_workers, transform=transform, seed=seed)
+        train_image_path, train_label_path, val_image_path, val_label_path, classes, train_batch_size=batch_size, val_batch_size=1, num_workers=num_workers, transform=transform)
 
     backbone_name = args.backbone
+    init_lr = args.init_lr
     model = get_model(backbone_name, len(classes))
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=init_lr)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=1)
     loss = torch.nn.CrossEntropyLoss()
+    patience = args.patience
 
-    train_module = TrainModule(model, train_dataloader, val_dataloader, optimizer, scheduler, loss, num_epochs, out_folder, classes, patience=10, val_by_source=eval_by_source, verbose_output=verbose_output)
+    train_module = TrainModule(model, train_dataloader, val_dataloader, optimizer, scheduler, loss, num_epochs, out_folder, classes, patience=patience, val_by_source=eval_by_source, verbose_output=verbose_output)
 
     train_module.train_network()
 

@@ -1,4 +1,5 @@
 import json
+import logging
 from glob import glob
 
 import cv2
@@ -8,6 +9,8 @@ import torch
 from torch.utils.data import Dataset, random_split, DataLoader
 from torchvision.transforms import v2
 from tqdm import tqdm
+
+logger = logging.getLogger('')
 
 
 def compute_mean_and_std(chip_paths):
@@ -32,11 +35,9 @@ def compute_mean_and_std(chip_paths):
     return mean, std
 
 
-def get_train_val_dataloaders(chip_path, label_path, classes, train_batch_size, val_batch_size, transform=[], get_source=False, shuffle=True, num_workers=4, seed=42424242):
-    dataset = ChipDataset(chip_path, label_path, classes, transform)
-
-    generator = torch.Generator().manual_seed(seed)
-    train_dataset, val_dataset = random_split(dataset, [0.8, 0.2], generator)
+def get_train_val_dataloaders(train_chip_path, train_label_path, val_chip_path, val_label_path, classes, train_batch_size, val_batch_size, transform=[], shuffle=True, num_workers=4, seed=42424242):
+    train_dataset = ChipDataset(train_chip_path, train_label_path, classes, transform)
+    val_dataset = ChipDataset(val_chip_path, val_label_path, classes, transform)
 
     train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=shuffle, num_workers=num_workers)
     val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, shuffle=False, num_workers=num_workers)
@@ -77,8 +78,10 @@ class ChipDataset(Dataset):
             s = 0
         elif source == 'Mask':
             s = 1
-        elif source is None:
+        elif source is None or source == 'None':
             s = 2
+        else:
+            raise Exception(f'source {source} is unknown')
 
         label = np.zeros([len(self.classes)])
         label[label_idx] = 1

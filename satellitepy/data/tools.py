@@ -366,6 +366,7 @@ def save_chips(
         interpolation_method,
         orient_objects=False,
         mask_objects=False,
+        subset_data=None
 ):
     """
     Save chips from the original images
@@ -388,11 +389,16 @@ def save_chips(
     Returns
     -------
     """
-    out_folder_images = out_folder / 'images'
-    out_folder_labels = out_folder / 'labels'
 
-    assert create_folder(out_folder_images)
-    assert create_folder(out_folder_labels)
+    if subset_data is not None:
+        base_out_image_folder = Path(out_folder)
+        base_out_label_folder = Path(out_folder)
+    else:
+        base_out_image_folder = Path(out_folder) / 'images'
+        base_out_label_folder = Path(out_folder) / 'labels'
+
+    assert create_folder(base_out_image_folder)
+    assert create_folder(base_out_label_folder)
 
     image_paths = get_file_paths(image_folder)
     label_paths = get_file_paths(label_folder)
@@ -404,8 +410,23 @@ def save_chips(
     chip_counter = [0,0] # per folder, per image
     if len(image_paths) == len(label_paths) == len(mask_paths):
         for img_path, label_path, mask_path in zip(image_paths, label_paths, mask_paths):
+            out_image_folder = base_out_image_folder
+            out_label_folder = base_out_label_folder
             chip_counter[1] = 0
             logger.info(f"Reading the image: {img_path}")
+
+            if subset_data is not None:
+                subset_type = ""
+                for col in subset_data.values:
+                    if img_path.name in col[0]:
+                        subset_type = col[2]
+                logger.info(f"Chips belong to split {subset_type}")
+                if subset_type != "":
+                    out_image_folder = Path(base_out_image_folder) / subset_type / 'images'
+                    assert create_folder(out_image_folder)
+                    out_label_folder = Path(base_out_label_folder) / subset_type / 'labels'
+                    assert create_folder(out_label_folder)
+
             img = read_img(str(img_path), img_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
             logger.info(f"Image read successfull!")
             label = read_label(label_path, label_format, mask_path)
@@ -425,7 +446,7 @@ def save_chips(
                 chip_img = chips['images'][i]
 
                 if not chip_img.size == 0:
-                    chip_img_path = out_folder_images / f'{img_name}_{i}.png'
+                    chip_img_path = out_image_folder / f'{img_name}_{i}.png'
                     cv2.imwrite(str(chip_img_path), chip_img)
                     chip_counter[0] += 1
                     chip_counter[1] += 1
@@ -433,7 +454,7 @@ def save_chips(
                     continue
 
                 chip_label = get_label_by_idx(chips['labels'], i)
-                chip_label_path = out_folder_labels / f'{img_name}_{i}.json'
+                chip_label_path = out_label_folder / f'{img_name}_{i}.json'
 
                 with open(str(chip_label_path), 'w') as f:
                     json.dump(chip_label, f, indent=4)
