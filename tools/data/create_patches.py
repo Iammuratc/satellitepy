@@ -58,7 +58,7 @@ def run(parser):
 
     out_folder = Path(args.out_folder)
     assert create_folder(out_folder)
-
+    
     subset_data = None
     if args.subset_file_path != "":
         subset_data = pd.read_csv(Path(args.subset_file_path))
