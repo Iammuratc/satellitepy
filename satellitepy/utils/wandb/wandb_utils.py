@@ -2,6 +2,7 @@ import json
 from copy import deepcopy
 from functools import partial
 from pathlib import Path
+import time
 
 import wandb
 
@@ -75,6 +76,7 @@ def run_sweep_config(original_config: dict, save_path: Path, sweep_project: str)
             wandb_run.finish()
 
 def fill_in_sweep_params(original_config, wandb_config: dict, new_config: dict):
+    new_config['out_folder'] += '/' + time.strftime("%Y%m%d-%H%M%S")
     for key, value in original_config.items():
         if key.startswith('SWEEP_'):
             del new_config[key]

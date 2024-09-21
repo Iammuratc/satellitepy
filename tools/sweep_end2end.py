@@ -37,17 +37,22 @@ default_config = {
         'resnet_type': 101,
         'down_ratio': 4,
         'tasks': ['hbboxes', 'obboxes', 'coarse-class', 'fine-class'],
+
         'SWEEP_target_task': {
-            'values': ['coarse-class', 'fine-class']
+            'values': ['coarse-class', 'fine-class', 'very-fine-class']
         },
+        # 'target_task': 'coarse-class',
+
         'K': 500,
         'random_seed': 42424242,
-        # "SWEEP_init_lr": {  # a distribution of possible values for a sweep
-        #                 'distribution': 'uniform',
-        #                 'min': 1.0e-4,
-        #                 'max': 1.0e-3
-        #         },
-        'init_lr': 1.25e-4,
+
+        "SWEEP_init_lr": {
+                        'distribution': 'uniform',
+                        'min': 0.0001,
+                        'max': 0.001
+                },
+        # 'init_lr': 1.25e-4,
+
         'num_epoch': 100,
         'num_workers': 4,
         'ngpus': 2,
@@ -66,7 +71,7 @@ default_config = {
         'mask_threshold': 10,
         'mask_adaptive_size': 51
     },
-    'out_folder': '/raid/userdata/j0nl0060/data/experiments/dotView1M/sweep_org-size',
+    'out_folder': '/mnt/2tb-0/satellitepy/temp/sweep_demo',
     'wandb': True,
     'wandb_project': 'dotView1M',
     'wandb_run_name': ''
