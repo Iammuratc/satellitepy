@@ -236,6 +236,10 @@ class Utils:
                 for idx, v in enumerate(annotation[k]):
                     ret[k][idx] = v
 
+        if target_task == 'masks':
+            ret['masks'] = torch.from_numpy([ret['masks']])
+            return ret
+
         td = get_task_dict(target_task)
         num_classes = len(set(td.values()))
 
