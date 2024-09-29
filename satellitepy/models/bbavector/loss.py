@@ -155,33 +155,32 @@ def isnan(x):
 
 
 class LossAll(torch.nn.Module):
-    def __init__(self, tasks, target_task):
+    def __init__(self, tasks, obboxes):
         super(LossAll, self).__init__()
         self.tasks_losses = nn.ModuleDict()
         for t in tasks:
             if t == 'masks':
                 self.tasks_losses[t] = BCELoss(mask_loss=True)
-            elif t == 'obboxes':
-                self.tasks_losses[t + '_params'] = OffSmoothL1Loss()
-                self.tasks_losses[t + '_offset'] = OffSmoothL1Loss()
-                self.tasks_losses[t + '_theta'] = BCELoss()
-            elif t == 'hbboxes':
-                self.tasks_losses[t + '_params'] = OffSmoothL1Loss()
-                self.tasks_losses[t + '_offset'] = OffSmoothL1Loss()
-            elif t == target_task:
-                self.tasks_losses['cls_' + t] = FocalLoss()
             else:
                 td = get_task_dict(t)
                 if 'max' in td.keys() and 'min' in td.keys():
+                    raise Exception('Not implemented without single target task yet.')
                     self.tasks_losses['reg_' + t] = OffSmoothL1Loss()
                 else:
-                    self.tasks_losses['cls_' + t] = CELoss()
+                    self.tasks_losses['cls_' + t] = FocalLoss()
 
-    def forward(self, pr_decs, gt_batch, target_task):
+                self.tasks_losses[t + '_hbbox_params'] = OffSmoothL1Loss()
+                self.tasks_losses[t + '_hbbox_offset'] = OffSmoothL1Loss()
+                if obboxes:
+                    self.tasks_losses[t + '_obbox_params'] = OffSmoothL1Loss()
+                    self.tasks_losses[t + '_obbox_offset'] = OffSmoothL1Loss()
+                    self.tasks_losses[t + '_obbox_theta'] = BCELoss()
+
+    def forward(self, pr_decs, gt_batch):
         loss_dict = dict()
 
         for task, loss_fnc in self.tasks_losses.items():
-            if task == 'cls_' + target_task:
+            if 'cls' in task:
                 loss_dict[task] = loss_fnc(pr_decs[task], gt_batch[task])
             else:
                 loss_dict[task] = loss_fnc(

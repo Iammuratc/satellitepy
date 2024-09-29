@@ -41,13 +41,11 @@ def parse_args():
     parser.add_argument('--log-config-path', default=project_folder /
                                                      Path('configs/log.config'), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, required=False, help='Log path.')
-    parser.add_argument('--tasks', default=['obboxes, coarse-class'], nargs='+',
+    parser.add_argument('--tasks', default=['coarse-class'], nargs='+',
                         help='The model will be trained for the given tasks. Find the other task names at '
                              'satellitepy.data.utils.get_satellitepy_table. If it is fine-class or very-fine class, '
                              'None values in those keys will be filled from one upper level')
-    parser.add_argument('--target-task', type=str, default='coarse-class',
-                        help='The model will be trained for the given target task. Needs to be a classification task. '
-                             'Default is coarse-class')
+    parser.add_argument('--obboxes', default=False, help='Uses obboxes if available in the annotations. Hbboxes are always used.')
     parser.add_argument('--out-folder',
                         type=Path,
                         help='Save folder of experiments. The trained weights will be saved under this folder.')
@@ -73,12 +71,7 @@ def train_bbavector(args):
     down_ratio = 4
     patience = args.patience
     tasks = args.tasks
-
-    assert 'obboxes' in tasks or 'hbboxes' in tasks, 'Tasks must contain at least one type of bounding boxes.'
-
-    target_task = args.target_task
-
-    assert target_task in tasks, 'target task must be part of the tasks'
+    obboxes = args.obboxes
 
     validate_datasets = args.validate_datasets
 
@@ -103,7 +96,7 @@ def train_bbavector(args):
         f'No log path is given, the default log path will be used: {log_path}')
     logger.info('Initiating the training of the BBAVector model...')
 
-    model = get_model(tasks, down_ratio)
+    model = get_model(tasks, down_ratio, obboxes)
 
     train_dataset = BBAVectorDataset(
         train_image_folder,
@@ -113,7 +106,6 @@ def train_bbavector(args):
         input_h,
         input_w,
         down_ratio,
-        target_task,
         args.augmentation,
         validate_datasets,
         K=K,
@@ -129,7 +121,6 @@ def train_bbavector(args):
             input_h,
             input_w,
             down_ratio,
-            target_task,
             args.augmentation,
             validate_datasets,
             K=K,
@@ -143,6 +134,7 @@ def train_bbavector(args):
         valid_dataset=valid_dataset,
         model=model,
         tasks=tasks,
+        obboxes=obboxes,
         down_ratio=down_ratio,
         out_folder=out_folder,
         init_lr=init_lr,
@@ -152,8 +144,7 @@ def train_bbavector(args):
         conf_thresh=conf_thresh,
         ngpus=ngpus,
         resume_train=checkpoint_path,
-        patience=patience,
-        target_task=target_task
+        patience=patience
     )
 
     ctrbox_obj.train_network()

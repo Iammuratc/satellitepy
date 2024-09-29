@@ -20,13 +20,13 @@ class Utils:
         self.augmentation = augmentation
         self.image_distort = data_augment.PhotometricDistort()
 
-    def get_data_dict(self, image_path, label_path, label_format, target_task):
+    def get_data_dict(self, image_path, label_path, label_format):
         image = cv2.imread(image_path.absolute().as_posix())
         image_h, image_w, c = image.shape
         labels = read_label(label_path, label_format)
         annotation = self.prepare_annotations(labels, image_w, image_h)
         image, annotation = self.data_transform(image, annotation, self.augmentation)
-        data_dict = self.generate_ground_truth(image, annotation, target_task)
+        data_dict = self.generate_ground_truth(image, annotation)
         data_dict['img_path'] = str(image_path)
         data_dict['label_path'] = str(label_path)
         data_dict['img_w'] = image_w
@@ -56,10 +56,11 @@ class Utils:
 
     def prepare_annotations(self, labels, image_w, image_h):
         annotation = {}
+        annotation['hbboxes'] = np.asarray(get_satellitepy_dict_values(labels, 'hbboxes'))
+        annotation['obboxes'] = np.asarray(get_satellitepy_dict_values(labels, 'obboxes'))
         for t in self.tasks:
-            if t in ['obboxes', 'hbboxes']:
-                annotation[t] = np.asarray(get_satellitepy_dict_values(labels, t))
-            elif t == 'masks':
+
+            if t == 'masks':
                 annotation[t] = self.prepare_masks(labels, image_w, image_h)
             else:
                 task_dict = get_task_dict(t)
@@ -216,7 +217,7 @@ class Utils:
         ll_new = pts[l_ind, :]
         return tt_new, rr_new, bb_new, ll_new
 
-    def generate_ground_truth(self, image, annotation, target_task):
+    def generate_ground_truth(self, image, annotation):
         image = np.asarray(np.clip(image, a_min=0., a_max=255.), np.float32)
         image = self.image_distort(np.asarray(image, np.float32))
         image = np.asarray(np.clip(image, a_min=0., a_max=255.), np.float32)
@@ -227,112 +228,161 @@ class Utils:
         ret = {
             'input': image
         }
+
         for k in annotation.keys():
             if k == 'masks':
                 ret[k] = annotation[k]
-            if k not in ['obboxes', 'hbboxes', 'masks', 'cls_' + target_task]:
+            elif k not in ['hbboxes', 'obboxes']:
+                td = get_task_dict(k.split('_')[1])
+                num_classes = len(set(td.values()))
 
-                ret[k] = np.zeros(self.max_objs, dtype=np.float32)
-                for idx, v in enumerate(annotation[k]):
-                    ret[k][idx] = v
+                ret[k] = np.zeros((num_classes, image_h, image_w), dtype=np.float32)
 
-        td = get_task_dict(target_task)
-        num_classes = len(set(td.values()))
+        # Hbbox code
 
-        ret['cls_' + target_task] = np.zeros((num_classes, image_h, image_w), dtype=np.float32)
+        wh = np.zeros((self.max_objs, 2), dtype=np.float32)
+        reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+        ind = np.zeros((self.max_objs), dtype=np.int64)
+        reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
+        num_objs = min(annotation['hbboxes'].shape[0], self.max_objs)
+        for k in range(num_objs):
+            if isinstance(annotation['hbboxes'][k], np.float32):
+                print(annotation["hbboxes"][k])
+                raise Exception(f'Why do we skip this? Value is {annotation["hbboxes"][k]}')
+                continue
 
-        if 'obboxes' in annotation.keys():
-            wh = np.zeros((self.max_objs, 10), dtype=np.float32)
-            cls_theta = np.zeros((self.max_objs, 1), dtype=np.float32)
-            reg = np.zeros((self.max_objs, 2), dtype=np.float32)
-            ind = np.zeros((self.max_objs), dtype=np.int64)
-            reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
-            num_objs = min(annotation['obboxes'].shape[0], self.max_objs)
-            for k in range(num_objs):
-                if isinstance(annotation['obboxes'][k], np.float32):
-                    continue
+            # if annotation['cls_' + target_task][k] is None:
+            #     continue
 
-                if annotation['cls_' + target_task][k] is None:
-                    continue
+            rect = annotation['hbboxes'][k, :]
+            cen_x, cen_y, bbox_w, bbox_h = rect
+            radius = gaussian_radius((math.ceil(bbox_h), math.ceil(bbox_w)))
+            radius = max(0, int(radius))
+            ct = np.asarray([cen_x, cen_y], dtype=np.float32)
+            ct_int = ct.astype(np.int32)
 
-                rect = annotation['obboxes'][k, :]
-                cen_x, cen_y, bbox_w, bbox_h, theta = rect
-                radius = gaussian_radius((math.ceil(bbox_h), math.ceil(bbox_w)))
-                radius = max(0, int(radius))
-                ct = np.asarray([cen_x, cen_y], dtype=np.float32)
-                ct_int = ct.astype(np.int32)
-                draw_umich_gaussian(ret['cls_' + target_task][annotation['cls_' + target_task][k]], ct_int, radius)
-                ind[k] = ct_int[1] * image_w + ct_int[0]
-                reg[k] = ct - ct_int
-                reg_mask[k] = 1
-                pts_4 = cv2.boxPoints(((cen_x, cen_y), (bbox_w, bbox_h), theta))
+            for task in annotation.keys():
+                if 'cls' in task and annotation[task][k]:
+                    draw_umich_gaussian(ret[task][annotation[task][k]], ct_int, radius)
 
-                bl = pts_4[0, :]
-                tl = pts_4[1, :]
-                tr = pts_4[2, :]
-                br = pts_4[3, :]
+            ind[k] = ct_int[1] * image_w + ct_int[0]
+            reg[k] = ct - ct_int
+            reg_mask[k] = 1
+            pts_4 = np.array([
+                [cen_x - bbox_w / 2, cen_y + bbox_h / 2],
+                [cen_x - bbox_w / 2, cen_y - bbox_h / 2],
+                [cen_x + bbox_w / 2, cen_y + bbox_h / 2],
+                [cen_x + bbox_w / 2, cen_y + bbox_h / 2],
+            ])
+            w_hbbox, h_hbbox = self.cal_bbox_wh(pts_4)
+            wh[k] = 1. * w_hbbox, 1. * h_hbbox
 
-                tt = (np.asarray(tl, np.float32) + np.asarray(tr, np.float32)) / 2
-                rr = (np.asarray(tr, np.float32) + np.asarray(br, np.float32)) / 2
-                bb = (np.asarray(bl, np.float32) + np.asarray(br, np.float32)) / 2
-                ll = (np.asarray(tl, np.float32) + np.asarray(bl, np.float32)) / 2
-
-                if theta in [-90.0, -0.0, 0.0]:
-                    tt, rr, bb, ll = self.reorder_pts(tt, rr, bb, ll)
-                wh[k, 0:2] = tt - ct
-                wh[k, 2:4] = rr - ct
-                wh[k, 4:6] = bb - ct
-                wh[k, 6:8] = ll - ct
-                w_hbbox, h_hbbox = self.cal_bbox_wh(pts_4)
-                wh[k, 8:10] = 1. * w_hbbox, 1. * h_hbbox
-                jaccard_score = ex_box_jaccard(pts_4.copy(), self.cal_bbox_pts(pts_4).copy())
-                if jaccard_score < 0.95:
-                    cls_theta[k, 0] = 1
-            ret['obboxes_params'] = wh
-            ret['obboxes_offset'] = reg
-            ret['obboxes_theta'] = cls_theta
+        ret['hbboxes_params'] = wh
+        ret['hbboxes_offset'] = reg
+        if 'ind' not in ret:
             ret['ind'] = ind
+        if 'reg_mask' not in ret:
             ret['reg_mask'] = reg_mask
 
-        if 'hbboxes' in annotation.keys():
-            wh = np.zeros((self.max_objs, 2), dtype=np.float32)
-            reg = np.zeros((self.max_objs, 2), dtype=np.float32)
-            ind = np.zeros((self.max_objs), dtype=np.int64)
-            reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
-            num_objs = min(annotation['obboxes'].shape[0], self.max_objs)
-            for k in range(num_objs):
-                if isinstance(annotation['hbboxes'][k], np.float32):
-                    continue
+        # ^Hbbox code
 
-                if annotation['cls_' + target_task][k] is None:
-                    continue
+        # td = get_task_dict(target_task)
+        # num_classes = len(set(td.values()))
 
-                rect = annotation['hbboxes'][k, :]
-                cen_x, cen_y, bbox_w, bbox_h = rect
-                radius = gaussian_radius((math.ceil(bbox_h), math.ceil(bbox_w)))
-                radius = max(0, int(radius))
-                ct = np.asarray([cen_x, cen_y], dtype=np.float32)
-                ct_int = ct.astype(np.int32)
+        # ret['cls_' + target_task] = np.zeros((num_classes, image_h, image_w), dtype=np.float32)
 
-                draw_umich_gaussian(ret['cls_' + target_task][annotation['cls_' + target_task][k]], ct_int, radius)
-                ind[k] = ct_int[1] * image_w + ct_int[0]
-                reg[k] = ct - ct_int
-                reg_mask[k] = 1
-                pts_4 = np.array([
-                    [cen_x - bbox_w / 2, cen_y + bbox_h / 2],
-                    [cen_x - bbox_w / 2, cen_y - bbox_h / 2],
-                    [cen_x + bbox_w / 2, cen_y + bbox_h / 2],
-                    [cen_x + bbox_w / 2, cen_y + bbox_h / 2],
-                ])
-                w_hbbox, h_hbbox = self.cal_bbox_wh(pts_4)
-                wh[k] = 1. * w_hbbox, 1. * h_hbbox
+        # if 'obboxes' in annotation.keys():
+        #     wh = np.zeros((self.max_objs, 10), dtype=np.float32)
+        #     cls_theta = np.zeros((self.max_objs, 1), dtype=np.float32)
+        #     reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+        #     ind = np.zeros((self.max_objs), dtype=np.int64)
+        #     reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
+        #     num_objs = min(annotation['obboxes'].shape[0], self.max_objs)
+        #     for k in range(num_objs):
+        #         if isinstance(annotation['obboxes'][k], np.float32):
+        #             continue
+        #
+        #         if annotation['cls_' + target_task][k] is None:
+        #             continue
+        #
+        #         rect = annotation['obboxes'][k, :]
+        #         cen_x, cen_y, bbox_w, bbox_h, theta = rect
+        #         radius = gaussian_radius((math.ceil(bbox_h), math.ceil(bbox_w)))
+        #         radius = max(0, int(radius))
+        #         ct = np.asarray([cen_x, cen_y], dtype=np.float32)
+        #         ct_int = ct.astype(np.int32)
+        #         draw_umich_gaussian(ret['cls_' + target_task][annotation['cls_' + target_task][k]], ct_int, radius)
+        #         ind[k] = ct_int[1] * image_w + ct_int[0]
+        #         reg[k] = ct - ct_int
+        #         reg_mask[k] = 1
+        #         pts_4 = cv2.boxPoints(((cen_x, cen_y), (bbox_w, bbox_h), theta))
+        #
+        #         bl = pts_4[0, :]
+        #         tl = pts_4[1, :]
+        #         tr = pts_4[2, :]
+        #         br = pts_4[3, :]
+        #
+        #         tt = (np.asarray(tl, np.float32) + np.asarray(tr, np.float32)) / 2
+        #         rr = (np.asarray(tr, np.float32) + np.asarray(br, np.float32)) / 2
+        #         bb = (np.asarray(bl, np.float32) + np.asarray(br, np.float32)) / 2
+        #         ll = (np.asarray(tl, np.float32) + np.asarray(bl, np.float32)) / 2
+        #
+        #         if theta in [-90.0, -0.0, 0.0]:
+        #             tt, rr, bb, ll = self.reorder_pts(tt, rr, bb, ll)
+        #         wh[k, 0:2] = tt - ct
+        #         wh[k, 2:4] = rr - ct
+        #         wh[k, 4:6] = bb - ct
+        #         wh[k, 6:8] = ll - ct
+        #         w_hbbox, h_hbbox = self.cal_bbox_wh(pts_4)
+        #         wh[k, 8:10] = 1. * w_hbbox, 1. * h_hbbox
+        #         jaccard_score = ex_box_jaccard(pts_4.copy(), self.cal_bbox_pts(pts_4).copy())
+        #         if jaccard_score < 0.95:
+        #             cls_theta[k, 0] = 1
+        #     ret['obboxes_params'] = wh
+        #     ret['obboxes_offset'] = reg
+        #     ret['obboxes_theta'] = cls_theta
+        #     ret['ind'] = ind
+        #     ret['reg_mask'] = reg_mask
 
-            ret['hbboxes_params'] = wh
-            ret['hbboxes_offset'] = reg
-            if 'ind' not in ret:
-                ret['ind'] = ind
-            if 'reg_mask' not in ret:
-                ret['reg_mask'] = reg_mask
+        # if 'hbboxes' in annotation.keys():
+        #     wh = np.zeros((self.max_objs, 2), dtype=np.float32)
+        #     reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+        #     ind = np.zeros((self.max_objs), dtype=np.int64)
+        #     reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
+        #     num_objs = min(annotation['obboxes'].shape[0], self.max_objs)
+        #     for k in range(num_objs):
+        #         if isinstance(annotation['hbboxes'][k], np.float32):
+        #             continue
+        #
+        #         if annotation['cls_' + target_task][k] is None:
+        #             continue
+        #
+        #         rect = annotation['hbboxes'][k, :]
+        #         cen_x, cen_y, bbox_w, bbox_h = rect
+        #         radius = gaussian_radius((math.ceil(bbox_h), math.ceil(bbox_w)))
+        #         radius = max(0, int(radius))
+        #         ct = np.asarray([cen_x, cen_y], dtype=np.float32)
+        #         ct_int = ct.astype(np.int32)
+        #
+        #         draw_umich_gaussian(ret['cls_' + target_task][annotation['cls_' + target_task][k]], ct_int, radius)
+        #         ind[k] = ct_int[1] * image_w + ct_int[0]
+        #         reg[k] = ct - ct_int
+        #         reg_mask[k] = 1
+        #         pts_4 = np.array([
+        #             [cen_x - bbox_w / 2, cen_y + bbox_h / 2],
+        #             [cen_x - bbox_w / 2, cen_y - bbox_h / 2],
+        #             [cen_x + bbox_w / 2, cen_y + bbox_h / 2],
+        #             [cen_x + bbox_w / 2, cen_y + bbox_h / 2],
+        #         ])
+        #         w_hbbox, h_hbbox = self.cal_bbox_wh(pts_4)
+        #         wh[k] = 1. * w_hbbox, 1. * h_hbbox
+        #
+        #     ret['hbboxes_params'] = wh
+        #     ret['hbboxes_offset'] = reg
+        #     if 'ind' not in ret:
+        #         ret['ind'] = ind
+        #     if 'reg_mask' not in ret:
+        #         ret['reg_mask'] = reg_mask
 
         for k, v in ret.items():
             ret[k] = torch.from_numpy(v)

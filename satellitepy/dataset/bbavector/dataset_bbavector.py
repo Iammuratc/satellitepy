@@ -21,7 +21,6 @@ class BBAVectorDataset(Dataset):
                  input_h,
                  input_w,
                  down_ratio,
-                 target_task='coarse-class',
                  augmentation=False,
                  validate_dataset=True,
                  K=1000,
@@ -30,7 +29,6 @@ class BBAVectorDataset(Dataset):
 
         self.utils = Utils(tasks, input_h, input_w, down_ratio, K, augmentation)
         self.tasks = tasks
-        self.target_task = target_task
         self.items = []
         self.augmentation = augmentation
         self.random_seed = random_seed
@@ -41,7 +39,6 @@ class BBAVectorDataset(Dataset):
             if t not in ['obboxes', 'hbboxes', 'masks']:
                 task_dict = get_task_dict(t)
                 if 'min' in task_dict.keys() and 'max' in task_dict.keys():
-                    assert t != target_task, f'target-task can not be a regression task but is {target_task}.'
                     self.grouped_tasks.append('reg_' + t)
                 else:
                     self.grouped_tasks.append('cls_' + t)
@@ -102,7 +99,7 @@ class BBAVectorDataset(Dataset):
                 'img_h': image_h
             }
 
-        data_dict = self.utils.get_data_dict(img_path, label_path, label_format, self.target_task)
+        data_dict = self.utils.get_data_dict(img_path, label_path, label_format)
         return data_dict
 
     def visualize_masks(self, image, masks, labels):

@@ -18,6 +18,7 @@ class TrainModule(object):
                  valid_dataset,
                  model,
                  tasks,
+                 obboxes,
                  down_ratio,
                  out_folder,
                  init_lr,
@@ -27,8 +28,7 @@ class TrainModule(object):
                  conf_thresh,
                  ngpus,
                  resume_train,
-                 patience,
-                 target_task='coarse-class'):
+                 patience):
         torch.manual_seed(317)
         self.train_dataset = train_dataset
         self.valid_dataset = valid_dataset
@@ -45,7 +45,7 @@ class TrainModule(object):
         self.resume_train = resume_train
         self.patience = patience
         self.tasks = tasks
-        self.target_task = target_task
+        self.obboxes = obboxes
 
     def train_network(self):
         logger = logging.getLogger('')
@@ -74,7 +74,7 @@ class TrainModule(object):
         if not os.path.exists(save_path):
             os.mkdir(save_path)
 
-        criterion = loss_utils.LossAll(self.tasks, self.target_task)
+        criterion = loss_utils.LossAll(self.tasks, self.obboxes)
         logger.info('Setting up data...')
 
         train_loader = torch.utils.data.DataLoader(self.train_dataset,
@@ -150,7 +150,7 @@ class TrainModule(object):
                     data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             self.optimizer.zero_grad()
             pr_decs = self.model(data_dict['input'])
-            loss_dict = criterion(pr_decs, data_dict, self.target_task)
+            loss_dict = criterion(pr_decs, data_dict)
             total_loss = sum([l for l in loss_dict.values()])
             total_loss.backward()
             self.optimizer.step()
@@ -175,7 +175,7 @@ class TrainModule(object):
                     data_dict[name] = data_dict[name].to(device=self.device, non_blocking=True)
             with torch.no_grad():
                 pr_decs = self.model(data_dict['input'])
-                loss_dict = criterion(pr_decs, data_dict, self.target_task)
+                loss_dict = criterion(pr_decs, data_dict)
                 for k, v in loss_dict.items():
                     running_loss.setdefault(k, [0., 0])
                     if isinstance(v, torch.Tensor):
