@@ -67,7 +67,7 @@ def train_segmentation(args):
     batch_size = args.batch_size
     num_workers = args.num_workers
     init_lr = args.init_lr
-    conf_thresh = args.conf_thresh
+    conf_thresh = 0
 
     random_seed = args.random_seed
     ngpus = args.ngpus

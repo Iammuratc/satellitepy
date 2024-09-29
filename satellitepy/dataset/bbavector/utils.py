@@ -237,7 +237,9 @@ class Utils:
                     ret[k][idx] = v
 
         if target_task == 'masks':
-            ret['masks'] = torch.from_numpy([ret['masks']])
+            #ret['masks'] = torch.from_numpy([ret['masks']])
+            for k, v in ret.items():
+                ret[k] = torch.from_numpy(v)
             return ret
 
         td = get_task_dict(target_task)
