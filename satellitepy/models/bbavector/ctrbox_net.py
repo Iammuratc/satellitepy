@@ -7,11 +7,11 @@ from . import resnet
 
 
 class CTRBOX(nn.Module):
-    def __init__(self, heads, pretrained, down_ratio, final_kernel, head_conv, resnet_type="101"):
+    def __init__(self, heads, pretrained, down_ratio, final_kernel, head_conv, resnet_type="101", in_channels=3):
         super(CTRBOX, self).__init__()
         assert down_ratio in [2, 4, 8, 16]
         if resnet_type == "34":
-            channels = [3, 16, 64, 128, 512, 1024]
+            channels = [in_channels, 16, 64, 128, 512, 1024]
             self.base_network = resnet.resnet34(pretrained=pretrained)
             self.dec_c2 = CombinationModule(128, 64, batch_norm=True)
             self.dec_c3 = CombinationModule(256, 128, batch_norm=True)
@@ -24,7 +24,7 @@ class CTRBOX(nn.Module):
                     nn.ReLU(inplace=True)
                 )
         else:
-            channels = [3, 64, 256, 512, 1024, 2048]
+            channels = [in_channels, 64, 256, 512, 1024, 2048]
             self.base_network = resnet.resnet101(pretrained=pretrained)
             self.dec_c2 = CombinationModule(512, 256, batch_norm=True)
             self.dec_c3 = CombinationModule(1024, 512, batch_norm=True)

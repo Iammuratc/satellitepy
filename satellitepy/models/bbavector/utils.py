@@ -6,11 +6,12 @@ import numpy as np
 from satellitepy.models.bbavector import ctrbox_net, decoder
 from satellitepy.data.utils import get_task_dict
 from satellitepy.data.bbox import BBox
+from satellitepy.models.bbavector.seg_bba import seg_bba
 
 logger = logging.getLogger('')
 
 
-def get_model(tasks, down_ratio):
+def get_model(tasks, down_ratio, in_channels=3):
     heads = {}
 
     for task in tasks:
@@ -34,7 +35,15 @@ def get_model(tasks, down_ratio):
                               pretrained=True,
                               down_ratio=down_ratio,
                               final_kernel=1,
-                              head_conv=256)
+                              head_conv=256,
+                              in_channels=in_channels)
+    return model
+
+def get_seg_bba_model(seg_model, bba_model, seg_weights):
+    seg_checkpoint = torch.load(seg_weights)
+    seg_model.load_state_dict(seg_checkpoint['model_state_dict'])
+
+    model = seg_bba(seg_model, bba_model)
     return model
 
 

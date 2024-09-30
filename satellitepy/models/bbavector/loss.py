@@ -83,6 +83,20 @@ class BCELoss(nn.Module):
             return 0.
 
 
+class MaskBCELoss(nn.Module):
+    def __init__(self):
+        super(MaskBCELoss, self).__init__()
+
+    def forward(self, output, target):
+        pred = output
+        nan_mask = torch.isnan(target) == False
+        loss = F.binary_cross_entropy(pred[nan_mask],
+                                      target[nan_mask],
+                                      reduction='mean')
+        if torch.any(torch.isnan(loss)):
+            return 0.
+        return loss
+
 class OffSmoothL1Loss(nn.Module):
     def __init__(self):
         super(OffSmoothL1Loss, self).__init__()
@@ -160,7 +174,7 @@ class LossAll(torch.nn.Module):
         self.tasks_losses = nn.ModuleDict()
         for t in tasks:
             if t == 'masks':
-                self.tasks_losses[t] = BCELoss(mask_loss=True)
+                self.tasks_losses[t] = MaskBCELoss()
             elif t == 'obboxes':
                 self.tasks_losses[t + '_params'] = OffSmoothL1Loss()
                 self.tasks_losses[t + '_offset'] = OffSmoothL1Loss()
@@ -182,6 +196,8 @@ class LossAll(torch.nn.Module):
 
         for task, loss_fnc in self.tasks_losses.items():
             if task == 'cls_' + target_task:
+                loss_dict[task] = loss_fnc(pr_decs[task], gt_batch[task])
+            elif task == 'masks':
                 loss_dict[task] = loss_fnc(pr_decs[task], gt_batch[task])
             else:
                 loss_dict[task] = loss_fnc(
