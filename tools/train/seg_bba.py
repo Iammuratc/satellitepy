@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument('--target-task', type=str, default='coarse-class',
                         help='The model will be trained for the given target task. Needs to be a classification task. '
                              'Default is coarse-class')
-    parser.add_argument('--seg_weights', required=True, type=Path, help='Path to the segmentation model weights.')
+    parser.add_argument('--seg-weights', required=True, type=Path, help='Path to the segmentation model weights.')
     parser.add_argument('--out-folder',
                         type=Path,
                         help='Save folder of experiments. The trained weights will be saved under this folder.')

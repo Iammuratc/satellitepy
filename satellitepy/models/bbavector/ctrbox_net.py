@@ -11,8 +11,8 @@ class CTRBOX(nn.Module):
         super(CTRBOX, self).__init__()
         assert down_ratio in [2, 4, 8, 16]
         if resnet_type == "34":
-            channels = [in_channels, 16, 64, 128, 512, 1024]
-            self.base_network = resnet.resnet34(pretrained=pretrained)
+            channels = [3, 16, 64, 128, 512, 1024]
+            self.base_network = resnet.resnet34(pretrained=pretrained, in_channels=in_channels)
             self.dec_c2 = CombinationModule(128, 64, batch_norm=True)
             self.dec_c3 = CombinationModule(256, 128, batch_norm=True)
             self.dec_c4 = CombinationModule(512, 256, batch_norm=True)
@@ -24,8 +24,8 @@ class CTRBOX(nn.Module):
                     nn.ReLU(inplace=True)
                 )
         else:
-            channels = [in_channels, 64, 256, 512, 1024, 2048]
-            self.base_network = resnet.resnet101(pretrained=pretrained)
+            channels = [3, 64, 256, 512, 1024, 2048]
+            self.base_network = resnet.resnet101(pretrained=pretrained, in_channels=in_channels)
             self.dec_c2 = CombinationModule(512, 256, batch_norm=True)
             self.dec_c3 = CombinationModule(1024, 512, batch_norm=True)
             self.dec_c4 = CombinationModule(2048, 1024, batch_norm=True)

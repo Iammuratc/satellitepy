@@ -10,6 +10,6 @@ class seg_bba(nn.Module):
 
     def forward(self, x):
         z = self.seg_model(x)
-        z = torch.cat(x, z)
+        z = torch.cat((x, z['masks']), dim=1)
         z = self.bba_model(z)
         return z
