@@ -44,6 +44,7 @@ def get_args():
                         help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed '
                              'according to this value.')
     parser.add_argument('--by-source', action='store_true', help='If True, the calculations will be done for each annotation source.')
+    parser.add_argument('--store-undetected-objects', action='store_true', help='If True, the ground truth indices of the undetected objects will be stored in the result file.')
     parser.add_argument('--log-config-path', default=None, help='Log config file.')
     parser.add_argument('--log-path', default=None, help='Log will be saved here.')
     return parser
@@ -100,7 +101,8 @@ def main(parser):
         nms_iou_thresh,
         ignore_other_instances,
         no_probability=args.no_probability,
-        by_source=args.by_source
+        by_source=args.by_source,
+        store_undetected_objects=args.store_undetected_objects
     )
 
 

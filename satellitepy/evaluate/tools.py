@@ -25,7 +25,8 @@ def calculate_map(
         nms_iou_thresh,
         ignore_other_instances=False,
         no_probability=False,
-        by_source=False):
+        by_source=False,
+        store_undetected_objects=False):
     '''
     instance_dict : dict
         Dictionary of class names with indices.
@@ -50,12 +51,13 @@ def calculate_map(
 
     gt_instance_names = [] # Store all instance names in ground truth to filter the AP values later
 
-    for result_path in tqdm(result_paths):
+    undet_obj_indices = {}
+    for i, result_path in enumerate(tqdm(result_paths)):
         if result_path.suffix != '.json':
             continue
         with open(result_path, 'r') as result_file:
             result = json.load(result_file)
-        conf_mat, ignored_instances_ret, ignored_cnt_ret = set_conf_mat_from_result(
+        conf_mat, ignored_instances_ret, ignored_cnt_ret, undet_gt_bbox_index_dict = set_conf_mat_from_result(
             conf_mat,
             task,
             result,
@@ -70,7 +72,13 @@ def calculate_map(
             gt_instance_names.append(instance_name)
         ignored_instances += ignored_instances_ret
         ignored_cnt += ignored_cnt_ret
-
+        if i == 0:
+            for th_values, undet_gt_bbox_indices in undet_gt_bbox_index_dict.items():
+                undet_obj_indices[th_values] = ["{}_{}".format(str(result_path.stem),str(undet_gt_bbox_ind)) for undet_gt_bbox_ind in undet_gt_bbox_indices ]
+        else:
+            for th_values, undet_gt_bbox_indices in undet_gt_bbox_index_dict.items():
+                for undet_gt_bbox_ind in undet_gt_bbox_indices:
+                    undet_obj_indices[th_values].append("{}_{}".format(str(result_path.stem),str(undet_gt_bbox_ind)))
     gt_instance_names = list(set(gt_instance_names))
     pr_threshold_ind = 0
     precision, recall = get_precision_recall(conf_mat, sort_values=True)
@@ -80,6 +88,7 @@ def calculate_map(
     if plot_pr:
         precision_recall_curve(out_folder, precision[pr_threshold_ind, :], recall[pr_threshold_ind, :])
 
+    # Store results into a text file
     with np.printoptions(threshold=np.inf):
         logger.info('AP')
         logger.info('Instance names')
@@ -110,12 +119,16 @@ def calculate_map(
             np.savetxt(file, [sorted_instance_names], fmt='%s', delimiter=',',header=f'AP{iou_thresholds[0]}):')
             np.savetxt(file, [ap_50], fmt='%.2f', delimiter=',')
             conf_mat_iou_th = 0.5
-            conf_mat_conf_sc_th = 0
+            conf_mat_conf_sc_th = 0.3
 
             conf_mat_iou_th_ind = iou_thresholds.index(conf_mat_iou_th)
             conf_mat_conf_sc_ind = conf_score_thresholds.index(conf_mat_conf_sc_th)
 
             np.savetxt(file, conf_mat[conf_mat_iou_th_ind][conf_mat_conf_sc_ind], fmt='%.2f', delimiter=',',header=f'Confusion matrix (IoU={conf_mat_iou_th}, Conf. Score={conf_mat_conf_sc_th})')
+            
+            if store_undetected_objects:
+                np.savetxt(file,[len(undet_obj_indices[conf_mat_iou_th,conf_mat_conf_sc_th])], fmt='%.0f', delimiter=',',header=f'Number of FN at (IoU={conf_mat_iou_th}, Conf. Score={conf_mat_conf_sc_th})')
+                np.savetxt(file,undet_obj_indices[conf_mat_iou_th,conf_mat_conf_sc_th],delimiter='\n',fmt='%s',header='Undetected object indices')
         logger.info(f'AP calculations are saved into: {evaluation_file_path}')
 
 

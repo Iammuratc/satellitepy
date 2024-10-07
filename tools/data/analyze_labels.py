@@ -182,8 +182,10 @@ def analyse_label_paths(label_folder,
                 very_fine_class_without_none[class_name] = class_count
         count_instances_by_task['very-fine-class'] = very_fine_class_without_none
 
+        len_ftgc = sum(count_instances_by_task['very-fine-class'].values())
+        print(f'Number of airplanes with FtGC: {len_ftgc}')
         ## Merge classes with low instance numbers to the role
-        count_instances_by_task = merge_into_role(count_instances_by_task,th=8,roles=roles)
+        count_instances_by_task = merge_into_role(count_instances_by_task,th=15,roles=roles)
 
 
         # Create the bar chart
@@ -192,10 +194,6 @@ def analyse_label_paths(label_folder,
         instance_names = get_instance_names(label_paths, label_format)
         levels = ', '.join(instance_names.keys())
         logger.info(f"3 levels will be plotted: {levels}")
-
-
-
-
 
         ## Color role dict
         colors_role_dict = {role:color for role, color in zip(roles.keys(),['blue','orange','green'])}
@@ -227,9 +225,6 @@ def analyse_label_paths(label_folder,
                 color_dict[task][class_name] = color
 
         ### Merge small very-fine-class into the parent role
-
-        
-
         fig = make_subplots(
             rows=len(list(tasks)), cols=1,
             subplot_titles=['Role', 'FineAir30 Class', 'Finest-grained Class'],

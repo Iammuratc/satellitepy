@@ -605,6 +605,7 @@ def get_satellitepy_table():
             'E190':20,
             'PrivateJet':21,
             'Private Jet':21,
+            'Private-Jet':21,
             'Propeller':22,
         },
         'difficulty': {
