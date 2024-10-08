@@ -2,8 +2,6 @@ import argparse
 from pathlib import Path
 import logging
 
-from wandb.wandb_torch import torch
-
 from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder
 from satellitepy.models.bbavector import train_model
 from satellitepy.models.bbavector.utils import get_model, get_seg_bba_model

@@ -15,6 +15,7 @@ def get_args():
     parser = configargparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', is_config_file=True, help='Path to the configuration file')
     parser.add_argument('--weights-path', help='Path to BBAVector model weights file.')
+    parser.add_argument('--weights-type', default='bba', help='Type of the model to test, bba or seg_bba. Default is bba.')
     parser.add_argument('--num-workers', type=int, default=4, help='Number of workers')
     parser.add_argument('--input-h', type=int, default=600, help='Resized image height. Equivalent of patch height.')
     parser.add_argument('--input-w', type=int, default=600, help='Resized image width. Equivalent of patch width.')
@@ -110,7 +111,8 @@ def main(parser):
         input_w=args.input_w,
         down_ratio=down_ratio,
         target_task=target_task,
-        img_read_module=args.image_read_module)
+        img_read_module=args.image_read_module,
+        weights_type=args.weights_type)
 
 
 if __name__ == '__main__':

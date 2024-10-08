@@ -58,7 +58,7 @@ def save_model(path, epoch, model, optimizer):
         'optimizer_state_dict': optimizer.state_dict()
     }, path)
 
-def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3):
+def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3, weights_type='bba'):
     checkpoint = torch.load(checkpoint_path)
     logger.info('loaded weights from {}, epoch {}'.format(checkpoint_path, checkpoint['epoch']))
 
@@ -69,7 +69,18 @@ def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3):
     mask_key = list(set([key.split('.')[0] for key in keys if 'masks' in key]))
     all_keys = bbox_keys + cls_keys + reg_keys + mask_key
 
-    model = get_model(all_keys,down_ratio)
+    if weights_type == 'bba':
+        model = get_model(all_keys,down_ratio)
+    elif weights_type == 'seg_bba':
+        seg_model = get_model(['masks'], down_ratio)
+        for param in seg_model.parameters():
+            param.requires_grad = False
+        bba_model = get_model(all_keys, down_ratio, in_channels=4)
+        model = seg_bba(seg_model, bba_model)
+        checkpoint = torch.load(checkpoint_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+    else:
+        raise NotImplementedError(f'Weights type {weights_type} is not implemented, use bba or seg_bba.')
 
     if isinstance(model, torch.nn.DataParallel):
         model.module.load_state_dict(checkpoint['model_state_dict'])
