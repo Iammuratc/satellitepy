@@ -94,9 +94,10 @@ def save_patch_results(
         assert create_folder(patch_mask_folder)
 
     for data_dict in tqdm(data_loader):
+        save_dict = {}
         img_name = Path(data_dict['img_path'][0]).stem
 
-        save_dict = get_patch_result(
+        save_dict['det_labels'] = get_patch_result(
             model,
             model_decoder,
             data_dict,

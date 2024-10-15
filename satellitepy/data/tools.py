@@ -602,7 +602,7 @@ def show_results_on_image(img_dir,
             logger.info(f'Skipping {label_path.stem}: No detections!')
             continue
 
-        results = remove_low_conf_results(results, target_task, conf_th, no_probability)
+        # results = remove_low_conf_results(results, target_task, conf_th, no_probability)
         results['det_labels'] = apply_nms(results['det_labels'], nms_iou_threshold=iou_th, target_task=target_task, no_probability=no_probability)
         results['matches'] = match_gt_and_det_bboxes(results['gt_labels'], results['det_labels'])
 
