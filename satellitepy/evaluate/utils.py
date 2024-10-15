@@ -64,6 +64,7 @@ def set_conf_mat_from_result(
         nms_iou_thresh,
         ignore_other_instances,
         no_probability,
+        norm_conf_scores,
         by_source):
     
     # Dict of Undetected objects
@@ -81,6 +82,9 @@ def set_conf_mat_from_result(
 
     det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=task, no_probability=no_probability)
 
+    if norm_conf_scores:
+        det_results[task] = [[item / sum(row) for item in row] for row in det_results[task]]
+        print(det_results[task])
     if no_probability:
         det_inds = det_results[task]
         conf_scores = det_results['confidence-scores']

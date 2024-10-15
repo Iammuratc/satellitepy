@@ -26,7 +26,8 @@ def calculate_map(
         ignore_other_instances=False,
         no_probability=False,
         by_source=False,
-        store_undetected_objects=False):
+        store_undetected_objects=False,
+        norm_conf_scores=False):
     '''
     instance_dict : dict
         Dictionary of class names with indices.
@@ -67,6 +68,7 @@ def calculate_map(
             nms_iou_thresh,
             ignore_other_instances,
             no_probability,
+            norm_conf_scores,
             by_source)
         for instance_name in result['gt_labels'][task]:
             gt_instance_names.append(instance_name)
@@ -119,7 +121,7 @@ def calculate_map(
             np.savetxt(file, [sorted_instance_names], fmt='%s', delimiter=',',header=f'AP{iou_thresholds[0]}):')
             np.savetxt(file, [ap_50], fmt='%.2f', delimiter=',')
             conf_mat_iou_th = 0.5
-            conf_mat_conf_sc_th = 0.3
+            conf_mat_conf_sc_th = 0.1
 
             conf_mat_iou_th_ind = iou_thresholds.index(conf_mat_iou_th)
             conf_mat_conf_sc_ind = conf_score_thresholds.index(conf_mat_conf_sc_th)
