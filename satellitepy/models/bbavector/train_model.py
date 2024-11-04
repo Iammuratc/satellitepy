@@ -63,7 +63,7 @@ class TrainModule(object):
 
         if self.resume_train:
             self.model, self.optimizer, start_epoch, valid_loss = load_checkpoint(self.model,
-                                                                                  self.resume_train)
+                                                                                  self.resume_train, self.down_ratio)
         else:
             self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.init_lr)
             start_epoch = -1

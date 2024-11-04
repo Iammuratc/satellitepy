@@ -49,6 +49,8 @@ def parse_args():
                         help='The model will be trained for the given target task. Needs to be a classification task. '
                              'Default is coarse-class')
     parser.add_argument('--seg-weights', required=True, type=Path, help='Path to the segmentation model weights.')
+    parser.add_argument('--freeze-seg', type=bool, default=True)
+
     parser.add_argument('--out-folder',
                         type=Path,
                         help='Save folder of experiments. The trained weights will be saved under this folder.')
@@ -108,7 +110,7 @@ def train_bbavector(args):
 
     seg_model = get_model(['masks'], down_ratio)
     for param in seg_model.parameters():
-        param.requires_grad = False
+        param.requires_grad = args.freeze_seg
     bba_model = get_model(tasks, down_ratio, in_channels=4)
     model = get_seg_bba_model(seg_model, bba_model, seg_weights)
 
