@@ -39,11 +39,14 @@ def get_args():
         help='If True, results already consist of max values of probabilities,' 
             'i.e., shape is [N,1], where, N number of instances.'
             'By default, each instance will have a probability of each class, shape is [N,C], where C number of classes.')
+    parser.add_argument('--norm-conf-scores', action='store_true', 
+        help='BBAVector produces conf score results larger than 1. If True, the confidence score sum will be normalized to 1. ')
     parser.add_argument('--plot-pr', action='store_true', help='Plot the PR curve.')
     parser.add_argument('--nms-iou-thresh', type=float, default=0.3,
                         help='Non-maximum suppression IOU threshold. Overlapping predictions will be removed '
                              'according to this value.')
     parser.add_argument('--by-source', action='store_true', help='If True, the calculations will be done for each annotation source.')
+    parser.add_argument('--store-undetected-objects', action='store_true', help='If True, the ground truth indices of the undetected objects will be stored in the result file.')
     parser.add_argument('--log-config-path', default=None, help='Log config file.')
     parser.add_argument('--log-path', default=None, help='Log will be saved here.')
     return parser
@@ -100,7 +103,9 @@ def main(parser):
         nms_iou_thresh,
         ignore_other_instances,
         no_probability=args.no_probability,
-        by_source=args.by_source
+        by_source=args.by_source,
+        norm_conf_scores=args.norm_conf_scores,
+        store_undetected_objects=args.store_undetected_objects
     )
 
 
