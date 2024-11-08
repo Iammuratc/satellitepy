@@ -49,7 +49,6 @@ def get_args():
 
 def main(args):
     """Application entry point."""
-
     log_config_path = get_default_log_config() if args.log_config_path is None else Path(args.log_config_path)
     log_path = get_default_log_path(Path(__file__).resolve().stem) if args.log_path is None else Path(args.log_path)
 

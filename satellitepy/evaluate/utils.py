@@ -64,9 +64,11 @@ def set_conf_mat_from_result(
         nms_iou_thresh,
         ignore_other_instances,
         no_probability,
+        norm_conf_scores,
         by_source):
     
-
+    # Dict of Undetected objects
+    undet_gt_bbox_index_dict = {} # {[iou_th,conf_score_th]:undet_gt_bbox_indices}
     instance_names = list(instance_dict.keys())
 
     ignored_instances_ret = []
@@ -80,6 +82,9 @@ def set_conf_mat_from_result(
 
     det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=task, no_probability=no_probability)
 
+    if norm_conf_scores:
+        det_results[task] = [[item / sum(row) for item in row] for row in det_results[task]]
+        print(det_results[task])
     if no_probability:
         det_inds = det_results[task]
         conf_scores = det_results['confidence-scores']
@@ -96,15 +101,22 @@ def set_conf_mat_from_result(
 
             for i_conf_score, conf_score in enumerate(conf_scores):
 
+                # If the conf score is less than the conf score threshold, skip the detection
                 if conf_score < conf_score_th:
                     continue
 
                 iou_score = matches['iou']['scores'][i_conf_score]
+                
+                det_name = str(idx2name[det_inds[i_conf_score]])
+                det_index = instance_dict[det_name]
+
+                # If the IoU score is less than the threshold, store it as a FP, i.e., gt=background, det=det
                 if iou_score < iou_th:
+                    conf_mat[i_iou_th, i_conf_score_th, instance_dict['Background'], det_index] += 1
                     continue
 
-                gt_index = matches['iou']['indexes'][i_conf_score]
 
+                gt_index = matches['iou']['indexes'][i_conf_score]
                 det_gt_instance_name = task_result[gt_index]
                 # #####
                 # annotation_source = matches['iou']['sources'][i_conf_score]
@@ -115,7 +127,7 @@ def set_conf_mat_from_result(
                 if det_gt_instance_name is None:
                     continue
 
-                det_name = str(idx2name[det_inds[i_conf_score]])
+
                 if ignore_other_instances and det_name not in instance_names:
                     ignored_cnt += 1
                     ignored_instances_ret.append(det_name)
@@ -127,10 +139,11 @@ def set_conf_mat_from_result(
                     det_gt_instance_name) not in instance_names else det_gt_instance_name
                 det_gt_index = instance_dict[str(det_gt_instance_name)]
 
-                det_index = instance_dict[det_name]
                 conf_mat[i_iou_th, i_conf_score_th, det_gt_index, det_index] += 1
 
             undet_gt_bbox_indices = set(range(len(result['gt_labels'][task]))) - set(det_gt_bbox_indices)
+            undet_gt_bbox_index_dict[iou_th,conf_score_th] = list(undet_gt_bbox_indices)
+
             for undet_gt_bbox_ind in list(undet_gt_bbox_indices):
                 undet_gt_instance_name = result['gt_labels'][task][undet_gt_bbox_ind]
                 if undet_gt_instance_name not in instance_names:
@@ -139,7 +152,7 @@ def set_conf_mat_from_result(
 
                 conf_mat[i_iou_th, i_conf_score_th, undet_gt_index, instance_dict['Background']] += 1
 
-    return conf_mat, ignored_instances_ret, ignored_cnt
+    return conf_mat, ignored_instances_ret, ignored_cnt, undet_gt_bbox_index_dict
 
 
 def get_precision_recall(conf_mat, sort_values=True, complete_curve=True):
