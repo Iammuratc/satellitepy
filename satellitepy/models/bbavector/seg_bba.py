@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.utils.checkpoint import checkpoint
 
 
 class seg_bba(nn.Module):
@@ -9,7 +10,8 @@ class seg_bba(nn.Module):
         self.bba_model = bba_model
 
     def forward(self, x):
-        z = self.seg_model(x)
+        x.requires_grad = True
+        z = checkpoint(self.seg_model, x)
         z = torch.cat((x, z['masks']), dim=1)
         z = self.bba_model(z)
         return z
