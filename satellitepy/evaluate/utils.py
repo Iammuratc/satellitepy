@@ -94,7 +94,7 @@ def set_conf_mat_from_result(
 
     matches = match_gt_and_det_bboxes(result['gt_labels'], det_results)
     if len(task_result) == 0:
-        return conf_mat, ignored_instances_ret, ignored_cnt
+        return conf_mat, ignored_instances_ret, ignored_cnt, undet_gt_bbox_index_dict
     for i_iou_th, iou_th in enumerate(iou_thresholds):
         for i_conf_score_th, conf_score_th in enumerate(conf_score_thresholds):
             det_gt_bbox_indices = []
@@ -103,21 +103,23 @@ def set_conf_mat_from_result(
 
                 # If the conf score is less than the conf score threshold, skip the detection
                 if conf_score < conf_score_th:
+                    # print(f'conf_score: {conf_score} < conf_score_th: {conf_score_th}')
                     continue
 
                 iou_score = matches['iou']['scores'][i_conf_score]
-                
+
                 det_name = str(idx2name[det_inds[i_conf_score]])
                 det_index = instance_dict[det_name]
+                gt_index = matches['iou']['indexes'][i_conf_score]
+                det_gt_instance_name = task_result[gt_index]
 
                 # If the IoU score is less than the threshold, store it as a FP, i.e., gt=background, det=det
                 if iou_score < iou_th:
                     conf_mat[i_iou_th, i_conf_score_th, instance_dict['Background'], det_index] += 1
                     continue
 
+                # print(f'det_name: {det_name}, gt_name: {det_gt_instance_name}')
 
-                gt_index = matches['iou']['indexes'][i_conf_score]
-                det_gt_instance_name = task_result[gt_index]
                 # #####
                 # annotation_source = matches['iou']['sources'][i_conf_score]
                 # if annotation_source != 'FR24':

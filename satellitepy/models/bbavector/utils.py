@@ -58,11 +58,13 @@ def save_model(path, epoch, model, optimizer):
         'optimizer_state_dict': optimizer.state_dict()
     }, path)
 
-def load_checkpoint(model, checkpoint_path, down_ratio, init_lr=1e-3, weights_type='bba'):
+def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3, weights_type='bba'):
     checkpoint = torch.load(checkpoint_path)
     logger.info('loaded weights from {}, epoch {}'.format(checkpoint_path, checkpoint['epoch']))
 
     keys = checkpoint['model_state_dict'].keys()
+    if weights_type == 'seg_bba':
+        keys = [key[10:] for key in keys if 'bba_model' in key]
     bbox_keys = list(set([key[:7] for key in keys if 'bboxes' in key]))
     cls_keys = list(set([key[4:].split('.')[0] for key in keys if 'cls_' in key]))
     reg_keys = list(set([key[4:].split('.')[0] for key in keys if 'reg_' in key]))
@@ -70,8 +72,7 @@ def load_checkpoint(model, checkpoint_path, down_ratio, init_lr=1e-3, weights_ty
     all_keys = bbox_keys + cls_keys + reg_keys + mask_key
 
     if weights_type == 'bba':
-       #  model.module.load_state_dict(checkpoint['model_state_dict'])
-        pass
+        model = get_model(all_keys, down_ratio)
     elif weights_type == 'seg_bba':
         seg_model = get_model(['masks'], down_ratio)
         for param in seg_model.parameters():
