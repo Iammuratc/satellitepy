@@ -426,7 +426,8 @@ def save_chips(
 
                 if not chip_img.size == 0:
                     chip_img_path = out_folder_images / f'{img_name}_{i}.png'
-                    cv2.imwrite(str(chip_img_path), chip_img)
+                    # cv2.imwrite(str(chip_img_path), chip_img)
+                    save_with_padding(chip_img, chip_img_path, (chip_size, chip_size))
                     chip_counter[0] += 1
                     chip_counter[1] += 1
                 else:
@@ -440,6 +441,41 @@ def save_chips(
             logger.info(f"{img_path.stem} has {chip_counter[1]} chips.")
         logger.info(f"{chip_counter[0]} chips are saved in total!")
         logger.info(f"Chips are saved at: {out_folder}")
+
+
+def save_with_padding(chip_img, chip_img_path, target_size=(256, 256), color=(0, 0, 0)):
+    """
+    Save an image with padding to ensure it meets the target size.
+
+    Args:
+        chip_img (numpy.ndarray): Input image.
+        chip_img_path (str): Path to save the padded image.
+        target_size (tuple): Desired (width, height) size, default is (256, 256).
+        color (tuple): Color of the padding (default is black).
+    """
+    height, width = chip_img.shape[:2]
+    target_width, target_height = target_size
+
+    # Compute padding values
+    pad_top = max(0, (target_height - height) // 2)
+    pad_bottom = max(0, target_height - height - pad_top)
+    pad_left = max(0, (target_width - width) // 2)
+    pad_right = max(0, target_width - width - pad_left)
+
+    # Add padding
+    padded_img = cv2.copyMakeBorder(
+        chip_img,
+        top=pad_top,
+        bottom=pad_bottom,
+        left=pad_left,
+        right=pad_right,
+        borderType=cv2.BORDER_CONSTANT,
+        value=color  # Padding color (black by default)
+    )
+
+    # Save the padded image
+    cv2.imwrite(str(chip_img_path), padded_img)
+
 def get_label_by_idx(satpy_labels: dict, i: int):
     """
     Creates a copy of the satpy_labels dict by doing the following:
