@@ -9,6 +9,7 @@ from satellitepy.data.patch import get_patches, merge_patch_results
 from satellitepy.data.utils import read_img
 
 
+logger = logging.getLogger('')
 
 def save_mmrotate_patch_results(
         out_folder,
@@ -48,7 +49,6 @@ def save_mmrotate_patch_results(
     -------
     None
     """
-    logger = logging.getLogger('')
     mmrotate_model = get_mmrotate_model(config_path, weights_path, device)
 
     patch_result_folder = Path(out_folder) / 'results' / 'patch_labels'
@@ -127,7 +127,6 @@ def save_mmrotate_original_results(
     -------
         None
     """
-    logger = logging.getLogger('')
     mmrotate_model = get_mmrotate_model(config_path, weights_path, device)
 
     original_result_folder = Path(out_folder)

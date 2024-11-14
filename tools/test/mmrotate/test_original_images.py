@@ -79,9 +79,9 @@ def main(args):
 
     assert create_folder(out_folder)
 
-    # init_logger(config_path=log_config_path, log_path=get_default_log_path('original_results'))
-    # logger = logging.getLogger('')
-    # logger.info('MMRotate model will process the images...')
+    init_logger(config_path=log_config_path, log_path=get_default_log_path('original_results'))
+    logger = logging.getLogger('')
+    logger.info('MMRotate model will process the images...')
 
     save_mmrotate_original_results(
         in_image_folder=in_image_folder,
