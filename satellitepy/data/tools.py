@@ -404,11 +404,13 @@ def save_chips(
     chip_counter = [0,0] # per folder, per image
     if len(image_paths) == len(label_paths) == len(mask_paths):
         for img_path, label_path, mask_path in zip(image_paths, label_paths, mask_paths):
+            label = read_label(label_path, label_format, mask_path)
+            if not (any(label['obboxes']) or any(label['hbboxes'])):
+                continue
             chip_counter[1] = 0
             logger.info(f"Reading the image: {img_path}")
             img = read_img(str(img_path), img_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
             logger.info(f"Image read successfull!")
-            label = read_label(label_path, label_format, mask_path)
 
             chips = get_chips(
                 img,
@@ -423,7 +425,9 @@ def save_chips(
             for i in range(count_chips):
 
                 chip_img = chips['images'][i]
-
+                if chip_img is None:
+                    logger.warning('Image is None!')
+                    continue
                 if not chip_img.size == 0:
                     chip_img_path = out_folder_images / f'{img_name}_{i}.png'
                     # cv2.imwrite(str(chip_img_path), chip_img)
