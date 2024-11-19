@@ -703,26 +703,24 @@ def read_vedai_label(label_path):
     return labels
 
 
-def read_fineair_label(label_path,include_fineair_class=True):
+def read_fineair_label(label_path):
     labels = init_satellitepy_label()
-    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'role', 'source']
-    if include_fineair_class:
-        available_tasks.append('fineair-class')
+    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'fineair-class', 'role', 'source']
     all_tasks = get_all_satellitepy_keys()
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
     with open(label_path, 'r') as f:
         file = json.load(f)
-
+    labels['dbboxes'] = []
     for annotation in file['features']:
         labels['coarse-class'].append('airplane')
         labels['fine-class'].append(annotation['properties']['Type'])
         labels['very-fine-class'].append(annotation['properties']['Subtype'])
-        if include_fineair_class:
-            labels['fineair-class'].append(annotation['properties']['fineairtype'])
+        labels['fineair-class'].append(annotation['properties']['fineairtype'])
         labels['source'].append(annotation['properties']['Source'])
         labels['role'].append(annotation['properties']['Role'])
         coords = annotation['geometry']['coordinates']
         diamond_corners = coords[:4][:]
+        labels['dbboxes'].append(diamond_corners)
         bbox = BBox(diamond_corners=diamond_corners)
         bbox = BBox(params=bbox.params)
         labels['obboxes'].append(bbox.corners)

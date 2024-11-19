@@ -89,7 +89,7 @@ def save_patches(
         rescaling=1,
         interpolation_method=cv2.INTER_LINEAR,
         keep_empty=False,
-        subset_data=None
+        subset_data=None,
     ):
     """
     Save patches from the original images
@@ -148,7 +148,7 @@ def save_patches(
 
     assert len(img_paths) == len(label_paths) == len(mask_paths)
 
-    for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
+    for img_path, label_path, mask_path in zip(img_paths[13:], label_paths[13:], mask_paths[13:]):
         mask_name = mask_path.name if mask_path != None else None
         label_name = label_path.name if label_path is not None else None
         logger.info(f"{img_path.name}, {label_name}, {mask_name}")
@@ -406,10 +406,10 @@ def save_chips(
         for img_path, label_path, mask_path in zip(image_paths, label_paths, mask_paths):
             chip_counter[1] = 0
             logger.info(f"Reading the image: {img_path}")
+            logger.info(f"Reading the label: {label_path}")
             img = read_img(str(img_path), img_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
             logger.info(f"Image read successfull!")
             label = read_label(label_path, label_format, mask_path)
-
             chips = get_chips(
                 img,
                 label,
@@ -522,7 +522,7 @@ def show_labels_on_images(
                 img = bbox.draw_bbox_to_img(img, corners=[bbox.diamond_corners], thickness=1)
             else:
                 bbox = BBox(corners=bbox_corners)
-                img = bbox.draw_bbox_to_img(img, corners=[bbox.corners], thickness=1)
+                img = bbox.draw_bbox_to_img(img, corners=[bbox.corners], thickness=3)
 
             available_tasks = requested_classes.copy()
             if labels['coarse-class'][i] != 'airplane':

@@ -1,6 +1,9 @@
 import configargparse
 from pathlib import Path
 
+
+import os
+os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = str(pow(2,40))
 import pandas as pd
 from satellitepy.data.tools import save_patches
 from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config

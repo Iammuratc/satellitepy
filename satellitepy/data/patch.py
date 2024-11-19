@@ -62,7 +62,7 @@ def get_patches(
     for i, patch_start_coord in enumerate(patch_start_coords):
         x_0, y_0 = patch_start_coord
         patch_dict['images'][i] = img_padded[y_0:y_0 + patch_size, x_0:x_0 + patch_size, :]
-
+        patch_polygon = create_patch_polygon(x_0=x_0,y_0=y_0,patch_size=patch_size)
         if label_file_exist:
             for j, (hbbox, obbox) in enumerate(zip(gt_labels['hbboxes'], gt_labels['obboxes'])):
 
@@ -73,7 +73,7 @@ def get_patches(
                     # All bboxes will be checked separately, if the bbox is in the patch.
                     # If one bbox (e.g., dbbox) is in the patch, other bboxes will be added to patch_dict
                     x_0, y_0 = patch_start_coord
-                    is_truncated_bbox = [is_truncated(bbox_corners=bbox, x_0=x_0, y_0=y_0, patch_size=patch_size,
+                    is_truncated_bbox = [is_truncated(bbox_corners=bbox, patch_polygon=patch_polygon,
                                                     relative_area_threshold=truncated_object_thr) for bbox in all_bboxes]
                     # Set all the tasks for the patch if the object bbox is not truncated
                     if not any(is_truncated_bbox):
@@ -160,20 +160,31 @@ def get_patch_start_coords(coord_max, patch_size, patch_overlap):
 
     return coords
 
-
-def is_truncated(bbox_corners, x_0, y_0, patch_size, relative_area_threshold):
-    """
-    Check if bbox is in the patch
-    Parameters
-    ----------
-    bbox_corners : list
-        Bounding box corners in shape (4,2)
+def create_patch_polygon(x_0, y_0, patch_size):
+    """    
     x_0 : int
         x coordinate of patch start
     y_0 : int
         y coordinate of patch start
     patch_size : int
         Patch size
+    """    
+    patch_coords = ((x_0, y_0), (x_0, y_0 + patch_size), (x_0 + patch_size, y_0 + patch_size), (x_0 + patch_size, y_0))
+    patch = Polygon(patch_coords)
+    return patch
+
+
+def get_intersection(bbox_corners, patch_polygon):
+    bbox = Polygon(bbox_corners)
+    return shapely.area(shapely.intersection(bbox, patch_polygon)) / shapely.area(bbox)
+
+def is_truncated(bbox_corners, patch_polygon, relative_area_threshold):
+    """
+    Check if bbox is in the patch
+    Parameters
+    ----------
+    bbox_corners : list
+        Bounding box corners in shape (4,2)
     relative_area_threshold : float
         % of object that should be in the image in range of [0.0, 1.0]
     Returns
@@ -181,10 +192,8 @@ def is_truncated(bbox_corners, x_0, y_0, patch_size, relative_area_threshold):
     is_truncated : bool
         False if the part of the object inside the patch is smaller than the threshold
     """
-    patch_coords = ((x_0, y_0), (x_0, y_0 + patch_size), (x_0 + patch_size, y_0 + patch_size), (x_0 + patch_size, y_0))
-    patch = Polygon(patch_coords)
-    bbox = Polygon(bbox_corners)
-    return relative_area_threshold >= shapely.area(shapely.intersection(bbox, patch)) / shapely.area(bbox)
+    intersection = get_intersection(bbox_corners,patch_polygon)
+    return relative_area_threshold >= intersection
 
 
 def merge_patch_results(patch_dict, patch_size, shape):
