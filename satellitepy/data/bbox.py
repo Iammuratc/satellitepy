@@ -21,8 +21,8 @@ class BBox:
                 self.corners = corners
             else:
                 raise Exception('Corners have to be either list or numpy array')
-
-            if np.shape(corners)[-2:] != (4, 2):
+            # print(self.corners)
+            if np.shape(self.corners)[-2:] != (4, 2):
                 raise Exception('The bbox in corner parametrization must end in shape (4,2) but has shape:',
                                 np.shape(corners))
             self.params = self.get_params()
