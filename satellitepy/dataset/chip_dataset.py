@@ -60,7 +60,7 @@ class ChipDataset(Dataset):
         return len(self.items)
 
     def _preprocess(self, img):
-        defaults = v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True), v2.Normalize(self.mean, self.std)])
+        defaults = v2.Compose([v2.ToImageTensor(), v2.ToDtype(torch.float32), v2.Normalize(self.mean, self.std)])
         img = defaults(img)
         return self.transform(img)
 
@@ -77,8 +77,8 @@ class ChipDataset(Dataset):
             s = 0
         elif source == 'Mask':
             s = 1
-        elif source is None:
-            s = 2
+        else:
+            s = 2       # source = None
 
         label = np.zeros([len(self.classes)])
         label[label_idx] = 1

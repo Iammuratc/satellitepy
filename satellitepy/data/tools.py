@@ -89,7 +89,7 @@ def save_patches(
         rescaling=1,
         interpolation_method=cv2.INTER_LINEAR,
         keep_empty=False,
-        subset_data=None,
+        subset_data=None
     ):
     """
     Save patches from the original images
@@ -148,7 +148,7 @@ def save_patches(
 
     assert len(img_paths) == len(label_paths) == len(mask_paths)
 
-    for img_path, label_path, mask_path in zip(img_paths[13:], label_paths[13:], mask_paths[13:]):
+    for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
         mask_name = mask_path.name if mask_path != None else None
         label_name = label_path.name if label_path is not None else None
         logger.info(f"{img_path.name}, {label_name}, {mask_name}")
@@ -404,12 +404,15 @@ def save_chips(
     chip_counter = [0,0] # per folder, per image
     if len(image_paths) == len(label_paths) == len(mask_paths):
         for img_path, label_path, mask_path in zip(image_paths, label_paths, mask_paths):
+            label = read_label(label_path, label_format, mask_path)
+            if not (any(label['obboxes']) or any(label['hbboxes'])):
+                continue
             chip_counter[1] = 0
             logger.info(f"Reading the image: {img_path}")
             logger.info(f"Reading the label: {label_path}")
             img = read_img(str(img_path), img_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
             logger.info(f"Image read successfull!")
-            label = read_label(label_path, label_format, mask_path)
+
             chips = get_chips(
                 img,
                 label,
@@ -423,10 +426,13 @@ def save_chips(
             for i in range(count_chips):
 
                 chip_img = chips['images'][i]
-
+                if chip_img is None:
+                    logger.warning('Image is None!')
+                    continue
                 if not chip_img.size == 0:
                     chip_img_path = out_folder_images / f'{img_name}_{i}.png'
-                    cv2.imwrite(str(chip_img_path), chip_img)
+                    # cv2.imwrite(str(chip_img_path), chip_img)
+                    save_with_padding(chip_img, chip_img_path, (chip_size, chip_size))
                     chip_counter[0] += 1
                     chip_counter[1] += 1
                 else:
@@ -440,6 +446,41 @@ def save_chips(
             logger.info(f"{img_path.stem} has {chip_counter[1]} chips.")
         logger.info(f"{chip_counter[0]} chips are saved in total!")
         logger.info(f"Chips are saved at: {out_folder}")
+
+
+def save_with_padding(chip_img, chip_img_path, target_size=(256, 256), color=(0, 0, 0)):
+    """
+    Save an image with padding to ensure it meets the target size.
+
+    Args:
+        chip_img (numpy.ndarray): Input image.
+        chip_img_path (str): Path to save the padded image.
+        target_size (tuple): Desired (width, height) size, default is (256, 256).
+        color (tuple): Color of the padding (default is black).
+    """
+    height, width = chip_img.shape[:2]
+    target_width, target_height = target_size
+
+    # Compute padding values
+    pad_top = max(0, (target_height - height) // 2)
+    pad_bottom = max(0, target_height - height - pad_top)
+    pad_left = max(0, (target_width - width) // 2)
+    pad_right = max(0, target_width - width - pad_left)
+
+    # Add padding
+    padded_img = cv2.copyMakeBorder(
+        chip_img,
+        top=pad_top,
+        bottom=pad_bottom,
+        left=pad_left,
+        right=pad_right,
+        borderType=cv2.BORDER_CONSTANT,
+        value=color  # Padding color (black by default)
+    )
+
+    # Save the padded image
+    cv2.imwrite(str(chip_img_path), padded_img)
+
 def get_label_by_idx(satpy_labels: dict, i: int):
     """
     Creates a copy of the satpy_labels dict by doing the following:
@@ -522,7 +563,7 @@ def show_labels_on_images(
                 img = bbox.draw_bbox_to_img(img, corners=[bbox.diamond_corners], thickness=1)
             else:
                 bbox = BBox(corners=bbox_corners)
-                img = bbox.draw_bbox_to_img(img, corners=[bbox.corners], thickness=3)
+                img = bbox.draw_bbox_to_img(img, corners=[bbox.corners], thickness=1)
 
             available_tasks = requested_classes.copy()
             if labels['coarse-class'][i] != 'airplane':

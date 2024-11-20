@@ -67,8 +67,8 @@ def create_chip(img, mask, bbox, chip_size, draw_corners=False, orient_objects=F
         rotated = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]))
         max_y, max_x, _ = rotated.shape
         rot_bbox = np.array(BBox(corners=bbox).rotate_corners(-angle), dtype=int)
-        rot_hbbox = BBox.get_bbox_limits(rot_bbox)
-        rot_hbbox = get_chip_coords(rot_hbbox, max_x, max_y, chip_size)
+        # rot_hbbox = BBox.get_bbox_limits(rot_bbox)
+        rot_hbbox = get_chip_coords(rot_bbox, max_x, max_y, chip_size)
         chip_img = rotated[rot_hbbox[2]:rot_hbbox[3], rot_hbbox[0]:rot_hbbox[1], :]
         
         if mask_objects:
