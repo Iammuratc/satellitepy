@@ -195,9 +195,7 @@ class LossAll(torch.nn.Module):
         loss_dict = dict()
 
         for task, loss_fnc in self.tasks_losses.items():
-            if task == 'cls_' + target_task:
-                loss_dict[task] = loss_fnc(pr_decs[task], gt_batch[task])
-            elif task == 'masks':
+            if task == 'cls_' + target_task or task == 'masks':
                 loss_dict[task] = loss_fnc(pr_decs[task], gt_batch[task])
             else:
                 loss_dict[task] = loss_fnc(

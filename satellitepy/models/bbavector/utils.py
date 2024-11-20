@@ -58,7 +58,7 @@ def save_model(path, epoch, model, optimizer):
         'optimizer_state_dict': optimizer.state_dict()
     }, path)
 
-def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3, weights_type='bba'):
+def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3, weights_type='bba', freeze_seg=True):
     checkpoint = torch.load(checkpoint_path)
     logger.info('loaded weights from {}, epoch {}'.format(checkpoint_path, checkpoint['epoch']))
 
@@ -76,7 +76,7 @@ def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3, weights_type='bba
     elif weights_type == 'seg_bba':
         seg_model = get_model(['masks'], down_ratio)
         for param in seg_model.parameters():
-            param.requires_grad = False
+            param.requires_grad = (not freeze_seg)
         bba_model = get_model(all_keys, down_ratio, in_channels=4)
         model = seg_bba(seg_model, bba_model)
         checkpoint = torch.load(checkpoint_path)
