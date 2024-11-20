@@ -120,8 +120,8 @@ def get_instances_per_task(label_folder,task):
     # Count instances
     count_instances = {}
     for label_path in label_paths:
-        # label = read_label(label_path, label_format='fr24')
-        label = read_fineair_label(label_path, include_fineair_class=False)
+        label = read_label(label_path, label_format='fineair')
+        # label = read_fineair_label(label_path, include_fineair_class=False)
         # If task is very-fine-class, merge fine-class and very-fine-class first
         values = get_satellitepy_dict_values(label, task)
         count_instances = count_unique_values(satellitepy_values = values, instances=count_instances)
