@@ -79,7 +79,7 @@ def train_chips(args):
         f'No log path is given, the default log path will be used: {log_path}')
     logger.info('Initiating the training of the BBAVector model...')
 
-    transform = [torchvision.transforms.RandomVerticalFlip()]
+    transform = [torchvision.transforms.RandomHorizontalFlip()]
 
     # seed = args.manual_seed if args.manual_seed else np.random.randint(4242)
     batch_size = args.batch_size
