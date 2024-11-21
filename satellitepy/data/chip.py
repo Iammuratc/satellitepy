@@ -69,24 +69,18 @@ def create_chip(img, bbox, chip_size, draw_corners=False, orient_objects=False, 
         chip_img = cv2.warpAffine(chip_img, M, (chip_img.shape[1], chip_img.shape[0]))
 
     if mask_background:
-        #-----------------
-
         params = BBox(corners=bbox).get_params()
         length = params[3]
         width = params[2]
         chip_mask = np.zeros(shape=(chip_img.shape[0], chip_img.shape[1])).astype(np.uint8)
-        start = (int(center[0] - width/2), int(center[1] - length/2))
-        end = (int(center[0] + width/2), int(center[1] + length/2))
+        start = (int(center[0] - length/2), int(center[1] - width/2))
+        end = (int(center[0] + length/2), int(center[1] + width/2))
         cv2.rectangle(chip_mask, start, end, color=(255,255,255), thickness=-1)
 
-        #-----------------
-        background_mask = np.zeros(shape=(img.shape[0], img.shape[1])).astype(np.uint8)
-        cv2.fillPoly(background_mask, np.array([bbox], dtype=int), 255)
-        chip_mask = background_mask[chip_coords[2]:chip_coords[3], chip_coords[0]:chip_coords[1]]
-        if orient_objects:
-            chip_mask = cv2.warpAffine(chip_mask, M, (chip_mask.shape[1], chip_mask.shape[0]))
+        if not orient_objects:
+            M_inv = cv2.getRotationMatrix2D(center, - (math.degrees(angle) - 90), 1.0)
+            chip_mask = cv2.warpAffine(chip_mask, M_inv, (chip_mask.shape[1], chip_mask.shape[0]))
         chip_img = cv2.bitwise_and(chip_img, chip_img, mask=chip_mask)
-
 
     return chip_img, (int(center_x), int(center_y))
 
