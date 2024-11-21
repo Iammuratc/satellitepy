@@ -43,15 +43,11 @@ def remove_neighbor_masks(mask):
     return mask_middle
 
 
-def create_chip(img, mask, bbox, chip_size, draw_corners=False, orient_objects=False):
+def create_chip(img, bbox, chip_size, draw_corners=False, orient_objects=False, mask_background=False):
     center_x = np.mean(bbox[:, 0])
     center_y = np.mean(bbox[:, 1])
     center = (center_x, center_y)
 
-    if (mask is None) or (not np.any(mask)):
-        mask_objects = False
-    else:
-        mask_objects = True
     # Set chip mask to None
     if draw_corners:
         img = cv2.copyMakeBorder(img, 200, 200, 200, 200, cv2.BORDER_CONSTANT, value=0)
@@ -61,30 +57,30 @@ def create_chip(img, mask, bbox, chip_size, draw_corners=False, orient_objects=F
         for coords in bbox:
             cv2.circle(img, (coords[0], coords[1]), 1, (0, 0, 255), 2)
 
-    if orient_objects:
-        angle = BBox(corners=bbox).get_orth_angle()
-        M = cv2.getRotationMatrix2D(center, math.degrees(angle)-90, 1.0)
-        rotated = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]))
-        max_y, max_x, _ = rotated.shape
-        rot_bbox = np.array(BBox(corners=bbox).rotate_corners(-angle), dtype=int)
-        # rot_hbbox = BBox.get_bbox_limits(rot_bbox)
-        rot_hbbox = get_chip_coords(rot_bbox, max_x, max_y, chip_size)
-        chip_img = rotated[rot_hbbox[2]:rot_hbbox[3], rot_hbbox[0]:rot_hbbox[1], :]
-        
-        if mask_objects:
-            rotated_mask = cv2.warpAffine(mask, M, (img.shape[1], img.shape[0]))
-            chip_mask = rotated_mask[rot_hbbox[2]:rot_hbbox[3], rot_hbbox[0]:rot_hbbox[1]]
-            chip_mask = remove_neighbor_masks(chip_mask)
-            chip_img = cv2.bitwise_and(chip_img, chip_img, mask=chip_mask)
+    center = (chip_size/2, chip_size/2)
 
-    else:
-        max_x, max_y, _ = img.shape
-        chip_coords = get_chip_coords(bbox, max_x, max_y, chip_size)
-        chip_img = img[chip_coords[2]:chip_coords[3], chip_coords[0]:chip_coords[1], :]
-        if mask_objects:
-            chip_mask = mask[chip_coords[2]:chip_coords[3], chip_coords[0]:chip_coords[1]]
-            chip_mask = remove_neighbor_masks(chip_mask)
-            chip_img = cv2.bitwise_and(chip_img, chip_img, mask=chip_mask)
+    max_x, max_y, _ = img.shape
+    chip_coords = get_chip_coords(bbox, max_x, max_y, chip_size)
+    chip_img = img[chip_coords[2]:chip_coords[3], chip_coords[0]:chip_coords[1], :]
+
+    angle = BBox(corners=bbox).get_orth_angle()
+    M = cv2.getRotationMatrix2D(center, math.degrees(angle) - 90, 1.0)
+    if orient_objects:
+        chip_img = cv2.warpAffine(chip_img, M, (chip_img.shape[1], chip_img.shape[0]))
+
+    if mask_background:
+        params = BBox(corners=bbox).get_params()
+        length = params[3] * 1.1
+        width = params[2] * 1.1
+        chip_mask = np.zeros(shape=(chip_img.shape[0], chip_img.shape[1])).astype(np.uint8)
+        start = (int(center[0] - length/2), int(center[1] - width/2))
+        end = (int(center[0] + length/2), int(center[1] + width/2))
+        cv2.rectangle(chip_mask, start, end, color=(255,255,255), thickness=-1)
+
+        if not orient_objects:
+            M_inv = cv2.getRotationMatrix2D(center, - (math.degrees(angle) - 90), 1.0)
+            chip_mask = cv2.warpAffine(chip_mask, M_inv, (chip_mask.shape[1], chip_mask.shape[0]))
+        chip_img = cv2.bitwise_and(chip_img, chip_img, mask=chip_mask)
 
     return chip_img, (int(center_x), int(center_y))
 
@@ -135,15 +131,7 @@ def get_chips(img,
         bbox_type = "hbboxes"
 
     bboxes = labels[bbox_type]
-    if mask_objects:
-        logger.info("Mask will be applied to the image")
-        mask = np.zeros(shape=(img.shape[0],img.shape[1])).astype(np.uint8)
-        for i, bbox in enumerate(bboxes):
-            cv2.fillPoly(mask, np.array([bbox], dtype=int), 255)
-        ## Pad mask
-        mask = np.pad(mask, pad_width[:2], mode='constant', constant_values=0)
-    else:
-        mask = None
+
     ## Pad image
     img = np.pad(img, pad_width, mode='constant', constant_values=0)
 
@@ -151,11 +139,11 @@ def get_chips(img,
     bboxes = np.array(bboxes) + np.array([pad_width[1][0], pad_width[0][0]])
     for i, bbox in enumerate(bboxes):
         chip_img, center = create_chip(img=img,
-            mask = mask,
             bbox=np.array(bbox).astype(int), 
             chip_size=chip_size, 
             draw_corners=False,
-            orient_objects=orient_objects)
+            orient_objects=orient_objects,
+            mask_background=mask_objects)
 
         set_image_keys(all_satellitepy_keys, chips_dict['labels'], labels, i)
 
