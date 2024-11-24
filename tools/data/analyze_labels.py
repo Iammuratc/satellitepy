@@ -84,7 +84,8 @@ def analyse_label_paths(label_folder,
     max_class_name_length, 
     print_none, 
     group_into_other_threshold,
-    remove_other):
+    remove_other,
+    remove_zero=False):
 
 
     label_paths = get_file_paths(label_folder)
@@ -104,6 +105,9 @@ def analyse_label_paths(label_folder,
     # if not print_none and 'None' in count_instances.keys():
     if not print_none:
         count_instances = remove_none_keys(count_instances)
+
+    if remove_zero:
+        count_instances = remove_zero_values(count_instances)
 
     if group_into_other_threshold > 0:
         others,count_instances = group_into_other(count_instances,group_into_other_threshold)
@@ -269,6 +273,8 @@ def analyse_label_paths(label_folder,
         fig.update_yaxes(title='y', visible=False, showticklabels=False)
         fig.show()
 
+    return count_instances
+
 def merge_into_role(count_instances_by_task,th,roles):
     result_dict = {role:0 for role in roles.keys()}
     for class_name, class_count in count_instances_by_task['very-fine-class'].items():
@@ -321,6 +327,15 @@ def remove_none_keys(input_dict):
             continue
         else:
             result_dict[key] = value    
+    return result_dict
+
+def remove_zero_values(input_dict):
+    result_dict = {}
+    for key, value in input_dict.items():
+        if value == 0:
+            continue
+        else:
+            result_dict[key] = value
     return result_dict
 
 

@@ -65,7 +65,7 @@ def create_chip(img, bbox, chip_size, draw_corners=False, orient_objects=False, 
 
     angle = BBox(corners=bbox).get_orth_angle()
     M = cv2.getRotationMatrix2D(center, math.degrees(angle) - 90, 1.0)
-    if orient_objects:
+    if orient_objects and chip_img is not None and chip_img.size != 0:
         chip_img = cv2.warpAffine(chip_img, M, (chip_img.shape[1], chip_img.shape[0]))
 
     if mask_background:
@@ -77,7 +77,7 @@ def create_chip(img, bbox, chip_size, draw_corners=False, orient_objects=False, 
         end = (int(center[0] + length/2), int(center[1] + width/2))
         cv2.rectangle(chip_mask, start, end, color=(255,255,255), thickness=-1)
 
-        if not orient_objects:
+        if not orient_objects and chip_img is not None and chip_img.size != 0:
             M_inv = cv2.getRotationMatrix2D(center, - (math.degrees(angle) - 90), 1.0)
             chip_mask = cv2.warpAffine(chip_mask, M_inv, (chip_mask.shape[1], chip_mask.shape[0]))
         chip_img = cv2.bitwise_and(chip_img, chip_img, mask=chip_mask)
