@@ -125,7 +125,6 @@ def train_chips(args):
             if k in keep_classes:
                 keep_dict[k] = v
         class_distribution = keep_dict
-    logger.info(f'class distribution: {class_distribution}')
 
     augmentation_factor = args.augmentation_factor
     augmentation_percentage = args.augmentation_percentage * augmentation_factor
@@ -136,14 +135,14 @@ def train_chips(args):
     for k, v in class_distribution.items():
         multiplier[k] = np.rint(augmentation_factor * (val_max / class_distribution[k]))
 
-    logger.info(f'using class multipliers: {multiplier}')
 
     classes = list(class_distribution.keys())
 
     log_path = Path(
         out_folder) / 'train_chips.log' if args.log_path is None else args.log_path
     init_logger(config_path=args.log_config_path, log_path=log_path)
-    logger = logging.getLogger('')
+    logger.info(f'class distribution: {class_distribution}')
+    logger.info(f'using class multipliers: {multiplier}')
     logger.info(
         f'No log path is given, the default log path will be used: {log_path}')
     logger.info('Initiating the training of the BBAVector model...')

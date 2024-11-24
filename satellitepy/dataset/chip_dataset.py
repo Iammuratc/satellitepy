@@ -81,9 +81,9 @@ class ChipDataset(Dataset):
         chip = cv2.imread(chip_path, cv2.IMREAD_COLOR)
         with open(label_path, 'r') as f:
             file = json.load(f)
-        class_idx = file[self.task][0]
+        class_name = file[self.task][0]
 
-        label_idx = self.classes.index(class_idx)
+        label_idx = self.classes.index(class_name)
         source = file['source'][0]
 
         if source == 'FR24':
