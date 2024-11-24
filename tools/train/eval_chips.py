@@ -81,6 +81,7 @@ def parse_args():
     parser.add_argument('--out-folder',
                         type=Path,
                         help='Save folder of experiments. The trained weights will be saved under this folder.')
+    parser.add_argument('--keep-classes', type=str, default='all', help='If not all, contains all class names that are trained on. Every class not in this list will not be considered.')
 
     args = parser.parse_args()
     return args
@@ -102,19 +103,29 @@ def train_chips(args):
 
     task = args.task
 
+    logger.info('Analyzing labels')
     class_distribution = analyse_label_paths(train_labels_path,
-                        label_format='satellitepy',
-                        task=task,
-                        logger=logger,
-                        plot_bar=False,
-                        plot_sunburst_bar=False,
-                        plot_horizontal_bar=False,
-                        out_folder=out_folder,
-                        max_class_name_length=0,
-                        print_none=True,
-                        group_into_other_threshold=0,
-                        remove_other=False,
-                        remove_zero=True)
+                                             label_format='satellitepy',
+                                             task=task,
+                                             logger=logger,
+                                             plot_bar=False,
+                                             plot_sunburst_bar=False,
+                                             plot_horizontal_bar=False,
+                                             out_folder=out_folder,
+                                             max_class_name_length=0,
+                                             print_none=True,
+                                             group_into_other_threshold=0,
+                                             remove_other=False,
+                                             remove_zero=True)
+
+    keep_classes = [c.strip() for c in args.keep_classes.split(",")] if args.keep_classes != 'all' else 'all'
+    if keep_classes != 'all':
+        keep_dict = {}
+        for k, v in class_distribution.items():
+            if k in keep_classes:
+                keep_dict[k] = v
+        class_distribution = keep_dict
+    logger.info(f'class distribution: {class_distribution}')
 
     augmentation_factor = args.augmentation_factor
     augmentation_percentage = args.augmentation_percentage * augmentation_factor
@@ -125,7 +136,7 @@ def train_chips(args):
     for k, v in class_distribution.items():
         multiplier[k] = np.rint(augmentation_factor * (val_max / class_distribution[k]))
 
-    print(f'using class multipliers: {multiplier}')
+    logger.info(f'using class multipliers: {multiplier}')
 
     classes = list(class_distribution.keys())
 
@@ -156,9 +167,9 @@ def train_chips(args):
     eval_by_source = args.eval_by_source
     verbose_output = args.verbose_output
 
-    train_dataset = ChipDataset(train_image_path, train_labels_path, classes, task, transform, multiplier)
-    val_dataset = ChipDataset(val_image_path, val_labels_path, classes, task)
-    test_dataset = ChipDataset(test_image_path, test_labels_path, classes, task)
+    train_dataset = ChipDataset(train_image_path, train_labels_path, classes, task, transform, multiplier, keep_classes=keep_classes)
+    val_dataset = ChipDataset(val_image_path, val_labels_path, classes, task, keep_classes=keep_classes)
+    test_dataset = ChipDataset(test_image_path, test_labels_path, classes, task, keep_classes=keep_classes)
 
 
     train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=True, num_workers=num_workers)

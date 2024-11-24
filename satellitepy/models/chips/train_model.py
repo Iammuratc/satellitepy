@@ -166,10 +166,6 @@ class TrainModule(object):
                f'class names: \n{self.classes} \n' +
                f'accuracy by class and source: \n{test_accs}')
 
-        res_dict = {}
-        for c, a in zip(self.classes, test_acc):
-            res_dict[c] = a
-
         logger.info(msg)
 
         logger.info('-----------------Combined-----------------')
@@ -180,4 +176,8 @@ class TrainModule(object):
 
         logger.info(msg)
         logger.info('-----------------res_dict-----------------')
+        res_dict = {}
+        for c, a in zip(self.classes, test_accs):
+            res_dict[c] = a
+
         logger.info(res_dict)

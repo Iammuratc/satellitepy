@@ -1,5 +1,6 @@
 import json
 from glob import glob
+import logging
 
 import cv2
 import numpy as np
@@ -44,21 +45,20 @@ def get_train_val_dataloaders(chip_path, label_path, classes, train_batch_size, 
 
 
 class ChipDataset(Dataset):
-    def __init__(self, chip_path, label_path, classes, task, transform=[], multiplier=None):
-        if not multiplier:
-            chip_paths = [f for f in sorted(glob(str(chip_path) + "/*.png"))]
-            label_paths = [f for f in sorted(glob(str(label_path) + "/*.json"))]
-        else:
-            chip_paths = []
-            label_paths = []
-            for c, l in zip(sorted(glob(str(chip_path) + "/*.png")), sorted(glob(str(label_path)+ "/*.json"))):
-                with open(l, 'r') as f:
-                    file = json.load(f)
-                class_name = file[task][0]
-                multiply = int(1 + np.rint(np.max([multiplier[class_name]-1, 0])))
+    def __init__(self, chip_path, label_path, classes, task, transform=[], multiplier=None, keep_classes='all'):
+        logger = logging.getLogger('')
+        chip_paths = []
+        label_paths = []
+        for c, l in zip(sorted(glob(str(chip_path) + "/*.png")), sorted(glob(str(label_path)+ "/*.json"))):
+            with open(l, 'r') as f:
+                file = json.load(f)
+            class_name = file[task][0]
+            if keep_classes != 'all' and class_name not in keep_classes:
+                continue
+            multiply = int(1 + np.rint(np.max([multiplier[class_name]-1, 0]))) if multiplier else 1
 
-                chip_paths += [c]*multiply
-                label_paths += [l]*multiply
+            chip_paths += [c]*multiply
+            label_paths += [l]*multiply
 
         self.mean, self.std = compute_mean_and_std(chip_paths)
 
