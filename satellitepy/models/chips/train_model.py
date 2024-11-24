@@ -93,21 +93,21 @@ class TrainModule(object):
 
 
     def train(self):
-            train_losses = []
-            train_pbar = tqdm(self.train_loader)
-            self.model.train()
+        train_losses = []
+        train_pbar = tqdm(self.train_loader)
+        self.model.train()
 
-            for (x, y, s) in train_pbar:
-                self.optimizer.zero_grad()
-                x, y = x.to(self.device), y.to(self.device)
-                y_hat = self.model(x)
+        for (x, y, s) in train_pbar:
+            self.optimizer.zero_grad()
+            x, y = x.to(self.device), y.to(self.device)
+            y_hat = self.model(x)
 
-                loss = self.loss_fn(y_hat, y)
-                loss.backward()
-                self.optimizer.step()
-                train_losses.append(loss.item())
-            train_loss = np.average(train_losses)
-            return train_loss
+            loss = self.loss_fn(y_hat, y)
+            loss.backward()
+            self.optimizer.step()
+            train_losses.append(loss.item())
+        train_loss = np.average(train_losses)
+        return train_loss
 
 
     def validate(self):
@@ -166,6 +166,9 @@ class TrainModule(object):
                f'class names: \n{self.classes} \n' +
                f'accuracy by class and source: \n{test_accs}')
 
+        res_dict = {}
+        for c, a in zip(self.classes, test_acc):
+            res_dict[c] = a
 
         logger.info(msg)
 
@@ -176,3 +179,5 @@ class TrainModule(object):
         msg = (f'accuracy by class: \n{test_accs}')
 
         logger.info(msg)
+        logger.info('-----------------res_dict-----------------')
+        logger.info(res_dict)
