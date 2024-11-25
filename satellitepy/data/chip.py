@@ -70,8 +70,8 @@ def create_chip(img, bbox, chip_size, draw_corners=False, orient_objects=False, 
 
     if mask_background:
         params = BBox(corners=bbox).get_params()
-        length = params[3] * 1.1
-        width = params[2] * 1.1
+        length = params[3] * 1.2
+        width = params[2] * 1.2
         chip_mask = np.zeros(shape=(chip_img.shape[0], chip_img.shape[1])).astype(np.uint8)
         start = (int(center[0] - length/2), int(center[1] - width/2))
         end = (int(center[0] + length/2), int(center[1] + width/2))

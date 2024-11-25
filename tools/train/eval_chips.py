@@ -72,6 +72,7 @@ def parse_args():
     parser.add_argument('--augmentation-factor', type=float, default=0, help='Percentage by which lower instance class are augmented. 0 means no instance number based augmentation, '
                                                                              '1 results in almost completely balanced classes.')
     parser.add_argument('--augmentation-percentage', type=float, default=0.2, help='Probability of using augmentations. Final p = aug_factor*aug_percentage, including augmentation_factor.')
+    parser.add_argument('--rotate', type=bool, default=False, required=False, help='Adds random rotation to augmentations if true')
     parser.add_argument('--eval-by-source', type=bool, default=False, required=False)
     parser.add_argument('--verbose-output', type=bool, default=False, required=False)
 
@@ -154,6 +155,9 @@ def train_chips(args):
                  torchvision.transforms.RandomApply([torchvision.transforms.GaussianBlur(kernel_size=(3, 3), sigma=(0.1, 0.5))], p=augmentation_percentage),
                  AddGaussianNoise(mean=0.0, std=0.01, p=augmentation_percentage),
                  torchvision.transforms.RandomApply([RandomChannelShuffle()], p=augmentation_percentage)]
+
+    if args.rotate:
+        transform.append(torchvision.transforms.RandomRotation(degrees=180))
 
     batch_size = args.batch_size
     train_batch_size = batch_size
