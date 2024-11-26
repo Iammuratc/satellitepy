@@ -89,7 +89,6 @@ def parse_args():
 
 def train_chips(args):
     logger = logging.getLogger('')
-
     train_image_path = Path(args.train_image_folder)
     train_labels_path = Path(args.train_label_folder)
 
@@ -101,6 +100,9 @@ def train_chips(args):
 
     out_folder = Path(args.out_folder)
     assert create_folder(out_folder)
+
+    pred_folder = Path(out_folder) / 'predictions'
+    assert create_folder(pred_folder, ask_permission=False)
 
     task = args.task
 
@@ -138,10 +140,12 @@ def train_chips(args):
 
 
     classes = list(class_distribution.keys())
+    classes.sort()
 
     log_path = Path(
         out_folder) / 'train_chips.log' if args.log_path is None else args.log_path
     init_logger(config_path=args.log_config_path, log_path=log_path)
+    logger.info(f'Using sorted classes: {classes}')
     logger.info(f'class distribution: {class_distribution}')
     logger.info(f'using class multipliers: {multiplier}')
     logger.info(
@@ -186,7 +190,7 @@ def train_chips(args):
     loss = torch.nn.CrossEntropyLoss()
 
     train_module = TrainModule(model, train_dataloader, val_dataloader, test_dataloader, optimizer,
-                               scheduler, loss, num_epochs, out_folder, classes, backbone_name, patience=5, val_by_source=eval_by_source, verbose_output=verbose_output)
+                               scheduler, loss, num_epochs, out_folder, classes, backbone_name, task, patience=5, val_by_source=eval_by_source, verbose_output=verbose_output)
 
     train_module.train_network()
     train_module.test()

@@ -98,6 +98,6 @@ class ChipDataset(Dataset):
 
         chip = self._preprocess(chip)
 
-        return chip, label, s
+        return chip, label, s, label_path
 
 
