@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import logging
 
-from satellitepy.data.bbox import BBox
+from satellitepy.data.bbox import BBox, le90_to_corners
 from satellitepy.data.utils import get_satellitepy_table
 from satellitepy.evaluate.utils import get_ious
 
@@ -83,11 +83,12 @@ def get_det_labels(mmrotate_result, class_names, task_name, nms_on_multiclass_th
             continue
 
         for class_bbox in class_bboxes:
-            my_bbox = BBox(params=np.array(class_bbox)[:5])
+            # my_bbox = BBox(params=np.array(class_bbox)[:5])
+            corners = le90_to_corners(np.array(class_bbox)[:5])
             if class_names[class_bboxes_ind] == 'other':
                 continue
             det_labels[task_name].append(get_satellitepy_table()[task_name][class_names[class_bboxes_ind]])
-            det_labels['obboxes'].append(my_bbox.corners)
+            det_labels['obboxes'].append(corners)
             det_labels['confidence-scores'].append(float(class_bbox[-1]))
     return det_labels
 

@@ -1,3 +1,5 @@
+import os
+os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = str(pow(2,40)).__str__()
 import logging
 from pathlib import Path
 from satellitepy.utils.path_utils import create_folder, init_logger, get_project_folder

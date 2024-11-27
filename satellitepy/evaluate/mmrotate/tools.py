@@ -136,7 +136,7 @@ def save_mmrotate_original_results(
     label_paths = get_file_paths(in_label_folder)
 
     for img_path, label_path in zip(image_paths, label_paths):
-        img_name = img_path.name
+        img_name = img_path.stem
         logger.info(f'Processing {img_name}...')
 
         is_match = is_file_names_match(img_path, label_path)
