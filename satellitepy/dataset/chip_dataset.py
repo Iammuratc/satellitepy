@@ -61,6 +61,10 @@ class ChipDataset(Dataset):
             label_paths += [l]*multiply
 
         self.mean, self.std = compute_mean_and_std(chip_paths)
+        norm_params_path = "/mnt/2tb-0/satellitepy/temp/chips/resnet34_augm_rot/norm_params.npy"
+        logger.info(f'Saving normalization params ({self.mean, self.std})to {norm_params_path}')
+        with open(norm_params_path, 'wb') as f:
+            np.save(f, np.array([self.mean, self.std]))
 
         self.transform = v2.Compose(transform)
         self.task = task

@@ -40,7 +40,6 @@ def parse_args():
     parser.add_argument('--out-folder',
                         type=Path,
                         help='Choose the out-folder of the training. Model must be called model_best.pth')
-
     args = parser.parse_args()
     return args
 

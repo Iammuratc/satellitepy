@@ -154,6 +154,7 @@ class TrainModule(object):
         with torch.no_grad():
             for (x, y, s, path) in test_pbar:
                 x, y = x.to(self.device), y.to(self.device)
+                print(x.shape)
                 y_hat = model(x)
 
                 pred_int = torch.argmax(y_hat, dim=1).cpu().numpy()

@@ -43,7 +43,7 @@ def remove_neighbor_masks(mask):
     return mask_middle
 
 
-def create_chip(img, bbox, chip_size, draw_corners=False, orient_objects=False, mask_background=False):
+def create_chip(img, bbox, chip_size, bbox_mask_margin=0.2, draw_corners=False, orient_objects=False, mask_background=False):
     center_x = np.mean(bbox[:, 0])
     center_y = np.mean(bbox[:, 1])
     center = (center_x, center_y)
@@ -59,10 +59,11 @@ def create_chip(img, bbox, chip_size, draw_corners=False, orient_objects=False, 
 
     center = (chip_size/2, chip_size/2)
 
-    max_x, max_y, _ = img.shape
+    max_y, max_x, _ = img.shape
     chip_coords = get_chip_coords(bbox, max_x, max_y, chip_size)
+    # print(chip_coords)
     chip_img = img[chip_coords[2]:chip_coords[3], chip_coords[0]:chip_coords[1], :]
-
+    # print(chip_img.shape)
     angle = BBox(corners=bbox).get_orth_angle()
     M = cv2.getRotationMatrix2D(center, math.degrees(angle) - 90, 1.0)
     if orient_objects and chip_img is not None and chip_img.size != 0:
@@ -70,12 +71,12 @@ def create_chip(img, bbox, chip_size, draw_corners=False, orient_objects=False, 
 
     if mask_background:
         params = BBox(corners=bbox).get_params()
-        length = params[3] * 1.2
-        width = params[2] * 1.2
+        length = params[3] * (1+bbox_mask_margin)
+        width = params[2] * (1+bbox_mask_margin)
         chip_mask = np.zeros(shape=(chip_img.shape[0], chip_img.shape[1])).astype(np.uint8)
         start = (int(center[0] - length/2), int(center[1] - width/2))
         end = (int(center[0] + length/2), int(center[1] + width/2))
-        cv2.rectangle(chip_mask, start, end, color=(255,255,255), thickness=-1)
+        cv2.rectangle(chip_mask, start, end, color=(255,255), thickness=-1)
 
         if not orient_objects and chip_img is not None and chip_img.size != 0:
             M_inv = cv2.getRotationMatrix2D(center, - (math.degrees(angle) - 90), 1.0)
