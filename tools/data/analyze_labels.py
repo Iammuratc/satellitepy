@@ -182,8 +182,6 @@ def analyse_label_paths(label_folder,
                 very_fine_class_without_none[class_name] = class_count
         count_instances_by_task['very-fine-class'] = very_fine_class_without_none
 
-        len_ftgc = sum(count_instances_by_task['very-fine-class'].values())
-        print(f'Number of airplanes with FtGC: {len_ftgc}')
         ## Merge classes with low instance numbers to the role
         count_instances_by_task = merge_into_role(count_instances_by_task,th=15,roles=roles)
 
@@ -223,6 +221,9 @@ def analyse_label_paths(label_folder,
                 # Get the item from the second list at that index
                 color = colors[class_name_ind]
                 color_dict[task][class_name] = color
+
+        len_ftgc = sum(count_instances_by_task['very-fine-class'].values())
+        print(f'Number of airplanes with FtGC: {len_ftgc}')
 
         ### Merge small very-fine-class into the parent role
         fig = make_subplots(
