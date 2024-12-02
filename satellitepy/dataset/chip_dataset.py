@@ -1,5 +1,6 @@
 import json
 from glob import glob
+import logging
 
 import cv2
 import numpy as np
@@ -32,10 +33,9 @@ def compute_mean_and_std(chip_paths):
     return mean, std
 
 
-def get_train_val_dataloaders(chip_path, label_path, classes, train_batch_size, val_batch_size, transform=[], get_source=False, shuffle=True, num_workers=4, seed=42424242):
+def get_train_val_dataloaders(chip_path, label_path, classes, train_batch_size, val_batch_size, transform=[], get_source=False, shuffle=True, num_workers=4):
     dataset = ChipDataset(chip_path, label_path, classes, transform)
 
-    generator = torch.Generator().manual_seed(seed)
     train_dataset, val_dataset = random_split(dataset, [0.8, 0.2], generator)
 
     train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, shuffle=shuffle, num_workers=num_workers)
@@ -45,14 +45,29 @@ def get_train_val_dataloaders(chip_path, label_path, classes, train_batch_size, 
 
 
 class ChipDataset(Dataset):
-    def __init__(self, chip_path, label_path, classes, transform=[]):
-        chip_paths = [f for f in sorted(glob(str(chip_path) + "/*.png"))]
-        label_paths = [f for f in sorted(glob(str(label_path) + "/*.json"))]
+    def __init__(self, chip_path, label_path, classes, task, transform=[], multiplier=None, keep_classes='all'):
+        logger = logging.getLogger('')
+        chip_paths = []
+        label_paths = []
+        for c, l in zip(sorted(glob(str(chip_path) + "/*.png")), sorted(glob(str(label_path)+ "/*.json"))):
+            with open(l, 'r') as f:
+                file = json.load(f)
+            class_name = file[task][0]
+            if keep_classes != 'all' and class_name not in keep_classes:
+                continue
+            multiply = int(1 + np.rint(np.max([multiplier[class_name]-1, 0]))) if multiplier else 1
+
+            chip_paths += [c]*multiply
+            label_paths += [l]*multiply
 
         self.mean, self.std = compute_mean_and_std(chip_paths)
+        norm_params_path = "/mnt/2tb-0/satellitepy/temp/chips/resnet34_augm_rot/norm_params.npy"
+        logger.info(f'Saving normalization params ({self.mean, self.std})to {norm_params_path}')
+        with open(norm_params_path, 'wb') as f:
+            np.save(f, np.array([self.mean, self.std]))
 
         self.transform = v2.Compose(transform)
-
+        self.task = task
         self.classes = classes
         self.items = list(zip(chip_paths, label_paths))
 
@@ -70,7 +85,9 @@ class ChipDataset(Dataset):
         chip = cv2.imread(chip_path, cv2.IMREAD_COLOR)
         with open(label_path, 'r') as f:
             file = json.load(f)
-        label_idx = self.classes.index(file['fineair-class'][0])
+        class_name = file[self.task][0]
+
+        label_idx = self.classes.index(class_name)
         source = file['source'][0]
 
         if source == 'FR24':
@@ -85,6 +102,6 @@ class ChipDataset(Dataset):
 
         chip = self._preprocess(chip)
 
-        return chip, label, s
+        return chip, label, s, label_path
 
 

@@ -32,12 +32,14 @@ def match_gt_and_det_bboxes(gt_labels, det_labels, by_source=False):
                         the det_labels['bboxes'] order, and the value is the index in gt_labels['bboxes'].
             'sources' : Annotation sources
     """
-    matches = {'iou': {'scores': [], 'indexes': [], 'sources': []}}
+    matches = {'iou': {'scores': [], 'indexes': []}}
+    if by_source:
+        matches['iou']['sources'] = []
 
     if gt_labels is None:
         return matches
 
-    if 'obboxes' in det_labels and any(gt_labels['obboxes']):
+    if 'obboxes' in det_labels.keys() and any(gt_labels['obboxes']):
         ious = get_ious(det_labels['obboxes'], gt_labels['obboxes'])
     else:
         ious = get_ious(det_labels['hbboxes'], gt_labels['hbboxes'])
@@ -50,7 +52,8 @@ def match_gt_and_det_bboxes(gt_labels, det_labels, by_source=False):
 
         matches['iou']['scores'].append(iou_score.item())
         matches['iou']['indexes'].append(bbox_ind_gt.item())
-        matches['iou']['sources'].append(gt_labels['source'][bbox_ind_gt.item()])
+        if by_source:
+            matches['iou']['sources'].append(gt_labels['source'][bbox_ind_gt.item()])
     return matches
 
 

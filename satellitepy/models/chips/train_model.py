@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -21,6 +23,7 @@ class TrainModule(object):
                  save_path,
                  classes,
                  backbone_name,
+                 task,
                  patience=10,
                  val_by_source=False,
                  verbose_output=True):
@@ -35,6 +38,7 @@ class TrainModule(object):
         self.save_path = save_path
         self.classes = classes
         self.backbone_name = backbone_name
+        self.task = task
         self.patience = patience
         self.val_by_source = val_by_source
         self.verbose_output = verbose_output
@@ -93,21 +97,21 @@ class TrainModule(object):
 
 
     def train(self):
-            train_losses = []
-            train_pbar = tqdm(self.train_loader)
-            self.model.train()
+        train_losses = []
+        train_pbar = tqdm(self.train_loader)
+        self.model.train()
 
-            for (x, y, s) in train_pbar:
-                self.optimizer.zero_grad()
-                x, y = x.to(self.device), y.to(self.device)
-                y_hat = self.model(x)
+        for (x, y, s, _) in train_pbar:
+            self.optimizer.zero_grad()
+            x, y = x.to(self.device), y.to(self.device)
+            y_hat = self.model(x)
 
-                loss = self.loss_fn(y_hat, y)
-                loss.backward()
-                self.optimizer.step()
-                train_losses.append(loss.item())
-            train_loss = np.average(train_losses)
-            return train_loss
+            loss = self.loss_fn(y_hat, y)
+            loss.backward()
+            self.optimizer.step()
+            train_losses.append(loss.item())
+        train_loss = np.average(train_losses)
+        return train_loss
 
 
     def validate(self):
@@ -117,7 +121,7 @@ class TrainModule(object):
         val_pbar = tqdm(self.val_loader)
         self.model.eval()
         with torch.no_grad():
-            for (x, y, s) in val_pbar:
+            for (x, y, s, _) in val_pbar:
                 x, y = x.to(self.device), y.to(self.device)
                 y_hat = self.model(x)
                 val_loss = self.loss_fn(y_hat, y)
@@ -135,37 +139,51 @@ class TrainModule(object):
     def test(self):
         logger = logging.getLogger('')
         best_path=os.path.join(self.save_path, 'model_best.pth')
+        logger.info(f'Loading model from {best_path}')
         checkpoint = torch.load(best_path)
         model = get_model(self.backbone_name, len(self.classes))
         model.load_state_dict(checkpoint['model_state_dict'])
-        self.model = self.model.to(self.device)
+        model = model.to(self.device)
 
         logger.info('Testing...')
 
         acc_sums = np.zeros([len(self.classes), 3])
         nums = torch.zeros([len(self.classes), 3])
         test_pbar = tqdm(self.test_loader)
-        self.model.eval()
+        model.eval()
         with torch.no_grad():
-            for (x, y, s) in test_pbar:
+            for (x, y, s, path) in test_pbar:
                 x, y = x.to(self.device), y.to(self.device)
-                y_hat = self.model(x)
+                print(x.shape)
+                y_hat = model(x)
 
                 pred_int = torch.argmax(y_hat, dim=1).cpu().numpy()
+                pred_score = torch.max(y_hat, dim=1).values.cpu().numpy()
                 gt = torch.argmax(y, dim=1).cpu().numpy()
 
                 acc_sum = np.sum(pred_int == gt)
                 acc_sums[gt, s] += acc_sum
                 nums[gt, s] += 1
 
+                path = path[0]
+
+                with open(path, 'r') as f:
+                    labels = json.load(f)
+                labels['chip_classification'] = {}
+                name = path.split('/')[-1]
+                out_path = Path(self.save_path)/ 'predictions' / name
+                labels['chip_classification'][self.task] = self.classes[int(pred_int)]
+                labels['chip_classification']['confidence-score'] = float(pred_score)
+
+                with open(out_path, 'w') as out_f:
+                    json.dump(labels, out_f, indent=4)
+
         test_accs = acc_sums / nums
         test_acc = acc_sums.sum(axis=(0, 1)) / nums.sum(axis=(0, 1))
         test_accs = np.where(nums != 0, test_accs, -1)
 
         msg = (f'test_acc: {test_acc:.5f} ' +
-               f'class names: \n{self.classes} \n' +
                f'accuracy by class and source: \n{test_accs}')
-
 
         logger.info(msg)
 
@@ -176,3 +194,9 @@ class TrainModule(object):
         msg = (f'accuracy by class: \n{test_accs}')
 
         logger.info(msg)
+        logger.info(f'Overall accuracy: {test_acc}')
+        logger.info('-----------------res_dict-----------------')
+        res_dict = {}
+        for c, a in zip(self.classes, test_accs):
+            res_dict[c] = a
+        logger.info(res_dict)

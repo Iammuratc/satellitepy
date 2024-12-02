@@ -28,7 +28,7 @@ def get_backbone(model_name):
         weights = ShuffleNet_V2_X1_5_Weights.DEFAULT
         model = shufflenet_v2_x1_5(weights=weights)
     else:
-        print(f'Model {model_name} not supported')
+        raise Exception('Model {model_name} not supported')
 
     return model
 
