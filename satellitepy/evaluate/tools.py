@@ -121,7 +121,7 @@ def calculate_map(
             np.savetxt(file, [sorted_instance_names], fmt='%s', delimiter=',',header=f'AP{iou_thresholds[0]}):')
             np.savetxt(file, [ap_50], fmt='%.2f', delimiter=',')
             conf_mat_iou_th = 0.5
-            conf_mat_conf_sc_th = 0.1
+            conf_mat_conf_sc_th = 0.5
 
             conf_mat_iou_th_ind = iou_thresholds.index(conf_mat_iou_th)
             conf_mat_conf_sc_ind = conf_score_thresholds.index(conf_mat_conf_sc_th)
