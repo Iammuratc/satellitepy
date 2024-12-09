@@ -32,12 +32,14 @@ def match_gt_and_det_bboxes(gt_labels, det_labels, by_source=False):
                         the det_labels['bboxes'] order, and the value is the index in gt_labels['bboxes'].
             'sources' : Annotation sources
     """
-    matches = {'iou': {'scores': [], 'indexes': [], 'sources': []}}
+    matches = {'iou': {'scores': [], 'indexes': []}}
+    if by_source:
+        matches['iou']['sources'] = []
 
     if gt_labels is None:
         return matches
 
-    if 'obboxes' in det_labels and any(gt_labels['obboxes']):
+    if 'obboxes' in det_labels.keys() and any(gt_labels['obboxes']):
         ious = get_ious(det_labels['obboxes'], gt_labels['obboxes'])
     else:
         ious = get_ious(det_labels['hbboxes'], gt_labels['hbboxes'])
@@ -50,7 +52,8 @@ def match_gt_and_det_bboxes(gt_labels, det_labels, by_source=False):
 
         matches['iou']['scores'].append(iou_score.item())
         matches['iou']['indexes'].append(bbox_ind_gt.item())
-        matches['iou']['sources'].append(gt_labels['source'][bbox_ind_gt.item()])
+        if by_source:
+            matches['iou']['sources'].append(gt_labels['source'][bbox_ind_gt.item()])
     return matches
 
 
@@ -84,10 +87,15 @@ def set_conf_mat_from_result(
 
     if norm_conf_scores:
         det_results[task] = [[item / sum(row) for item in row] for row in det_results[task]]
-        print(det_results[task])
     if no_probability:
         det_inds = det_results[task]
-        conf_scores = det_results['confidence-scores']
+        # print(det_results)
+
+        cgc_conf_scores = det_results['confidence-scores']
+        if 'fac-confidence-scores' in det_results:
+            fac_conf_scores = det_results['fac-confidence-scores']
+        else:
+            fac_conf_scores = [1] * len(cgc_conf_scores)
     else:
         det_inds = np.argmax(det_results[task], axis=1) if len(det_results[task]) > 0 else []
         conf_scores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
@@ -99,10 +107,11 @@ def set_conf_mat_from_result(
         for i_conf_score_th, conf_score_th in enumerate(conf_score_thresholds):
             det_gt_bbox_indices = []
 
-            for i_conf_score, conf_score in enumerate(conf_scores):
+            for i_conf_score, (cgc_conf_score,fac_conf_score) in enumerate(zip(cgc_conf_scores,fac_conf_scores)):
 
                 # If the conf score is less than the conf score threshold, skip the detection
-                if conf_score < conf_score_th:
+                # if conf_score < conf_score_th:
+                if any(item < conf_score_th for item in [cgc_conf_score,fac_conf_score]):
                     continue
 
                 iou_score = matches['iou']['scores'][i_conf_score]
