@@ -186,6 +186,9 @@ def analyse_label_paths(label_folder,
                 very_fine_class_without_none[class_name] = class_count
         count_instances_by_task['very-fine-class'] = very_fine_class_without_none
 
+        len_unique_ftgc = len(count_instances_by_task['very-fine-class'].keys())
+        print(list(count_instances_by_task['very-fine-class'].keys()))
+        print(len_unique_ftgc)
         len_ftgc = sum(count_instances_by_task['very-fine-class'].values())
         print(f'Number of airplanes with FtGC: {len_ftgc}')
         ## Merge classes with low instance numbers to the role
@@ -231,7 +234,7 @@ def analyse_label_paths(label_folder,
         ### Merge small very-fine-class into the parent role
         fig = make_subplots(
             rows=len(list(tasks)), cols=1,
-            subplot_titles=['Role', 'FineAir30 Class', 'Finest-grained Class'],
+            subplot_titles=['Role', 'FineAir Class', 'Finest-grained Class'],
             shared_xaxes=False,
             vertical_spacing=0.1
             )
@@ -271,6 +274,7 @@ def analyse_label_paths(label_folder,
         )
         # fig.update_xaxes(title_font=dict(size=24))
         fig.update_yaxes(title='y', visible=False, showticklabels=False)
+        # plt.savefig('/home/murat/Projects/satellitepy/docs/fineair_dist.png')
         fig.show()
 
     return count_instances

@@ -87,11 +87,15 @@ def set_conf_mat_from_result(
 
     if norm_conf_scores:
         det_results[task] = [[item / sum(row) for item in row] for row in det_results[task]]
-        print(det_results[task])
     if no_probability:
         det_inds = det_results[task]
+        # print(det_results)
+
         cgc_conf_scores = det_results['confidence-scores']
-        fac_conf_scores = det_results['fac-confidence-scores']
+        if 'fac-confidence-scores' in det_results:
+            fac_conf_scores = det_results['fac-confidence-scores']
+        else:
+            fac_conf_scores = [1] * len(cgc_conf_scores)
     else:
         det_inds = np.argmax(det_results[task], axis=1) if len(det_results[task]) > 0 else []
         conf_scores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
@@ -107,7 +111,7 @@ def set_conf_mat_from_result(
 
                 # If the conf score is less than the conf score threshold, skip the detection
                 # if conf_score < conf_score_th:
-                if all(item < conf_score_th for item in [cgc_conf_score,fac_conf_score]):
+                if any(item < conf_score_th for item in [cgc_conf_score,fac_conf_score]):
                     continue
 
                 iou_score = matches['iou']['scores'][i_conf_score]
