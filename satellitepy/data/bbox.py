@@ -84,6 +84,7 @@ class BBox:
         y_sum = corners[i_0][1] + corners[i_1][1]
         return x_dif, y_dif, y_sum
 
+
     def get_corners(self):
         """
         convert the angle representation into the corner representation.
@@ -234,3 +235,63 @@ class BBox:
 
         hbb = [[min_x, max_y], [min_x, min_y], [max_x, min_y], [max_x, max_y]]
         return hbb
+
+
+def le90_to_corners(params):
+    """
+    Convert bounding box parameters (xc, yc, height, width, angle) in 'le90' format 
+    to the four corners of the bounding box, where height is along the y-axis and
+    width is along the x-axis.
+
+    Args:
+        xc (float): x-coordinate of the bounding box center.
+        yc (float): y-coordinate of the bounding box center.
+        height (float): Height of the bounding box.
+        width (float): Width of the bounding box.
+        angle (float): Rotation angle in degrees, in the range [-90, 90].
+
+    Returns:
+        np.ndarray: An array of shape (4, 2), representing the four corner points 
+                    in clockwise order starting from the top-left.
+    """
+    # Ensure height is the longer dimension
+    xc, yc, width, height, angle = params
+
+    # if height < width:
+    #     height, width = width, height  # Swap height and width
+    #     angle += 90                   # Adjust the angle
+    #     if angle > 90:
+    #         angle -= 180              # Keep angle in [-90, 90]
+    
+    # Convert angle to radians
+    theta = np.radians(angle)
+    # theta = angle
+    # Compute cosine and sine of the rotation angle
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
+
+    # Half dimensions
+    half_height = height / 2.0
+    half_width = width / 2.0
+
+    # Compute the unrotated corner offsets relative to the center
+    offsets = np.array([
+        [-half_width, -half_height],  # Top-left corner
+        [ half_width, -half_height],  # Top-right corner
+        [ half_width,  half_height],  # Bottom-right corner
+        [-half_width,  half_height],  # Bottom-left corner
+    ])
+
+    # Apply rotation using the rotation matrix
+    rotation_matrix = np.array([
+        [cos_theta, -sin_theta],
+        [sin_theta,  cos_theta],
+    ])
+
+    # Rotate each corner
+    rotated_offsets = offsets @ rotation_matrix.T
+
+    # Translate the rotated offsets to the center position
+    corners = rotated_offsets + np.array([xc, yc])
+
+    return corners

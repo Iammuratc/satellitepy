@@ -6,6 +6,7 @@ import numpy as np
 import logging
 
 import cv2
+
 from tqdm import tqdm
 
 from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, \

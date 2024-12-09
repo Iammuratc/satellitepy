@@ -85,19 +85,25 @@ def read_img(img_path, module='cv2', rescaling=1.0, interpolation_method=cv2.INT
     Returns
     -------
     img : np.ndarray
-        Image in the opencv format,  (rows, columns, bands). If image has four bands, the alpha channel is ignored.
+        Image in the opencv format,  (rows, columns, bands).
     """
 
     if module == 'cv2':
-        img = cv2.imread(img_path)
+        img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
     elif module == 'rasterio':
         with rasterio.open(img_path) as src:
-            img_array = src.read()
-            img = np.transpose(img_array, axes=(1, 2, 0))
-            img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
-            lo, hi = np.percentile(img, (1, 99))
-            img = (img.astype(float) - lo) * (255 / (hi - lo))
-            img = np.clip(img, 0, 255).astype(np.uint8)
+            # Read all bands
+            img_array = src.read()  # Shape: (C, H, W)
+            
+            # Transpose to (H, W, C) format
+            img = np.transpose(img_array, axes=(1, 2, 0))  # Shape: (H, W, C)
+            
+            lo = np.percentile(img, 1) # lo_percent
+            hi = np.percentile(img, 99) # hi_percent
+            img_clipped = np.clip(img, lo, hi)
+            img_normalized = (img_clipped - lo) / (hi - lo) * 255.0
+            return np.clip(img_normalized, 0, 255).astype(np.uint8)
+        
     else:
         logger.error(f'{module} is not a valid argument!')
         return 0
