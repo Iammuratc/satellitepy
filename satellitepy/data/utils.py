@@ -303,6 +303,10 @@ def parse_potsdam_labels(label_path):
     objs : list of slices
         Horizontal bounding boxes of the objects
     """
+    # satellitepy labels
+    masks, hbboxes, obboxes = [], [], []
+    # read mask label file
+
     img = cv2.imread(label_path)
 
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -311,26 +315,23 @@ def parse_potsdam_labels(label_path):
     upper = np.array([40, 255, 255])
 
     mask = cv2.inRange(hsv, lower, upper)
-
-    s = generate_binary_structure(2, 2)
-
-    labeled_image, num_features = label(mask, structure=s)
-    objs = find_objects(labeled_image)
-
-    masks = []
-    hbboxes = []
-
-    for obj in objs:
-        hbbox = [[obj[1].start, obj[0].start], [obj[1].stop, obj[0].start], [obj[1].stop, obj[0].stop],
-                 [obj[1].start, obj[0].stop]]
-        h = BBox.get_bbox_limits(np.array(hbbox))
-
-        coords = np.argwhere((mask[h[2]:h[3], h[0]:h[1]] != 0)).T.tolist()
-
-        masks.append([(coords[1] + h[0]).tolist(), (coords[0] + h[2]).tolist()])
-        hbboxes.append(hbbox)
-
-    return (hbboxes, masks)
+    num_labels, labels = cv2.connectedComponents(mask)  
+    # Calculate the size of each connected component
+    for label in range(1, num_labels):  # Skip the background (label 0)
+        # satellitepy Masks
+        component_img = (labels == label).astype(np.uint8)
+        y_coords, x_coords = np.nonzero(component_img)
+        mask_coords = np.array(list(zip(x_coords, y_coords))).tolist()
+        masks.append(mask_coords)
+        # satellitepy hbboxes
+        contours, hierarchy = cv2.findContours(component_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        x, y, w, h = cv2.boundingRect(contours[0])
+        hbboxes.append([[x,y],[x,y+h],[x+w,y+h],[x+w,y]])
+        rect = cv2.minAreaRect(contours[0])
+        box = cv2.boxPoints(rect)  # Get corners of the rotated rectangle
+        box = np.int0(box)  # Convert to integer
+        obboxes.append(box.tolist())
+    return hbboxes, obboxes, masks
 
 
 def get_satellitepy_table():

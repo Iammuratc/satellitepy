@@ -638,17 +638,18 @@ def read_satellitepy_label(label_path):
 
 def read_isprs_label(label_path):
     labels = init_satellitepy_label()
-    available_tasks = ['hbboxes', 'coarse-class', 'masks']
+    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'masks']
     all_tasks = get_all_satellitepy_keys()
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
 
-    hbboxes, masks = parse_potsdam_labels(label_path)
+    hbboxes, obboxes, masks = parse_potsdam_labels(label_path)
 
+    labels['coarse-class'] = ['vehicle']*len(hbboxes)
+    labels['hbboxes'] = hbboxes
+    labels['obboxes'] = obboxes
     labels['masks'] = masks
 
     for i in range(len(hbboxes)):
-        labels['coarse-class'].append('vehicle')
-        labels['hbboxes'].append(hbboxes[i])
         fill_none_to_empty_keys(labels, not_available_tasks)
 
     return labels
