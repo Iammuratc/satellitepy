@@ -89,8 +89,7 @@ def save_patches(
         mask_folder=None,
         rescaling=1,
         interpolation_method=cv2.INTER_LINEAR,
-        keep_empty=False,
-        subset_data=None
+        keep_empty=False
     ):
     """
     Save patches from the original images
@@ -128,12 +127,8 @@ def save_patches(
 
     assert out_folder.exists(), 'Make sure the out-folder exists or is created before calling this function.'
 
-    if subset_data is not None:
-        out_image_folder = Path(out_folder)
-        out_label_folder = Path(out_folder)
-    else:
-        out_image_folder = Path(out_folder) / 'images'
-        out_label_folder = Path(out_folder) / 'labels'
+    out_image_folder = Path(out_folder) / 'images'
+    out_label_folder = Path(out_folder) / 'labels'
 
     assert create_folder(out_image_folder, ask_permission=False)
     img_paths = get_file_paths(image_folder)
@@ -153,19 +148,6 @@ def save_patches(
         mask_name = mask_path.name if mask_path != None else None
         label_name = label_path.name if label_path is not None else None
         logger.info(f"{img_path.name}, {label_name}, {mask_name}")
-
-        # Change output directory to patches if subset_data is not None
-        if subset_data is not None:
-            subset_type = ""
-            for col in subset_data.values:
-                if img_path.name in col[0]:
-                    subset_type = col[2]
-
-            if subset_type != "":
-                out_image_folder = Path(out_image_folder) / subset_type / 'images'
-                assert create_folder(out_image_folder)
-                out_label_folder = Path(out_label_folder) / subset_type / 'labels'
-                assert create_folder(out_label_folder)
 
         gt_labels = read_label(label_path, label_format, mask_path, rescaling)
 
@@ -550,7 +532,7 @@ def show_labels_on_images(
     requested_classes = [task for task in tasks if task not in ['dbboxes', 'obboxes', 'hbboxes', 'masks']]
     # Force user to pass only one bbox type
     requested_bbox_names = [task for task in tasks if task.endswith('bboxes')]
-    assert len(requested_bbox_names) == 1, logger.error('There has to be only type of bounding boxes in tasks!')
+    assert len(requested_bbox_names) > 0, logger.error('There has to be only type of bounding boxes in tasks!')
     bbox_name = requested_bbox_names[0]
 
     for label_path, mask_path, img_path in tqdm(zip(label_paths, mask_paths, img_paths), total=len(label_paths)):
@@ -598,14 +580,18 @@ def show_labels_on_images(
 
             if 'masks' in tasks and labels['masks'][0] is not None:
                 if label_format == 'satellitepy':
-                    mask = labels['masks']
+                    masks = labels['masks']
                 else:
-                    mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
-
+                    masks = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+                # print(mask)
                 img_mask = np.zeros(shape=(img.shape[0], img.shape[1]), dtype=np.uint8)
-                for i in range(len(labels[bbox_name])):
-                    x, y = mask[i]
-                    img_mask[y, x] = 1
+                for mask_i in range(len(labels[bbox_name])):
+                    for coord_i in masks[mask_i]:
+                        try:
+                            x, y = coord_i
+                            img_mask[y, x] = 1
+                        except:
+                            print([x,y])
 
                 contours, hierarchy = cv2.findContours(img_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                 cv2.drawContours(img, contours, -1, (0, 0, 255), 1)
