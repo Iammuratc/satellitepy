@@ -120,7 +120,6 @@ def set_conf_mat_from_result(
                     conf_mat[i_iou_th, i_conf_score_th, instance_dict['Background'], det_index] += 1
                     continue
 
-
                 gt_index = matches['iou']['indexes'][i_conf_score]
                 det_gt_instance_name = task_result[gt_index]
                 # #####
