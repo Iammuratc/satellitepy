@@ -91,27 +91,23 @@ def set_conf_mat_from_result(
         det_inds = det_results[task]
         # print(det_results)
 
-        cgc_conf_scores = det_results['confidence-scores']
-        if 'fac-confidence-scores' in det_results:
-            fac_conf_scores = det_results['fac-confidence-scores']
-        else:
-            fac_conf_scores = [1] * len(cgc_conf_scores)
+        conf_scores = det_results['confidence-scores']
     else:
         det_inds = np.argmax(det_results[task], axis=1) if len(det_results[task]) > 0 else []
         conf_scores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
 
     matches = match_gt_and_det_bboxes(result['gt_labels'], det_results)
     if len(task_result) == 0:
-        return conf_mat, ignored_instances_ret, ignored_cnt
+        return conf_mat, ignored_instances_ret, ignored_cnt, undet_gt_bbox_index_dict
     for i_iou_th, iou_th in enumerate(iou_thresholds):
         for i_conf_score_th, conf_score_th in enumerate(conf_score_thresholds):
             det_gt_bbox_indices = []
 
-            for i_conf_score, (cgc_conf_score,fac_conf_score) in enumerate(zip(cgc_conf_scores,fac_conf_scores)):
+            for i_conf_score, conf_score in enumerate(conf_scores):
 
                 # If the conf score is less than the conf score threshold, skip the detection
                 # if conf_score < conf_score_th:
-                if any(item < conf_score_th for item in [cgc_conf_score,fac_conf_score]):
+                if conf_score < conf_score_th:
                     continue
 
                 iou_score = matches['iou']['scores'][i_conf_score]
@@ -135,7 +131,6 @@ def set_conf_mat_from_result(
                 # #####
                 if det_gt_instance_name is None:
                     continue
-
 
                 if ignore_other_instances and det_name not in instance_names:
                     ignored_cnt += 1

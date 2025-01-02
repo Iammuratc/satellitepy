@@ -90,6 +90,8 @@ def read_img(img_path, module='cv2', rescaling=1.0, interpolation_method=cv2.INT
 
     if module == 'cv2':
         img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+        if len(img.shape) == 2:
+            img = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
     elif module == 'rasterio':
         with rasterio.open(img_path) as src:
             # Read all bands
