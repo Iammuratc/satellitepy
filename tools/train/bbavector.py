@@ -56,6 +56,8 @@ def parse_args():
     parser.add_argument('--random-seed', default=12, type=int)
     parser.add_argument('--augmentation', action='store_true')
     parser.set_defaults(augmentation=False)
+    parser.add_argument('--mask-ratio', type=float, default=1,
+                        help='Percentage of masks that are used if masks are available. Values 0 to 1')
 
     args = parser.parse_args()
     return args
@@ -73,6 +75,8 @@ def train_bbavector(args):
     down_ratio = 4
     patience = args.patience
     tasks = args.tasks
+    mask_ratio = args.mask_ratio
+    assert 0 <= mask_ratio <= 1, 'Mask ratio needs to be between 0 and 1'
 
     assert 'obboxes' in tasks or 'hbboxes' in tasks, 'Tasks must contain at least one type of bounding boxes.'
 
@@ -117,7 +121,8 @@ def train_bbavector(args):
         args.augmentation,
         validate_datasets,
         K=K,
-        random_seed=random_seed
+        random_seed=random_seed,
+        mask_ratio=mask_ratio
     )
 
     if args.valid_image_folder:
@@ -133,7 +138,8 @@ def train_bbavector(args):
             args.augmentation,
             validate_datasets,
             K=K,
-            random_seed=random_seed
+            random_seed=random_seed,
+            mask_ratio=mask_ratio
         )
     else:
         valid_dataset = None

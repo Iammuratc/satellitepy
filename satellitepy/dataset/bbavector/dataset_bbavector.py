@@ -1,4 +1,6 @@
 import os
+import random
+
 import cv2
 import numpy as np
 from torch.utils.data import Dataset
@@ -25,7 +27,8 @@ class BBAVectorDataset(Dataset):
                  augmentation=False,
                  validate_dataset=True,
                  K=1000,
-                 random_seed=12):
+                 random_seed=12,
+                 mask_ratio=1):
         super(BBAVectorDataset, self).__init__()
 
         self.utils = Utils(tasks, input_h, input_w, down_ratio, K, augmentation)
@@ -76,6 +79,11 @@ class BBAVectorDataset(Dataset):
                 for img_path, label_path in zip_matched_files(in_image_folder, in_label_folder):
                     self.items.append((img_path, label_path, in_label_format))
 
+        # do only mask percentage logic
+        num_items = len(self.items)
+        num_mask = int(num_items * mask_ratio)
+        self.mask_set = random.sample(range(num_items), num_mask)
+
     def __len__(self):
         return len(self.items)
 
@@ -103,6 +111,8 @@ class BBAVectorDataset(Dataset):
             }
 
         data_dict = self.utils.get_data_dict(img_path, label_path, label_format, self.target_task)
+        if idx not in self.mask_set and data_dict['masks']:
+            del data_dict['masks']
         return data_dict
 
     def visualize_masks(self, image, masks, labels):
