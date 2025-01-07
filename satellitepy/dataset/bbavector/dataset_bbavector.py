@@ -111,8 +111,9 @@ class BBAVectorDataset(Dataset):
             }
 
         data_dict = self.utils.get_data_dict(img_path, label_path, label_format, self.target_task)
-        if idx not in self.mask_set and data_dict['masks']:
-            del data_dict['masks']
+        if idx not in self.mask_set and data_dict['masks'].any():
+            data_dict['masks'] = torch.from_numpy(np.asarray([np.full(data_dict['masks'].shape[1:], np.nan, dtype=np.float32)]))
+
         return data_dict
 
     def visualize_masks(self, image, masks, labels):

@@ -92,11 +92,27 @@ def shift_bboxes(patch_dict, i, bbox_names, patch_start_coord, patch_size):
         if bbox is None:
             continue
         patch_dict['labels'][i][bbox_name][-1] = (np.array(bbox) - [x_0, y_0]).tolist()
-    if (patch_dict['labels'][i]['masks'][-1]!=None):# and (patch_dict['labels'][i]['masks']!=[]):
-        mask_shifted = (np.array(patch_dict['labels'][i]['masks'][-1]) - [x_0, y_0]).tolist()#.reshape(2, 1)
-        mask_shifted = [coord for coord in mask_shifted if 0 <= coord[0] < patch_size and 0 <= coord[1] < patch_size]
-        patch_dict['labels'][i]['masks'][-1] = mask_shifted
+    if patch_dict['labels'][i]['masks'][-1] is not None:
+        mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2, 1)
+        mask_shifted[0][mask_shifted[0] >= patch_size] = patch_size - 1
+        mask_shifted[0][mask_shifted[0] < 0] = 0
+        mask_shifted[1][mask_shifted[1] >= patch_size] = patch_size - 1
+        mask_shifted[1][mask_shifted[1] < 0] = 0
+        patch_dict['labels'][i]['masks'][-1] = mask_shifted.tolist()
     return patch_dict
+
+# def shift_bboxes(patch_dict, i, bbox_names, patch_start_coord, patch_size):
+#     x_0, y_0 = patch_start_coord
+#     for bbox_name in bbox_names:
+#         bbox = patch_dict['labels'][i][bbox_name][-1]
+#         if bbox is None:
+#             continue
+#         patch_dict['labels'][i][bbox_name][-1] = (np.array(bbox) - [x_0, y_0]).tolist()
+#     if (patch_dict['labels'][i]['masks'][-1]!=None):# and (patch_dict['labels'][i]['masks']!=[]):
+#         mask_shifted = (np.array(patch_dict['labels'][i]['masks'][-1]) - [x_0, y_0]).tolist()#.reshape(2, 1)
+#         mask_shifted = [coord for coord in mask_shifted if 0 <= coord[0] < patch_size and 0 <= coord[1] < patch_size]
+#         patch_dict['labels'][i]['masks'][-1] = mask_shifted
+#     return patch_dict
 
 
 def get_pad_size(coord_max, patch_size, patch_overlap):
