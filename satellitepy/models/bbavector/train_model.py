@@ -90,7 +90,7 @@ class TrainModule(object):
                                                        shuffle=True,
                                                        num_workers=self.num_workers,
                                                        pin_memory=True,
-                                                       drop_last=True, )
+                                                       drop_last=False, )
 
         early_stopping = EarlyStopping(
             patience=self.patience,

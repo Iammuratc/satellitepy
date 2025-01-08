@@ -38,6 +38,12 @@ class Utils:
             return None
         masks = np.zeros((image_height, image_width))
 
+        if labels['masks'] != [] and isinstance(labels['masks'][0][0], list):
+            fix = np.array([pixel for obj in labels['masks'] for pixel in obj])
+            fix_x = fix[:, 0]
+            fix_y = fix[:, 1]
+            labels['masks'] = [[fix_x.tolist(), fix_y.tolist()]]
+
         for val in labels['masks']:
             if val is None:
                 continue
@@ -299,7 +305,7 @@ class Utils:
             reg = np.zeros((self.max_objs, 2), dtype=np.float32)
             ind = np.zeros((self.max_objs), dtype=np.int64)
             reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
-            num_objs = min(annotation['obboxes'].shape[0], self.max_objs)
+            num_objs = min(annotation['hbboxes'].shape[0], self.max_objs)
             for k in range(num_objs):
                 if isinstance(annotation['hbboxes'][k], np.float32):
                     continue
