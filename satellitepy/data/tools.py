@@ -18,7 +18,7 @@ from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, get_file_paths
 from satellitepy.data.bbox import BBox
 from satellitepy.data.utils import get_satellitepy_dict_values
-from satellitepy.evaluate.utils import remove_low_conf_results, match_gt_and_det_bboxes
+from satellitepy.evaluate.utils import remove_low_conf_results, match_gt_and_det_bboxes, filter_out_fp_airplanes
 from satellitepy.evaluate.bbavector.utils import apply_nms
 
 
@@ -630,7 +630,7 @@ def show_results_on_image(img_dir,
             logger.info(f'Skipping {label_path.stem}: No detections!')
             continue
 
-        # results = remove_low_conf_results(results, target_task, conf_th, no_probability)
+        instance_dict = get_satellitepy_table()[task]
         results = filter_out_fp_airplanes(result, target_task, instance_dict)
         results['det_labels'] = apply_nms(results['det_labels'], nms_iou_threshold=iou_th, target_task=target_task, no_probability=no_probability)
         

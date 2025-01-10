@@ -8,7 +8,7 @@ from satellitepy.utils.path_utils import get_file_paths
 import logging
 import json
 from satellitepy.evaluate.utils import set_conf_mat_from_result, get_precision_recall, get_average_precision, \
-    remove_low_conf_results, match_gt_and_det_bboxes
+    remove_low_conf_results, match_gt_and_det_bboxes, filter_out_fp_airplanes
 from tqdm import tqdm
 from satellitepy.evaluate.bbavector.utils import apply_nms
 
@@ -214,7 +214,13 @@ def calculate_iou_score(in_result_folder,
             mask = cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,
                                          mask_adaptive_size, mask_threshold)
 
-            result = remove_low_conf_results(result, target_task, conf_score_threshold)
+            from satellitepy.data.utils import get_satellitepy_table
+
+            instance_dict = get_satellitepy_table()[target_task]
+
+            result = filter_out_fp_airplanes(result, target_task, instance_dict)
+            # result = remove_low_conf_results(result, target_task, conf_score_threshold, no_probability=False)
+
             det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=target_task)
             conf_scores = np.max(det_results[target_task], axis=1) if len(det_results[target_task]) > 0 else []
 
@@ -232,8 +238,7 @@ def calculate_iou_score(in_result_folder,
                     if det_gt_value is None:
                         continue
 
-                    bbox = det_results['hbboxes'][i_conf_score] if det_results['hbboxes'][
-                        i_conf_score].any() else det_results['hbboxes'][i_conf_score]
+                    bbox = det_results['obboxes'][i_conf_score] if det_results['obboxes'][i_conf_score] != None else det_results['hbboxes'][i_conf_score]
                     det_value = decode_masks(bbox, mask)
 
                     iou = calc_iou(det_gt_value, det_value)

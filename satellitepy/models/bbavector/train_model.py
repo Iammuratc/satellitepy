@@ -82,7 +82,7 @@ class TrainModule(object):
                                                    shuffle=True,
                                                    num_workers=self.num_workers,
                                                    pin_memory=True,
-                                                   drop_last=True, )
+                                                   drop_last=False, )
 
         if self.valid_dataset:
             valid_loader = torch.utils.data.DataLoader(self.valid_dataset,
