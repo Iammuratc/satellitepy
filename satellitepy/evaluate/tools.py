@@ -54,6 +54,7 @@ def calculate_map(
 
     undet_obj_indices = {}
     for i, result_path in enumerate(tqdm(result_paths)):
+        print(result_path.name)
         if result_path.suffix != '.json':
             continue
         with open(result_path, 'r') as result_file:

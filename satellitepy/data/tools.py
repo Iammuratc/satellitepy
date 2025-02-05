@@ -646,10 +646,11 @@ def show_results_on_image(img_dir,
 
         available_tasks = [task for task in available_tasks if task not in ['obboxes','hbboxes','masks','confidence-scores']]
 
-        if results['det_labels']['obboxes'][0] is None:
+        try: 
+            if results['det_labels']['obboxes'][0] is not None:
+                bboxes = 'obboxes'
+        except:
             bboxes = 'hbboxes'
-        else:
-            bboxes = 'obboxes'
 
         for i, bbox_corners in enumerate(results['det_labels'][bboxes]):
             bbox_corners = np.array(bbox_corners, np.int32)
