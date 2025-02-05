@@ -112,7 +112,11 @@ def apply_nms(det_labels, nms_iou_threshold=0.5, target_task="coarse-class", no_
     #
     save_dict = dict()
     
-    bbox_params = [BBox(corners=corners).params for corners in det_labels['obboxes']]
+    try:
+        bbox_params = [BBox(corners=corners).params for corners in det_labels['obboxes']]
+    except:
+        bbox_params = [BBox(corners=corners).params for corners in det_labels['hbboxes']]
+
     # bbox_params = [BBox(corners=corners.astype(np.float32)).get_params_cv2() for corners in det_labels['obboxes']]
     if no_probability:
         conf_scores = det_labels['confidence-scores']
