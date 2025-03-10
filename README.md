@@ -4,7 +4,7 @@ Satellitepy is a python module that focuses on fine-grained object recognition i
 One of the advantages of Satellitepy is to train a DL model by using multi-task learning, e.g, classification, detection and segmentation. There are 16 tasks in our pipeline. Satellitepy allows each task to be handled individually and/or jointly.
 
 # Datasets
-We have trained/evaluated the SOtA models with the following datasets: DOTA (w. iSaid), Fair1M, XView, Rarepl. (Real+Synthetic), VEDAI, VHR-10, ShipRSImageNet, UCAS-AOD, DIOR, and Potsdam.
+We have trained/evaluated the SOtA models with the following datasets: [FineAir](https://huggingface.co/datasets/UniBwM-Informatik-IV/FineAir), DOTA (w. iSaid), Fair1M, XView, Rarepl. (Real+Synthetic), VEDAI, VHR-10, ShipRSImageNet, UCAS-AOD, DIOR, and Potsdam.
 
 # How to use
 
