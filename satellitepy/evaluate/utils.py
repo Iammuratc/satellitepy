@@ -4,6 +4,7 @@ import logging
 from shapely.geometry import Polygon
 import numpy as np
 from satellitepy.evaluate.bbavector.utils import apply_nms
+from satellitepy.data.bbox import BBox
 from satellitepy.utils.path_utils import get_file_paths
 from tqdm import tqdm
 
@@ -81,6 +82,9 @@ def set_conf_mat_from_result(
     idx2name = {v: k for k, v in instance_dict.items()}
     task_result = get_satellitepy_dict_values(result['gt_labels'], task)
 
+    # TODO: Remove this after the IGARSS submission
+    result = filter_out_fp_airplanes(result, task, instance_dict)
+
     result = remove_low_conf_results(result, task, conf_score_thresholds[0], no_probability)
 
     det_results = apply_nms(result['det_labels'], nms_iou_threshold=nms_iou_thresh, target_task=task, no_probability=no_probability)
@@ -89,7 +93,6 @@ def set_conf_mat_from_result(
         det_results[task] = [[item / sum(row) for item in row] for row in det_results[task]]
     if no_probability:
         det_inds = det_results[task]
-        # print(det_results)
 
         cgc_conf_scores = det_results['confidence-scores']
         if 'fac-confidence-scores' in det_results:
@@ -98,11 +101,16 @@ def set_conf_mat_from_result(
             fac_conf_scores = [1] * len(cgc_conf_scores)
     else:
         det_inds = np.argmax(det_results[task], axis=1) if len(det_results[task]) > 0 else []
-        conf_scores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
+        cgc_conf_scores = np.max(det_results[task], axis=1) if len(det_inds) > 0 else []
+        # cgc_conf_scores = det_results['confidence-scores']
+        if 'fac-confidence-scores' in det_results:
+            fac_conf_scores = det_results['fac-confidence-scores']
+        else:
+            fac_conf_scores = [1] * len(cgc_conf_scores)
 
     matches = match_gt_and_det_bboxes(result['gt_labels'], det_results)
     if len(task_result) == 0:
-        return conf_mat, ignored_instances_ret, ignored_cnt
+        return conf_mat, ignored_instances_ret, ignored_cnt, undet_gt_bbox_index_dict
     for i_iou_th, iou_th in enumerate(iou_thresholds):
         for i_conf_score_th, conf_score_th in enumerate(conf_score_thresholds):
             det_gt_bbox_indices = []
@@ -163,6 +171,37 @@ def set_conf_mat_from_result(
 
     return conf_mat, ignored_instances_ret, ignored_cnt, undet_gt_bbox_index_dict
 
+def filter_out_fp_airplanes(result, task, instance_dict):
+    """
+    Remove FP detected airplanes in DOTA to fix the broken AP score.
+    dim_thresholds have the following order:
+    np.percentile(np.array(h_values)*np.array(w_values),q=[5,95])
+    np.percentile(w_values,q=[5,95])
+    np.percentile(h_values,q=[5,95])
+    np.percentile(np.array(w_values)/np.array(h_values),q=[5,95])
+    """
+    dim_thresholds = [[758.10837913,53247.27013973],
+        [27.03579201, 226.17843831],
+        [24.85126722, 237.16258303],
+        [0.65146055, 1.49493762]]
+    th_margin = -0.15
+    dim_thresholds = np.array(dim_thresholds) * np.array([1-th_margin,1+th_margin])
+    airplane_satellitepy_ind = instance_dict['airplane']
+    det_obboxes = result['det_labels']['obboxes']
+    indices_rejected = []
+    for i, det_obbox in enumerate(det_obboxes):
+        if np.argmax(result['det_labels'][task][i]) != airplane_satellitepy_ind:
+            continue
+        bbox = BBox(corners=det_obbox)
+        cx, cy, width, height, angle = bbox.get_params()
+        if (dim_thresholds[0][0]<width*height<dim_thresholds[0][1]) and (dim_thresholds[1][0]<width<dim_thresholds[1][1]) and (dim_thresholds[2][0]<height<dim_thresholds[2][1]) and (dim_thresholds[3][0]<width/height<dim_thresholds[3][1]):
+            continue
+        else:
+            indices_rejected.append(i)
+
+    indices_filtered = list(set(range(len(det_obboxes))) - set(indices_rejected))
+    result = filter_result(result, task=task, idx=indices_filtered)
+    return result
 
 def get_precision_recall(conf_mat, sort_values=True, complete_curve=True):
     """
@@ -291,7 +330,6 @@ def get_ious(bboxes_1, bboxes_2):
 
     return ious
 
-
 def remove_low_conf_results(results, task, conf_score, no_probability):
     if conf_score == 0:
         return results
@@ -302,7 +340,13 @@ def remove_low_conf_results(results, task, conf_score, no_probability):
         conf_scores = np.max(results['det_labels'][task], axis=1) if len(results['det_labels'][task]) > 0 else []
     idx = np.argwhere(conf_scores > conf_score).flatten() if len(results['det_labels'][task]) > 0 else []
 
+    result = filter_result(result=results,task=task, idx=idx)
+    return result
+
+def filter_result(result, task, idx):
+    
     filtered_results = {
+        'gt_labels':result['gt_labels'],
         'det_labels': {},
         'matches': {
             'iou': {
@@ -312,12 +356,13 @@ def remove_low_conf_results(results, task, conf_score, no_probability):
         }
     }
 
-    for key in results['det_labels'].keys():
-        filtered_results['det_labels'][key] = np.array(results['det_labels'][key])[idx]
+    for key in result['det_labels'].keys():
+        filtered_results['det_labels'][key] = np.array(result['det_labels'][key])[idx]
 
-    if len(results['gt_labels'][task]) != 0:
-        filtered_results['matches']['iou']['scores'] = np.array(results['matches']['iou']['scores'])[idx]
-        filtered_results['matches']['iou']['indexes'] = np.array(results['matches']['iou']['indexes'])[idx]
+    
+    if 'matches' in result.keys():
+        filtered_results['matches']['iou']['scores'] = np.array(result['matches']['iou']['scores'])[idx]
+        filtered_results['matches']['iou']['indexes'] = np.array(result['matches']['iou']['indexes'])[idx]
 
     return filtered_results
 

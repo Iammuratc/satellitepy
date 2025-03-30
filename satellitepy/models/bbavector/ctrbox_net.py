@@ -7,7 +7,7 @@ from . import resnet
 
 
 class CTRBOX(nn.Module):
-    def __init__(self, heads, pretrained, down_ratio, final_kernel, head_conv, resnet_type="101"):
+    def __init__(self, heads, pretrained, down_ratio, final_kernel, head_conv, resnet_type="34"):
         super(CTRBOX, self).__init__()
         assert down_ratio in [2, 4, 8, 16]
         if resnet_type == "34":

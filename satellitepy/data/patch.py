@@ -93,8 +93,11 @@ def shift_bboxes(patch_dict, i, bbox_names, patch_start_coord, patch_size):
             continue
         patch_dict['labels'][i][bbox_name][-1] = (np.array(bbox) - [x_0, y_0]).tolist()
     if (patch_dict['labels'][i]['masks'][-1]!=None):# and (patch_dict['labels'][i]['masks']!=[]):
-        mask_shifted = (np.array(patch_dict['labels'][i]['masks'][-1]) - [x_0, y_0]).tolist()#.reshape(2, 1)
-        mask_shifted = [coord for coord in mask_shifted if 0 <= coord[0] < patch_size and 0 <= coord[1] < patch_size]
+        mask_shifted = np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2,1)#).tolist()#.reshape(2, 1)
+        if mask_shifted.shape[-1] == 0:
+            mask_shifted = mask_shifted.tolist()
+        else:
+            mask_shifted = [coord for coord in mask_shifted if 0 <= coord[0] < patch_size and 0 <= coord[1] < patch_size]
         patch_dict['labels'][i]['masks'][-1] = mask_shifted
     return patch_dict
 
