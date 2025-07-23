@@ -117,6 +117,7 @@ def set_conf_mat_from_result(
                 iou_score = matches['iou']['scores'][i_conf_score]
                 
                 det_name = str(idx2name[det_inds[i_conf_score]])
+                # print(iou_score)
                 det_index = instance_dict[det_name]
 
                 # If the IoU score is less than the threshold, store it as a FP, i.e., gt=background, det=det
@@ -127,6 +128,8 @@ def set_conf_mat_from_result(
 
                 gt_index = matches['iou']['indexes'][i_conf_score]
                 det_gt_instance_name = task_result[gt_index]
+                print(det_gt_instance_name)
+                print(det_name)
                 # #####
                 # annotation_source = matches['iou']['sources'][i_conf_score]
                 # if annotation_source != 'FR24':

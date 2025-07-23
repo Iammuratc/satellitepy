@@ -567,7 +567,8 @@ def show_labels_on_images(
                 if type(task_result) is float:
                     task_result = round(task_result, 2)
 
-                text = task_text + ': ' + str(task_result)
+                # text = task_text + ': ' + str(task_result)
+                text = str(task_result)
 
                 cv2.putText(img,
                     text=str(text),
@@ -646,11 +647,9 @@ def show_results_on_image(img_dir,
 
         available_tasks = [task for task in available_tasks if task not in ['obboxes','hbboxes','masks','confidence-scores']]
 
-        try: 
-            if results['det_labels']['obboxes'][0] is not None:
-                bboxes = 'obboxes'
-        except:
-            bboxes = 'hbboxes'
+        bboxes = 'hbboxes'
+        if results['det_labels']['obboxes'][0] is not None:
+            bboxes = 'obboxes'
 
         for i, bbox_corners in enumerate(results['det_labels'][bboxes]):
             bbox_corners = np.array(bbox_corners, np.int32)
@@ -671,7 +670,8 @@ def show_results_on_image(img_dir,
                 if type(task_result) is float:
                     task_result = round(task_result, 2)
 
-                text = task_text + ': ' + str(task_result)
+                # text = task_text + ': ' + str(task_result)
+                text = str(task_result)
                 cv2.putText(img, str(text), (x_max, y_min + j * 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
         if mask_dir and (all_tasks_flag or 'masks' in tasks):
