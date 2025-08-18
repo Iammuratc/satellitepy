@@ -3,8 +3,7 @@ import logging
 import shapely
 from shapely.geometry import Polygon
 
-from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
-
+from satellitepy.data.utils import get_all_satellitepy_keys, set_image_keys, init_satellitepy_label
 logger = logging.getLogger('')
 
 
@@ -93,9 +92,13 @@ def shift_bboxes(patch_dict, i, bbox_names, patch_start_coord, patch_size):
             continue
         patch_dict['labels'][i][bbox_name][-1] = (np.array(bbox) - [x_0, y_0]).tolist()
     if (patch_dict['labels'][i]['masks'][-1]!=None):# and (patch_dict['labels'][i]['masks']!=[]):
-        mask_shifted = (np.array(patch_dict['labels'][i]['masks'][-1]) - [x_0, y_0]).tolist()#.reshape(2, 1)
-        mask_shifted = [coord for coord in mask_shifted if 0 <= coord[0] < patch_size and 0 <= coord[1] < patch_size]
-        patch_dict['labels'][i]['masks'][-1] = mask_shifted
+        try:
+            mask_shifted = (np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2, 1)).tolist()#
+            mask_shifted = [coord for coord in mask_shifted if 0 <= coord[0] < patch_size and 0 <= coord[1] < patch_size]
+            patch_dict['labels'][i]['masks'][-1] = mask_shifted
+        except Exception as e:
+            logger.error(f'Error shifting mask: {e}')
+            print(mask_shifted)
     return patch_dict
 
 

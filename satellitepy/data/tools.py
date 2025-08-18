@@ -9,22 +9,92 @@ import cv2
 
 from tqdm import tqdm
 
-from satellitepy.data.labels import read_label, init_satellitepy_label, fill_none_to_empty_keys, \
-    get_all_satellitepy_keys, satellitepy_labels_empty
+from satellitepy.data.labels import read_label
+from satellitepy.data.utils import init_satellitepy_label, fill_none_to_empty_keys, get_all_satellitepy_keys, satellitepy_labels_empty
 from satellitepy.data.patch import get_patches
 from satellitepy.data.chip import get_chips
-from satellitepy.data.utils import get_xview_classes, get_task_dict, read_img, rescale_labels
+from satellitepy.data.utils import get_xview_classes, get_task_dict, read_img, rescale_labels, exclude_cg_classes
 from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, get_file_paths
 from satellitepy.data.bbox import BBox
-from satellitepy.data.utils import get_satellitepy_dict_values
+from satellitepy.data.utils import get_satellitepy_dict_values, extract_gsd_from_label
 from satellitepy.evaluate.utils import remove_low_conf_results, match_gt_and_det_bboxes
 from satellitepy.evaluate.bbavector.utils import apply_nms
 
-
-
 logger = logging.getLogger('')
 
+
+def rescale_dataset(
+    image_folder,
+    label_folder,
+    label_format,
+    out_folder,
+    mask_folder,
+    image_read_module,
+    rescaling,
+    interpolation_method):
+    """
+    Rescale images and labels in the dataset.
+    Parameters
+    ----------
+    image_folder : Path
+        Input image folder. Images in this folder will be processed.
+    label_folder : Path
+        Input label folder. Labels in this folder will be used to create patch labels.
+    mask_folder : Path
+        Input mask folder. Masks in this folder will be used to create patch masks
+    label_format : str
+        Input label format.
+    out_folder : Path
+        Output folder. Patches and corresponding labels will be saved into <out-folder>/images and <out-folder>/labels
+    image_read_module : str
+        cv2 or rasterio to read the images
+    rescaling : float
+        Images and the corresponding labels will be rescaled.
+    interpolation_method : str
+        <interpolation-method> will be used to rescale images.
+    Returns
+    -------
+    Save rescaled images in <out-folder>/images and <out-folder>/labels
+    """
+    logger.info('Rescaling dataset')
+    assert image_folder.exists(), 'Make sure the image-folder exists or is created before calling this function.'
+    assert out_folder.exists(), 'Make sure the out-folder exists or is created before calling this function.'
+
+    # Create output folders
+    out_image_folder = Path(out_folder) / 'images'
+    out_label_folder = Path(out_folder) / 'labels'
+
+    assert create_folder(out_image_folder, ask_permission=False)
+    img_paths = get_file_paths(image_folder)
+    if label_folder:
+        assert create_folder(out_label_folder, ask_permission=False)
+        label_paths = get_file_paths(label_folder)
+    else:
+        label_paths = [None] * len(img_paths)
+    if mask_folder:
+        mask_paths = get_file_paths(mask_folder)
+    else:
+        mask_paths = [None] * len(img_paths)
+
+    # Check if all folders have the same number of files
+    assert len(img_paths) == len(label_paths) == len(mask_paths)
+
+    for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
+        mask_name = mask_path.name if mask_path != None else None
+        label_name = label_path.name if label_path is not None else None
+
+        logger.info(f"{img_path.name}, {label_name}, {mask_name}")
+        gt_labels = read_label(label_path, label_format, mask_path, rescaling)
+
+        out_image_path = Path(out_image_folder) / img_path.name
+        out_label_path = Path(out_label_folder) / label_name
+        
+        
+        img = read_img(str(img_path), module=image_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
+        cv2.imwrite(str(out_image_path), img)
+        with open(str(out_label_path), 'w') as f:
+            json.dump(gt_labels, f, indent=2)
 
 def create_satellitepy_labels(
         image_folder,
@@ -88,8 +158,11 @@ def save_patches(
         image_read_module,
         mask_folder=None,
         rescaling=1,
+        new_gsd=None,
+        gsd_threshold=None,
         interpolation_method=cv2.INTER_LINEAR,
-        keep_empty=False
+        keep_empty=False,
+        include_only_cgc=None
     ):
     """
     Save patches from the original images
@@ -115,10 +188,18 @@ def save_patches(
         cv2 or rasterio to read the images
     rescaling : float
         Images and the corresponding labels will be rescaled.
+    new_gsd : float
+        If set, images will be rescaled to the desired GSD (in m) before creating patches. This is helpful to unify the spatial resolution over patches from different datasets, IF GSD is available in the label files.
+    gsd_threshold : float
+        If set, images with higher native GSD will be excluded. This is useful to avoid very large images with low resolution. If not set, no threshold is applied. Default is None.
     interpolation_method : str
         <interpolation-method> will be used to rescale images.
     keep_patches : bool
         Empty patches are kept if true.
+    include_only_cgc : list
+        If set, only given CGC classes will be included in the patches. Other CGC classes will be ignored.
+        This is useful to create patches for a specific task, e.g., vehicle detection.
+        Default is None, which means all CGC classes are included.
     Returns
     -------
     Save patches in <out-folder>/images and <out-folder>/labels
@@ -127,6 +208,7 @@ def save_patches(
 
     assert out_folder.exists(), 'Make sure the out-folder exists or is created before calling this function.'
 
+    # Create output folders
     out_image_folder = Path(out_folder) / 'images'
     out_label_folder = Path(out_folder) / 'labels'
 
@@ -142,6 +224,7 @@ def save_patches(
     else:
         mask_paths = [None] * len(img_paths)
 
+    # Check if all folders have the same number of files
     assert len(img_paths) == len(label_paths) == len(mask_paths)
 
     for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
@@ -149,7 +232,23 @@ def save_patches(
         label_name = label_path.name if label_path is not None else None
         logger.info(f"{img_path.name}, {label_name}, {mask_name}")
 
+        # Apply GSD threshold
+        if gsd_threshold:
+            gsd = extract_gsd_from_label(label_path, label_format)
+            if gsd is None:
+                logger.warning(f'GSD is not found in the label file {label_path}. Skipping this image.')
+                continue
+            if gsd > gsd_threshold:
+                logger.info(f'GSD {gsd} is above the threshold {gsd_threshold}. Skipping this image.')
+                continue
+            if new_gsd:
+                rescaling = gsd / new_gsd if gsd else 1.0    
+                logger.info(f'Rescaling factor is {rescaling}.')
+
         gt_labels = read_label(label_path, label_format, mask_path, rescaling)
+        # Filter labels by CGC classes
+        if include_only_cgc:
+            gt_labels = exclude_cg_classes(gt_labels, include_only_cgc)
 
         img = read_img(str(img_path), module=image_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
 
@@ -162,7 +261,6 @@ def save_patches(
         )
 
         count_patches = len(patches['images'])
-        logger.info(f'Number of patches: {count_patches}')
         count_skipped_patches = [0, 0]
         for i in tqdm(range(count_patches)):
 
@@ -187,8 +285,9 @@ def save_patches(
 
             cv2.imwrite(str(patch_image_path), patch_img)
             with open(str(patch_label_path), 'w') as f:
-                json.dump(patch_label, f, indent=4)
+                json.dump(patch_label, f, indent=2)
 
+        logger.info(f'Number of patches: {count_patches}')
         logger.info(f"{count_skipped_patches[0]} patches are skipped because images consist of only zeros.")
         if not keep_empty:
             logger.info(f"{count_skipped_patches[1]} patches are skipped because no bounding boxes are defined.")
@@ -520,7 +619,7 @@ def show_labels_on_images(
     """
     logger.info('Drawing labels on images, and saving the images.')
 
-    out_image_folder = out_folder / "images"
+    out_image_folder = out_folder
     assert create_folder(out_image_folder)
 
     img_paths = get_file_paths(image_folder)

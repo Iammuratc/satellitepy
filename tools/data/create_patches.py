@@ -48,9 +48,21 @@ def get_args():
                         help='This module will be used to read the image. rasterio is suggested for large TIF images.')
     parser.add_argument('--rescaling', type=float, default=1, help='Scale the images before creating patches. This is helpful to unify the spatial resolution over patches from different datasets. '
                         'For example, fair1m (spatial resolution ~0.8) can be rescaled to the spatial resolution of 0.5, rescaling equals 0.8/0.5=1.6. The tasks will be rescaled by the factor of <rescaling>, too, if applicable.')
+    
+    # Rescaling
+    ## Read rescaling from the metadata gsd in the label files
+    parser.add_argument('--gsd-threshold', type=float, default=None, help='Images with higher native GSD (in m) will be excluded. This is useful to avoid very large images with low resolution. If not set, no threshold is applied. Default is None.')
+    parser.add_argument('--new-gsd', type=float, default=None, help='Rescale the images to a desired GSD (in m) before creating patches. ' \
+    'This is helpful to unify the spatial resolution over patches from different datasets,' \
+    'IF GSD is available in the label files.' \
+    'Set gsd-threshold to take effect if you want to exclude images with higher native GSD than the threshold. ')
+    # Interpolation method
+    # https://docs.opencv.org/4.x/d4/d61/tutorial_writing_an
     parser.add_argument('--interpolation-method', type=str, default='INTER_LINEAR', 
         help='Interpolation method to scale the images before creating patches. This is used only if rescaling is different than 1.0.',
         choices=['INTER_NEAREST','INTER_LINEAR','INTER_CUBIC','INTER_AREA'])
+    parser.add_argument('--include-only-cgc', type=str, nargs='+', default=['vehicle','ship','airplane'],
+                        help='If set, only given CGC classes will be included in the patches. Other CGC classes will be ignored.')
     return parser
 
 
@@ -84,6 +96,12 @@ def run(parser):
     if not in_mask_folder:
         logger.info('No mask folder is given. Patches will have no ground truth mask.')
 
+    if args.new_gsd:
+        if not in_label_folder:
+            raise ValueError('If rescaling from native GSD is set, in_label_folder must be provided.')
+        logger.info('Rescaling from native GSD is set. Rescaling will be read from the label files. Currently only DOTA format is supported.')
+
+
     save_patches(
         image_folder=in_image_folder,
         label_folder=in_label_folder,
@@ -95,8 +113,11 @@ def run(parser):
         mask_folder=in_mask_folder,
         image_read_module=args.image_read_module,
         rescaling=args.rescaling,
+        new_gsd=args.new_gsd,
+        gsd_threshold=args.gsd_threshold,
         interpolation_method=args.interpolation_method,
         keep_empty=args.keep_empty,
+        include_only_cgc=args.include_only_cgc,
     )
 
 

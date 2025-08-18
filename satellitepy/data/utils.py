@@ -4,10 +4,263 @@ import rasterio
 from scipy.ndimage import generate_binary_structure, label, find_objects
 import logging
 import rasterio
+import glob
+import re
 
 from satellitepy.data.bbox import BBox
 
 logger = logging.getLogger('')
+
+def init_satellitepy_label():
+    """
+    This function creates an empty labels dict in satellitepy format.
+    WARNING: Do not use underdash "_" in key names, because "_" will be 
+    used in parsing the nested task names (e.g., attributes_engines_no-engines) within other functions.
+    Returns
+    -------
+    labels : dict of str
+        hbboxes : list
+            Horizontal bounding box corners for every object
+        obboxes : list
+            Oriented bounding box corners for every object
+        masks : list
+            Mask pixel coordinates with the shape [<number-of-objects>,2]. The order is x,y
+        coarse-class : list of str
+            coarse grained classes (CGC). It has to be one of these three types: airplane,ship,vehicle
+        fine-class : list of str 
+            fine grained classes(FGC) (e.g., A220, passenger ship)
+        role : list of str 
+            object roles. For example, Small Civil Transport/Utility, Military Fighter/Interceptor/Attack
+        very-fine-class : list of str
+            very fine grained classes (FtGC) (e.g., A220-100)
+        difficulty : list of int
+            Detection difficulty of the object. Only DOTA provides this. 
+            For example, clouds make the detection task difficult. 
+        source: list of str
+            Source for fineair annotations. Either FR24, Mask or None
+        attributes : dict of str
+            This value only serves for Rareplanes at the moment. 
+            Please check the Rareplanes paper for details.
+            'engines' : dict of str
+                'no-engines' : list of int
+                    Number of engines
+                'propulsion' : list of str
+                    unpowered, jet, propeller
+            'fuselage' : dict of str
+                'canards' : list of bool
+                'length' : list of float
+            'wings' : dict of str
+                'wing-span' : list of float
+                'wing-shape' : list of str
+                    swept, straight, delta, variable_swept
+                'wing-position' : list of str
+                    low_mounted, high_mounted
+            'tail' : dict of str
+                'no-tail-fins' : list of int
+                    1, 2
+            'role' : list of str
+                large_transport, medium_transport, small_transport
+                fighter, bomber, transport, trainer
+    """
+    labels = {
+        'hbboxes': [],
+        'obboxes': [],
+        'masks': [],
+        'coarse-class': [],
+        'role': [],
+        'fine-class': [],
+        'very-fine-class': [],
+        'fineair-class': [],
+        'difficulty': [],
+        'source': [],
+        'attributes': {
+            'engines': {
+                'no-engines': [],
+                'propulsion': []
+            },
+            'fuselage': {
+                'canards': [],
+                'length': []
+            },
+            'wings': {
+                'wing-span': [],
+                'wing-shape': [],
+                'wing-position': []
+            },
+            'tail': {
+                'no-tail-fins': []
+            }
+        }
+    }
+    return labels
+
+
+def merge_satpy_label_dict(target_satpy_labels: dict, to_add: dict):
+    for k in target_satpy_labels.keys():
+        if isinstance(target_satpy_labels[k], dict):
+            merge_satpy_label_dict(target_satpy_labels[k], to_add[k])
+        else:
+            target_satpy_labels[k] += to_add[k]
+
+def get_all_satellitepy_keys():
+    """
+    Get all possible satellitepy keys
+    Returns
+    -------
+    all_keys : list of str
+        E.g. ['bboxes','mask-indices','coarse-class','attributes_engines_propulsion']
+    """
+
+    labels = init_satellitepy_label()
+
+    all_keys = []
+
+    for key_0, value_0 in labels.items():
+        if isinstance(value_0, list):
+            all_keys.append(key_0)
+        else:
+            for key_1, value_1 in value_0.items():
+                if isinstance(value_1, list):
+                    all_keys.append(f"{key_0}_{key_1}")
+                else:
+                    for key_2, value_2 in value_1.items():
+                        if isinstance(value_2, list):
+                            all_keys.append(f"{key_0}_{key_1}_{key_2}")
+    return all_keys
+
+
+def set_image_keys(all_satellitepy_keys, sub_image_labels, gt_labels, i):
+    """
+    Set object labels for the patch 
+    Parameters
+    ----------
+    sub_image_labels : dict of str
+        Dict in satellitepy format. sub_image could be patch or chip
+    gt_labels : dict of str
+        Dict in satellitepy format 
+    gt_label_i : int
+        Index of object in gt_labels
+    Returns
+    -------
+    sub_image_labels : dict of str
+        Dict in satellitepy format. Only the objects within the patch and the chip
+    """
+    for task in all_satellitepy_keys:
+        keys = task.split("_")
+        if len(keys) == 1:
+            sub_image_labels[keys[0]].append(gt_labels[keys[0]][i])
+        elif len(keys) == 2:
+            sub_image_labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][i])
+        elif len(keys) == 3:
+            sub_image_labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][i])
+    return sub_image_labels
+
+
+def fill_none_to_empty_keys(labels, not_available_tasks):
+    """
+    Append None to non existing tasks for one object; hbboxes are calculated by obboxes if missing
+    Parameters
+    ----------
+    labels : dict of str
+        Dict in satellitepy format 
+    not_available_tasks : list of str
+        Tasks are not available within the dataset. E.g., [masks','attributes_engines_propulsion','attributes_engines_no-engines']
+    Returns
+    -------
+    labels : dict of str
+        None appended dict in satellitepy format
+    """
+
+    for task in not_available_tasks:
+        keys = task.split('_')
+        if len(keys) == 1:
+            labels[keys[0]].append(None)
+        elif len(keys) == 2:
+            labels[keys[0]][keys[1]].append(None)
+        elif len(keys) == 3:
+            labels[keys[0]][keys[1]][keys[2]].append(None)
+    return labels
+
+
+def satellitepy_labels_empty(labels):
+    """
+    This function checks whether the labels dict in satellitepy format is empty.
+    Returns
+    -------
+    bool: Whether it is empty
+    """
+
+    def inner(d):
+        if isinstance(d, list):
+            return len(d) == 0
+        elif isinstance(d, dict):
+            for k, v in d.items():
+                return inner(v)
+        else:
+            raise ValueError("expected labels dict in satellitepy format to only contain keys and values of type list")
+
+    return inner(labels)
+
+
+def exclude_cg_classes(labels, include_only_cgc):
+    """
+    Exclude CGC classes from the labels.
+    Parameters
+    ----------
+    labels : dict
+        Satellitepy labels dictionary.
+    include_only_cgc : list
+        List of CGC classes to include. If None, all CGC classes are included.
+    Returns
+    -------
+    filtered_labels : dict
+        Filtered labels dictionary with only the specified CGC classes.
+    """
+    if include_only_cgc is None:
+        return labels
+    
+    # Find indices of CGC classes to include
+    cgc_values = get_satellitepy_dict_values(labels, 'coarse-class')
+    include_indices = []
+    for key, cgc in enumerate(cgc_values):
+        if cgc in include_only_cgc:
+            include_indices.append(key)
+
+    # Set the filtered labels based on the indices
+    filtered_labels = init_satellitepy_label()
+    all_tasks = get_all_satellitepy_keys()
+    for key in include_indices:
+        filtered_labels = set_image_keys(all_tasks, filtered_labels, labels, key)
+            
+    return filtered_labels
+
+def extract_gsd_from_label(label_path, label_format):
+    """
+    Extract GSD from the label file.
+    Parameters
+    ----------
+    label_path : str
+        Path to the label file.
+    label_format : str
+        Format of the label file.
+    Returns
+    -------
+    gsd : float
+        Ground Sample Distance (GSD) in meters.
+    """
+    if label_format != 'dota':
+        raise ValueError(f'Label format {label_format} is not supported for GSD extraction.')
+    
+    # Read GSD from the label file
+    # for file_path in file_paths:
+    with open(label_path, "r") as file:
+        for line in file:
+            match = re.search(r"gsd:\s*([\d.]+)", line)
+            if match:
+                gsd = float(match.group(1))
+                logger.info(f'GSD extracted from {label_path}: {gsd} m')
+                return gsd
+    return None
 
 
 def get_fineair_roles():

@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 import json
 
-from satellitepy.data.utils import get_vedai_classes, set_mask, parse_potsdam_labels, get_shipnet_categories, rescale_labels
+from satellitepy.data.utils import get_vedai_classes, set_mask, parse_potsdam_labels, get_shipnet_categories, rescale_labels, get_satellitepy_dict_values, get_all_satellitepy_keys, fill_none_to_empty_keys, get_task_dict, get_xview_classes, read_img
 from satellitepy.data.bbox import BBox
 
 logger = logging.getLogger('')
@@ -51,104 +51,6 @@ def read_label(label_path, label_format, mask_path=None, rescaling=1):
     return labels
 
 
-def get_all_satellitepy_keys():
-    """
-    Get all possible satellitepy keys
-    Returns
-    -------
-    all_keys : list of str
-        E.g. ['bboxes','mask-indices','coarse-class','attributes_engines_propulsion']
-    """
-
-    labels = init_satellitepy_label()
-
-    all_keys = []
-
-    for key_0, value_0 in labels.items():
-        if isinstance(value_0, list):
-            all_keys.append(key_0)
-        else:
-            for key_1, value_1 in value_0.items():
-                if isinstance(value_1, list):
-                    all_keys.append(f"{key_0}_{key_1}")
-                else:
-                    for key_2, value_2 in value_1.items():
-                        if isinstance(value_2, list):
-                            all_keys.append(f"{key_0}_{key_1}_{key_2}")
-    return all_keys
-
-
-def set_image_keys(all_satellitepy_keys, sub_image_labels, gt_labels, i):
-    """
-    Set object labels for the patch 
-    Parameters
-    ----------
-    sub_image_labels : dict of str
-        Dict in satellitepy format. sub_image could be patch or chip
-    gt_labels : dict of str
-        Dict in satellitepy format 
-    gt_label_i : int
-        Index of object in gt_labels
-    Returns
-    -------
-    sub_image_labels : dict of str
-        Dict in satellitepy format. Only the objects within the patch and the chip
-    """
-    for task in all_satellitepy_keys:
-        keys = task.split("_")
-        if len(keys) == 1:
-            sub_image_labels[keys[0]].append(gt_labels[keys[0]][i])
-        elif len(keys) == 2:
-            sub_image_labels[keys[0]][keys[1]].append(gt_labels[keys[0]][keys[1]][i])
-        elif len(keys) == 3:
-            sub_image_labels[keys[0]][keys[1]][keys[2]].append(gt_labels[keys[0]][keys[1]][keys[2]][i])
-    return sub_image_labels
-
-
-def fill_none_to_empty_keys(labels, not_available_tasks):
-    """
-    Append None to non existing tasks for one object; hbboxes are calculated by obboxes if missing
-    Parameters
-    ----------
-    labels : dict of str
-        Dict in satellitepy format 
-    not_available_tasks : list of str
-        Tasks are not available within the dataset. E.g., [masks','attributes_engines_propulsion','attributes_engines_no-engines']
-    Returns
-    -------
-    labels : dict of str
-        None appended dict in satellitepy format
-    """
-
-    for task in not_available_tasks:
-        keys = task.split('_')
-        if len(keys) == 1:
-            labels[keys[0]].append(None)
-        elif len(keys) == 2:
-            labels[keys[0]][keys[1]].append(None)
-        elif len(keys) == 3:
-            labels[keys[0]][keys[1]][keys[2]].append(None)
-    return labels
-
-
-def satellitepy_labels_empty(labels):
-    """
-    This function checks whether the labels dict in satellitepy format is empty.
-    Returns
-    -------
-    bool: Whether it is empty
-    """
-
-    def inner(d):
-        if isinstance(d, list):
-            return len(d) == 0
-        elif isinstance(d, dict):
-            for k, v in d.items():
-                return inner(v)
-        else:
-            raise ValueError("expected labels dict in satellitepy format to only contain keys and values of type list")
-
-    return inner(labels)
 
 
 def init_satellitepy_label():
@@ -277,12 +179,14 @@ def read_dota_label(label_path, mask_path=None):
                     labels['role'].append('Large Vehicle')
                 else:
                     labels['role'].append(None)
-            elif category != 'plane' and category != 'ship' and category != 'helicopter':
-                continue
-            else:
-                category = 'airplane' if category == 'plane' else category
-                labels['coarse-class'].append(category)
+            elif category == 'plane':
+                labels['coarse-class'].append('airplane')
                 labels['role'].append(None)
+            elif category == 'ship':
+                labels['coarse-class'].append('ship')
+                labels['role'].append(None)
+            else:
+                continue
 
             labels['difficulty'].append(difficulty)
 
