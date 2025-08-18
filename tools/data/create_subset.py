@@ -1,7 +1,7 @@
 import configargparse
 import random
 from pathlib import Path
-from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config
+from satellitepy.utils.path_utils import create_folder, init_logger, get_default_log_path, get_default_log_config, get_file_paths
 from satellitepy.data.tools import copy_files
 import logging
 import logging.config
@@ -24,7 +24,7 @@ def get_args():
     parser.add_argument('--test-out-folder', type=Path, required=True,
                         help='Save folder of test set. Images and corresponding labels will be saved into '
                              '<out-folder>/images and <out-folder>/labels.')
-    parser.add_argument('--randomise', type=bool, required=False, default=False, 
+    parser.add_argument('--random-seed', type=int, default=None, 
                         help='Determines if the files should be randomised before copying them to new locations. Default=False')
     parser.add_argument('--val-split', type=float, required=False, default=0.1,
                         help='Which percantage of the split should be used for val. Default=0.1')
@@ -63,8 +63,8 @@ def run(parser):
     assert create_folder(target_val_image_folder)
     assert create_folder(target_val_label_folder)
     
-    image_files = sorted([f for f in src_image_folder.iterdir() if f.is_file()])
-    annotation_files = sorted([f for f in src_label_folder.iterdir() if f.is_file()])
+    image_files = get_file_paths(src_image_folder) # sorted([f for f in src_image_folder.iterdir() if f.is_file()])
+    annotation_files = get_file_paths(src_label_folder) # sorted([f for f in src_label_folder.iterdir() if f.is_file()])
     
     if args.in_mask_folder:
         src_mask_folder = Path(args.in_mask_folder)
@@ -83,7 +83,8 @@ def run(parser):
 
     # Shuffle files
     paired_files = list(zip(image_files, annotation_files, mask_files))
-    if args.randomise:
+    if args.random_seed is not None:
+        random.seed(args.random_seed)
         random.shuffle(paired_files)
     image_files, annotation_files, mask_files = zip(*paired_files)
 

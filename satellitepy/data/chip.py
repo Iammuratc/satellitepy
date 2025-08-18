@@ -5,8 +5,10 @@ import math
 
 import cv2
 import numpy as np
+
 from satellitepy.data.bbox import BBox
-from satellitepy.data.labels import init_satellitepy_label, get_all_satellitepy_keys, set_image_keys
+from satellitepy.data.utils import get_all_satellitepy_keys, set_image_keys, init_satellitepy_label
+
 import logging
 
 logger = logging.getLogger('')
