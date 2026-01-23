@@ -6,7 +6,7 @@ import numpy as np
 import logging
 
 import cv2
-
+from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
 
 from satellitepy.data.labels import read_label
@@ -30,7 +30,6 @@ def rescale_dataset(
     label_format,
     out_folder,
     mask_folder,
-    image_read_module,
     rescaling,
     interpolation_method):
     """
@@ -47,8 +46,6 @@ def rescale_dataset(
         Input label format.
     out_folder : Path
         Output folder. Patches and corresponding labels will be saved into <out-folder>/images and <out-folder>/labels
-    image_read_module : str
-        cv2 or rasterio to read the images
     rescaling : float
         Images and the corresponding labels will be rescaled.
     interpolation_method : str
@@ -91,7 +88,7 @@ def rescale_dataset(
         out_label_path = Path(out_label_folder) / label_name
         
         
-        img = read_img(str(img_path), module=image_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
+        img = read_img(str(img_path), rescaling=rescaling, interpolation_method=interpolation_method)
         cv2.imwrite(str(out_image_path), img)
         with open(str(out_label_path), 'w') as f:
             json.dump(gt_labels, f, indent=2)
@@ -155,7 +152,6 @@ def save_patches(
         truncated_object_thr,
         patch_size,
         patch_overlap,
-        image_read_module,
         mask_folder=None,
         rescaling=1,
         new_gsd=None,
@@ -184,8 +180,6 @@ def save_patches(
         Patch size
     patch_overlap : int
         Patch overlap
-    image_read_module : str
-        cv2 or rasterio to read the images
     rescaling : float
         Images and the corresponding labels will be rescaled.
     new_gsd : float
@@ -227,73 +221,96 @@ def save_patches(
     # Check if all folders have the same number of files
     assert len(img_paths) == len(label_paths) == len(mask_paths)
 
-    for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
-        mask_name = mask_path.name if mask_path != None else None
-        label_name = label_path.name if label_path is not None else None
-        logger.info(f"{img_path.name}, {label_name}, {mask_name}")
+    # for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths):
+    args_list = [(img_path, 
+        label_path,
+        label_format,
+        out_image_folder,
+        out_label_folder,
+        mask_path, 
+        rescaling, 
+        include_only_cgc,
+        new_gsd,
+        gsd_threshold,
+        interpolation_method,
+        keep_empty,
+        truncated_object_thr,
+        patch_size,
+        patch_overlap) for img_path, label_path, mask_path in zip(img_paths, label_paths, mask_paths)]
+    with Pool(processes=cpu_count()) as pool:
+        results = list(tqdm(pool.imap(save_patch, args_list), 
+                          total=len(args_list), 
+                          desc="Creating patches"))
+    
 
-        # Apply GSD threshold
-        if gsd_threshold:
-            gsd = extract_gsd_from_label(label_path, label_format)
-            if gsd is None:
-                logger.warning(f'GSD is not found in the label file {label_path}. Skipping this image.')
-                continue
-            if gsd > gsd_threshold:
-                logger.info(f'GSD {gsd} is above the threshold {gsd_threshold}. Skipping this image.')
-                continue
-            if new_gsd:
-                rescaling = gsd / new_gsd if gsd else 1.0    
-                logger.info(f'Rescaling factor is {rescaling}.')
+def save_patch(args):
+    img_path, label_path, label_format, out_image_folder, out_label_folder, mask_path, rescaling, include_only_cgc, new_gsd, gsd_threshold, interpolation_method, keep_empty, truncated_object_thr, patch_size, patch_overlap = args
 
-        gt_labels = read_label(label_path, label_format, mask_path, rescaling)
-        # Filter labels by CGC classes
-        if include_only_cgc:
-            gt_labels = exclude_cg_classes(gt_labels, include_only_cgc)
+    mask_name = mask_path.name if mask_path != None else None
+    label_name = label_path.name if label_path is not None else None
+    logger.info(f"{img_path.name}, {label_name}, {mask_name}")
 
-        img = read_img(str(img_path), module=image_read_module, rescaling=rescaling, interpolation_method=interpolation_method)
+    # Apply GSD threshold
+    if gsd_threshold:
+        gsd = extract_gsd_from_label(label_path, label_format)
+        if gsd is None:
+            logger.warning(f'GSD is not found in the label file {label_path}. Skipping this image.')
+            return 0
+        if gsd > gsd_threshold:
+            logger.info(f'GSD {gsd} is above the threshold {gsd_threshold}. Skipping this image.')
+            return 0
+        if new_gsd:
+            rescaling = gsd / new_gsd if gsd else 1.0    
+            logger.info(f'Rescaling factor is {rescaling}.')
 
-        patches = get_patches(
-            img,
-            gt_labels,
-            truncated_object_thr,
-            patch_size,
-            patch_overlap
-        )
+    gt_labels = read_label(label_path, label_format, mask_path, rescaling)
+    # Filter labels by CGC classes
+    if include_only_cgc:
+        gt_labels = exclude_cg_classes(gt_labels, include_only_cgc)
 
-        count_patches = len(patches['images'])
-        count_skipped_patches = [0, 0]
-        for i in tqdm(range(count_patches)):
+    img = read_img(str(img_path), rescaling=rescaling, interpolation_method=interpolation_method)
 
-            img_name = img_path.stem
+    patches = get_patches(
+        img,
+        gt_labels,
+        truncated_object_thr,
+        patch_size,
+        patch_overlap
+    )
 
-            patch_x0, patch_y0 = patches['start_coords'][i]
-            patch_name = f"{img_name}_x_{patch_x0}_y_{patch_y0}"
+    count_patches = len(patches['images'])
+    count_skipped_patches = [0, 0]
+    for i in tqdm(range(count_patches)):
 
-            patch_img = patches['images'][i]
-            patch_image_path = Path(out_image_folder) / f"{patch_name}.png"
+        img_name = img_path.stem
 
-            if len(np.unique(patch_img)) == 1:
-                count_skipped_patches[0] += 1
-                continue
+        patch_x0, patch_y0 = patches['start_coords'][i]
+        patch_name = f"{img_name}_x_{patch_x0}_y_{patch_y0}"
 
-            patch_label = patches['labels'][i]
-            patch_label_path = Path(out_label_folder) / f"{patch_name}.json"
+        patch_img = patches['images'][i]
+        patch_image_path = Path(out_image_folder) / f"{patch_name}.png"
 
-            if not keep_empty and not (any(patch_label['obboxes']) or any(patch_label['hbboxes'])):
-                count_skipped_patches[1] += 1
-                continue
+        if len(np.unique(patch_img)) == 1:
+            count_skipped_patches[0] += 1
+            continue
 
-            cv2.imwrite(str(patch_image_path), patch_img)
-            with open(str(patch_label_path), 'w') as f:
-                json.dump(patch_label, f, indent=2)
+        patch_label = patches['labels'][i]
+        patch_label_path = Path(out_label_folder) / f"{patch_name}.json"
 
-        logger.info(f'Number of patches: {count_patches}')
-        logger.info(f"{count_skipped_patches[0]} patches are skipped because images consist of only zeros.")
-        if not keep_empty:
-            logger.info(f"{count_skipped_patches[1]} patches are skipped because no bounding boxes are defined.")
-        logger.info(f"{sum(count_skipped_patches)} patches are skipped in total.")
-        logger.info(f"{count_patches - sum(count_skipped_patches)} patches are created in total.")
-        logger.info(f"Patch labels are created at: {out_label_folder}")
+        if not keep_empty and not (any(patch_label['obboxes']) or any(patch_label['hbboxes'])):
+            count_skipped_patches[1] += 1
+            continue
+
+        cv2.imwrite(str(patch_image_path), patch_img)
+        with open(str(patch_label_path), 'w') as f:
+            json.dump(patch_label, f, indent=2)
+
+    logger.info(f'Number of patches: {count_patches}')
+    logger.info(f"{count_skipped_patches[0]} patches are skipped because images consist of only zeros.")
+    logger.info(f"{count_skipped_patches[1]} patches are skipped because no bounding boxes are defined.")
+    logger.info(f"{sum(count_skipped_patches)} patches are skipped in total.")
+    logger.info(f"{count_patches - sum(count_skipped_patches)} patches are created in total.")
+    logger.info(f"Patch labels are created at: {out_label_folder}")
 
 
 def save_class_chips(
@@ -708,7 +725,6 @@ def show_results_on_image(img_dir,
                           tasks,
                           target_task,
                           all_tasks_flag,
-                          image_read_module,
                           iou_th=0.5,
                           conf_th=0.5,
                           no_probability=False,
@@ -722,7 +738,7 @@ def show_results_on_image(img_dir,
     mask_paths = get_file_paths(mask_dir) if mask_dir else [None] * len(img_paths)
     assert len(img_paths) == len(label_paths) == len(mask_paths)
     for img_path, label_path, mask_path in tqdm(zip(img_paths, label_paths, mask_paths), total=len(img_paths)):
-        img = read_img(str(img_path), module=image_read_module)
+        img = read_img(str(img_path))
         results = read_label(label_path, label_format='satellitepy')
 
         if len(results['det_labels'][target_task]) == 0:
