@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 import json
 
-from satellitepy.data.utils import get_vedai_classes, set_mask, parse_potsdam_labels, get_shipnet_categories, rescale_labels, get_satellitepy_dict_values, get_all_satellitepy_keys, fill_none_to_empty_keys, get_task_dict, get_xview_classes, read_img
+from satellitepy.data.utils import init_satellitepy_label, get_vedai_classes, set_mask, parse_potsdam_labels, get_shipnet_categories, rescale_labels, get_satellitepy_dict_values, get_all_satellitepy_keys, fill_none_to_empty_keys, get_task_dict, get_xview_classes, read_img
 from satellitepy.data.bbox import BBox
 
 logger = logging.getLogger('')
@@ -49,100 +49,6 @@ def read_label(label_path, label_format, mask_path=None, rescaling=1):
     if rescaling != 1:
         labels = rescale_labels(labels, rescaling=rescaling)
     return labels
-
-
-
-
-def init_satellitepy_label():
-    """
-    This function creates an empty labels dict in satellitepy format.
-    WARNING: Do not use underdash "_" in key names, because "_" will be 
-    used in parsing the nested task names (e.g., attributes_engines_no-engines) within other functions.
-    Returns
-    -------
-    labels : dict of str
-        hbboxes : list
-            Horizontal bounding box corners for every object
-        obboxes : list
-            Oriented bounding box corners for every object
-        masks : list
-            Mask pixel coordinates with the shape [<number-of-objects>,2]. The order is x,y
-        coarse-class : list of str
-            coarse grained classes (CGC). It has to be one of these three types: airplane,ship,vehicle
-        fine-class : list of str 
-            fine grained classes(FGC) (e.g., A220, passenger ship)
-        role : list of str 
-            object roles. For example, Small Civil Transport/Utility, Military Fighter/Interceptor/Attack
-        very-fine-class : list of str
-            very fine grained classes (FtGC) (e.g., A220-100)
-        difficulty : list of int
-            Detection difficulty of the object. Only DOTA provides this. 
-            For example, clouds make the detection task difficult. 
-        source: list of str
-            Source for fineair annotations. Either FR24, Mask or None
-        attributes : dict of str
-            This value only serves for Rareplanes at the moment. 
-            Please check the Rareplanes paper for details.
-            'engines' : dict of str
-                'no-engines' : list of int
-                    Number of engines
-                'propulsion' : list of str
-                    unpowered, jet, propeller
-            'fuselage' : dict of str
-                'canards' : list of bool
-                'length' : list of float
-            'wings' : dict of str
-                'wing-span' : list of float
-                'wing-shape' : list of str
-                    swept, straight, delta, variable_swept
-                'wing-position' : list of str
-                    low_mounted, high_mounted
-            'tail' : dict of str
-                'no-tail-fins' : list of int
-                    1, 2
-            'role' : list of str
-                large_transport, medium_transport, small_transport
-                fighter, bomber, transport, trainer
-    """
-    labels = {
-        'hbboxes': [],
-        'obboxes': [],
-        'masks': [],
-        'coarse-class': [],
-        'role': [],
-        'fine-class': [],
-        'very-fine-class': [],
-        'fineair-class': [],
-        'difficulty': [],
-        'source': [],
-        'attributes': {
-            'engines': {
-                'no-engines': [],
-                'propulsion': []
-            },
-            'fuselage': {
-                'canards': [],
-                'length': []
-            },
-            'wings': {
-                'wing-span': [],
-                'wing-shape': [],
-                'wing-position': []
-            },
-            'tail': {
-                'no-tail-fins': []
-            }
-        }
-    }
-    return labels
-
-
-def merge_satpy_label_dict(target_satpy_labels: dict, to_add: dict):
-    for k in target_satpy_labels.keys():
-        if isinstance(target_satpy_labels[k], dict):
-            merge_satpy_label_dict(target_satpy_labels[k], to_add[k])
-        else:
-            target_satpy_labels[k] += to_add[k]
 
 
 def read_dota_label(label_path, mask_path=None):

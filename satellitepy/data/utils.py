@@ -1,12 +1,10 @@
 import cv2
 import numpy as np
-import rasterio
-from scipy.ndimage import generate_binary_structure, label, find_objects
 import logging
-import rasterio
-import glob
 import re
 
+
+from satellitepy.data.tools_fineair import read_fineair_img
 from satellitepy.data.bbox import BBox
 
 logger = logging.getLogger('')
@@ -326,7 +324,7 @@ def rescale_labels(labels,rescaling):
         set_satellitepy_dict_values(satellitepy_dict=labels_rescaled,task=task,value=rescaled_values)
     return labels_rescaled
 
-def read_img(img_path, module='cv2', rescaling=1.0, interpolation_method=cv2.INTER_LINEAR):
+def read_img(img_path, rescaling=1.0, interpolation_method=cv2.INTER_LINEAR):
     """
     Read image.
     Parameters
@@ -341,25 +339,7 @@ def read_img(img_path, module='cv2', rescaling=1.0, interpolation_method=cv2.INT
         Image in the opencv format,  (rows, columns, bands).
     """
 
-    if module == 'cv2':
-        img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
-    elif module == 'rasterio':
-        with rasterio.open(img_path) as src:
-            # Read all bands
-            img_array = src.read()  # Shape: (C, H, W)
-            
-            # Transpose to (H, W, C) format
-            img = np.transpose(img_array, axes=(1, 2, 0))  # Shape: (H, W, C)
-            
-            lo = np.percentile(img, 1) # lo_percent
-            hi = np.percentile(img, 99) # hi_percent
-            img_clipped = np.clip(img, lo, hi)
-            img_normalized = (img_clipped - lo) / (hi - lo) * 255.0
-            return np.clip(img_normalized, 0, 255).astype(np.uint8)
-        
-    else:
-        logger.error(f'{module} is not a valid argument!')
-        return 0
+    img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
     
     if rescaling != 1.0:
         interpolation_dict = {
@@ -370,6 +350,7 @@ def read_img(img_path, module='cv2', rescaling=1.0, interpolation_method=cv2.INT
             }
         img = cv2.resize(img, (0, 0), fx = rescaling, fy = rescaling, interpolation = interpolation_dict[interpolation_method])
     return img
+
 
 
 def set_mask(labels, mask_path, bbox_type, mask_type):

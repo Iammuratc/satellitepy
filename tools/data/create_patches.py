@@ -40,12 +40,11 @@ def get_args():
     parser.add_argument('--patch-overlap', type=int, help='Overlapping size of neighboring patches. In CNN '
                                                           'terminology, stride = patch-size - patch-overlap. '
                                                           'If necessary, the original image will be padded with zeros to create full size patches.')
-    parser.add_argument('--keep-empty', type=bool, default=False, help='Keeps empty patches if True. All black patches are still discarded. Default is False.')
+    parser.add_argument('--keep-empty', action='store_true', help='if set, patches with no GT bounding boxes are saved. '
+                                                          'Empty label file will be created for those patches. All black patches are still discarded. Default is False.')
     parser.add_argument('--log-config-path', default=None, type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, default=None, help='Log path.')
     # Reading image
-    parser.add_argument('--image-read-module', type=str, default='cv2',
-                        help='This module will be used to read the image. rasterio is suggested for large TIF images.')
     parser.add_argument('--rescaling', type=float, default=1, help='Scale the images before creating patches. This is helpful to unify the spatial resolution over patches from different datasets. '
                         'For example, fair1m (spatial resolution ~0.8) can be rescaled to the spatial resolution of 0.5, rescaling equals 0.8/0.5=1.6. The tasks will be rescaled by the factor of <rescaling>, too, if applicable.')
     
@@ -111,7 +110,6 @@ def run(parser):
         patch_size=args.patch_size,
         patch_overlap=args.patch_overlap,
         mask_folder=in_mask_folder,
-        image_read_module=args.image_read_module,
         rescaling=args.rescaling,
         new_gsd=args.new_gsd,
         gsd_threshold=args.gsd_threshold,
