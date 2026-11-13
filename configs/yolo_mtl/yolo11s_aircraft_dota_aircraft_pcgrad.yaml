@@ -1,0 +1,10 @@
+extends: yolo11s_aircraft_dota_aircraft_strict_detached.yaml
+
+train:
+  # Project only conflicting per-dataset detection gradients. Semantic heads
+  # remain strictly detached and retain their independent optimizer.
+  gradient_conflict_control: pcgrad
+  # PCGrad retains one detector-gradient vector per active dataset. A global
+  # batch of eight repeatedly exhausted rank-0 memory before the first
+  # checkpoint; one image per rank leaves headroom for those vectors.
+  batch_size: 4

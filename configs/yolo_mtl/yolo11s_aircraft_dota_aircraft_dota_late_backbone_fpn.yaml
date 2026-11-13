@@ -1,0 +1,9 @@
+extends: yolo11s_aircraft_dota_aircraft_strict_detached.yaml
+
+model:
+  # YOLO11 modules 0-7 are the shared early backbone. DOTA receives a
+  # separately trainable copy of the late P5 backbone (modules 8-10) and the
+  # complete detection FPN/neck (modules 11-22). All domains retain one shared
+  # aircraft OBB head, and semantic gradients remain detached.
+  geometry_fpn_domains: [dota_aircraft]
+  geometry_fpn_start: 8

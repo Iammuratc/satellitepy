@@ -18,6 +18,8 @@ def parse_args():
     parser.add_argument('--init-lr', type=float, default=1.25e-4, help='Initial learning rate')
     parser.add_argument('--input-h', type=int, default=600, help='Resized image height')
     parser.add_argument('--input-w', type=int, default=600, help='Resized image width')
+    parser.add_argument('--input-channels', type=int, choices=(3, 4), default=3,
+                        help='3 for RGB patches, 4 for RGB+IR patches')
     parser.add_argument('--K', type=int, default=1500, help='Maximum of objects')
     parser.add_argument('--conf-thresh', type=float, default=0.18,
                         help='Confidence threshold, 0.1 for general evaluation')
@@ -25,23 +27,29 @@ def parse_args():
     parser.add_argument('--patience', type=int, default=10,
                         help='Number of Patience epochs. If the valid loss does not improve for <patience> times, '
                              'the training will stop. ')
+    parser.add_argument('--checkpoint-interval', type=int, default=1,
+                        help='Save an optimizer checkpoint every N epochs and always at the final epoch.')
+    parser.add_argument('--gradient-accumulation-steps', type=int, default=1,
+                        help='Accumulate this many micro-batches before each optimizer step.')
+    parser.add_argument('--batch-log-interval', type=int, default=1,
+                        help='Write batch progress and running losses to the log every N batches.')
     parser.add_argument('--resume-train', type=Path, help='Weights resumed in training')
-    parser.add_argument('--train-image-folder', type=Path,
+    parser.add_argument('--train-image-folder', type=Path, required=True,
                         help='Image folder. The images in this folder will be used to train the model.')
-    parser.add_argument('--train-label-folder', type=Path,
+    parser.add_argument('--train-label-folder', type=Path, required=True,
                         help='Label folder. The labels in this folder will be used to train the model.')
-    parser.add_argument('--train-label-format', type=Path,
+    parser.add_argument('--train-label-format', type=str, required=True,
                         help='Label file format. e.g., dota, fair1m, satellitepy.')
     parser.add_argument('--valid-image-folder', type=Path,
                         help='Image folder. The images in this folder will be used to validate the model.')
     parser.add_argument('--valid-label-folder', type=Path,
                         help='Label folder. The labels in this folder will be used to validate the model.')
-    parser.add_argument('--valid-label-format', type=Path,
+    parser.add_argument('--valid-label-format', type=str,
                         help='Label file format. e.g., dota, fair1m, satellitepy.')
     parser.add_argument('--log-config-path', default=project_folder /
                                                      Path('configs/log.config'), type=Path, help='Log config file.')
     parser.add_argument('--log-path', type=Path, required=False, help='Log path.')
-    parser.add_argument('--tasks', default=['obboxes, coarse-class'], nargs='+',
+    parser.add_argument('--tasks', default=['obboxes', 'coarse-class'], nargs='+',
                         help='The model will be trained for the given tasks. Find the other task names at '
                              'satellitepy.data.utils.get_satellitepy_table. If it is fine-class or very-fine class, '
                              'None values in those keys will be filled from one upper level')
@@ -49,7 +57,7 @@ def parse_args():
                         help='The model will be trained for the given target task. Needs to be a classification task. '
                              'Default is coarse-class')
     parser.add_argument('--out-folder',
-                        type=Path,
+                        type=Path, required=True,
                         help='Save folder of experiments. The trained weights will be saved under this folder.')
     parser.add_argument('--validate-datasets', action='store_true')
     parser.set_defaults(validate_datasets=False)
@@ -65,9 +73,9 @@ def train_bbavector(args):
     train_image_folder = Path(args.train_image_folder)
     train_label_folder = Path(args.train_label_folder)
     train_label_format = str(args.train_label_format)
-    valid_image_folder = Path(args.valid_image_folder)
-    valid_label_folder = Path(args.valid_label_folder)
-    valid_label_format = str(args.valid_label_format)
+    validation_args = (args.valid_image_folder, args.valid_label_folder, args.valid_label_format)
+    if any(value is not None for value in validation_args) and not all(value is not None for value in validation_args):
+        raise ValueError('Validation image folder, label folder, and label format must be provided together.')
     input_h = args.input_h
     input_w = args.input_w
     down_ratio = 4
@@ -103,7 +111,7 @@ def train_bbavector(args):
         f'No log path is given, the default log path will be used: {log_path}')
     logger.info('Initiating the training of the BBAVector model...')
 
-    model = get_model(tasks, down_ratio)
+    model = get_model(tasks, down_ratio, input_channels=args.input_channels)
 
     train_dataset = BBAVectorDataset(
         train_image_folder,
@@ -117,23 +125,25 @@ def train_bbavector(args):
         args.augmentation,
         validate_datasets,
         K=K,
-        random_seed=random_seed
+        random_seed=random_seed,
+        input_channels=args.input_channels
     )
 
     if args.valid_image_folder:
         valid_dataset = BBAVectorDataset(
-            valid_image_folder,
-            valid_label_folder,
-            valid_label_format,
+            args.valid_image_folder,
+            args.valid_label_folder,
+            args.valid_label_format,
             tasks,
             input_h,
             input_w,
             down_ratio,
             target_task,
-            args.augmentation,
+            False,
             validate_datasets,
             K=K,
-            random_seed=random_seed
+            random_seed=random_seed,
+            input_channels=args.input_channels
         )
     else:
         valid_dataset = None
@@ -153,6 +163,9 @@ def train_bbavector(args):
         ngpus=ngpus,
         resume_train=checkpoint_path,
         patience=patience,
+        checkpoint_interval=args.checkpoint_interval,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        batch_log_interval=args.batch_log_interval,
         target_task=target_task
     )
 

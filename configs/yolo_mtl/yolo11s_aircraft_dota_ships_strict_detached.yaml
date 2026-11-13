@@ -1,0 +1,7 @@
+extends: yolo11s_aircraft_dota_ships_joint.yaml
+
+model:
+  detach_task_features: true
+
+train:
+  strict_detached_optimization: true

@@ -7,7 +7,6 @@ from satellitepy.data.utils import read_img
 from satellitepy.data.tools import read_label
 from satellitepy.data.patch import get_patches, merge_patch_results
 from satellitepy.utils.path_utils import create_folder, get_file_paths
-from satellitepy.evaluate.utils import match_gt_and_det_bboxes
 from satellitepy.evaluate.bbavector.utils import get_patch_result
 
 from torch.utils.data import DataLoader
@@ -59,7 +58,8 @@ def save_patch_results(
     """
     logger = logging.getLogger('')
 
-    model, optimizer, epoch, valid_loss = load_checkpoint(checkpoint_path, down_ratio)
+    model, optimizer, epoch, valid_loss = load_checkpoint(
+        checkpoint_path, down_ratio, tasks=tasks)
     model.to(device)
     model.eval()
 
@@ -75,6 +75,7 @@ def save_patch_results(
         input_h=input_h,
         input_w=input_w,
         down_ratio=down_ratio,
+        target_task=target_task,
         augmentation=False,
         validate_dataset=False,
     )

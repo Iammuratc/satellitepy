@@ -1,0 +1,11 @@
+path,notes
+/mnt/2tb-0/satellitepy/data/DIOR/split,
+/mnt/2tb-0/satellitepy/data/DOTA/,
+/mnt/2tb-0/satellitepy/data/fair1m/,
+/mnt/2tb-0/satellitepy/data/Potsdam/archive/ISPRS_semantic_labeling_Vaihingen/,"labels: gts_disconnected_components, labels include segmentation masks, boundinx boxes must be derived from it, images: top, "
+/mnt/2tb-0/satellitepy/data/Rareplanes/train/,"labels: split_labels/labels/ and images: tiled_images_only"
+/mnt/2tb-0/satellitepy/data/VEDAI/,"images: Vehicules1024  both rgb and IR, labels: Annotations1024"
+/mnt/2tb-0/satellitepy/data/VHR-10_dataset_coco/VHR-10-NWPU,"images: positive image set, labels: ground truth"
+/mnt/2tb-0/satellitepy/data/ship_image_net/split/,
+/mnt/2tb-0/satellitepy/data/ucas_aod/,
+/mnt/2tb-0/satellitepy/data/xview/,

@@ -1,0 +1,35 @@
+# Shared-backbone baseline over FineAir RGB+NIR and RarePlanes RGB. RGB-only
+# images receive a zero IR plane; sparse losses apply only to supplied labels.
+model:
+  weights: yolo11s-obb.pt
+  input_channels: 4
+  geometry_tasks: [obboxes]
+  geometry_loss_weights: {obboxes: 1.0}
+
+tasks:
+  coarse-class: {kind: classification, loss_weight: 1.0}
+  fine-class: {kind: classification, loss_weight: 1.0}
+  very-fine-class: {kind: classification, loss_weight: 1.0}
+  role: {kind: classification, loss_weight: 1.0}
+  attributes_engines_no-engines: {kind: classification, loss_weight: 1.0}
+  attributes_engines_propulsion: {kind: classification, loss_weight: 1.0}
+  attributes_fuselage_canards: {kind: classification, loss_weight: 1.0}
+  attributes_fuselage_length: {kind: regression, loss_weight: 1.0}
+  attributes_wings_wing-span: {kind: regression, loss_weight: 1.0}
+  attributes_wings_wing-shape: {kind: classification, loss_weight: 1.0}
+  attributes_wings_wing-position: {kind: classification, loss_weight: 1.0}
+  attributes_tail_no-tail-fins: {kind: classification, loss_weight: 1.0}
+
+train:
+  image_size: 1024
+  rgb_ir_channel_dropout: 0.25
+  batch_size: 8
+  epochs: 100
+  learning_rate: 0.0002
+  weight_decay: 0.0005
+  workers: 8
+  validation_interval: 1
+  early_stopping_patience: 15
+  early_stopping_min_delta: 0.0001
+  early_stopping_metric: mean_map50_95
+  map: {confidence: 0.001, nms_iou: 0.7, max_detections: 1000}

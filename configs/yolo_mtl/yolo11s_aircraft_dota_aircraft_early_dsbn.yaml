@@ -1,0 +1,7 @@
+extends: yolo11s_aircraft_dota_aircraft_strict_detached.yaml
+
+model:
+  # Keep every convolution shared, but use dataset-specific BatchNorm through
+  # the first two downsampling stages (YOLO graph modules 0-3).
+  normalization_domains: [fineair, rareplanes, dota_aircraft]
+  normalization_module_end: 4

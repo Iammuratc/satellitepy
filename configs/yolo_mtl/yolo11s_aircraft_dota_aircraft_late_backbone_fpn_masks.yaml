@@ -1,0 +1,10 @@
+extends: yolo11s_aircraft_dota_aircraft_dota_late_backbone_fpn.yaml
+
+model:
+  # The mask head consumes DOTA's routed P3 feature directly. Its gradients
+  # update the DOTA-specific late-backbone/FPN route and shared early backbone,
+  # but never the FineAir/RarePlanes late route.
+  mask_feature_domains: {masks: dota_aircraft}
+
+tasks:
+  masks: {kind: segmentation, outputs: 1, loss_weight: 1.0}

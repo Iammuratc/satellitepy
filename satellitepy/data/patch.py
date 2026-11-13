@@ -57,23 +57,34 @@ def get_patches(
         'start_coords': patch_start_coords,
     }
 
+    if label_file_exist:
+        provided_geometry = list(gt_labels.get('_provided_geometry', ()))
+        provided_tasks = list(gt_labels.get('_provided_tasks', ()))
+        for patch_labels in patch_dict['labels']:
+            patch_labels['_provided_geometry'] = provided_geometry
+            patch_labels['_provided_tasks'] = provided_tasks
+
     bbox_names = ['hbboxes','obboxes']
     for i, patch_start_coord in enumerate(patch_start_coords):
         x_0, y_0 = patch_start_coord
         patch_dict['images'][i] = img_padded[y_0:y_0 + patch_size, x_0:x_0 + patch_size, :]
         patch_polygon = create_patch_polygon(x_0=x_0,y_0=y_0,patch_size=patch_size)
         if label_file_exist:
-            for j, (hbbox, obbox) in enumerate(zip(gt_labels['hbboxes'], gt_labels['obboxes'])):
-
-                all_bboxes = [hbbox,obbox]
+            object_count = max(len(gt_labels['hbboxes']), len(gt_labels['obboxes']))
+            for j in range(object_count):
+                hbbox = gt_labels['hbboxes'][j] if j < len(gt_labels['hbboxes']) else None
+                obbox = gt_labels['obboxes'][j] if j < len(gt_labels['obboxes']) else None
+                provided_bboxes = [bbox for bbox in (hbbox, obbox) if bbox is not None]
 
                 # Check if bboxes are defined at all
-                if any(all_bboxes):
-                    # All bboxes will be checked separately, if the bbox is in the patch.
-                    # If one bbox (e.g., dbbox) is in the patch, other bboxes will be added to patch_dict
+                if provided_bboxes:
+                    # Check only geometry actually provided by the source.  A
+                    # missing HBB/OBB must remain missing and must not affect
+                    # whether the object belongs to this patch.
                     x_0, y_0 = patch_start_coord
                     is_truncated_bbox = [is_truncated(bbox_corners=bbox, patch_polygon=patch_polygon,
-                                                    relative_area_threshold=truncated_object_thr) for bbox in all_bboxes]
+                                                    relative_area_threshold=truncated_object_thr)
+                                         for bbox in provided_bboxes]
                     # Set all the tasks for the patch if the object bbox is not truncated
                     if not any(is_truncated_bbox):
                         patch_dict['labels'][i] = set_image_keys(get_all_satellitepy_keys(), patch_dict['labels'][i], gt_labels, j)
@@ -91,14 +102,26 @@ def shift_bboxes(patch_dict, i, bbox_names, patch_start_coord, patch_size):
         if bbox is None:
             continue
         patch_dict['labels'][i][bbox_name][-1] = (np.array(bbox) - [x_0, y_0]).tolist()
-    if (patch_dict['labels'][i]['masks'][-1]!=None):# and (patch_dict['labels'][i]['masks']!=[]):
-        try:
-            mask_shifted = (np.array(patch_dict['labels'][i]['masks'][-1]) - np.array([x_0, y_0]).reshape(2, 1)).tolist()#
-            mask_shifted = [coord for coord in mask_shifted if 0 <= coord[0] < patch_size and 0 <= coord[1] < patch_size]
-            patch_dict['labels'][i]['masks'][-1] = mask_shifted
-        except Exception as e:
-            logger.error(f'Error shifting mask: {e}')
-            print(mask_shifted)
+    mask = patch_dict['labels'][i]['masks'][-1]
+    if mask is not None:
+        mask_points = np.asarray(mask)
+        if mask_points.ndim != 2:
+            raise ValueError(f'Expected a 2D mask coordinate array, got {mask_points.shape}')
+        if mask_points.shape[1] == 2:
+            # Potsdam parser representation: [[x, y], ...].
+            points = mask_points
+        elif mask_points.shape[0] == 2:
+            # SatellitePy representation: [[x, ...], [y, ...]].
+            points = mask_points.T
+        else:
+            raise ValueError(
+                f'Expected mask coordinates shaped (N, 2) or (2, N), got {mask_points.shape}')
+        points = points - np.asarray([x_0, y_0])
+        inside = ((points[:, 0] >= 0) & (points[:, 0] < patch_size) &
+                  (points[:, 1] >= 0) & (points[:, 1] < patch_size))
+        # Persist one canonical representation consumed by prepare_masks and
+        # SparseMTLDataset: separate x and y coordinate arrays.
+        patch_dict['labels'][i]['masks'][-1] = points[inside].T.tolist()
     return patch_dict
 
 

@@ -1,0 +1,28 @@
+# FineAir control: classification heads train normally, but their gradients do
+# not modify the YOLO11 backbone/neck. Detection gradients remain unchanged.
+model:
+  weights: yolo11s-obb.pt
+  input_channels: 4
+  detach_task_features: true
+  geometry_tasks: [obboxes]
+  geometry_loss_weights:
+    obboxes: 1.0
+
+tasks:
+  coarse-class: {kind: classification, loss_weight: 1.0}
+  fine-class: {kind: classification, loss_weight: 1.0}
+  very-fine-class: {kind: classification, loss_weight: 1.0}
+
+train:
+  image_size: 1024
+  rgb_ir_channel_dropout: 0.0
+  batch_size: 8
+  epochs: 100
+  learning_rate: 0.0002
+  weight_decay: 0.0005
+  workers: 8
+  validation_interval: 1
+  early_stopping_patience: 15
+  early_stopping_min_delta: 0.0001
+  early_stopping_metric: map50_95
+  map: {confidence: 0.001, nms_iou: 0.7, max_detections: 1000}

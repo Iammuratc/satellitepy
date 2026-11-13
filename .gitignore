@@ -4,3 +4,22 @@
 **/*.egg*
 # launch.json for nvim-dap and vscode
 **/launch.json
+outputs/
+.codex-data/
+
+# Local experiment-tracking credentials. Never commit API keys.
+docs/wandb_api.txt
+
+# Local experiment runs and downloaded checkpoints.
+wandb/
+*.pt
+
+# Private conversational exports are not project documentation.
+docs/chat_export_*.md
+
+# Local reference papers, archives, and generated office documents.
+docs/*.pdf
+docs/**/*.pdf
+docs/*.ods
+docs/*.zip
+docs/presentation_unified_aerial_detector/

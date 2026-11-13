@@ -1,0 +1,4 @@
+extends: yolo11s_aircraft_dota_ships_strict_detached.yaml
+
+model:
+  geometry_feature_gate_initial: 0.1

@@ -10,7 +10,7 @@ from satellitepy.data.bbox import BBox
 logger = logging.getLogger('')
 
 
-def get_model(tasks, down_ratio):
+def get_model(tasks, down_ratio, pretrained=True, input_channels=3):
     heads = {}
 
     for task in tasks:
@@ -25,20 +25,21 @@ def get_model(tasks, down_ratio):
             heads[task] = 1
         else:
             td = get_task_dict(task)
-            if 'max' and 'min' in td.keys():
+            if 'max' in td and 'min' in td:
                 heads['reg_' + task] = 1
             else:
                 heads['cls_' + task] = len(set(td.values()))
 
     model = ctrbox_net.CTRBOX(heads=heads,
-                              pretrained=True,
+                              pretrained=pretrained,
                               down_ratio=down_ratio,
                               final_kernel=1,
-                              head_conv=256)
+                              head_conv=256,
+                              input_channels=input_channels)
     return model
 
 
-def save_model(path, epoch, model, optimizer):
+def save_model(path, epoch, model, optimizer, loss=None):
     if isinstance(model, torch.nn.DataParallel):
         state_dict = model.module.state_dict()
     else:
@@ -46,11 +47,12 @@ def save_model(path, epoch, model, optimizer):
     torch.save({
         'epoch': epoch,
         'model_state_dict': state_dict,
-        'optimizer_state_dict': optimizer.state_dict()
+        'optimizer_state_dict': optimizer.state_dict(),
+        'loss': loss
     }, path)
 
-def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3):
-    checkpoint = torch.load(checkpoint_path)
+def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3, map_location='cpu', tasks=None):
+    checkpoint = torch.load(checkpoint_path, map_location=map_location)
     logger.info('loaded weights from {}, epoch {}'.format(checkpoint_path, checkpoint['epoch']))
 
     keys = checkpoint['model_state_dict'].keys()
@@ -58,9 +60,13 @@ def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3):
     cls_keys = list(set([key[4:].split('.')[0] for key in keys if 'cls_' in key]))
     reg_keys = list(set([key[4:].split('.')[0] for key in keys if 'reg_' in key]))
     mask_key = list(set([key.split('.')[0] for key in keys if 'masks' in key]))
-    all_keys = bbox_keys + cls_keys + reg_keys + mask_key
+    # Preserve the original task/head order when it is available. Optimizer
+    # state is restored by parameter position, so rebuilding heads from sets
+    # can attach Adam moments to parameters with incompatible shapes.
+    all_keys = list(tasks) if tasks is not None else bbox_keys + cls_keys + reg_keys + mask_key
 
-    model = get_model(all_keys,down_ratio)
+    input_channels = checkpoint['model_state_dict']['base_network.conv1.weight'].shape[1]
+    model = get_model(all_keys, down_ratio, pretrained=False, input_channels=input_channels)
 
     if isinstance(model, torch.nn.DataParallel):
         model.module.load_state_dict(checkpoint['model_state_dict'])
@@ -69,13 +75,16 @@ def load_checkpoint(checkpoint_path, down_ratio, init_lr=1e-3):
         for k, v in model.state_dict().items():
             saved_weights = checkpoint['model_state_dict'][k]
             if v.shape != saved_weights.shape:
-                checkpoint['model_state_dict'][k] = saved_weights[:v.shape[0], ...]
+                raise ValueError(
+                    f'Checkpoint tensor {k!r} has shape {tuple(saved_weights.shape)}, '
+                    f'but the reconstructed model expects {tuple(v.shape)}.'
+                )
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer = torch.optim.Adam(model.parameters(), lr=init_lr)
 
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']
-    valid_loss = checkpoint['loss']
+    valid_loss = checkpoint.get('loss')
 
     return model, optimizer, epoch, valid_loss
 

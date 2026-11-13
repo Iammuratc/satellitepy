@@ -1,0 +1,10 @@
+extends: yolo11s_aircraft_dota_ships_gated.yaml
+
+train:
+  epochs: 30
+  learning_rate: 0.00005
+  dataset_sampling: weighted
+  # Folder order: FineAir, RarePlanes, DOTA-ships. This balances the two
+  # aircraft sources together against the ship source.
+  dataset_sampling_weights: [0.25, 0.25, 0.50]
+  early_stopping_patience: 10

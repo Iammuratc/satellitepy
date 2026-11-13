@@ -1,0 +1,5 @@
+extends: yolo11s_aircraft_dota_aircraft_strict_detached.yaml
+
+model:
+  geometry_feature_domains: [fineair, rareplanes, dota_aircraft]
+  geometry_domain_gate_initial: 0.1

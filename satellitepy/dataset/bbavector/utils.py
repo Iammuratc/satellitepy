@@ -11,17 +11,25 @@ from satellitepy.data.labels import read_label
 
 
 class Utils:
-    def __init__(self, tasks, input_h=None, input_w=None, down_ratio=None, K=1000, augmentation=False):
+    def __init__(self, tasks, input_h=None, input_w=None, down_ratio=None, K=1000,
+                 augmentation=False, input_channels=3):
         self.input_h = input_h
         self.input_w = input_w
         self.down_ratio = down_ratio
         self.tasks = tasks
         self.max_objs = K
         self.augmentation = augmentation
+        self.input_channels = input_channels
         self.image_distort = data_augment.PhotometricDistort()
 
     def get_data_dict(self, image_path, label_path, label_format, target_task):
-        image = cv2.imread(image_path.absolute().as_posix())
+        image = cv2.imread(image_path.absolute().as_posix(), cv2.IMREAD_UNCHANGED)
+        if image.ndim == 2:
+            image = image[:, :, np.newaxis]
+        if self.input_channels == 3 and image.shape[2] == 4:
+            image = image[:, :, :3]
+        if image.shape[2] != self.input_channels:
+            raise ValueError(f'Expected {self.input_channels} image channels, got {image.shape[2]}: {image_path}')
         image_h, image_w, c = image.shape
         labels = read_label(label_path, label_format)
         annotation = self.prepare_annotations(labels, image_w, image_h)
@@ -116,6 +124,19 @@ class Utils:
                         new_box = np.concatenate([b, np.ones((b.shape[0], 1))], axis=1)
                         new_box = np.matmul(new_box, np.transpose(M))
                         boxes[idx][idx_1] = np.asarray(new_box, np.float32)
+        elif image.shape[0] != self.input_h or image.shape[1] != self.input_w:
+            scale_x = self.input_w / image.shape[1]
+            scale_y = self.input_h / image.shape[0]
+            image = cv2.resize(image, (self.input_w, self.input_h), interpolation=cv2.INTER_LINEAR)
+            if mask is not None:
+                mask = cv2.resize(mask, (self.input_w, self.input_h), interpolation=cv2.INTER_NEAREST)
+            for box_group in boxes:
+                for idx, box in enumerate(box_group):
+                    if box is not None:
+                        scaled_box = np.asarray(box, dtype=np.float32).copy()
+                        scaled_box[:, 0] *= scale_x
+                        scaled_box[:, 1] *= scale_y
+                        box_group[idx] = scaled_box
 
         out_annotations = {}
         check_boxes = []
@@ -218,7 +239,12 @@ class Utils:
 
     def generate_ground_truth(self, image, annotation, target_task):
         image = np.asarray(np.clip(image, a_min=0., a_max=255.), np.float32)
-        image = self.image_distort(np.asarray(image, np.float32))
+        if self.augmentation:
+            if image.shape[2] > 3:
+                rgb = self.image_distort(np.asarray(image[:, :, :3], np.float32))
+                image = np.concatenate((rgb, image[:, :, 3:]), axis=2)
+            else:
+                image = self.image_distort(np.asarray(image, np.float32))
         image = np.asarray(np.clip(image, a_min=0., a_max=255.), np.float32)
         image = np.transpose(image / 255. - 0.5, (2, 0, 1))
         image_h = self.input_h // self.down_ratio
@@ -232,9 +258,10 @@ class Utils:
                 ret[k] = annotation[k]
             if k not in ['obboxes', 'hbboxes', 'masks', 'cls_' + target_task]:
 
-                ret[k] = np.zeros(self.max_objs, dtype=np.float32)
-                for idx, v in enumerate(annotation[k]):
-                    ret[k][idx] = v
+                ret[k] = np.full(self.max_objs, np.nan, dtype=np.float32)
+                for idx, v in enumerate(annotation[k][:self.max_objs]):
+                    if v is not None:
+                        ret[k][idx] = v
 
         td = get_task_dict(target_task)
         num_classes = len(set(td.values()))
@@ -247,7 +274,7 @@ class Utils:
             reg = np.zeros((self.max_objs, 2), dtype=np.float32)
             ind = np.zeros((self.max_objs), dtype=np.int64)
             reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
-            num_objs = min(annotation['obboxes'].shape[0], self.max_objs)
+            num_objs = min(annotation['hbboxes'].shape[0], self.max_objs)
             for k in range(num_objs):
                 if isinstance(annotation['obboxes'][k], np.float32):
                     continue
@@ -321,7 +348,7 @@ class Utils:
                 pts_4 = np.array([
                     [cen_x - bbox_w / 2, cen_y + bbox_h / 2],
                     [cen_x - bbox_w / 2, cen_y - bbox_h / 2],
-                    [cen_x + bbox_w / 2, cen_y + bbox_h / 2],
+                    [cen_x + bbox_w / 2, cen_y - bbox_h / 2],
                     [cen_x + bbox_w / 2, cen_y + bbox_h / 2],
                 ])
                 w_hbbox, h_hbbox = self.cal_bbox_wh(pts_4)

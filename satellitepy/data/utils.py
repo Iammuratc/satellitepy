@@ -2,12 +2,116 @@ import cv2
 import numpy as np
 import logging
 import re
+import rasterio
+from rasterio.windows import Window
 
-
-from satellitepy.data.tools_fineair import read_fineair_img
 from satellitepy.data.bbox import BBox
 
 logger = logging.getLogger('')
+
+# Meaningful (non-``None``) subtypes in the prepared FineAir role_th_50 labels.
+# IDs are appended after the legacy RarePlanes/ShipNet very-fine taxonomy in
+# sorted order, preserving all existing checkpoint indices.
+FINEAIR_VERY_FINE_CLASSES = """A220--100
+A220--300
+A300F4--605R
+A319--100
+A320--200
+A320--323
+A320--ceo
+A321--200
+A321--neo
+A330--200
+A330--300
+A330--900
+A340--313
+A350--1000
+A350--900
+A380--800
+ATR42--600
+B717--200
+B737--700
+B737--800
+B737--900
+B737--MAX8
+B737--MAX9
+B747--400
+B747--800
+B757--200
+B757--300
+B767--200
+B767--300
+B767--400
+B767--F6N
+B777--200
+B777--300
+B777--F
+B777--MAX8
+B787--10
+B787--8
+B787--9
+B787--MAC8
+BE40--400XP
+Beechcraft99--Airliner
+Bombardier-Challenger--300
+Bombardier-Challenger--3500
+Bombardier-Challenger--650
+Bombardier-Global--5500
+Bombardier-Global--6000
+Bombardier-Global--6500
+Bombardier-Global--7500
+CRJ--700
+CRJ-200--ER
+CRJ-200--LR
+CRJ-700--500
+CRJ-700--ER
+CRJ-700--SE
+CRJ-701--701
+CRJ-701--ER
+CRJ-900--ER
+CRJ-900--LR
+Cessna-Citation--560
+Cessna-Citation--680
+Cessna-Citation--Ascend
+Cessna-Citation--Latitude
+Cessna-Citation--Latitude-680A
+Cessna-Citation--Latitude-C680A
+DeHavilland-Dash-8--400
+E135--BJ
+E145--LR
+E145--XR
+E170--LR
+E170--SE
+E175--LL
+E175--LR
+E175--SU
+E190--AR
+E190--LR
+E190--STD
+E195--E2
+Embraer--1000
+Embraer--E170
+Embraer--E170STD
+Embraer--E175
+Embraer--E175LR
+Embraer--E190
+Embraer--E195
+Embraer--ERJ-145LR
+Embraer-Legacy--600
+Embraer-Legacy--650
+Embraer-Legacy--650E
+Embraer-Phenom--300
+Embraer-Phenom--300 E55P
+Embraer-Praetor--500
+Embraer-Praetor--600
+Falcon--8X
+Gulfstream-Global--280
+Gulfstream-Global--5500
+H25B--800XP
+Hawker--750
+MD11--F
+Pilatus--PC-12 NG
+Sukhoi-100--95B""".splitlines()
 
 def init_satellitepy_label():
     """
@@ -69,6 +173,7 @@ def init_satellitepy_label():
         'fine-class': [],
         'very-fine-class': [],
         'fineair-class': [],
+        'dota-class': [],
         'difficulty': [],
         'source': [],
         'attributes': {
@@ -226,6 +331,9 @@ def exclude_cg_classes(labels, include_only_cgc):
 
     # Set the filtered labels based on the indices
     filtered_labels = init_satellitepy_label()
+    for metadata_key in ('_provided_geometry', '_provided_tasks'):
+        if metadata_key in labels:
+            filtered_labels[metadata_key] = labels[metadata_key].copy()
     all_tasks = get_all_satellitepy_keys()
     for key in include_indices:
         filtered_labels = set_image_keys(all_tasks, filtered_labels, labels, key)
@@ -324,7 +432,7 @@ def rescale_labels(labels,rescaling):
         set_satellitepy_dict_values(satellitepy_dict=labels_rescaled,task=task,value=rescaled_values)
     return labels_rescaled
 
-def read_img(img_path, rescaling=1.0, interpolation_method=cv2.INTER_LINEAR):
+def read_img(img_path, module='cv2', rescaling=1.0, interpolation_method=cv2.INTER_LINEAR):
     """
     Read image.
     Parameters
@@ -339,7 +447,27 @@ def read_img(img_path, rescaling=1.0, interpolation_method=cv2.INTER_LINEAR):
         Image in the opencv format,  (rows, columns, bands).
     """
 
-    img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+    if module == 'cv2':
+        img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+    elif module == 'rasterio':
+        with rasterio.open(img_path) as source:
+            img = np.moveaxis(source.read(), 0, -1)
+        if img.shape[-1] == 4:
+            img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
+        elif img.shape[-1] == 3:
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        low, high = np.percentile(img, (1, 99))
+        if high > low:
+            img = np.clip((img.astype(np.float32) - low) * (255.0 / (high - low)), 0, 255).astype(np.uint8)
+    else:
+        raise ValueError(f'Unsupported image reader {module!r}; expected "cv2" or "rasterio".')
+
+    if img is None:
+        raise ValueError(f'Could not read image: {img_path}')
+    if img.ndim == 2:
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    elif img.shape[2] == 4:
+        img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
     
     if rescaling != 1.0:
         interpolation_dict = {
@@ -348,8 +476,65 @@ def read_img(img_path, rescaling=1.0, interpolation_method=cv2.INTER_LINEAR):
             'INTER_CUBIC':cv2.INTER_CUBIC,
             'INTER_AREA':cv2.INTER_AREA
             }
-        img = cv2.resize(img, (0, 0), fx = rescaling, fy = rescaling, interpolation = interpolation_dict[interpolation_method])
+        interpolation = interpolation_dict.get(interpolation_method, interpolation_method)
+        img = cv2.resize(img, (0, 0), fx=rescaling, fy=rescaling, interpolation=interpolation)
     return img
+
+
+def fineair_band_stretches(img_path, low_percentile=1.0, high_percentile=99.0,
+                           sample_window_size=256, sample_grid=4):
+    """Estimate robust ranges from small windows distributed over a scene."""
+    with rasterio.open(img_path) as source:
+        if source.count < 4:
+            raise ValueError(f'Expected four FineAir bands, got {source.count}: {img_path}')
+        width = min(sample_window_size, source.width)
+        height = min(sample_window_size, source.height)
+        xs = np.linspace(0, max(0, source.width - width), sample_grid, dtype=int)
+        ys = np.linspace(0, max(0, source.height - height), sample_grid, dtype=int)
+        samples = [source.read(indexes=(1, 2, 3, 4),
+                               window=Window(int(x), int(y), width, height)).reshape(4, -1)
+                   for x in xs for y in ys]
+        overview = np.concatenate(samples, axis=1)
+    stretches = []
+    for band in overview:
+        valid = band[np.isfinite(band) & (band > 0)]
+        if not valid.size:
+            stretches.append((0.0, 1.0))
+            continue
+        low, high = np.percentile(valid, (low_percentile, high_percentile))
+        stretches.append((float(low), float(high if high > low else low + 1.0)))
+    return tuple(stretches)
+
+
+def read_fineair_rgb_ir(img_path, window=None, stretches=None, output_size=None):
+    """Read FineAir as an OpenCV-compatible BGR+NIR uint8 array.
+
+    FineAir TIFF bands are RGB plus spectral NIR. The fourth band is not alpha.
+    ``window`` follows rasterio's ``(column, row, width, height)`` convention.
+    """
+    stretches = stretches or fineair_band_stretches(img_path)
+    if len(stretches) != 4:
+        raise ValueError('FineAir stretches must contain four (low, high) pairs')
+    raster_window = None if window is None else Window(*window)
+    with rasterio.open(img_path) as source:
+        bands = source.read(indexes=(1, 2, 3, 4), window=raster_window,
+                            boundless=True, fill_value=0)
+    converted = np.empty(bands.shape, dtype=np.uint8)
+    for index, (low, high) in enumerate(stretches):
+        converted[index] = np.clip(
+            (bands[index].astype(np.float32) - low) * (255.0 / (high - low)),
+            0, 255).astype(np.uint8)
+        converted[index][bands[index] <= 0] = 0
+    # Rasterio gives RGBN; cv2.imwrite expects BGRA channel order.
+    result = np.moveaxis(converted[[2, 1, 0, 3]], 0, -1)
+    if output_size is not None:
+        target_height, target_width = output_size
+        height, width = result.shape[:2]
+        if height > target_height or width > target_width:
+            raise ValueError(f'FineAir window {result.shape[:2]} exceeds {output_size}')
+        result = np.pad(result, ((0, target_height - height),
+                                 (0, target_width - width), (0, 0)))
+    return result
 
 
 
@@ -541,7 +726,9 @@ def parse_potsdam_labels(label_path):
     masks, hbboxes, obboxes = [], [], []
     # read mask label file
 
-    img = cv2.imread(label_path)
+    img = cv2.imread(str(label_path))
+    if img is None:
+        raise ValueError(f'Could not read ISPRS segmentation mask: {label_path}')
 
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
@@ -559,11 +746,13 @@ def parse_potsdam_labels(label_path):
         masks.append(mask_coords)
         # satellitepy hbboxes
         contours, hierarchy = cv2.findContours(component_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        x, y, w, h = cv2.boundingRect(contours[0])
+        contour = max(contours, key=cv2.contourArea)
+        hull = cv2.convexHull(contour)
+        x, y, w, h = cv2.boundingRect(hull)
         hbboxes.append([[x,y],[x,y+h],[x+w,y+h],[x+w,y]])
-        rect = cv2.minAreaRect(contours[0])
+        rect = cv2.minAreaRect(hull)
         box = cv2.boxPoints(rect)  # Get corners of the rotated rectangle
-        box = np.int0(box)  # Convert to integer
+        box = box.astype(int)
         obboxes.append(box.tolist())
     return hbboxes, obboxes, masks
 
@@ -578,6 +767,23 @@ def get_satellitepy_table():
         If values are the instance of float, then max and min values
     """
     satellitepy_table = {
+        'dota-class': {
+            'plane': 0,
+            'baseball-diamond': 1,
+            'bridge': 2,
+            'ground-track-field': 3,
+            'small-vehicle': 4,
+            'large-vehicle': 5,
+            'ship': 6,
+            'tennis-court': 7,
+            'basketball-court': 8,
+            'storage-tank': 9,
+            'soccer-ball-field': 10,
+            'roundabout': 11,
+            'harbor': 12,
+            'swimming-pool': 13,
+            'helicopter': 14,
+        },
         'coarse-class':{
             'airplane':0,
             'ship':1,
@@ -748,6 +954,12 @@ def get_satellitepy_table():
             'H25B'                          :   135,      # FR24
             'Cessna-Citation'               :    86,      # FR24
             'Gulfstream'                    :   136,      # FR24
+            'Airliner'                      :   137,      # FineAir balanced class
+            'Private Jet'                   :   138,      # FineAir balanced class
+            'PrivateJet'                    :   138,      # FineAir spelling alias
+            'Private-Jet'                   :   138,      # FineAir spelling alias
+            'Propeller'                     :   139,      # FineAir balanced class
+            'CRJ-200'                       :   118,      # FineAir alias for CRJ2
             'Gulfstream-Global'             :   113,      # FR24 137
             'Embraer-Praetor'               :   112,      # FR24 138
             'Embraer-Phenom'                :   109,      # FR24 139
@@ -901,6 +1113,12 @@ def get_satellitepy_table():
             }
         }
     }
+    very_fine = satellitepy_table['very-fine-class']
+    next_index = max(very_fine.values(), default=-1) + 1
+    for class_name in FINEAIR_VERY_FINE_CLASSES:
+        if class_name not in very_fine:
+            very_fine[class_name] = next_index
+            next_index += 1
     return satellitepy_table
 
 

@@ -10,6 +10,26 @@ from satellitepy.data.bbox import BBox
 logger = logging.getLogger('')
 
 
+# Geometry genuinely present in each original annotation format.  This is
+# deliberately distinct from geometry that could be calculated from another
+# representation.  ISPRS is the explicit mask-derived exception requested for
+# the Potsdam/Vaihingen data.
+PROVIDED_GEOMETRY_BY_FORMAT = {
+    'dota': ('obboxes',),
+    'dota_all': ('obboxes',),
+    'fair1m': ('obboxes',),
+    'rareplanes_real': ('hbboxes', 'obboxes'),
+    'rareplanes_synthetic': ('hbboxes', 'obboxes'),
+    'vhr': ('hbboxes',),
+    'dior': ('obboxes',),
+    'ship_net': ('hbboxes', 'obboxes'),
+    'ucas': ('obboxes',),
+    'isprs': ('hbboxes', 'obboxes'),
+    'vedai': ('obboxes',),
+    'fineair': ('obboxes',),
+}
+
+
 def read_label(label_path, label_format, mask_path=None, rescaling=1):
     if isinstance(label_path, Path):
         label_path = str(label_path)
@@ -17,6 +37,8 @@ def read_label(label_path, label_format, mask_path=None, rescaling=1):
         labels = None
     elif label_format == 'dota' or label_format == 'DOTA':
         labels = read_dota_label(label_path, mask_path)
+    elif label_format in ('dota_all', 'DOTA_ALL'):
+        labels = read_dota_label(label_path, mask_path, include_all_classes=True)
     elif label_format == 'fair1m':
         labels = read_fair1m_label(label_path)
     elif label_format == 'satellitepy':
@@ -46,14 +68,34 @@ def read_label(label_path, label_format, mask_path=None, rescaling=1):
         logger.error('Label format is not defined!')
         labels = 0
 
-    if rescaling != 1:
+    if rescaling != 1 and labels is not None:
         labels = rescale_labels(labels, rescaling=rescaling)
+    if isinstance(labels, dict):
+        normalized_format = label_format.lower()
+        provided = PROVIDED_GEOMETRY_BY_FORMAT.get(normalized_format)
+        if provided is None:
+            # SatellitePy JSON is also used for externally converted datasets
+            # such as xView. Preserve explicit metadata when present; for
+            # legacy files infer only geometry with at least one real value.
+            provided = tuple(
+                task for task in ('hbboxes', 'obboxes')
+                if any(value is not None for value in labels.get(task, ()))
+            )
+        labels.setdefault('_provided_geometry', list(provided))
+        provided_tasks = set(labels.get('_provided_tasks', ()))
+        if normalized_format == 'isprs' or mask_path is not None:
+            provided_tasks.add('masks')
+        labels['_provided_tasks'] = sorted(provided_tasks)
     return labels
 
 
-def read_dota_label(label_path, mask_path=None):
+def read_dota_label(label_path, mask_path=None, include_all_classes=False):
     labels = init_satellitepy_label()
-    available_tasks = ['hbboxes', 'obboxes', 'difficulty', 'coarse-class', 'role']
+    # DOTA's Task 1 annotation supplies an oriented quadrilateral.  Do not
+    # synthesize an HBB from it: geometry availability is training signal.
+    available_tasks = ['obboxes', 'difficulty', 'coarse-class', 'role']
+    if include_all_classes:
+        available_tasks.append('dota-class')
     mask_exists = True if mask_path else False
     if mask_exists:
         available_tasks.append('masks')
@@ -77,6 +119,8 @@ def read_dota_label(label_path, mask_path=None):
 
             category = bbox_line[category_i].rstrip()
             category_words = category.split('-')
+            if include_all_classes:
+                labels['dota-class'].append(category)
             if len(category_words) == 2 and category_words[1] == 'vehicle':
                 labels['coarse-class'].append(category_words[1])
                 if category_words[0] == 'small':
@@ -91,6 +135,12 @@ def read_dota_label(label_path, mask_path=None):
             elif category == 'ship':
                 labels['coarse-class'].append('ship')
                 labels['role'].append(None)
+            elif category == 'helicopter' and include_all_classes:
+                labels['coarse-class'].append('helicopter')
+                labels['role'].append(None)
+            elif include_all_classes:
+                labels['coarse-class'].append(None)
+                labels['role'].append(None)
             else:
                 continue
 
@@ -99,7 +149,6 @@ def read_dota_label(label_path, mask_path=None):
             bbox_corners_flatten = [[float(corner) for corner in bbox_line[:category_i]]]
             bbox_corners = np.reshape(bbox_corners_flatten, (4, 2)).tolist()
             labels['obboxes'].append(bbox_corners)
-            labels['hbboxes'].append(BBox.get_hbb_from_obb(bbox_corners))
             fill_none_to_empty_keys(labels, not_available_tasks)
 
         if mask_exists:
@@ -110,7 +159,7 @@ def read_dota_label(label_path, mask_path=None):
 
 def read_fair1m_label(label_path):
     labels = init_satellitepy_label()
-    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'role']
+    available_tasks = ['obboxes', 'coarse-class', 'fine-class', 'role']
     all_tasks = get_all_satellitepy_keys()
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
 
@@ -173,7 +222,6 @@ def read_fair1m_label(label_path):
                 coord.append(float(point))
             coords.append(coord)
         labels['obboxes'].append(coords)
-        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
         fill_none_to_empty_keys(labels, not_available_tasks)
 
     return labels
@@ -197,7 +245,14 @@ def read_rareplanes_real_label(label_path):
         bbox = BBox(diamond_corners=np.array(points[:8]).reshape(4, 2))
         corners = bbox.corners
         labels['obboxes'].append(corners)
-        labels['hbboxes'].append(BBox.get_hbb_from_obb(corners))
+        # RarePlanes COCO annotations provide bbox=[x, y, width, height]
+        # independently of segmentation.  Preserve that HBB verbatim rather
+        # than enclosing the oriented polygon.
+        x, y, width, height = annotation['bbox']
+        labels['hbboxes'].append([
+            [x, y], [x, y + height],
+            [x + width, y + height], [x + width, y],
+        ])
         labels['coarse-class'].append('airplane')
         labels['attributes']['engines']['no-engines'].append(int(annotation['num_engines']))
         labels['attributes']['engines']['propulsion'].append(annotation['propulsion'])
@@ -237,7 +292,11 @@ def read_rareplanes_synthetic_label(label_path, mask_path):
         corners = bbox.corners.tolist()
 
         labels['obboxes'].append(corners)
-        labels['hbboxes'].append(BBox.get_hbb_from_obb(corners))
+        x, y, width, height = annotation['bbox']
+        labels['hbboxes'].append([
+            [x, y], [x, y + height],
+            [x + width, y + height], [x + width, y],
+        ])
         labels['coarse-class'].append('airplane')
 
         name = '_'.join(annotation['full'].split('_')[3:])
@@ -293,16 +352,15 @@ def read_VHR_label(label_path):
 
         labels['coarse-class'].append(coarse)
         labels['hbboxes'].append([[vals[0], vals[1]], [vals[2], vals[1]], [vals[2], vals[3]], [vals[0], vals[3]]])
+        fill_none_to_empty_keys(labels, not_available_tasks)
 
     handler.close()
-
-    fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
 
 
 def read_dior_label(label_path):
     labels = init_satellitepy_label()
-    available_tasks = ['hbboxes', 'obboxes', 'difficulty', 'coarse-class']
+    available_tasks = ['obboxes', 'difficulty', 'coarse-class']
     all_tasks = get_all_satellitepy_keys()
     not_available_tasks = [task for task in all_tasks if task not in available_tasks or available_tasks.remove(task)]
 
@@ -332,7 +390,6 @@ def read_dior_label(label_path):
         corners = [[x_left_top, y_left_top], [x_left_bottom, y_left_bottom], [x_right_bottom, y_right_bottom],
                    [x_right_top, y_right_top]]
         labels['obboxes'].append(corners)
-        labels['hbboxes'].append(BBox.get_hbb_from_obb(corners))
         fill_none_to_empty_keys(labels, not_available_tasks)
     handler.close()
 
@@ -400,14 +457,26 @@ def read_ship_net_label(label_path):
                 coords.append(corner)
                 corner = []
         labels['obboxes'].append(coords)
-        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
+        # ShipImageNet supplies a separate horizontal <bndbox> alongside the
+        # polygon.  Use those original coordinates.
+        bndbox = objects[i].find('bndbox')
+        if bndbox is None:
+            labels['hbboxes'].append(None)
+        else:
+            xmin = float(bndbox.find('xmin').text)
+            ymin = float(bndbox.find('ymin').text)
+            xmax = float(bndbox.find('xmax').text)
+            ymax = float(bndbox.find('ymax').text)
+            labels['hbboxes'].append([
+                [xmin, ymin], [xmin, ymax], [xmax, ymax], [xmax, ymin],
+            ])
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
 
 
 def read_ucas_label(label_path):
     labels = init_satellitepy_label()
-    available_tasks = ['hbboxes', 'obboxes', 'coarse-class']
+    available_tasks = ['obboxes', 'coarse-class']
     all_tasks = get_all_satellitepy_keys()
     not_available_tasks = [task for task in all_tasks if task not in available_tasks or available_tasks.remove(task)]
 
@@ -434,7 +503,6 @@ def read_ucas_label(label_path):
             coords.append(corner)
             corner = []
         labels['obboxes'].append(coords)
-        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
 
         fill_none_to_empty_keys(labels, not_available_tasks)
     return labels
@@ -443,6 +511,9 @@ def read_ucas_label(label_path):
 def read_satellitepy_label(label_path):
     with open(label_path, 'r') as f:
         labels = json.load(f)
+    # Keep labels written before newer task keys were introduced readable.
+    object_count = max(len(labels.get('hbboxes', ())), len(labels.get('obboxes', ())))
+    labels.setdefault('dota-class', [None] * object_count)
     return labels
 
 
@@ -468,7 +539,7 @@ def read_isprs_label(label_path):
 def read_vedai_label(label_path):
     labels = init_satellitepy_label()
     classes = get_vedai_classes()
-    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'fine-class']
+    available_tasks = ['obboxes', 'coarse-class', 'fine-class']
     all_tasks = get_all_satellitepy_keys()
     not_available_tasks = [task for task in all_tasks if task not in available_tasks or available_tasks.remove(task)]
 
@@ -504,7 +575,6 @@ def read_vedai_label(label_path):
             corner = []
 
         labels['obboxes'].append(coords)
-        labels['hbboxes'].append(BBox.get_hbb_from_obb(coords))
 
         labels['coarse-class'].append(coarse)
         labels['fine-class'].append(fine)
@@ -516,26 +586,33 @@ def read_vedai_label(label_path):
 
 def read_fineair_label(label_path):
     labels = init_satellitepy_label()
-    available_tasks = ['hbboxes', 'obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'fineair-class', 'role', 'source']
+    available_tasks = ['obboxes', 'coarse-class', 'fine-class', 'very-fine-class', 'fineair-class', 'role', 'source']
     all_tasks = get_all_satellitepy_keys()
     not_available_tasks = [task for task in all_tasks if not task in available_tasks or available_tasks.remove(task)]
     with open(label_path, 'r') as f:
         file = json.load(f)
     labels['dbboxes'] = []
     for annotation in file['features']:
+        properties = annotation['properties']
+        fineair_class = properties.get('fineairtype') or properties.get('Type')
+        if not fineair_class:
+            raise ValueError(f'Missing FineAir class in {label_path}')
+        subtype = properties.get('Subtype')
+        if subtype and any(part in {'', 'None'} for part in subtype.split('--')):
+            subtype = None
         labels['coarse-class'].append('airplane')
-        labels['fine-class'].append(annotation['properties']['Type'])
-        labels['very-fine-class'].append(annotation['properties']['Subtype'])
-        labels['fineair-class'].append(annotation['properties']['fineairtype'])
-        labels['source'].append(annotation['properties']['Source'])
-        labels['role'].append(annotation['properties']['Role'])
+        labels['fine-class'].append(fineair_class)
+        labels['very-fine-class'].append(subtype)
+        # Preserve this legacy task for compatibility with existing runs.
+        labels['fineair-class'].append(fineair_class)
+        labels['source'].append(properties.get('Source'))
+        labels['role'].append(properties.get('Role'))
         coords = annotation['geometry']['coordinates']
         diamond_corners = coords[:4][:]
         labels['dbboxes'].append(diamond_corners)
         bbox = BBox(diamond_corners=diamond_corners)
         bbox = BBox(params=bbox.params)
         labels['obboxes'].append(bbox.corners)
-        labels['hbboxes'].append(bbox.get_hbb_from_obb(bbox.corners))
         fill_none_to_empty_keys(labels, not_available_tasks)
 
     return labels

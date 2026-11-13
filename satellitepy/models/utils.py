@@ -31,7 +31,7 @@ class EarlyStopping:
         self.counter = 0
         self.best_score = None
         self.early_stop = False
-        self.val_loss_min = val_loss_min if val_loss_min is not None else np.Inf
+        self.val_loss_min = val_loss_min if val_loss_min is not None else np.inf
         self.delta = delta
         self.path = path
         self.trace_func = trace_func
@@ -43,7 +43,7 @@ class EarlyStopping:
         if self.best_score is None:
             self.best_score = score
             self.save_checkpoint(val_loss, model, optimizer, epoch)
-        elif self.best_score is np.nan:
+        elif np.isnan(self.best_score):
             self.counter += 1
         elif score < self.best_score + self.delta:
             self.counter += 1

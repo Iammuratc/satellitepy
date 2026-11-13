@@ -1,0 +1,67 @@
+# Sparse-supervision merged-dataset baseline. Geometry and semantic losses are
+# applied only where that exact annotation is present on the source object.
+model:
+  weights: yolo11s-obb.pt
+  input_channels: 4
+  geometry_tasks: [hbboxes, obboxes]
+  geometry_loss_weights:
+    hbboxes: 1.0
+    obboxes: 1.0
+
+tasks:
+  coarse-class:
+    kind: classification
+    loss_weight: 1.0
+  role:
+    kind: classification
+    loss_weight: 1.0
+  fine-class:
+    kind: classification
+    loss_weight: 1.0
+  very-fine-class:
+    kind: classification
+    loss_weight: 1.0
+  fineair-class:
+    kind: classification
+    loss_weight: 1.0
+  masks:
+    kind: segmentation
+    loss_weight: 1.0
+  attributes_engines_no-engines:
+    kind: classification
+    loss_weight: 1.0
+  attributes_engines_propulsion:
+    kind: classification
+    loss_weight: 1.0
+  attributes_fuselage_canards:
+    kind: classification
+    loss_weight: 1.0
+  attributes_fuselage_length:
+    kind: regression
+    loss_weight: 1.0
+  attributes_wings_wing-span:
+    kind: regression
+    loss_weight: 1.0
+  attributes_wings_wing-shape:
+    kind: classification
+    loss_weight: 1.0
+  attributes_wings_wing-position:
+    kind: classification
+    loss_weight: 1.0
+  attributes_tail_no-tail-fins:
+    kind: classification
+    loss_weight: 1.0
+
+train:
+  # Preserve the prepared patch resolution. This is important for small DOTA
+  # objects and fine-grained aircraft/ship attributes.
+  image_size: 1024
+  rgb_ir_channel_dropout: 0.25
+  # Global batch size (2 images/GPU with four GPUs). Increase after measuring
+  # peak memory with all geometry, semantic, and mask heads enabled.
+  batch_size: 8
+  epochs: 100
+  learning_rate: 0.0002
+  weight_decay: 0.0005
+  workers: 8
+  validation_interval: 1

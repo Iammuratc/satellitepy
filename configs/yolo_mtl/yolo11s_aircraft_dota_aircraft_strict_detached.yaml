@@ -1,0 +1,6 @@
+extends: yolo11s_aircraft_dota_ships_strict_detached.yaml
+
+model:
+  geometry_families: [aircraft]
+  dataset_geometry_families: {fineair: aircraft, rareplanes: aircraft, dota_aircraft: aircraft}
+  geometry_loss_weights: {aircraft: 1.0}
