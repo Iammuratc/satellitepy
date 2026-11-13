@@ -1,0 +1,40 @@
+services:
+  satellitepy:
+    build:
+      context: .
+      args:
+        TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu126}
+    image: satellitepy:local
+    gpus: all
+    shm_size: "16gb"
+    working_dir: /workspace/satellitepy
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace/satellitepy
+      - type: bind
+        source: ${SATELLITEPY_DATA_ROOT:-/mnt/2tb-0/satellitepy/data}
+        target: /data
+        read_only: false
+      - type: bind
+        source: ${SATELLITEPY_FINEAIR_ROOT:-/mnt/2tb-1/satellitepy/data/FR24_dataset}
+        target: /data/FineAir/FR24_dataset
+        read_only: false
+      - type: bind
+        source: ./outputs
+        target: /output
+      - type: bind
+        source: ${SATELLITEPY_PATCHES_ROOT:-/mnt/2tb-1/satellitepy/patches}
+        target: /patches
+      - type: volume
+        source: codex-home
+        target: /root/.codex
+      - type: bind
+        source: /mnt/2tb-1/vscode-server-satellitepy
+        target: /root/.vscode-server
+    stdin_open: true
+    tty: true
+    command: ["sleep", "infinity"]
+
+volumes:
+  codex-home:

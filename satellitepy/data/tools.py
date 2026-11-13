@@ -18,8 +18,6 @@ from satellitepy.models.bbavector.utils import decode_masks
 from satellitepy.utils.path_utils import create_folder, get_file_paths
 from satellitepy.data.bbox import BBox
 from satellitepy.data.utils import get_satellitepy_dict_values, extract_gsd_from_label
-from satellitepy.evaluate.utils import remove_low_conf_results, match_gt_and_det_bboxes
-from satellitepy.evaluate.bbavector.utils import apply_nms
 
 logger = logging.getLogger('')
 
@@ -241,9 +239,75 @@ def save_patches(
         results = list(tqdm(pool.imap(save_patch, args_list), 
                           total=len(args_list), 
                           desc="Creating patches"))
+
+
+def save_patches_from_paths(
+        image_paths,
+        label_paths,
+        label_format,
+        out_folder,
+        truncated_object_thr,
+        patch_size,
+        patch_overlap,
+        mask_paths=None,
+        ir_paths=None,
+        rescaling=1,
+        interpolation_method=cv2.INTER_LINEAR,
+        keep_empty=False,
+        include_only_cgc=None,
+        workers=None,
+        name_prefixes=None):
+    """Create patches from explicitly matched source files.
+
+    Unlike :func:`save_patches`, this entry point does not rely on the sort order
+    of three directories.  It is intended for heterogeneous original datasets
+    and for source-level train/validation/test splits.  If ``ir_paths`` is
+    supplied, the infrared image is appended as a fourth channel; omitting it
+    produces ordinary three-channel patches.
+    """
+    image_paths = [Path(path) for path in image_paths]
+    label_paths = [Path(path) if path is not None else None for path in label_paths]
+    mask_paths = ([None] * len(image_paths) if mask_paths is None else
+                  [Path(path) if path is not None else None for path in mask_paths])
+    ir_paths = ([None] * len(image_paths) if ir_paths is None else
+                [Path(path) if path is not None else None for path in ir_paths])
+    name_prefixes = ([None] * len(image_paths) if name_prefixes is None else name_prefixes)
+    if not (len(image_paths) == len(label_paths) == len(mask_paths) == len(ir_paths)
+            == len(name_prefixes)):
+        raise ValueError('image, label, mask, and IR path lists must have equal lengths')
+
+    out_folder = Path(out_folder)
+    out_image_folder = out_folder / 'images'
+    out_label_folder = out_folder / 'labels'
+    assert create_folder(out_image_folder, ask_permission=False)
+    assert create_folder(out_label_folder, ask_permission=False)
+
+    args_list = [(
+        image_path, label_path, label_format, out_image_folder, out_label_folder,
+        mask_path, rescaling, include_only_cgc, None, None,
+        interpolation_method, keep_empty, truncated_object_thr, patch_size,
+        patch_overlap, ir_path, name_prefix,
+    ) for image_path, label_path, mask_path, ir_path, name_prefix in zip(
+        image_paths, label_paths, mask_paths, ir_paths, name_prefixes)]
+
+    worker_count = cpu_count() if workers is None else workers
+    if worker_count == 1:
+        for args in tqdm(args_list, desc='Creating patches'):
+            save_patch(args)
+    else:
+        with Pool(processes=worker_count) as pool:
+            list(tqdm(pool.imap(save_patch, args_list), total=len(args_list),
+                      desc='Creating patches'))
     
 
 def save_patch(args):
+    if len(args) == 15:
+        ir_path = None
+        name_prefix = None
+    else:
+        ir_path = args[15]
+        name_prefix = args[16] if len(args) > 16 else None
+        args = args[:15]
     img_path, label_path, label_format, out_image_folder, out_label_folder, mask_path, rescaling, include_only_cgc, new_gsd, gsd_threshold, interpolation_method, keep_empty, truncated_object_thr, patch_size, patch_overlap = args
 
     mask_name = mask_path.name if mask_path != None else None
@@ -268,7 +332,26 @@ def save_patch(args):
     if include_only_cgc:
         gt_labels = exclude_cg_classes(gt_labels, include_only_cgc)
 
-    img = read_img(str(img_path), rescaling=rescaling, interpolation_method=interpolation_method)
+    try:
+        img = read_img(str(img_path), rescaling=rescaling,
+                       interpolation_method=interpolation_method)
+    except (OSError, ValueError) as error:
+        logger.warning('Skipping unreadable source image %s: %s', img_path, error)
+        return 0
+    if ir_path is not None:
+        try:
+            ir_img = read_img(str(ir_path), rescaling=rescaling,
+                              interpolation_method=interpolation_method)
+        except (OSError, ValueError) as error:
+            logger.warning('Skipping source with unreadable IR image %s: %s', ir_path, error)
+            return 0
+        if ir_img.ndim == 3:
+            ir_img = cv2.cvtColor(ir_img, cv2.COLOR_BGR2GRAY)
+        if ir_img.shape[:2] != img.shape[:2]:
+            raise ValueError(f'RGB and IR shapes differ: {img_path} and {ir_path}')
+        if img.ndim == 2:
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        img = np.dstack((img[:, :, :3], ir_img))
 
     patches = get_patches(
         img,
@@ -285,7 +368,8 @@ def save_patch(args):
         img_name = img_path.stem
 
         patch_x0, patch_y0 = patches['start_coords'][i]
-        patch_name = f"{img_name}_x_{patch_x0}_y_{patch_y0}"
+        prefix = f'{name_prefix}__' if name_prefix else ''
+        patch_name = f"{prefix}{img_name}_x_{patch_x0}_y_{patch_y0}"
 
         patch_img = patches['images'][i]
         patch_image_path = Path(out_image_folder) / f"{patch_name}.png"
@@ -748,6 +832,9 @@ def show_results_on_image(img_dir,
         # results = remove_low_conf_results(results, target_task, conf_th, no_probability)
         # results['det_labels'] = apply_nms(results['det_labels'], nms_iou_threshold=iou_th, target_task=target_task, no_probability=no_probability)
         
+        # Evaluation has optional MMRotate dependencies; keep them out of the
+        # data-preparation import path.
+        from satellitepy.evaluate.utils import match_gt_and_det_bboxes
         results['matches'] = match_gt_and_det_bboxes(results['gt_labels'], results['det_labels'])
 
 

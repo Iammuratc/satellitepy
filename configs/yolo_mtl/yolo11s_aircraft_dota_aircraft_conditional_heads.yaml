@@ -1,0 +1,15 @@
+extends: yolo11s_aircraft_dota_aircraft_strict_detached.yaml
+
+model:
+  # FineAir and RarePlanes share one aircraft detector. DOTA uses an
+  # independently trainable aircraft detector head over the same shared
+  # backbone/FPN features, isolating output calibration and annotation-policy
+  # differences without duplicating the representation.
+  geometry_families: [aircraft, dota_aircraft_head]
+  dataset_geometry_families:
+    fineair: aircraft
+    rareplanes: aircraft
+    dota_aircraft: dota_aircraft_head
+  geometry_loss_weights:
+    aircraft: 1.0
+    dota_aircraft_head: 1.0

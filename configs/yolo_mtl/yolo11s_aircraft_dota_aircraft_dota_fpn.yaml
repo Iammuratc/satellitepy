@@ -1,0 +1,7 @@
+extends: yolo11s_aircraft_dota_aircraft_strict_detached.yaml
+
+model:
+  # YOLO11 modules 0-10 remain shared. DOTA receives a separate copy of the
+  # detection neck (modules 11-22); all domains retain one aircraft OBB head.
+  geometry_fpn_domains: [dota_aircraft]
+  geometry_fpn_start: 11

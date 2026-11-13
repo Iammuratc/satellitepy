@@ -1,0 +1,11 @@
+extends: yolo11s_aircraft_dota_aircraft_dota_adapter.yaml
+
+model:
+  # The mask head reuses the DOTA detection adapter, but detached base
+  # features stop mask gradients before the shared backbone/FPN. Detection
+  # gradients continue to train both the shared detector and adapter normally.
+  mask_feature_domains: {masks: dota_aircraft}
+  mask_detach_base_features: true
+
+tasks:
+  masks: {kind: segmentation, outputs: 1, loss_weight: 1.0}

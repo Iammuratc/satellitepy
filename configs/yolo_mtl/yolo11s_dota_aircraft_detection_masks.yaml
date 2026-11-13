@@ -1,0 +1,9 @@
+extends: yolo11s_dota_aircraft_detection_only.yaml
+
+model:
+  # Independent DOTA baseline: dense aircraft-mask supervision and OBB
+  # detection jointly update the same backbone/FPN.
+  mask_feature_domains: {masks: shared}
+
+tasks:
+  masks: {kind: segmentation, outputs: 1, loss_weight: 1.0}

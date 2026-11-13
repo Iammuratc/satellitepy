@@ -1,0 +1,8 @@
+extends: yolo11s_aircraft_dota_aircraft_dota_adapter.yaml
+
+model:
+  # Replace the scalar 1x1 DOTA residual with a per-image channel-gated
+  # bottleneck expert: 1x1 reduction, depthwise 3x3 spatial correction, and
+  # zero-initialized 1x1 expansion at every P3/P4/P5 level.
+  geometry_domain_adapter_type: dynamic_spatial_channel
+  geometry_domain_bottleneck_ratio: 4

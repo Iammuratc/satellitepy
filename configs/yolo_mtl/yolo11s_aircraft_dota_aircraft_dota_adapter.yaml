@@ -1,0 +1,7 @@
+extends: yolo11s_aircraft_dota_aircraft_strict_detached.yaml
+
+model:
+  # FineAir and RarePlanes use the unmodified shared FPN. Only DOTA receives
+  # a dataset-conditioned residual path into the shared aircraft head.
+  geometry_feature_domains: [dota_aircraft]
+  geometry_domain_gate_initial: 0.1

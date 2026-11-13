@@ -1,0 +1,8 @@
+extends: yolo11s_aircraft_dota_aircraft_strict_detached.yaml
+
+model:
+  # Each dataset has an independent copy of YOLO modules 0-4: the input stem,
+  # P2 stage, and early P3 stage. Modules 5 onward, the complete FPN, and the
+  # aircraft OBB head remain shared. Semantic gradients stay strictly detached.
+  backbone_feature_domains: [fineair, rareplanes, dota_aircraft]
+  backbone_domain_end: 5

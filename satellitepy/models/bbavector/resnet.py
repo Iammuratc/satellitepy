@@ -120,7 +120,7 @@ class ResNet(nn.Module):
 
     def __init__(self, block, layers, num_classes=1000, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None,
-                 norm_layer=None):
+                 norm_layer=None, input_channels=3):
         super(ResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -134,7 +134,7 @@ class ResNet(nn.Module):
             raise ValueError(f'replace_stride_with_dilation should be None or a 3-element tuple, got {replace_stride_with_dilation}')
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3,
+        self.conv1 = nn.Conv2d(input_channels, self.inplanes, kernel_size=7, stride=2, padding=3,
                                bias=False)
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
@@ -210,6 +210,11 @@ def _resnet(arch, block, layers, pretrained, progress, **kwargs):
     model = ResNet(block, layers, **kwargs)
     if pretrained:
         state_dict = load_state_dict_from_url(model_urls[arch], progress=progress)
+        if model.conv1.weight.shape[1] != state_dict['conv1.weight'].shape[1]:
+            rgb_weights = state_dict['conv1.weight']
+            extra = rgb_weights.mean(dim=1, keepdim=True).repeat(
+                1, model.conv1.weight.shape[1] - rgb_weights.shape[1], 1, 1)
+            state_dict['conv1.weight'] = torch.cat((rgb_weights, extra), dim=1)
         model.load_state_dict(state_dict, strict=False)
     return model
 

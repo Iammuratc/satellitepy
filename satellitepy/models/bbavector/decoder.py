@@ -105,7 +105,12 @@ class DecDecoder(object):
         ], dim=2)
 
     def ctdet_decode(self, pr_decs):
-        heat = pr_decs['cls_' + self.target_task]
+        # Use one NMS-suppressed heatmap for candidate selection, confidence
+        # filtering, class gathering, and box decoding.  Previously scores and
+        # classes were gathered from the raw heatmap while decode_* selected
+        # boxes from an NMS heatmap.  The two top-K index sets therefore did
+        # not describe the same detections.
+        heat = self._nms(pr_decs['cls_' + self.target_task])
         scores, idx_2d, _, _ = self._topk(heat)
 
         idx_1d = (scores > self.conf_thresh).squeeze(0).cpu().numpy()

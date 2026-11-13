@@ -25,10 +25,12 @@ class BBAVectorDataset(Dataset):
                  augmentation=False,
                  validate_dataset=True,
                  K=1000,
-                 random_seed=12):
+                 random_seed=12,
+                 input_channels=3):
         super(BBAVectorDataset, self).__init__()
 
-        self.utils = Utils(tasks, input_h, input_w, down_ratio, K, augmentation)
+        self.utils = Utils(tasks, input_h, input_w, down_ratio, K, augmentation, input_channels)
+        self.input_channels = input_channels
         self.tasks = tasks
         self.target_task = target_task
         self.items = []
@@ -61,10 +63,16 @@ class BBAVectorDataset(Dataset):
                     hash_str = str(img_path) + str(label_path) + str(self.random_seed)
                     hash_bytes = hashlib.sha256(bytes(hash_str, 'utf-8')).digest()[:4]
                     np.random.seed(int.from_bytes(hash_bytes[:4], 'little'))
-                    image = cv2.imread(img_path.absolute().as_posix())
+                    image = cv2.imread(img_path.absolute().as_posix(), cv2.IMREAD_UNCHANGED)
+                    if image.ndim == 2:
+                        image = image[:, :, np.newaxis]
+                    if self.input_channels == 3 and image.shape[2] == 4:
+                        image = image[:, :, :3]
+                    if image.shape[2] != self.input_channels:
+                        raise ValueError(f'Expected {self.input_channels} channels: {img_path}')
                     labels = read_label(label_path, in_label_format)
                     image_h, image_w, c = image.shape
-                    annotation = self.utils.preapare_annotations(labels, image_w, image_h)  # , img_path)
+                    annotation = self.utils.prepare_annotations(labels, image_w, image_h)
                     image, annotation = self.utils.data_transform(image, annotation, self.augmentation)
 
                     if self.all_tasks_available(annotation):
@@ -93,8 +101,19 @@ class BBAVectorDataset(Dataset):
         img_path, label_path, label_format = self.items[idx]
 
         if self.testing:
-            image = cv2.imread(img_path.absolute().as_posix())
+            image = cv2.imread(img_path.absolute().as_posix(), cv2.IMREAD_UNCHANGED)
+            if image.ndim == 2:
+                image = image[:, :, np.newaxis]
+            if self.input_channels == 3 and image.shape[2] == 4:
+                image = image[:, :, :3]
             image_h, image_w, c = image.shape
+            # DOTA follows the original BBAVector recipe: 600x600 source
+            # crops are resized to the 608x608 network input. Keep the source
+            # dimensions below so decoded boxes are mapped back correctly.
+            if image_h != self.utils.input_h or image_w != self.utils.input_w:
+                image = cv2.resize(
+                    image, (self.utils.input_w, self.utils.input_h),
+                    interpolation=cv2.INTER_LINEAR)
             return {
                 'input': torch.from_numpy(image / 255).permute((2, 0, 1)),
                 'img_path': str(img_path),

@@ -7,12 +7,13 @@ from . import resnet
 
 
 class CTRBOX(nn.Module):
-    def __init__(self, heads, pretrained, down_ratio, final_kernel, head_conv, resnet_type="101"):
+    def __init__(self, heads, pretrained, down_ratio, final_kernel, head_conv,
+                 resnet_type="101", input_channels=3):
         super(CTRBOX, self).__init__()
         assert down_ratio in [2, 4, 8, 16]
         if resnet_type == "34":
             channels = [3, 16, 64, 128, 512, 1024]
-            self.base_network = resnet.resnet34(pretrained=pretrained)
+            self.base_network = resnet.resnet34(pretrained=pretrained, input_channels=input_channels)
             self.dec_c2 = CombinationModule(128, 64, batch_norm=True)
             self.dec_c3 = CombinationModule(256, 128, batch_norm=True)
             self.dec_c4 = CombinationModule(512, 256, batch_norm=True)
@@ -25,7 +26,7 @@ class CTRBOX(nn.Module):
                 )
         else:
             channels = [3, 64, 256, 512, 1024, 2048]
-            self.base_network = resnet.resnet101(pretrained=pretrained)
+            self.base_network = resnet.resnet101(pretrained=pretrained, input_channels=input_channels)
             self.dec_c2 = CombinationModule(512, 256, batch_norm=True)
             self.dec_c3 = CombinationModule(1024, 512, batch_norm=True)
             self.dec_c4 = CombinationModule(2048, 1024, batch_norm=True)
@@ -50,7 +51,7 @@ class CTRBOX(nn.Module):
                 fc = nn.Sequential(
                     nn.Conv2d(64, 64, kernel_size=3, padding=1, bias=True),
                     nn.ReLU(inplace=True),
-                    nn.Conv2d(64, classes, kernel_size=1, padding=1, bias=True)
+                    nn.Conv2d(64, classes, kernel_size=1, padding=0, bias=True)
                 )
             else:
                 fc = nn.Sequential(nn.Conv2d(channels[self.l1], head_conv, kernel_size=3, padding=1, bias=True),
@@ -60,7 +61,7 @@ class CTRBOX(nn.Module):
             if head[:4] == "cls_":
                 fc[-1].bias.data.fill_(-2.19)
             else:
-                self.fill_fc_weights(fc)
+                fc.apply(self.fill_fc_weights)
 
             self.__setattr__(head, fc)
 

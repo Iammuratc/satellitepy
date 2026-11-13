@@ -1,8 +1,6 @@
 from satellitepy.models.bbavector.utils import decode_predictions
 from satellitepy.data.bbox import BBox
 
-from mmrotate.core.bbox import rbbox_overlaps
-
 import torch
 import numpy as np
 import logging
@@ -53,6 +51,7 @@ def get_patch_result(
 
 
 def nms(bboxes, scores, iou_th):
+    from mmrotate.core.bbox import rbbox_overlaps
     # pass
     """
     NMS for rotated and horizontal bounding boxes

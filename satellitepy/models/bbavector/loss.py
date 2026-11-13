@@ -32,7 +32,11 @@ class CELoss(nn.Module):
         if mask.sum():
             nan_mask = torch.isnan(target) == False
             _mask = (mask & nan_mask) > 0
-            loss = F.cross_entropy(pred[_mask],
+            # Classification heads are sigmoid-activated by CTRBOX because the
+            # target classification head is also the detection heatmap. Convert
+            # probabilities back to logits before applying cross entropy.
+            logits = torch.logit(pred.clamp(min=EPSILON, max=1 - EPSILON))
+            loss = F.cross_entropy(logits[_mask],
                                    target[_mask].long(),
                                    reduction='mean')
             if torch.any(torch.isnan(loss)):

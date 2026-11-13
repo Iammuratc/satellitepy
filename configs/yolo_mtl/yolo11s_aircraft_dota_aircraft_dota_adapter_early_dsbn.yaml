@@ -1,0 +1,7 @@
+extends: yolo11s_aircraft_dota_aircraft_dota_adapter.yaml
+
+model:
+  # Low-level dataset statistics are separated while convolutional weights
+  # remain shared. DOTA additionally receives the lightweight P3/P4/P5 adapter.
+  normalization_domains: [fineair, rareplanes, dota_aircraft]
+  normalization_module_end: 4

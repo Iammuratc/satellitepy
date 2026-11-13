@@ -1,0 +1,16 @@
+.git
+.gitignore
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+.venv
+venv*
+data
+datasets
+outputs
+checkpoints
+*.pth
+*.pt
+notebooks

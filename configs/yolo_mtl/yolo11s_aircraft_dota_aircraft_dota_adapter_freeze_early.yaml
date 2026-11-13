@@ -1,0 +1,6 @@
+extends: yolo11s_aircraft_dota_aircraft_dota_adapter.yaml
+
+model:
+  # Preserve pretrained low-level features and their BN statistics. Module 0
+  # remains trainable so the RGB+IR input stem can adapt to its fourth channel.
+  frozen_backbone_modules: [1, 2, 3]
